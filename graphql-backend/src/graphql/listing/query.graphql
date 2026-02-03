@@ -1,0 +1,111 @@
+type Query {
+  catalogue(vendorId: ID, search: String, types: [String], offset: Int, limit: Int, includeDrafts: Boolean): CatalogueResult
+  searchMerchantListings(merchantId: ID!, search: String!): [MerchantListingSearchResult]
+  listing(id: String!, vendorId: String!): Listing
+  listingGrouping(id: String!, vendorId: String!): ListingGrouping
+  listingGroupings(vendorId: String!, types: [GroupingsType]): [ListingGrouping]
+  listingSchedule(id: String!, vendorId: String!): ListingSchedule
+  listingSchedules(listingId: String, date: DateTime, vendorId: ID!): [ListingSchedule]
+}
+
+type CatalogueResult {
+  listings: [Listing]
+  hasMore: Boolean,
+  hasPrevious: Boolean,
+  totalCount: Int
+}
+
+type MerchantListingSearchResult {
+  id: ID!
+  title: String!
+  type: ListingType!
+  category: String
+  status: StatusType
+  thumbnail: Thumbnail
+}
+  
+type Listing {
+  id: String!
+  slug: String
+  vendorId: String!
+  vendor: Vendor
+  name: String
+  thumbnail: Thumbnail
+  thumbnailMode: String
+  pricing_descriptor: String
+  rating: Rating
+  type: ListingType
+  url: String
+  isLive: Boolean
+  other_listings: [OtherListing]
+  reviews(limit: Int): [Review]
+  reportReasons(defaultLocale: String): [ChoiceOption]
+  conversationMessages: [ConversationMessage] 
+  questions: [Question]
+  ref: RecordRef
+  listingStatus: StatusType
+  wishlist: Boolean
+  skus: [ListingSku]
+  zoom: Float
+  backgroundColor: String
+}
+
+type ListingSku {
+    id: String
+    price: CurrencyAmount
+    qty: String
+}
+
+type OtherListing {
+  listing: Listing
+  isRelated: Boolean
+  source: String
+}
+
+type ListingSchedule {
+  id: ID
+  listingId: ID
+  vendorId: ID
+  name: String
+  recurrenceRule: String
+  capacity: Int
+  fromTime: Time
+  toTime: Time
+  activityList: ActivityList
+  tour: Tour
+  ref: RecordRef
+}
+
+type ListingGrouping {
+  id: ID
+  vendorId: ID
+  name: String!
+  type: GroupingsType!
+  overall_price: CurrencyAmount!
+  description: String!
+  overall_value: Float!
+  price_per_listing: CurrencyAmount!
+  category_price_rank: Float!
+  category_price_rank_prior: Float!
+  ref: RecordRef
+}
+
+enum GroupingsType {
+  CATEGORY
+  PLAYLIST
+}
+
+enum QuestionModeEnum {
+  BID
+  FIXED_PRICE
+  FREE
+}
+
+enum ListingType {
+  LIVESTREAM
+  VIDEO
+  PODCAST
+  TOUR
+  PRODUCT
+  SERVICE
+}

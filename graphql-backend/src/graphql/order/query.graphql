@@ -1,0 +1,208 @@
+type Query {
+    order(id: ID!, customerEmail: String): Order
+    orders(customerEmail: String, customerId: String, forObject: RecordRefInput, vendorId: ID): [Order]
+    refunds(vendorId: ID!, status: [String!]): [Refund]
+    refund(orderId: ID!): Refund
+    estimate(target: String!, lines: [OrderLineInput]): OrderBalance
+    orderRefundPolicy(orderId: ID!): ProductReturnPolicy
+    backorderedOrders(vendorId: ID!): [Order]
+    orderCheckout(orderId: ID!): Order
+}
+
+type Order {
+  id: ID!
+  createdDate: DateTime
+  code: String
+  customerEmail: String
+  customer: User
+  forObject: RecordRef
+  user: User
+  lines: [OrderLine]
+  ref: RecordRef
+  stripe: StripeDetails
+  paid_status: String!
+  discount: CurrencyAmount
+  billing: OrderBillingDetails
+  delivery: OrderDeliveryDetails
+  payments: [OrderPayment]
+  paymentSummary: OrderPaymentSummary
+  checkoutLinkExpiresAt: DateTime
+}
+
+type OrderDeliveryDetails {
+  name: String
+  address: String
+  addressComponents: StripePlaceComponents
+}
+
+type OrderBillingDetails {
+  name: String
+  address: String
+  addressComponents: StripePlaceComponents
+}
+
+type OrderBalance {
+  quantity: Float
+  subtotal: CurrencyAmount
+  fees: CurrencyAmount
+  discount: CurrencyAmount
+  total: CurrencyAmount
+  refund: CurrencyAmount
+}
+
+type ShippingOption {
+  carrier_code: String
+  service_code: String,
+  price: CurrencyAmount
+}
+
+type OrderPayment {
+  code: String
+  currency: String
+  charge: OrderCharge
+  method_description: String
+  date: DateTime
+}
+
+type OrderPaymentSummary {
+  currency: String
+  due: OrderBalance
+  charged: OrderCharge
+  payout: OrderPayout
+}
+
+type OrderPayout {
+  subtotal: Float
+  tax: Float
+  fees: Float
+  recieves: Float
+  refunded: Float
+}
+
+type OrderCharge {
+  subtotal: Float
+  fees: Float
+  tax: Float
+  paid: Float
+}
+
+type ReturnShippingBox {
+  id: ID,
+  code: String,
+  dimensions_cm: BoxDimensions,
+  used_weight: Float,
+  items: [ReturnShippingItem]
+}
+
+type BoxDimensions {
+  depth: Float,
+  width: Float,
+  height: Float
+}
+
+type ReturnShippingItem {
+  id: ID,
+  name: String,
+  quantity: Int
+}
+
+type ReturnShippingEstimate {
+  id: ID,
+  rate_id: String,
+  whoPayShipping: String,
+  cost: CurrencyAmount,
+  boxes: [ReturnShippingBox],
+  status: String
+}
+
+type RefundRequestLine {
+  id: ID,
+  price: CurrencyAmount,
+  quantity: Float,
+  refund_status: String
+  descriptor: String,
+  refund_quantity: Float
+}
+
+type RefundOrderInfo {
+  id: ID!,
+  code: String,
+  customerEmail: String,
+  createdDate: DateTime
+}
+
+type Refund {
+  id: ID!
+  orderId: ID!
+  userId: ID!
+  vendorId: ID!
+  amount: Float!
+  currency: String!
+  reason: String
+  status: String!
+  refund_status: String!
+  requestedAt: DateTime!
+  evidencePhotos: [Media]
+  evidenceVideos: [Media]
+  decisionAt: DateTime
+  decidedBy: String
+  lines: [RefundRequestLine]
+  returnShippingLabels: [LabelInfo]
+  returnShippingEstimate: ReturnShippingEstimate
+  stripe: StripeDetails
+  createdDate: DateTime!
+  createdBy: ID!
+  order: RefundOrderInfo
+}
+
+type StripeOrder {
+  paymentIntent: String!
+  clientSecret: String!
+}
+
+type OrderLine {
+  id: ID!
+  ref: RecordRef
+  forObject: RecordRef
+  variantId: ID
+  soldFrom: OrderLineSoldFrom
+  image: Media
+  merchantId: String
+  merchant: Vendor
+  refund_status: String
+  refund_quantity: Float
+  price_log: [PriceLogEntry]
+  price: CurrencyAmount
+  subtotal: CurrencyAmount
+  tax: CurrencyAmount
+  total: CurrencyAmount
+  refunded: CurrencyAmount
+  item_description: String
+  description: String
+  quantity: Float
+  descriptor: String
+  stripe: StripeDetails
+  discount: Int
+  target: String
+  ticketIds: [ID]
+  interactionId: ID
+  refundRequested: Boolean!
+  lineRules: OrderLineRefundRules
+  inventory_status: String
+  backordered_at: DateTime
+}
+
+type OrderLineSoldFrom {
+  state: String
+  country: String
+}
+
+type OrderTax {
+  amount: CurrencyAmount
+}
+
+type OrderLineRefundRules {
+  noRefunds: Boolean!
+  refundRules: RefundRules
+}
+

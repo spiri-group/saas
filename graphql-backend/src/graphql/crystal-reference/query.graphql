@@ -1,0 +1,193 @@
+type Query {
+  # Get all crystals with optional filtering
+  crystalReferences(filters: CrystalReferenceFiltersInput): CrystalReferenceListResponse!
+
+  # Get a single crystal by ID
+  crystalReference(id: ID!): CrystalReference
+
+  # Search crystals by name (for autocomplete/typeahead)
+  searchCrystals(query: String!, limit: Int): [CrystalReference!]!
+
+  # Get crystals by property (e.g., all grounding crystals)
+  crystalsByProperty(property: String!): [CrystalReference!]!
+
+  # Get crystals by chakra
+  crystalsByChakra(chakra: ChakraType!): [CrystalReference!]!
+}
+
+# Main Crystal Reference type
+type CrystalReference {
+  id: ID!
+  ref: RecordRef!
+
+  # Basic Info
+  name: String!
+  alternateNames: [String!]!
+  description: String!
+
+  # Physical Properties
+  colors: [CrystalColor!]!
+  crystalSystem: CrystalSystem
+  mohsHardness: Float
+  commonForms: [CrystalForm!]!
+
+  # Metaphysical Properties
+  chakras: [ChakraType!]!
+  elements: [ElementType!]!
+  zodiacSigns: [ZodiacSign!]!
+  planetaryAssociation: String
+  numerology: Int
+
+  # Uses & Meanings
+  primaryProperties: [String!]!
+  emotionalUses: [String!]!
+  spiritualUses: [String!]!
+  physicalAssociations: [String!]!
+
+  # Care Instructions
+  cleansingMethods: [CleansingMethod!]!
+  chargingMethods: [ChargingMethod!]!
+  avoidMethods: [String!]!
+  careNotes: String
+
+  # Source Information
+  localities: [String!]!
+
+  # Media
+  thumbnail: String
+
+  # Metadata
+  status: RecordStatus!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# Enums
+enum CrystalColor {
+  clear
+  white
+  black
+  red
+  orange
+  yellow
+  green
+  blue
+  purple
+  pink
+  brown
+  gray
+  gold
+  silver
+  multicolor
+  iridescent
+}
+
+enum CrystalSystem {
+  cubic
+  tetragonal
+  orthorhombic
+  hexagonal
+  trigonal
+  monoclinic
+  triclinic
+  amorphous
+}
+
+enum CrystalForm {
+  raw
+  tumbled
+  point
+  cluster
+  sphere
+  palm_stone
+  tower
+  wand
+  pyramid
+  heart
+  skull
+  cabochon
+  faceted
+  slice
+  geode
+  jewelry
+  freeform
+  other
+}
+
+enum ChakraType {
+  root
+  sacral
+  solar_plexus
+  heart
+  throat
+  third_eye
+  crown
+  earth_star
+  soul_star
+}
+
+enum ElementType {
+  earth
+  water
+  fire
+  air
+  spirit
+}
+
+enum ZodiacSign {
+  aries
+  taurus
+  gemini
+  cancer
+  leo
+  virgo
+  libra
+  scorpio
+  sagittarius
+  capricorn
+  aquarius
+  pisces
+}
+
+enum CleansingMethod {
+  moonlight
+  sunlight
+  smoke
+  sound
+  water
+  salt
+  earth
+  selenite
+  clear_quartz
+  breath
+  visualization
+  reiki
+  other
+}
+
+enum ChargingMethod {
+  moonlight
+  sunlight
+  crystal_cluster
+  intention
+  grid
+  meditation
+  earth
+  other
+}
+
+# Filter input
+input CrystalReferenceFiltersInput {
+  search: String
+  colors: [CrystalColor!]
+  chakras: [ChakraType!]
+  elements: [ElementType!]
+  zodiacSigns: [ZodiacSign!]
+  properties: [String!]
+}
+
+# Response types
+type CrystalReferenceListResponse {
+  crystals: [CrystalReference!]!
+  totalCount: Int!
+}

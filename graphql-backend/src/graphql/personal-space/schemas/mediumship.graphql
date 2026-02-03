@@ -1,0 +1,756 @@
+# ============================================
+# Mediumship Schema
+# ============================================
+# Types and operations for mediumship features:
+# - Synchronicity Log
+# - Spirit Messages
+# - Personal Symbol Dictionary
+# - Loved Ones in Spirit
+# - Development Exercises
+# - Reading Reflections
+
+# ============================================
+# Enums
+# ============================================
+
+enum SpiritSource {
+  guide
+  loved_one
+  angel
+  ancestor
+  higher_self
+  unknown
+  collective
+  nature_spirit
+  other
+}
+
+enum ReceptionMethod {
+  clairvoyance
+  clairaudience
+  clairsentience
+  claircognizance
+  dreams
+  meditation
+  automatic_writing
+  pendulum
+  cards
+  signs
+  other
+}
+
+enum ExerciseType {
+  meditation
+  visualization
+  psychometry
+  remote_viewing
+  aura_reading
+  symbol_work
+  automatic_writing
+  pendulum
+  card_practice
+  sitting_in_power
+  other
+}
+
+enum ExerciseDifficulty {
+  beginner
+  intermediate
+  advanced
+}
+
+# ============================================
+# Synchronicity Types
+# ============================================
+
+type Synchronicity {
+  id: ID!
+  userId: ID!
+  date: String!
+  title: String!
+  description: String!
+  time: String
+  location: String
+  witnesses: String
+  possibleMeaning: String
+  relatedTo: String
+  confirmedMeaning: String
+  recurringTheme: Boolean
+  relatedSynchronicities: [String!]
+  symbols: [SymbolTag!]
+  significanceScore: Int
+  photoUrl: String
+  createdAt: String!
+  updatedAt: String!
+  ref: RecordRef!
+}
+
+type SynchronicityResponse {
+  success: Boolean!
+  message: String
+  synchronicity: Synchronicity
+}
+
+input CreateSynchronicityInput {
+  userId: ID!
+  date: String
+  title: String!
+  description: String!
+  time: String
+  location: String
+  witnesses: String
+  possibleMeaning: String
+  relatedTo: String
+  recurringTheme: Boolean
+  relatedSynchronicities: [String!]
+  symbols: [SymbolTagInput!]
+  significanceScore: Int
+  photoUrl: String
+}
+
+input UpdateSynchronicityInput {
+  id: ID!
+  userId: ID!
+  title: String
+  description: String
+  time: String
+  location: String
+  witnesses: String
+  possibleMeaning: String
+  relatedTo: String
+  confirmedMeaning: String
+  recurringTheme: Boolean
+  relatedSynchronicities: [String!]
+  symbols: [SymbolTagInput!]
+  significanceScore: Int
+  photoUrl: String
+}
+
+input SynchronicityFilters {
+  startDate: String
+  endDate: String
+  recurringTheme: Boolean
+  hasSymbol: String
+  minSignificance: Int
+  limit: Int
+  offset: Int
+}
+
+# ============================================
+# Spirit Message Types
+# ============================================
+
+type SpiritMessage {
+  id: ID!
+  userId: ID!
+  date: String!
+  messageContent: String!
+  source: SpiritSource!
+  sourceName: String
+  sourceDescription: String
+  receptionMethod: ReceptionMethod!
+  receptionContext: String
+  clarity: Int
+  evidentialDetails: String
+  validated: Boolean
+  validationNotes: String
+  interpretation: String
+  actionTaken: String
+  outcome: String
+  emotionsDuring: [String!]
+  emotionsAfter: [String!]
+  photoUrl: String
+  createdAt: String!
+  updatedAt: String!
+  ref: RecordRef!
+}
+
+type SpiritMessageResponse {
+  success: Boolean!
+  message: String
+  spiritMessage: SpiritMessage
+}
+
+input CreateSpiritMessageInput {
+  userId: ID!
+  date: String
+  messageContent: String!
+  source: SpiritSource!
+  sourceName: String
+  sourceDescription: String
+  receptionMethod: ReceptionMethod!
+  receptionContext: String
+  clarity: Int
+  evidentialDetails: String
+  interpretation: String
+  emotionsDuring: [String!]
+  emotionsAfter: [String!]
+  photoUrl: String
+}
+
+input UpdateSpiritMessageInput {
+  id: ID!
+  userId: ID!
+  messageContent: String
+  source: SpiritSource
+  sourceName: String
+  sourceDescription: String
+  receptionMethod: ReceptionMethod
+  receptionContext: String
+  clarity: Int
+  evidentialDetails: String
+  validated: Boolean
+  validationNotes: String
+  interpretation: String
+  actionTaken: String
+  outcome: String
+  emotionsDuring: [String!]
+  emotionsAfter: [String!]
+  photoUrl: String
+}
+
+input SpiritMessageFilters {
+  startDate: String
+  endDate: String
+  source: SpiritSource
+  receptionMethod: ReceptionMethod
+  validated: Boolean
+  limit: Int
+  offset: Int
+}
+
+# ============================================
+# Personal Symbol Types
+# ============================================
+
+type ContextualMeaning {
+  context: String!
+  meaning: String!
+}
+
+type SymbolExample {
+  entryType: String!
+  entryId: String!
+  date: String!
+  snippet: String!
+}
+
+type MeaningEvolution {
+  date: String!
+  previousMeaning: String!
+  newMeaning: String!
+  reason: String
+}
+
+type PersonalSymbol {
+  id: ID!
+  userId: ID!
+  symbolName: String!
+  normalizedName: String!
+  category: String
+  personalMeaning: String!
+  contextualMeanings: [ContextualMeaning!]
+  firstEncountered: String!
+  lastEncountered: String!
+  totalOccurrences: Int!
+  dreamOccurrences: Int!
+  readingOccurrences: Int!
+  synchronicityOccurrences: Int!
+  notableExamples: [SymbolExample!]
+  meaningEvolution: [MeaningEvolution!]
+  notes: String
+  createdAt: String!
+  updatedAt: String!
+  ref: RecordRef!
+}
+
+type PersonalSymbolResponse {
+  success: Boolean!
+  message: String
+  symbol: PersonalSymbol
+}
+
+input ContextualMeaningInput {
+  context: String!
+  meaning: String!
+}
+
+input CreatePersonalSymbolInput {
+  userId: ID!
+  symbolName: String!
+  category: String
+  personalMeaning: String!
+  contextualMeanings: [ContextualMeaningInput!]
+  notes: String
+}
+
+input UpdatePersonalSymbolInput {
+  id: ID!
+  userId: ID!
+  personalMeaning: String
+  contextualMeanings: [ContextualMeaningInput!]
+  notes: String
+}
+
+input PersonalSymbolFilters {
+  category: String
+  minOccurrences: Int
+  limit: Int
+  offset: Int
+}
+
+# ============================================
+# User Card Symbols Types (Personal tarot card meanings)
+# ============================================
+
+type UserCardSymbols {
+  id: ID!
+  userId: ID!
+  cardName: String!
+  normalizedCardName: String!
+  personalSymbols: [String!]!
+  usePersonalOnly: Boolean!
+  notes: String
+  createdAt: String!
+  updatedAt: String!
+  ref: RecordRef!
+}
+
+type UserCardSymbolsResponse {
+  success: Boolean!
+  message: String
+  cardSymbols: UserCardSymbols
+}
+
+input CreateUserCardSymbolsInput {
+  userId: ID!
+  cardName: String!
+  personalSymbols: [String!]!
+  usePersonalOnly: Boolean
+  notes: String
+}
+
+input UpdateUserCardSymbolsInput {
+  id: ID!
+  userId: ID!
+  personalSymbols: [String!]
+  usePersonalOnly: Boolean
+  notes: String
+}
+
+# ============================================
+# Loved Ones in Spirit Types
+# ============================================
+
+type SignExplanation {
+  sign: String!
+  reason: String!
+}
+
+type MessageHistoryItem {
+  date: String!
+  messageId: String
+  summary: String!
+}
+
+type ImportantDate {
+  date: String!
+  occasion: String!
+  reminderEnabled: Boolean
+}
+
+type LovedOneInSpirit {
+  id: ID!
+  userId: ID!
+  name: String!
+  relationship: String!
+  nickname: String
+  birthDate: String
+  passingDate: String
+  passingCircumstances: String
+  personalMemory: String
+  theirPersonality: String
+  sharedInterests: [String!]
+  lessonsLearned: String
+  commonSigns: [String!]
+  signExplanations: [SignExplanation!]
+  messageHistory: [MessageHistoryItem!]
+  importantDates: [ImportantDate!]
+  photoUrl: String
+  createdAt: String!
+  updatedAt: String!
+  ref: RecordRef!
+}
+
+type LovedOneResponse {
+  success: Boolean!
+  message: String
+  lovedOne: LovedOneInSpirit
+}
+
+input SignExplanationInput {
+  sign: String!
+  reason: String!
+}
+
+input ImportantDateInput {
+  date: String!
+  occasion: String!
+  reminderEnabled: Boolean
+}
+
+input CreateLovedOneInput {
+  userId: ID!
+  name: String!
+  relationship: String!
+  nickname: String
+  birthDate: String
+  passingDate: String
+  passingCircumstances: String
+  personalMemory: String
+  theirPersonality: String
+  sharedInterests: [String!]
+  lessonsLearned: String
+  commonSigns: [String!]
+  signExplanations: [SignExplanationInput!]
+  importantDates: [ImportantDateInput!]
+  photoUrl: String
+}
+
+input UpdateLovedOneInput {
+  id: ID!
+  userId: ID!
+  name: String
+  relationship: String
+  nickname: String
+  birthDate: String
+  passingDate: String
+  passingCircumstances: String
+  personalMemory: String
+  theirPersonality: String
+  sharedInterests: [String!]
+  lessonsLearned: String
+  commonSigns: [String!]
+  signExplanations: [SignExplanationInput!]
+  importantDates: [ImportantDateInput!]
+  photoUrl: String
+}
+
+input LovedOneFilters {
+  relationship: String
+  limit: Int
+  offset: Int
+}
+
+# ============================================
+# Development Exercise Types
+# ============================================
+
+type DevelopmentExercise {
+  id: ID!
+  userId: ID!
+  date: String!
+  exerciseType: ExerciseType!
+  exerciseName: String!
+  source: String
+  difficulty: ExerciseDifficulty
+  duration: Int
+  environment: String
+  preparation: String
+  results: String
+  accuracy: Int
+  hits: [String!]
+  misses: [String!]
+  insights: String
+  challengesFaced: String
+  improvements: String
+  confidenceLevel: Int
+  willRepeat: Boolean
+  nextSteps: String
+  notes: String
+  createdAt: String!
+  updatedAt: String!
+  ref: RecordRef!
+}
+
+type DevelopmentExerciseResponse {
+  success: Boolean!
+  message: String
+  exercise: DevelopmentExercise
+}
+
+input CreateDevelopmentExerciseInput {
+  userId: ID!
+  date: String
+  exerciseType: ExerciseType!
+  exerciseName: String!
+  source: String
+  difficulty: ExerciseDifficulty
+  duration: Int
+  environment: String
+  preparation: String
+  results: String
+  accuracy: Int
+  hits: [String!]
+  misses: [String!]
+  insights: String
+  challengesFaced: String
+  improvements: String
+  confidenceLevel: Int
+  willRepeat: Boolean
+  nextSteps: String
+  notes: String
+}
+
+input UpdateDevelopmentExerciseInput {
+  id: ID!
+  userId: ID!
+  exerciseType: ExerciseType
+  exerciseName: String
+  source: String
+  difficulty: ExerciseDifficulty
+  duration: Int
+  environment: String
+  preparation: String
+  results: String
+  accuracy: Int
+  hits: [String!]
+  misses: [String!]
+  insights: String
+  challengesFaced: String
+  improvements: String
+  confidenceLevel: Int
+  willRepeat: Boolean
+  nextSteps: String
+  notes: String
+}
+
+input DevelopmentExerciseFilters {
+  startDate: String
+  endDate: String
+  exerciseType: ExerciseType
+  difficulty: ExerciseDifficulty
+  limit: Int
+  offset: Int
+}
+
+# ============================================
+# Reading Reflection Types
+# ============================================
+
+type ReadingReflection {
+  id: ID!
+  userId: ID!
+  date: String!
+  readerName: String!
+  readingType: String
+  format: String
+  duration: Int
+  bookingId: String
+  readerId: String
+  mainMessages: String
+  evidentialInfo: String
+  predictions: String
+  guidance: String
+  accuracyScore: Int
+  resonatedWith: [String!]
+  didntResonate: [String!]
+  validatedLater: String
+  emotionalImpact: String
+  actionsTaken: String
+  overallRating: Int
+  notes: String
+  photoUrl: String
+  createdAt: String!
+  updatedAt: String!
+  ref: RecordRef!
+}
+
+type ReadingReflectionResponse {
+  success: Boolean!
+  message: String
+  reflection: ReadingReflection
+}
+
+input CreateReadingReflectionInput {
+  userId: ID!
+  date: String
+  readerName: String!
+  readingType: String
+  format: String
+  duration: Int
+  bookingId: String
+  readerId: String
+  mainMessages: String
+  evidentialInfo: String
+  predictions: String
+  guidance: String
+  accuracyScore: Int
+  resonatedWith: [String!]
+  didntResonate: [String!]
+  emotionalImpact: String
+  actionsTaken: String
+  overallRating: Int
+  notes: String
+  photoUrl: String
+}
+
+input UpdateReadingReflectionInput {
+  id: ID!
+  userId: ID!
+  readerName: String
+  readingType: String
+  format: String
+  duration: Int
+  bookingId: String
+  readerId: String
+  mainMessages: String
+  evidentialInfo: String
+  predictions: String
+  guidance: String
+  accuracyScore: Int
+  resonatedWith: [String!]
+  didntResonate: [String!]
+  validatedLater: String
+  emotionalImpact: String
+  actionsTaken: String
+  overallRating: Int
+  notes: String
+  photoUrl: String
+}
+
+input ReadingReflectionFilters {
+  startDate: String
+  endDate: String
+  readingType: String
+  minRating: Int
+  limit: Int
+  offset: Int
+}
+
+# ============================================
+# Mediumship Statistics
+# ============================================
+
+type SymbolCount {
+  name: String!
+  count: Int!
+}
+
+type UpcomingLovedOneDate {
+  lovedOneId: ID!
+  name: String!
+  date: String!
+  occasion: String!
+}
+
+type MediumshipStats {
+  totalSynchronicities: Int!
+  synchronicitiesThisMonth: Int!
+  totalSpiritMessages: Int!
+  messagesThisMonth: Int!
+  symbolCount: Int!
+  topSymbols: [SymbolCount!]!
+  mostActiveSource: SpiritSource
+  preferredReceptionMethod: ReceptionMethod
+  exerciseCount: Int!
+  exercisesThisMonth: Int!
+  averageAccuracy: Float!
+  favoriteExercise: ExerciseType
+  lovedOnesCount: Int!
+  upcomingDates: [UpcomingLovedOneDate!]!
+  readingReflectionCount: Int!
+  averageReadingRating: Float!
+  daysActive: Int!
+  currentStreak: Int!
+  longestStreak: Int!
+}
+
+type DeleteMediumshipResponse {
+  success: Boolean!
+  message: String
+}
+
+# ============================================
+# Query Extensions
+# ============================================
+
+type Query {
+  # Synchronicities
+  synchronicities(userId: ID!, filters: SynchronicityFilters): [Synchronicity!]!
+  synchronicity(id: ID!, userId: ID!): Synchronicity
+  recentSynchronicities(userId: ID!, limit: Int): [Synchronicity!]!
+
+  # Spirit Messages
+  spiritMessages(userId: ID!, filters: SpiritMessageFilters): [SpiritMessage!]!
+  spiritMessage(id: ID!, userId: ID!): SpiritMessage
+  recentSpiritMessages(userId: ID!, limit: Int): [SpiritMessage!]!
+
+  # Personal Symbols
+  personalSymbols(userId: ID!, filters: PersonalSymbolFilters): [PersonalSymbol!]!
+  personalSymbol(id: ID!, userId: ID!): PersonalSymbol
+  personalSymbolByName(userId: ID!, symbolName: String!): PersonalSymbol
+
+  # User Card Symbols
+  userCardSymbols(userId: ID!): [UserCardSymbols!]!
+  userCardSymbol(id: ID!, userId: ID!): UserCardSymbols
+  userCardSymbolByCardName(userId: ID!, cardName: String!): UserCardSymbols
+
+  # Loved Ones
+  lovedOnes(userId: ID!, filters: LovedOneFilters): [LovedOneInSpirit!]!
+  lovedOne(id: ID!, userId: ID!): LovedOneInSpirit
+
+  # Development Exercises
+  developmentExercises(userId: ID!, filters: DevelopmentExerciseFilters): [DevelopmentExercise!]!
+  developmentExercise(id: ID!, userId: ID!): DevelopmentExercise
+  recentDevelopmentExercises(userId: ID!, limit: Int): [DevelopmentExercise!]!
+
+  # Reading Reflections
+  readingReflections(userId: ID!, filters: ReadingReflectionFilters): [ReadingReflection!]!
+  readingReflection(id: ID!, userId: ID!): ReadingReflection
+  recentReadingReflections(userId: ID!, limit: Int): [ReadingReflection!]!
+
+  # Stats
+  mediumshipStats(userId: ID!): MediumshipStats!
+}
+
+# ============================================
+# Mutation Extensions
+# ============================================
+
+type Mutation {
+  # Synchronicities
+  createSynchronicity(input: CreateSynchronicityInput!): SynchronicityResponse!
+  updateSynchronicity(input: UpdateSynchronicityInput!): SynchronicityResponse!
+  deleteSynchronicity(id: ID!, userId: ID!): DeleteMediumshipResponse!
+
+  # Spirit Messages
+  createSpiritMessage(input: CreateSpiritMessageInput!): SpiritMessageResponse!
+  updateSpiritMessage(input: UpdateSpiritMessageInput!): SpiritMessageResponse!
+  deleteSpiritMessage(id: ID!, userId: ID!): DeleteMediumshipResponse!
+
+  # Personal Symbols
+  createPersonalSymbol(input: CreatePersonalSymbolInput!): PersonalSymbolResponse!
+  updatePersonalSymbol(input: UpdatePersonalSymbolInput!): PersonalSymbolResponse!
+  deletePersonalSymbol(id: ID!, userId: ID!): DeleteMediumshipResponse!
+
+  # User Card Symbols
+  createUserCardSymbols(input: CreateUserCardSymbolsInput!): UserCardSymbolsResponse!
+  updateUserCardSymbols(input: UpdateUserCardSymbolsInput!): UserCardSymbolsResponse!
+  deleteUserCardSymbols(id: ID!, userId: ID!): DeleteMediumshipResponse!
+
+  # Loved Ones
+  createLovedOne(input: CreateLovedOneInput!): LovedOneResponse!
+  updateLovedOne(input: UpdateLovedOneInput!): LovedOneResponse!
+  deleteLovedOne(id: ID!, userId: ID!): DeleteMediumshipResponse!
+
+  # Development Exercises
+  createDevelopmentExercise(input: CreateDevelopmentExerciseInput!): DevelopmentExerciseResponse!
+  updateDevelopmentExercise(input: UpdateDevelopmentExerciseInput!): DevelopmentExerciseResponse!
+  deleteDevelopmentExercise(id: ID!, userId: ID!): DeleteMediumshipResponse!
+
+  # Reading Reflections
+  createReadingReflection(input: CreateReadingReflectionInput!): ReadingReflectionResponse!
+  updateReadingReflection(input: UpdateReadingReflectionInput!): ReadingReflectionResponse!
+  deleteReadingReflection(id: ID!, userId: ID!): DeleteMediumshipResponse!
+}

@@ -1,0 +1,64 @@
+type Mutation {
+    """Create a new platform alert"""
+    createPlatformAlert(input: CreatePlatformAlertInput!): PlatformAlertResponse!
+
+    """Update the status of a platform alert"""
+    updatePlatformAlertStatus(
+        id: ID!
+        alertStatus: AlertStatusEnum!
+        resolutionNotes: String
+    ): PlatformAlertResponse!
+
+    """Assign a platform alert to a staff member"""
+    assignPlatformAlert(
+        id: ID!
+        assigneeId: ID
+    ): PlatformAlertResponse!
+
+    """Dismiss a platform alert"""
+    dismissPlatformAlert(
+        id: ID!
+        resolutionNotes: String
+    ): PlatformAlertResponse!
+}
+
+type PlatformAlertResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    alert: PlatformAlert
+}
+
+input CreatePlatformAlertInput {
+    alertType: AlertTypeEnum!
+    severity: AlertSeverityEnum!
+    title: String!
+    message: String!
+
+    # Affected parties (optional)
+    customerId: String
+    customerEmail: String
+    merchantId: String
+
+    # Context
+    context: AlertContextInput
+
+    # Source
+    source: AlertSourceInput!
+}
+
+input AlertContextInput {
+    orderId: String
+    setupIntentId: String
+    errorMessage: String
+    url: String
+    stackTrace: String
+    userAgent: String
+    additionalData: JSON
+}
+
+input AlertSourceInput {
+    component: String!
+    environment: String!
+    version: String
+}

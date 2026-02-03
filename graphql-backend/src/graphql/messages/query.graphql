@@ -1,0 +1,35 @@
+type Query {
+    message(ref: RecordRefInput!) : Message,
+    messages(forObject: RecordRefInput!) : [Message]
+}
+
+type Message { 
+  id: ID!
+  posted_by: MessageAuthor,
+  posted_by_user: User
+  posted_by_vendor: Vendor
+  text: String
+  reply_to: Message
+  deliver_to: DeliverTo
+  sentAt: DateTime
+  sentAtString: DateTime
+  respondedAt: DateTime
+  createdDate: DateTime
+  ref: RecordRef
+  isReported: Boolean
+  media: [Media]
+}
+
+type MessageAuthor {
+  ref: RecordRef,
+  name: String
+}
+
+type DeliverTo {
+  userId: ID!
+  user: User
+  requiresResponse: Boolean
+  responseCode: String
+  datetime: String
+  mode: CommunicationModeType
+}

@@ -1,0 +1,194 @@
+extend type Mutation {
+  createGalleryCategory(input: CreateGalleryCategoryInput!): CreateGalleryCategoryResponse!
+  updateGalleryCategory(input: UpdateGalleryCategoryInput!): UpdateGalleryCategoryResponse!
+  deleteGalleryCategory(id: ID!): DeleteGalleryCategoryResponse!
+  
+  createGalleryAlbum(input: CreateGalleryAlbumInput!): CreateGalleryAlbumResponse!
+  updateGalleryAlbum(input: UpdateGalleryAlbumInput!): UpdateGalleryAlbumResponse!
+  deleteGalleryAlbum(id: ID!): DeleteGalleryAlbumResponse!
+  
+  createGalleryGroup(input: CreateGalleryGroupInput!): CreateGalleryGroupResponse!
+  updateGalleryGroup(input: UpdateGalleryGroupInput!): UpdateGalleryGroupResponse!
+  deleteGalleryGroup(id: ID!): DeleteGalleryGroupResponse!
+  
+  createGalleryItem(input: CreateGalleryItemInput!): CreateGalleryItemResponse!
+  updateGalleryItem(input: UpdateGalleryItemInput!): UpdateGalleryItemResponse!
+  upsertGalleryItem(input: UpsertGalleryItemInput!): UpsertGalleryItemResponse!
+  deleteGalleryItem(id: ID!, merchantId: ID!): DeleteGalleryItemResponse!
+}
+
+input CreateGalleryCategoryInput {
+  merchantId: ID!
+  name: String!
+  description: String
+  color: String
+  icon: String
+}
+
+input UpdateGalleryCategoryInput {
+  id: ID!
+  name: String
+  description: String
+  color: String
+  icon: String
+  sortOrder: Int
+}
+
+input CreateGalleryAlbumInput {
+  merchantId: ID!
+  name: String!
+  description: String
+  coverImageUrl: String
+}
+
+input UpdateGalleryAlbumInput {
+  id: ID!
+  name: String
+  description: String
+  coverImageUrl: String
+}
+
+input CreateGalleryGroupInput {
+  merchantId: ID!
+  categoryId: ID!
+  name: String!
+  description: String
+}
+
+input UpdateGalleryGroupInput {
+  id: ID!
+  name: String
+  description: String
+}
+
+input CreateGalleryItemInput {
+  merchantId: ID!
+  categoryId: ID
+  albumId: ID
+  groupId: ID
+  type: GalleryItemType!
+  title: String!
+  description: String
+  mediaUrl: String!
+  thumbnailUrl: String
+  layout: GalleryItemLayout!
+  linkedProducts: [LinkedProductInput!]
+  tags: [String!]
+  usedBytes: Int
+}
+
+input UpdateGalleryItemInput {
+  id: ID!
+  title: String
+  description: String
+  layout: GalleryItemLayout
+  categoryId: ID
+  albumId: ID
+  groupId: ID
+  linkedProducts: [LinkedProductInput!]
+  tags: [String!]
+}
+
+input UpsertGalleryItemInput {
+  id: ID # If provided, will update existing item; if not, will create new item
+  merchantId: ID!
+  categoryId: ID
+  albumId: ID
+  groupId: ID
+  type: GalleryItemType!
+  title: String!
+  description: String
+  mediaUrl: String!
+  thumbnailUrl: String
+  layout: GalleryItemLayout!
+  linkedProducts: [LinkedProductInput!]
+  tags: [String!]
+  usedBytes: Int
+}
+
+input LinkedProductInput {
+  id: ID!
+  title: String!
+  thumbnailUrl: String
+  price: CurrencyAmountInput
+}
+
+input CurrencyAmountInput {
+  amount: Float!
+  currency: String!
+}
+
+type CreateGalleryCategoryResponse {
+  success: Boolean!
+  message: String
+  category: GalleryCategory
+}
+
+type UpdateGalleryCategoryResponse {
+  success: Boolean!
+  message: String
+  category: GalleryCategory
+}
+
+type DeleteGalleryCategoryResponse {
+  success: Boolean!
+  message: String
+}
+
+type CreateGalleryAlbumResponse {
+  success: Boolean!
+  message: String
+  album: GalleryAlbum
+}
+
+type UpdateGalleryAlbumResponse {
+  success: Boolean!
+  message: String
+  album: GalleryAlbum
+}
+
+type DeleteGalleryAlbumResponse {
+  success: Boolean!
+  message: String
+}
+
+type CreateGalleryGroupResponse {
+  success: Boolean!
+  message: String
+  group: GalleryGroup
+}
+
+type UpdateGalleryGroupResponse {
+  success: Boolean!
+  message: String
+  group: GalleryGroup
+}
+
+type DeleteGalleryGroupResponse {
+  success: Boolean!
+  message: String
+}
+
+type CreateGalleryItemResponse {
+  success: Boolean!
+  message: String
+  galleryItem: GalleryItem
+}
+
+type UpdateGalleryItemResponse {
+  success: Boolean!
+  message: String
+  galleryItem: GalleryItem
+}
+
+type UpsertGalleryItemResponse {
+  success: Boolean!
+  message: String
+  galleryItem: GalleryItem
+  isNew: Boolean! # Indicates if this was a create (true) or update (false)
+}
+
+type DeleteGalleryItemResponse {
+  success: Boolean!
+  message: String
+}

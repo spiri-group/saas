@@ -1,0 +1,30 @@
+input EmailTemplateInput {
+  id: ID!
+  name: String!
+  subject: String!
+  html: String!
+  variables: [String!]
+  category: String
+  description: String
+  isActive: Boolean
+  headerId: String
+  footerId: String
+}
+
+input EmailHeaderFooterInput {
+  id: ID
+  name: String!
+  type: String!
+  content: String!
+  description: String
+  isDefault: Boolean
+  isActive: Boolean
+}
+
+type Mutation {
+  upsertEmailTemplate(input: EmailTemplateInput!): EmailTemplate!
+  deleteEmailTemplate(id: ID!): Boolean!
+  upsertEmailHeaderFooter(input: EmailHeaderFooterInput!): EmailHeaderFooter!
+  deleteEmailHeaderFooter(id: ID!): Boolean!
+  deleteEmailAsset(name: String!): Boolean!
+}

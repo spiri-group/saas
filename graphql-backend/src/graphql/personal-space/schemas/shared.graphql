@@ -1,0 +1,119 @@
+# ============================================
+# Shared Types for Personal Space
+# ============================================
+
+# Symbol category used across readings and dreams
+enum SymbolCategory {
+  ELEMENT     # water, fire, air, earth
+  ANIMAL      # snake, owl, wolf, etc.
+  ARCHETYPE   # mother, trickster, sage, etc.
+  OBJECT      # key, mirror, tower, etc.
+  PLACE       # forest, ocean, house, etc.
+  PERSON      # stranger, child, guide, etc.
+  ACTION      # flying, falling, running, etc.
+  CELESTIAL   # moon, sun, stars, etc.
+  OTHER
+}
+
+# Symbol tag - used in both readings and dreams
+type SymbolTag {
+  symbolId: ID
+  name: String!
+  category: SymbolCategory
+  context: String
+  autoExtracted: Boolean!
+}
+
+input SymbolTagInput {
+  symbolId: ID
+  name: String!
+  category: SymbolCategory
+  context: String
+  autoExtracted: Boolean
+}
+
+# System symbol definition
+type Symbol {
+  id: ID!
+  name: String!
+  normalizedName: String!
+  category: SymbolCategory!
+  systemMeanings: [String!]!
+  associatedCards: [String!]!
+  isSystemSymbol: Boolean!
+  createdAt: String!
+}
+
+# User's personal meaning for a symbol
+type UserSymbolMeaning {
+  id: ID!
+  userId: ID!
+  symbolId: ID!
+  symbolName: String!
+  personalMeaning: String!
+  totalOccurrences: Int!
+  dreamOccurrences: Int!
+  readingOccurrences: Int!
+  firstSeen: String!
+  lastSeen: String!
+  commonContexts: [String!]!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# Symbol queries
+extend type Query {
+  userSymbols(userId: ID!, limit: Int = 50): [UserSymbolMeaning!]!
+  userSymbol(userId: ID!, symbolName: String!): UserSymbolMeaning
+  symbolSuggestions(query: String!, limit: Int = 10): [Symbol!]!
+}
+
+# Symbol mutations
+extend type Mutation {
+  updateUserSymbolMeaning(input: UpdateUserSymbolMeaningInput!): UpdateUserSymbolMeaningResponse!
+}
+
+input UpdateUserSymbolMeaningInput {
+  userId: ID!
+  symbolName: String!
+  personalMeaning: String!
+}
+
+type UpdateUserSymbolMeaningResponse {
+  success: Boolean!
+  message: String
+  userSymbolMeaning: UserSymbolMeaning
+}
+
+# ============================================
+# Symbol Pattern Statistics
+# ============================================
+
+type SymbolOccurrence {
+  symbolName: String!
+  category: SymbolCategory
+  totalCount: Int!
+  dreamCount: Int!
+  readingCount: Int!
+  lastSeen: String!
+  personalMeaning: String
+}
+
+type CategoryBreakdown {
+  category: String!
+  count: Int!
+  percentage: Float!
+}
+
+type SymbolPatternStats {
+  totalSymbols: Int!
+  totalOccurrences: Int!
+  topSymbols: [SymbolOccurrence!]!
+  crossEntrySymbols: [SymbolOccurrence!]!
+  categoryBreakdown: [CategoryBreakdown!]!
+  recentSymbols: [SymbolOccurrence!]!
+}
+
+extend type Query {
+  symbolPatternStats(userId: ID!): SymbolPatternStats!
+}

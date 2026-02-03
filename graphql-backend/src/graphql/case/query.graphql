@@ -1,0 +1,150 @@
+type Query {
+  case(trackingCode: ID, caseId: String) : Case
+  cases(statuses: [String], madeOffer: Boolean, religionId: String, zipCode: Int): [Case]
+  caseOffers(merchantId: ID, caseId: ID): [CaseOffer]
+  caseOffer(ref: RecordRefInput!): CaseOffer
+  casePayments: [CasePayment]
+}
+
+type Case {
+  id: ID!
+  trackingCode: ID!
+  contact: Contact
+  code: String
+  category: ChoiceOption
+  religion: ChoiceOption
+  startedFrom: StartedFrom
+  location: GooglePlace
+  affectedPeople: [AffectedPerson]
+  affectedAreas: [AffectedArea]
+  description: String
+  ref: RecordRef
+  caseStatus: CaseStatus
+  locatedFromMe: RelativeLocationFromMe
+  managedBy: [String]
+  merchants: [Vendor]
+  myRole: String
+  interactions(types: [String]): [CaseInteraction]
+  release_status: CaseReleaseType
+  stripe: StripeDetails
+  balance: CurrencyAmount
+  urgencyFee: Variant
+  releaseOffer: CaseOffer
+  closeOffer: CaseOffer
+  stripeIntent(id: String!): CaseStripeIntent
+}
+
+type CaseStripeIntent {
+  id: String!
+  type: String!
+}
+
+type CaseInteraction {
+  id: String!
+  code: String!
+  title: String!
+  details: String
+  message: String
+  posted_by_userId: String!
+  posted_by_user: User,
+  posted_by_vendorId: String!
+  posted_by_vendor: Vendor
+  type: CaseInteractionType!
+  conductedAtDate: DateTime!
+  createdDate: DateTime!
+  attachedFiles: [Media]
+  ref: RecordRef
+  participants: [VendorUser]
+}
+
+type CaseOffer {
+  id: ID
+  merchantId: ID
+  caseId: ID
+  case: Case
+  code: String
+  description: String
+  acceptedOn: DateTime
+  rejectedOn: DateTime
+  type: CaseOfferType
+  order: Order
+  merchant: Vendor
+  ref: RecordRef
+  stripe: StripeDetails
+  merchantResponded: Boolean
+  clientRequested: Boolean
+}
+
+type CasePayment {
+  case: Case
+  merchant: Vendor
+  stripe: StripeDetails
+  createdDate: DateTime!
+  type: String
+}
+
+type StartedFrom {
+  amount: Float
+  unitId: String
+  descriptor: String
+  unit(defaultLocale: String): ChoiceOption 
+}
+
+type Contact {
+  email: String!
+  name: String
+  phoneNumber: ContactNumber
+}
+
+type AffectedArea {
+  id: String!
+  name: String
+  coldTemperature: Boolean
+  physicalActivity: Boolean
+  negativeSensations: Boolean
+  evidence: [Media]
+}
+
+type AffectedPerson {
+  id: String!
+  name: String
+  mentallyInjured: Boolean
+  physicallyInjured: Boolean
+  isChild: Boolean
+  evidence: [Media]
+}
+
+type CaseInvoice {
+  id: String!
+  userId: String
+  interactions: [CaseInvoiceInteraction]
+}
+
+type CaseInvoiceInteraction {
+  interactionId: String!,
+  invoiceDescription: String!,
+  amount: CurrencyAmount
+}
+
+enum CaseStatus {
+  CREATED
+  NEW
+  ACTIVE
+  CLOSED
+}
+
+enum CaseInteractionType {
+  ACTIVITY
+  CASE_COMMENT
+  RECORD_FEE
+}
+
+enum CaseReleaseType {
+  PENDING
+}
+
+enum CaseOfferType {
+  APPLICATION
+  RELEASE
+  CLOSE
+}

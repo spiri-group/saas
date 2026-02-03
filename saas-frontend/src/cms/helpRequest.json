@@ -1,0 +1,21 @@
+{
+    "firstPage": {
+        "description": "Welcome  to SpiriAssist"
+    },
+    "thirdPage": {
+        "terms": [
+            {
+                "title": "Service Fee",
+                "description": "The cost for this help request is $5, payable in advance. This fee covers an initial consultation and basic guidance."
+            },
+            {
+                "title": "Scope of Service",
+                "description": "The assistance provided will be limited to advice, guidance, and possible spiritual practices or rituals. We do not guarantee the resolution of any paranormal or spiritual issues."
+            },
+            {
+                "title": "Disclaimer",
+                "description": "The services offered are based on spiritual practices and beliefs. Results may vary, and we do not claim scientific validation for these practices"
+            }
+        ]
+    }
+}

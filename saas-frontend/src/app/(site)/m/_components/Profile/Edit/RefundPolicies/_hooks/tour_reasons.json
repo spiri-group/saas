@@ -1,0 +1,92 @@
+[
+    {
+        "id": "t1c9c062-1de0-4cdc-b13e-4a8698880928",
+        "title": "Change of mind",
+        "code": "CHANGE_OF_MIND",
+        "whoPayShipping": "NOT_REQUIRED",
+        "conditions": [
+            {
+                "id": "t1f5f5b6-51ae-4fe2-a99e-d2f580e6b0e6",
+                "code": "GENERAL",
+                "title": "General",
+                "description": "If a customer changes their mind before the tour date, they may request a refund. Refund amount depends on how far in advance the cancellation is made. No refunds for cancellations made within 24 hours of the tour start time.",
+                "isCustom": false
+            }
+        ]
+    },
+    {
+        "id": "t2f3fdb-3d7f-4b79-8b56-93bc2b9d5f99",
+        "title": "Schedule conflict",
+        "code": "SCHEDULE_CONFLICT",
+        "whoPayShipping": "NOT_REQUIRED",
+        "conditions": [
+            {
+                "id": "t2e9e5c9-e0a1-4f74-b3cc-ea819abe57f0",
+                "code": "GENERAL",
+                "title": "General",
+                "description": "If the customer has a scheduling conflict that prevents attendance, they may request a refund or reschedule. Refund amount depends on notice given. Rescheduling may be offered as an alternative.",
+                "isCustom": false
+            }
+        ]
+    },
+    {
+        "id": "t3f8ab7b-b8e3-4ab0-bce7-7d5aef023f90",
+        "title": "Weather or safety concerns",
+        "code": "WEATHER_SAFETY",
+        "whoPayShipping": "NOT_REQUIRED",
+        "conditions": [
+            {
+                "id": "t3a7d8a1d-bc3d-433f-b348-e7c2a9398a61",
+                "code": "GENERAL",
+                "title": "General",
+                "description": "If the tour is cancelled due to weather or safety concerns by the operator, a full refund or reschedule will be offered. Customer-initiated cancellations due to weather forecasts follow standard cancellation terms.",
+                "isCustom": false
+            }
+        ]
+    },
+    {
+        "id": "t4f2e872-1a87-4a6f-9321-44b763235ee9",
+        "title": "Tour cancelled by operator",
+        "code": "OPERATOR_CANCELLED",
+        "whoPayShipping": "NOT_REQUIRED",
+        "conditions": [
+            {
+                "id": "t4f85a6a-6789-4b5b-b378-5ca34f6c8f45",
+                "code": "GENERAL",
+                "title": "General",
+                "description": "If the tour is cancelled by the operator for any reason, customers will receive a full refund or the option to reschedule at no additional cost.",
+                "isCustom": false
+            }
+        ]
+    },
+    {
+        "id": "t5odb1d8-10d5-48ab-9a9a-3a7c63bfa0a4",
+        "title": "Medical or emergency",
+        "code": "MEDICAL_EMERGENCY",
+        "whoPayShipping": "NOT_REQUIRED",
+        "conditions": [
+            {
+                "id": "t5437f6a3-bb74-45ac-8724-5b24c5d8adf2",
+                "code": "GENERAL",
+                "title": "General",
+                "description": "In case of documented medical emergency or bereavement, customers may request a full refund or reschedule regardless of standard cancellation terms. Documentation may be required.",
+                "isCustom": false
+            }
+        ]
+    },
+    {
+        "id": "t6dd3ab7-9281-48b7-b6a7-87510bb0f0b2",
+        "title": "Tour not as described",
+        "code": "NOT_AS_DESCRIBED",
+        "whoPayShipping": "NOT_REQUIRED",
+        "conditions": [
+            {
+                "id": "t68f9788-0d79-48c3-a825-c2d94bfc7f89",
+                "code": "GENERAL",
+                "title": "General",
+                "description": "If the tour experience significantly differs from the description provided, customers may request a partial or full refund. Claims must be made within 48 hours of tour completion with supporting details.",
+                "isCustom": false
+            }
+        ]
+    }
+]

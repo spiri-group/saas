@@ -1,0 +1,144 @@
+# ============================================
+# Dream Journal Types
+# ============================================
+
+enum DreamMood {
+  peaceful
+  joyful
+  anxious
+  fearful
+  confused
+  sad
+  excited
+  neutral
+  mysterious
+  empowered
+}
+
+enum DreamClarity {
+  vivid
+  clear
+  moderate
+  hazy
+  minimal
+}
+
+enum DreamType {
+  normal
+  lucid
+  recurring
+  nightmare
+  prophetic
+  visitation
+  flying
+  falling
+  spiritual
+}
+
+type DreamJournalEntry {
+  id: ID!
+  userId: ID!
+  date: String!
+  title: String!
+  content: String!
+  dreamType: DreamType
+  mood: DreamMood
+  clarity: DreamClarity
+  isLucid: Boolean
+  themes: [String!]
+  symbols: [SymbolTag!]!
+  interpretation: String
+  emotions: [String!]
+  sleepQuality: Int
+  wakeTime: String
+  photoUrl: String
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# ============================================
+# Dream Queries
+# ============================================
+
+extend type Query {
+  dreams(userId: ID!, filters: DreamFiltersInput): [DreamJournalEntry!]!
+  dream(id: ID!, userId: ID!): DreamJournalEntry
+  dreamByDate(userId: ID!, date: String!): DreamJournalEntry
+  recentDreams(userId: ID!, limit: Int = 5): [DreamJournalEntry!]!
+  searchDreams(userId: ID!, query: String!, limit: Int = 20): [DreamJournalEntry!]!
+}
+
+input DreamFiltersInput {
+  startDate: String
+  endDate: String
+  dreamType: DreamType
+  mood: DreamMood
+  isLucid: Boolean
+  theme: String
+  limit: Int
+  offset: Int
+}
+
+# ============================================
+# Dream Mutations
+# ============================================
+
+extend type Mutation {
+  createDream(input: CreateDreamInput!): CreateDreamResponse!
+  updateDream(input: UpdateDreamInput!): UpdateDreamResponse!
+  deleteDream(id: ID!, userId: ID!): DeleteDreamResponse!
+}
+
+input CreateDreamInput {
+  userId: ID!
+  date: String
+  title: String!
+  content: String!
+  dreamType: DreamType
+  mood: DreamMood
+  clarity: DreamClarity
+  isLucid: Boolean
+  themes: [String!]
+  symbols: [SymbolTagInput!]
+  interpretation: String
+  emotions: [String!]
+  sleepQuality: Int
+  wakeTime: String
+  photoUrl: String
+}
+
+input UpdateDreamInput {
+  id: ID!
+  userId: ID!
+  title: String
+  content: String
+  dreamType: DreamType
+  mood: DreamMood
+  clarity: DreamClarity
+  isLucid: Boolean
+  themes: [String!]
+  symbols: [SymbolTagInput!]
+  interpretation: String
+  emotions: [String!]
+  sleepQuality: Int
+  wakeTime: String
+  photoUrl: String
+}
+
+type CreateDreamResponse {
+  success: Boolean!
+  message: String
+  dream: DreamJournalEntry
+}
+
+type UpdateDreamResponse {
+  success: Boolean!
+  message: String
+  dream: DreamJournalEntry
+}
+
+type DeleteDreamResponse {
+  success: Boolean!
+  message: String
+}

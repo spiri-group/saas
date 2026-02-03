@@ -1,0 +1,4 @@
+type Mutation {
+  updateFeeConfig(key: String!, percent: Float!, fixed: Float!, currency: String!): Boolean!
+  deleteFeeConfig(key: String!): Boolean!
+}

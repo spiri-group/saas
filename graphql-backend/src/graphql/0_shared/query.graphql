@@ -1,0 +1,442 @@
+type Query {
+  search(source: String!, term: String!, offset: Int, limit: Int): SearchResponse
+  charge(id: String!): StripeCharge
+  setUpIntentTarget(id: String!): SetupIntentTarget
+  checkSetupIntentPayment(id: String!): SetupIntentPaymentStatus
+}
+
+type SearchResponse {
+    results: [SearchResult!]!
+    hasMore: Boolean!
+    hasPrevious: Boolean!
+    totalCount: Int!
+}
+
+type SearchResult {
+  id: ID!
+  title: String!
+  link: String
+  thumbnail: Thumbnail
+  price: CurrencyAmount
+  additionalInfo: String
+}
+
+type SetupIntentTarget {
+  forObject: RecordRef!,
+  target: String!
+}
+
+type SetupIntentPaymentStatus {
+  forObject: RecordRef,
+  target: String,
+  paymentConfirmed: Boolean!
+}
+  
+type Media {
+  name: String!
+  urlRelative: String!
+  url: String!
+  size: String!
+  type: FileFormatType
+  code: String
+  title: String
+  description: String
+  hashtags: [String]
+  sizeBytes: Int
+  durationSeconds: Int
+}
+
+type Video {
+  media: Media!
+  coverPhoto: Media
+}
+
+type BannerConfig {
+  backgroundType: BannerBackgroundType!
+  backgroundColor: String
+  gradientStart: String
+  gradientEnd: String
+  gradientDirection: GradientDirection
+  backgroundImage: Media
+  promiseText: String!
+  textColor: String!
+  textAlignment: TextAlignment!
+  textSize: BannerTextSize!
+}
+
+enum BannerBackgroundType {
+  COLOR
+  GRADIENT
+  IMAGE
+}
+
+enum GradientDirection {
+  TO_RIGHT
+  TO_LEFT
+  TO_BOTTOM
+  TO_TOP
+  TO_BOTTOM_RIGHT
+  TO_BOTTOM_LEFT
+  TO_TOP_RIGHT
+  TO_TOP_LEFT
+}
+
+enum TextAlignment {
+  LEFT
+  CENTER
+  RIGHT
+}
+
+enum BannerTextSize {
+  SMALL
+  MEDIUM
+  LARGE
+  XLARGE
+}
+
+type ContactNumber {
+  raw: String
+  displayAs: String
+  value: String
+}
+
+type GooglePlace {
+  id: String!,
+  formattedAddress: String!,
+  components: StripePlaceComponents,
+  point: GooglePoint
+}
+
+type StripePlaceComponents {
+  city: String,
+  country: String!,
+  line1: String,
+  line2: String,
+  postal_code: String,
+  state: String
+}
+
+type GooglePoint {
+  type: String!,
+  coordinates: LocationCoordinates!
+}
+
+type LocationCoordinates {
+  lat: Float!,
+  lng: Float!,
+}
+
+type StripeDetails {
+  accountId: String,
+  invoiceId: String,
+  invoiceNumber: String,
+  invoiceStatus: String,
+  charge: StripeCharge
+  paymentIntent: StripePaymentIntent,
+  paymentIntentSecret: String,
+  setupIntentId: String,
+  setupIntentSecret: String,
+  amount: StripeAmount
+  totalDue: CurrencyAmount
+  totalRefunded: CurrencyAmount
+  totalPaid: CurrencyAmount
+}
+
+type StripePaymentIntent {
+  id: String,
+  account: String
+}
+
+type StripeAmount {
+  currency: String
+  amount: Float
+  due: Float,
+  charged: Float,
+  refunded: Float,
+  status: String
+}
+
+type StripeCharge {
+  id: String,
+  account: String,
+  amount: CurrencyAmount,
+  amount_captured: CurrencyAmount,
+  amount_refunded: CurrencyAmount,
+  amount_remaining: CurrencyAmount,
+  status: String!
+}
+
+type StripeInvoice {
+  id: String!,
+  status: String!
+}
+
+type CurrencyAmount {
+  id: String
+  currency: String,
+  amount: Float,
+  recurring: RecurringDefinition
+}
+
+type RecurringDefinition {
+  interval: String!,
+  interval_count: Int!,
+}
+
+type RecordRef {
+  id: String,
+  partition: [String],
+  container: String
+}
+
+type RecordRefWithName {
+  ref: RecordRef!,
+  name: String!
+}
+
+type Localization {
+  locale: Locale
+  value: String
+}
+
+type PriceLogEntry {
+  datetime: DateTime
+  type: String
+  status: String
+  price: CurrencyAmount
+}
+
+type TimeSpan {
+  amount: Int
+  unitId: String,
+  unit(defaultLocale: String): ChoiceOption 
+}
+
+type TimeRange {
+  start: Time,
+  end: Time,
+  duration_ms: Int
+}
+
+type Rating {
+  total_count: Int
+  average: Float
+  rating0: Int
+  rating1: Int
+  rating2: Int
+  rating3: Int
+  rating4: Int
+  rating5: Int
+}
+
+type Thumbnail {
+  image: ThumbnailImage
+  dynamicMode: ThumbnailDynamicMode
+  title: ThumbnailTitle
+  moreInfo: ThumbnailMoreInfo
+  stamp: ThumbnailStamp
+  bgColor: String
+  panelTone: String
+}
+
+type ThumbnailTitle {
+  content: String
+  panel: ThumbnailPanel
+}
+
+type ThumbnailMoreInfo {
+  content: String
+}
+
+type ThumbnailPanel {
+  bgColor: String
+  textColor: String
+  bgOpacity: Float
+}
+
+type ThumbnailImage {
+  media: Media,
+  zoom: Float,
+  objectFit: String
+}
+
+type ThumbnailStamp {
+  text: String
+  enabled: Boolean
+  bgColor: String
+  textColor: String
+}
+
+type ThumbnailDynamicMode {
+  type: ThumbnailDynamicModeType!
+  video: ThumbnailVideoMode
+  collage: ThumbnailCollageMode
+}
+
+enum ThumbnailDynamicModeType {
+  VIDEO
+  COLLAGE
+}
+
+type ThumbnailVideoMode {
+  media: Media!
+  autoplay: Boolean
+  muted: Boolean
+}
+
+type ThumbnailCollageMode {
+  images: [Media!]!
+  transitionDuration: Int
+  crossFade: Boolean
+}
+
+# Pre-Reading Questions Output
+type QuestionOption {
+  id: String!
+  label: String!
+}
+
+type PreReadingQuestion {
+  id: String!
+  type: PreReadingQuestionType!
+  question: String!
+  description: String
+  required: Boolean!
+  options: [QuestionOption!]
+}
+
+enum PreReadingQuestionType {
+  SHORT_TEXT
+  LONG_TEXT
+  MULTIPLE_CHOICE
+  CHECKBOXES
+  DROPDOWN
+  DATE
+  NUMBER
+  EMAIL
+}
+
+type ColorChoice {
+  background: String
+  foreground: String
+}
+
+type BackgroundFormat {
+  color: String
+  image: Media
+  transparency: Float
+}
+
+type TextSchema {
+  content: String!
+  format: TextFormat
+  verticalAlignment: String
+}
+
+type TextFormat {
+  family: String
+  size: String
+  color: String
+  backgroundColor: String
+  bold: Boolean
+  italic: Boolean
+  alignment: String
+  decoration: String
+  case: String
+  margin: TopBottomLeftRight
+  padding: TopBottomLeftRight
+  withQuotes: Boolean
+  borderRadius: BorderRadius
+}
+
+type TopBottomLeftRight {
+  top: Int
+  bottom: Int
+  left: Int
+  right: Int
+}
+
+type BorderRadius {
+  topLeft: Int
+  topRight: Int
+  bottomLeft: Int
+  bottomRight: Int
+}
+
+type FAQ {
+  id: String!
+  title: String
+  description: String
+}
+
+type Card {
+  id: String!
+  paymentMethodId: String!
+  brand: String!
+  last4: String!
+  exp_month: Int!
+  exp_year: Int!
+  funding: String!
+  country: String
+}
+
+enum CommentType {
+  COMMENT
+  REVIEW_AND_RATING
+}
+
+enum Day {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+enum RecordStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum FileFormatType {
+  AUDIO
+  VIDEO
+  IMAGE
+  FILE
+}
+
+enum VisibleType {
+  PUBLIC
+  PRIVATE
+}
+
+enum UnitType {
+  HOUR
+  MINUTE
+  SECOND
+}
+
+enum TimeFrameType {
+  BEFORE
+  AFTER
+  DURING
+}
+
+enum CommunicationModeType {
+  SMS
+  EMAIL
+  PLATFORM
+}
+
+enum StatusType {
+  COMPLETED
+  UPCOMING
+  ON_GOING
+  CANCELLED
+  SHIPPED
+  AWAITING_PAYMENT
+  AWAITING_CHARGE
+  REFUNDED
+}

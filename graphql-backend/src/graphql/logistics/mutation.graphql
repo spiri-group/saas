@@ -1,0 +1,89 @@
+type Mutation {
+  generate_shipments(
+    orderRef: RecordRefInput!
+  ): [Shipment]
+
+  set_rate_for_shipment(
+    orderRef: RecordRefInput!,
+    shipmentId: ID!,
+    rateId: String!
+  ): EstimateRecord
+
+  submit_packed_boxes_for_estimate(
+    orderRef: RecordRefInput!,
+    shipmentId: ID!,
+    packedBoxes: [PackedBoxInput!]!,
+    serviceCode: String!,
+    carrierCode: String!,
+    sendFrom: ShippingAddressInput!,
+    sendTo: ShippingAddressInput!
+  ): EstimateRecord
+
+  confirm_and_finalize_shipment(
+    orderRef: RecordRefInput!,
+    shipmentId: ID!
+  ): FinalizedShipmentResult
+
+  mark_delivery_as_reviewed(
+    orderRef: RecordRefInput!,
+    shipmentId: ID!
+  ): Shipment,
+
+  override_delivery_status(
+    orderRef: RecordRefInput!,
+    shipmentId: ID!,
+    statusCode: String!,
+    reason: String
+  ): Shipment
+}
+
+input ShippingAddressInput {
+  id: ID
+  name: String!
+  line1: String!
+  line2: String
+  city: String!
+  state: String!
+  country: String!
+  postal_code: String!
+}
+
+input PackedBoxInput {
+  id: ID
+  name: String!
+  code: String!
+  
+  max_weight_kg: Float!
+  volume: Float!
+
+  dimensions_cm: DimensionsInput!
+  items: [PackedBoxItemInput!]!
+
+  used_weight: Float!
+  used_volume: Float!
+}
+
+input DimensionsInput {
+  depth: Float!
+  width: Float!
+  height: Float!
+}
+
+input PackedBoxItemInput {
+  id: ID
+  forObject: RecordRefInput!
+  variantId: ID!
+  harmonized_tariff_code: HarmonizedTariffCodeInput
+  country_of_manufacture: String
+  country_of_origin: String
+  quantity: Int!
+  packed: Int
+  weight: WeightInput!
+  name: String!
+  price: CurrencyAmountInput!
+}
+
+input HarmonizedTariffCodeInput {
+  hsCode: String
+}
+

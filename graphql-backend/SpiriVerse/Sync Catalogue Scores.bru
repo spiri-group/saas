@@ -1,0 +1,19 @@
+meta {
+  name: Sync Catalogue Scores
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{gql}}
+  body: graphql
+  auth: inherit
+}
+
+body:graphql {
+  mutation scoreCatalogue {
+    score_catalogue {
+      code
+    }
+  }
+}

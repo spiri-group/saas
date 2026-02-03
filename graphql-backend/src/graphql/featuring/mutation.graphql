@@ -1,0 +1,129 @@
+"""Input for a time slot"""
+input FeaturingTimeSlotInput {
+    start: String!
+    end: String!
+}
+
+"""Input for a schedule weekday"""
+input FeaturingScheduleWeekdayInput {
+    day: Int!
+    dayName: String!
+    enabled: Boolean!
+    timeSlots: [FeaturingTimeSlotInput]!
+}
+
+"""Input for a date override"""
+input FeaturingDateOverrideInput {
+    date: String!
+    type: String!
+    timeSlots: [FeaturingTimeSlotInput]
+    reason: String
+}
+
+"""Input for store-specific schedule"""
+input FeaturingScheduleInput {
+    scheduleMode: String!
+    timezone: String!
+    weekdays: [FeaturingScheduleWeekdayInput]
+    dateOverrides: [FeaturingDateOverrideInput]
+    bufferMinutes: Int
+    advanceBookingDays: Int
+}
+
+"""Input for delivery context"""
+input FeaturingDeliveryContextInput {
+    inStore: Boolean!
+    online: Boolean!
+    storeLocationId: String
+}
+
+"""Input for service price override"""
+input FeaturingServicePriceOverrideInput {
+    serviceId: ID!
+    serviceName: String!
+    overrideType: String!
+    fixedPrice: CurrencyAmountInput
+    ratePerHour: CurrencyAmountInput
+}
+
+"""Input for configuring featuring schedule"""
+input ConfigureFeaturingScheduleInput {
+    relationshipId: ID!
+    storeSchedule: FeaturingScheduleInput!
+}
+
+"""Input for configuring featuring pricing"""
+input ConfigureFeaturingPricingInput {
+    relationshipId: ID!
+    servicePriceOverrides: [FeaturingServicePriceOverrideInput]!
+}
+
+"""Input for configuring featuring delivery"""
+input ConfigureFeaturingDeliveryInput {
+    relationshipId: ID!
+    deliveryContext: FeaturingDeliveryContextInput!
+}
+
+"""Input for creating a featuring request"""
+input CreateFeaturingRequestInput {
+    practitionerId: ID!
+    featuringType: FeaturingType!
+    """Service IDs when featuringType is SELECTED_SERVICES"""
+    featuredServiceIds: [ID]
+    """Proposed merchant revenue share in basis points (e.g., 1500 for 15%)"""
+    merchantRevenueShareBps: Int!
+    """Optional message to the practitioner"""
+    requestMessage: String
+    """Optional delivery context"""
+    deliveryContext: FeaturingDeliveryContextInput
+}
+
+"""Input for responding to a featuring request"""
+input RespondFeaturingRequestInput {
+    relationshipId: ID!
+    accept: Boolean!
+    """Optional response message"""
+    responseMessage: String
+}
+
+"""Input for updating a featuring relationship"""
+input UpdateFeaturingRelationshipInput {
+    relationshipId: ID!
+    """Update which services are featured (when SELECTED_SERVICES)"""
+    featuredServiceIds: [ID]
+    """Update display order on shopfront"""
+    displayOrder: Int
+    """Toggle highlighting on shopfront"""
+    highlighted: Boolean
+}
+
+"""Response for featuring mutations"""
+type FeaturingRequestResponse {
+    code: String!
+    success: Boolean!
+    message: String!
+    relationship: FeaturingRelationship
+}
+
+type Mutation {
+    """Merchant sends a featuring request to a practitioner"""
+    createFeaturingRequest(input: CreateFeaturingRequestInput!): FeaturingRequestResponse!
+
+    """Practitioner responds to a featuring request (accept or reject)"""
+    respondToFeaturingRequest(input: RespondFeaturingRequestInput!): FeaturingRequestResponse!
+
+    """Update an active featuring relationship (merchant only)"""
+    updateFeaturingRelationship(input: UpdateFeaturingRelationshipInput!): FeaturingRequestResponse!
+
+    """Terminate a featuring relationship (either party)"""
+    terminateFeaturingRelationship(relationshipId: ID!, reason: String): FeaturingRequestResponse!
+
+    """Configure store-specific schedule for a featuring relationship"""
+    configureFeaturingSchedule(input: ConfigureFeaturingScheduleInput!): FeaturingRequestResponse!
+
+    """Configure store-specific pricing for a featuring relationship"""
+    configureFeaturingPricing(input: ConfigureFeaturingPricingInput!): FeaturingRequestResponse!
+
+    """Configure delivery context for a featuring relationship"""
+    configureFeaturingDelivery(input: ConfigureFeaturingDeliveryInput!): FeaturingRequestResponse!
+}

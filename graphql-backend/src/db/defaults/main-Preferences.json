@@ -1,0 +1,22 @@
+{
+    "partitionColumn": "type",
+    "items": [
+        {
+            "id": "VENDOR",
+            "type": "COLOUR",
+            "entityType": "VENDOR",
+            "general": {
+                "name": "General",
+                "background": {
+                    "name": "Background",
+                    "value": "transparent"
+                },
+                "text": {
+                    "name": "Text",
+                    "value": "#000000"
+                }
+            },
+            "status": "ACTIVE"
+        }
+    ]
+}

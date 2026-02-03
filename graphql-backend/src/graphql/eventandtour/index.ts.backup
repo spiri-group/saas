@@ -1,0 +1,1639 @@
+import { v4 as uuidv4 } from 'uuid';
+import { DateTime, Duration, Interval } from "luxon";
+import { serverContext } from "../../services/azFunction";
+import { currency_amount_type, recordref_type } from "../0_shared/types";
+import { activityList_type, booking_type, session_type, ticketSpec_type, ticket_type, tour_type, vendor_event_type, vendor_event_input_type, vendor_event_update_type } from "./types";
+import { ListingTypes, listingSchedule_type } from "../listing/types";
+import { message_type } from "../messages/types";
+import { PatchOperation } from "@azure/cosmos";
+import { partitionsEqual } from '../../utils/functions';
+import { vendor_type } from '../vendor/types';
+import { generate_order_no } from '../order';
+import { orderLine_tourBooking_type, order_type } from '../order/types';
+import { user_type } from '../user/types';
+import { sender_details } from '../../client/email_templates';
+
+const resolvers = {
+    Query: {
+        tour: async (_: any, args: any, { dataSources }: serverContext, ___: any) => {
+            const tour = await dataSources.cosmos.get_record("Main-Listing", args.id, args.vendorId)
+            return tour
+        },
+        session: async(_:any, args: { vendorId: string, listingId: string, sessionId: string }, {dataSources}: serverContext, __:any ) => {
+            let session = await dataSources.cosmos.get_record<session_type>("Tour-Session", args.sessionId, [args.vendorId, args.listingId])
+            return session;
+        },
+        sessionBooking: async(_: any, args: { sessionRef: recordref_type, bookingRef: recordref_type  }, context: serverContext) => {
+            const booking = await context.dataSources.cosmos.get_record<booking_type>("Main-Bookings", args.bookingRef.id, args.bookingRef.partition)
+        
+            if (booking == null) throw `Could not find booking ${args.bookingRef.id} for session ${args.bookingRef.partition}`
+
+            // now we need to scope just the session requested
+            booking.sessions = booking.sessions.filter((x: any) => x.ref.id == args.sessionRef.id && partitionsEqual(x.ref.partition, args.sessionRef.partition))
+
+            return booking
+        },
+        sessionsSummary: async(parent:any, 
+            args: { 
+                from?: Date, 
+                to?: Date, 
+                date?: Date,
+                vendorId?: string, 
+                listingId?: number, 
+                ticketsRequired: number
+            }, 
+            context: serverContext, __:any ) => {
+
+            context.logger.logMessage("EventSessions called");
+
+            if (args.date == undefined && args.from == undefined && args.to == undefined) throw "You must provide a date, or a date range"
+            if (args.date != undefined && (args.from != undefined || args.to != undefined)) throw "You cannot provide a date and a date range"
+
+            const sessions = await hydrate_session_dates(parent, args,context) as any[]
+
+            const whereConditions = [
+                "c.date >= @from",
+                "c.date <= @to"
+            ]
+            const parameters = [
+                { name: "@from", value: args.from.toISOString() },
+                { name: "@to", value: args.to.toISOString() }
+            ] as { name: string, value: any }[]
+            
+            if (args.listingId != null) {
+                whereConditions.push("c.listingId = @listingId")
+                parameters.push({ name: "@listingId", value: args.listingId })
+            }
+
+            if (args.vendorId != null) {
+                whereConditions.push("c.forObject.partition = @vendorId")
+                parameters.push({ name: "@vendorId", value: args.vendorId })
+            }
+
+            const summary = await context.dataSources.cosmos.run_query<session_type>("Tour-Session", {
+                query: `SELECT COUNT(1) as 'numberOfSessions', SUM(c.capacity.max) as 'overallCapacity', c.date FROM c WHERE ${whereConditions.join(" AND ")}  GROUP BY c.date`,
+                parameters
+            }, true);
+
+            // now we need to get the bookings for each of the sessions and then compute an attendance rate by comparing total number of tickets vs capacity
+            for (var session of sessions) {
+                const bookings = await context.dataSources.cosmos.run_query<booking_type>("Main-Bookings", {
+                    query: "SELECT VALUE count(t.id) FROM b JOIN s in b.sessions JOIN t in s.tickets WHERE s.ref.id=@sessionId AND s.ref.partition=@sessionPartition",
+                    parameters: [
+                        { name: "@sessionId", value: session.id },
+                        { name: "@sessionPartition", value: [session.forObject.partition, session.forObject.id] }
+                    ]
+                }, true)
+                session["ticketCount"] = bookings[0]
+            }
+
+            return summary.map((x: any) => {
+                    const session = sessions.find((y: any) => y.date == x.date)
+                    return {
+                        date: x.date,
+                        numberOfSessions: x.numberOfSessions,
+                        overallCapacity: x.overallCapacity,
+                        attendanceRate: session.ticketCount / x.overallCapacity
+                    }
+                }
+            )
+        },
+        sessions: async(parent:any, 
+            args: { 
+                from?: Date, 
+                to?: Date, 
+                date?: Date,
+                vendorId?: string, 
+                listingId?: number, 
+                skip?: number, take?: number,
+                ticketsRequired: number
+            }, 
+            context: serverContext, __:any ) => {
+
+            context.logger.logMessage("EventSessions called");
+
+            if (args.date == undefined && args.from == undefined && args.to == undefined) throw "You must provide a date, or a date range"
+            if (args.date != undefined && (args.from != undefined || args.to != undefined)) throw "You cannot provide a date and a date range"
+
+            var sessions : session_type[] = await hydrate_session_dates(parent, args,context)
+            
+            if (args.skip != null) {
+                sessions = sessions.slice(args.skip)
+            }
+
+            if (args.take != null) {
+                sessions = sessions.slice(0, args.take)
+            }
+
+            return sessions.sort((a,b) => DateTime.fromISO(a.date).toMillis() - DateTime.fromISO(b.date).toMillis());
+        },
+        messages : async (_:any, args: { sessionRef: recordref_type }, {dataSources}: serverContext, __:any ) => {
+            var messages = await dataSources.cosmos.run_query<message_type>("Main-Message", {
+                query: "SELECT * FROM c WHERE c.sessionRef.id = @id AND c.sessionRef.partition = @partition",
+                parameters: [
+                    { name: "@id", value: args.sessionRef.id },
+                    { name: "@partition", value: args.sessionRef.partition }
+                ]
+            })
+            return messages;
+        },
+        find_booking_via_paymentIntentId: async(_: any, args: {id: string}, context: serverContext) => {
+            const bookingResp = await context.dataSources.cosmos.run_query("Main-Bookings", {
+                query : "SELECT * FROM c WHERE c.stripe.paymentIntentId =@id" ,
+                parameters: [
+                    { name: "@id", value: args.id }
+                ]
+            }, true)
+            if (bookingResp.length == 0) throw `Could not find booking with payment intent ${args.id}`
+            return bookingResp[0]
+        },
+        bookingPayments: async(_:any, _args: any, context: serverContext, __:any) => {
+            const payments = await context.dataSources.cosmos.run_query("Main-Bookings", {
+                    query: "SELECT c.id as 'bookingId', c.userId as 'userId', m.id as 'merchantId', iv.createdDate as createdDate, iv.stripe FROM c JOIN m in c.merchants JOIN iv in m.invoices WHERE iv.userId=@userId",
+                    parameters: [
+                        {name: "@userId", value: context.userId}
+                    ]
+                }
+            , true)
+            return payments.map((payment) => ({...payment, type: "BookingInvoice"}))
+        },
+        tourBooking: async(_:any, args: any, {dataSources}: serverContext, __:any) => {
+            const tourBooking = await dataSources.cosmos.get_record("Main-Bookings", args.bookingId, ["TOUR", args.customerEmail])
+            return tourBooking
+        },
+        tourBookings: async (_: any, args: { vendorId?: string, userId?: string }, { dataSources }: serverContext, ___: any) => {
+            
+            let parameters = []
+            let whereConditions = []
+            if (args.vendorId != null) {
+                parameters.push({ name: "@vendorId", value: args.vendorId })
+                whereConditions.push("c.vendorId = @vendorId")
+            }
+            if (args.userId != null) {
+                parameters.push({ name: "@userId", value: args.userId })
+                whereConditions.push("c.userId = @userId")
+            }
+
+            const baseQuery = "SELECT * FROM c WHERE c.type = 'TOUR'"
+            const conditionsQuery = whereConditions.length > 0 ? `AND ${whereConditions.join(" AND ")}` : ""
+
+            const tourBookings = await dataSources.cosmos.run_query("Main-Bookings", {
+                query: `${baseQuery} ${conditionsQuery}`,
+                parameters
+            }, true)
+        
+            return tourBookings
+        },
+        vendorEvents: async (_: any, args: { vendorId: string }, { dataSources }: serverContext, ___: any) => {
+            const events = await dataSources.cosmos.run_query<vendor_event_type>("Main-ListingSchedules", {
+                query: "SELECT * FROM c WHERE c.vendorId = @vendorId AND c.type = 'VendorEvent' AND c.startAt >= @now ORDER BY c.startAt ASC",
+                parameters: [
+                    { name: "@vendorId", value: args.vendorId },
+                    { name: "@now", value: DateTime.now().toISO() }
+                ]
+            }, true)
+            
+            return events
+        },
+        vendorEvent: async (_: any, args: { id: string }, { dataSources }: serverContext, ___: any) => {
+            const events = await dataSources.cosmos.run_query<vendor_event_type>("Main-ListingSchedules", {
+                query: "SELECT * FROM c WHERE c.id = @id AND c.type = 'VendorEvent'",
+                parameters: [
+                    { name: "@id", value: args.id }
+                ]
+            }, true)
+            
+            return events.length > 0 ? events[0] : null
+        },
+        nextVendorEvent: async (_: any, args: { vendorId: string }, { dataSources }: serverContext, ___: any) => {
+            const events = await dataSources.cosmos.run_query<vendor_event_type>("Main-ListingSchedules", {
+                query: "SELECT * FROM c WHERE c.vendorId = @vendorId AND c.type = 'VendorEvent' AND c.startAt >= @now ORDER BY c.startAt ASC OFFSET 0 LIMIT 1",
+                parameters: [
+                    { name: "@vendorId", value: args.vendorId },
+                    { name: "@now", value: DateTime.now().toISO() }
+                ]
+            }, true)
+            
+            return events.length > 0 ? events[0] : null
+        }
+    }, 
+    Mutation: {
+        create_tour: async (_: any, args: any, context: serverContext) => {
+            if (context.userId == null) throw "User must be present for this call";
+
+            var item = args.tour;
+            item["type"] = ListingTypes.TOUR;
+            item["vendorId"] = args.merchantId;
+            item.name = item.name
+            
+            // set default names
+            item.activityList.name = "Activity List 1";
+            item.ticketList.name = "Ticket List 1";
+
+            item["activityLists"] = [item.activityList]
+            delete item.activityList;
+            item["ticketLists"] = [item.ticketList]
+            delete item.ticketList;
+            
+            await context.dataSources.cosmos.add_record("Main-Listing", item, item["vendorId"], context.userId)
+            
+            const merchantEmail = await context.dataSources.cosmos.get_record<user_type>("Main-User", context.userId, context.userId)
+
+            context.signalR.addNotificationMessage(
+                `The tour ${item['name']} has been setup successfully`,
+                {
+                    userId: args.merchantId, status: "success"
+                }
+            )
+
+            await context.dataSources.sendgrid.sendEmail(
+                sender_details.from,
+                merchantEmail.email,
+                "TOUR_CREATED_MERCHANT",
+                {
+                    tour: {
+                        name: item.name
+                    }
+                }           
+            )
+
+            return {
+                code: 200,
+                message: `The tour ${item['name']} has been setup successfully`,
+                tour: await context.dataSources.cosmos.get_record("Main-Listing", item.id, item["vendorId"])
+            }
+        },
+        create_announcement: async (_: any, args: any, context: serverContext) => {
+            if (context.userId == null) throw "User must be present for this call"
+            
+            var announcement: any = args.announcement
+        
+            announcement["id"] = uuidv4()
+            announcement["createdDate"] = DateTime.now().toISO()
+            announcement["createdBy"] = context.userId
+            const container = await context.dataSources.cosmos.get_container("Tour-Session")
+
+            await container.item(args.sessionRef.id, args.sessionRef.partition).patch([
+                { op: "add", path: "/announcements/-", value: announcement }
+            ]);
+
+            return {
+                code: "200",
+                message: "Announcement created",
+                announcement: await context.dataSources.cosmos.get_record("Tour-Session", args.sessionRef.id, args.sessionRef.partition)
+            }
+        },
+        activate_session: async (_: any, args: {sessionRef: recordref_type}, context: serverContext) => {
+            if (context.userId == null) throw "User must be present for this call";
+            // if the record in cosmosdb has the attribute ttl we want to remove it
+            const record = await context.dataSources.cosmos.run_query("Tour-Session", 
+            { query: "SELECT c.id FROM c WHERE IS_DEFINED(c.ttl) AND c.id = @id",
+              parameters: [{ name: "@id", value: args.sessionRef.id }]
+            }, true)     
+            let responseMesssage = "";
+            if (record.length != 0) {       
+                await context.dataSources.cosmos.patch_record(
+                    "Tour-Session", args.sessionRef.id, args.sessionRef.partition, 
+                    [{ op: "remove", path: "/ttl"}], 
+                    context.userId);
+                responseMesssage = "Session activated"
+            } else {
+                responseMesssage = "Session already active"
+            }
+            return {
+                code: "200",
+                message: responseMesssage
+            }
+        },
+        create_manual_tour_bookings: async (
+            _: any,
+            args: { 
+                bookings: { userDetails: any, numberOfPeople: string }[], 
+                sessionRef: recordref_type },
+            context: serverContext) => {
+            if (context.userId == null) throw "User must be present for this call";
+            
+            const bookingResults = []
+            for (var booking_input of args.bookings) {
+                // look up the user via their email address and try and find them
+                let userId = null;
+                const userResults = await context.dataSources.cosmos.run_query("Main-User", {
+                    query: `SELECT * FROM l Where l.email = @email`,
+                    parameters: [{
+                        name: "@email", value: booking_input.userDetails.email
+                    }]
+                })
+                if (userResults.length > 0) {
+                    userId = userResults[0].id
+                } else {
+                    var item = booking_input.userDetails;
+                    item.id = uuidv4();
+
+                    // create them a stripe account
+                    let {data, status} = await context.dataSources.stripe.callApi("POST", "customers", {
+                        "email": item.email,
+                        "name": `${item.firstname} ${item.lastname}`
+                    });
+                    if (status == 200) throw `Could not create customer`
+                    item.stripe = {
+                        customerId: data.id
+                    }
+
+                    // now create our user
+                    await context.dataSources.cosmos.add_record("Main-User", item, item.id, context.userId)                 
+                    userId = item.id; 
+                }
+                
+                // now that we have a user id we can create the booking
+
+                // check if a booking already exists for this user
+                if ((await context.dataSources.cosmos.run_query("Main-Bookings", {
+                    query: "SELECT * FROM c WHERE c.userId = @userId AND c.sessionRef.id = @sessionId AND c.sessionRef.partition = @sessionPartition",
+                    parameters: [
+                        { name: "@userId", value: userId },
+                        { name: "@sessionId", value: args.sessionRef.id },
+                        { name: "@sessionPartition", value: args.sessionRef.partition }
+                    ]
+                }, true)).length > 0) {
+                    throw `Booking already exists for user ${userId} and session ${args.sessionRef.id}`
+                }
+
+                // otherwise we good to go
+                const tickets = [...Array(Number(booking_input.numberOfPeople)).keys()].map((x: number, idx: number) => {
+                    return {
+                        id: uuidv4(),
+                        index: idx,
+                        person: `Person ${x + 1}`,
+                        sourcedFrom: null,
+                        stripe: {},
+                        price_log: [],
+                        status_log: [
+                            { datetime: DateTime.now().toISO(), label: "CREATED", triggeredBy: "MERCHANT" }
+                        ]
+                    }
+                })
+
+                const booking = {
+                    id: uuidv4(),
+                    code: await generate_order_no(booking_input.userDetails.email , context.dataSources.cosmos),
+                    type: "TOUR",
+                    customerEmail: booking_input.userDetails.email,
+                    userId: userId,
+                    vendorId: args.sessionRef.partition[0],
+                    sessions: [{
+                        index: 0,
+                        ref: args.sessionRef,
+                        tickets
+                    }],
+                    datetime: DateTime.now().toISO(),
+                    checkedIn: null,
+                    lastMessageRef: null,
+                    status_log: [
+                        { 
+                            datetime: DateTime.now().toISO(), 
+                            label: "CREATED", 
+                            triggeredBy: "MERCHANT" 
+                        }
+                    ]
+                }
+
+                await context.dataSources.cosmos.add_record("Main-Bookings", booking, ["TOUR", booking_input.userDetails.email], context.userId)
+
+                bookingResults.push(
+                    await context.dataSources.cosmos.get_record("Main-Bookings", booking.id, ["TOUR", booking_input.userDetails.email])
+                )
+
+                const sessionDB = await context.dataSources.cosmos.get_record<session_type>("Tour-Session", args.sessionRef.id, args.sessionRef.partition)
+                const tourDB = await context.dataSources.cosmos.get_record<tour_type>("Main-Listing", sessionDB.forObject.id, sessionDB.forObject.partition)
+                const activityList = tourDB.activityLists.find((x: any) => x.id == sessionDB.activityListId)
+                if (activityList == null) throw `Could not find activity list ${sessionDB.activityListId}`
+
+                await context.dataSources.sendgrid.sendEmailToMany(
+                    sender_details.from,
+                    [booking_input.userDetails],
+                    "TOUR_MANUAL_BOOKING_CREATED_CUSTOMER",
+                    {
+                        tour: {
+                            name: tourDB.name,
+                            location: activityList.activities[0].location.formattedAddress,
+                            date: DateTime.fromISO(sessionDB.date).toLocaleString(DateTime.DATE_FULL),
+                            startTime: DateTime.fromISO(sessionDB.time.start).toLocaleString(DateTime.TIME_SIMPLE),
+                            endTime: DateTime.fromISO(sessionDB.time.end).toLocaleString(DateTime.TIME_SIMPLE),
+                        },
+                        tourBooking: {
+                            code: booking["code"],
+                            numberOfPeople: booking_input.numberOfPeople
+                        }
+                        
+                    }, (user) => user.email
+                )
+
+            }
+
+            return {
+                code: "200",
+                success: true,
+                message: `Bookings created successfully`,
+                bookings: bookingResults
+            }
+
+        },
+        create_tour_booking: async (
+            _: any, 
+            args: { 
+                customerEmail: string,
+                merchantId: string,
+                sessions: {
+                    ref: recordref_type,
+                    tickets: { 
+                        id: string, quantity: number,
+                        sourcedFrom: { ticketId: string },
+                        price: number // to be set later,
+                        descriptor: string // to set later
+                    }[]
+                }[]
+            }, 
+            context: serverContext) => {
+
+            // we need to check that the sessions being booked from are all for a single merchant
+            // we do not support multiple merchants in a single booking
+            const merchantIds = args.sessions.map(x => x.ref.partition[0])
+            if (new Set(merchantIds).size != 1) throw "Cannot book sessions from multiple merchants in a single booking"
+            const merchant = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", args.merchantId, args.merchantId)
+            // if they haven't got a stripe account then we can't book
+            if (merchant.stripe == null) throw `Merchant ${args.merchantId} does not have a stripe account unable to create booking`
+
+            const bookingId = uuidv4();
+            const bookingRef = {
+                id: bookingId,
+                partition: ["TOUR", args.customerEmail],
+                container: "Main-Bookings"
+            }
+
+            // step 2: we need to create the invoice in stripe
+            // const customer = await context.dataSources.cosmos.get_record<user_type>("Main-User", context.userId, context.userId)
+            // if (customer.stripe == null) throw `User ${context.userId} does not have a stripe account unable to create booking`
+            
+            // now we  get the ticket price for each one specified
+            const sessionDB = await context.dataSources.cosmos.get_record<session_type>("Tour-Session", session.ref.id, session.ref.partition)
+            const tourDB = await context.dataSources.cosmos.get_record<tour_type>("Main-Listing", sessionDB.forObject.id, sessionDB.forObject.partition)
+            const activityList = tourDB.activityLists.find((x: any) => x.id == sessionDB.activityListId)
+            if (activityList == null) throw `Could not find activity list ${sessionDB.activityListId}`
+            const ticketList = tourDB.ticketLists.find((x: any) => x.id == sessionDB.ticketListId)
+            if (ticketList == null) throw `Could not find ticket list ${sessionDB.ticketListId}`
+            
+            for (var session of args.sessions) {
+
+                const startTime = DateTime.fromISO(activityList.activities[0].time).toLocaleString(DateTime.TIME_SIMPLE)
+                const endTime = DateTime.fromISO(activityList.activities[activityList.activities.length - 1].time).toLocaleString(DateTime.TIME_SIMPLE)
+
+                for (var ticket of session.tickets) {
+                    // we need to get the price of the ticket by looking at the session and the ticket
+                    const ticketsFromTicketList = ticketList.tickets as ticketSpec_type[]
+                    const ticketDetails = ticketsFromTicketList.find((x: any) => x.id == ticket.sourcedFrom.ticketId)
+                    if (ticketDetails == null) throw `Could not find ticket ${ticket.sourcedFrom.ticketId}`
+                    ticket.price = ticketDetails.price.amount
+                    ticket.descriptor = `${tourDB.name} - ${startTime} -> ${endTime} - ${ticketDetails.name}`
+                }
+            }
+
+            // step 5: Create an order in the database with just this booking
+            
+            // create the tickets for the booking
+            // - it should be 1 ticket per person
+            var sessions = args.sessions.map((session, idx) => {
+                
+                var ticketsMapped = session.tickets.map(ticket => {
+                    return {
+                        id: ticket.id,
+                        descriptor: ticket.descriptor,
+                        price: {
+                            amount: ticket.price,
+                            currency: "AUD",
+                            quantity: ticket.quantity,
+                        },
+                        sourcedFrom: ticket.sourcedFrom,
+                        status_log: [
+                            { 
+                                datetime: DateTime.now().toISO(), 
+                                label: "CREATED", 
+                                triggeredBy: "CUSTOMER" 
+                            }
+                        ]
+                    }
+                })
+
+                // we then need to create a ticket for each ticket
+                var tickets = ticketsMapped.map(({price, ...ticket}, idx) => {
+                    let tmp = [] as any[]
+                    for (var i = 1; i <= price.quantity; i++) {
+                        tmp.push({
+                            ...ticket,
+                            id : uuidv4(), // need to give it a new id
+                            person: "",
+                            index: (idx) + (i-1),
+                            price: {
+                                ...price,
+                                quantity: 1
+                            }
+                        })
+                    }
+                    return tmp
+                }).flat()
+
+                return {
+                    index: idx,
+                    ref: session.ref,
+                    tickets
+                }
+            }) 
+
+            const orderId = uuidv4();
+
+            // now we're going to create a payment intent in stripe for the total
+            var stripeCustomer = await context.dataSources.stripe.resolveCustomer(args.customerEmail)
+            const intent = await context.dataSources.stripe
+                .callApi("POST", "setup_intents", {
+                    customer: stripeCustomer.id,
+                    metadata: {
+                        target: "Main-Orders",
+                        orderId: orderId,
+                        customerEmail: args.customerEmail
+                    }
+            })
+            if (intent.status != 200) throw "Error creating payment intent in stripe"
+
+            const orderLines = sessions.flatMap((session) => {
+                const tickets = session.tickets.map((ticket) => {
+                    return {
+                        id: uuidv4(),
+                        forObject: bookingRef,
+                        sessionRef: session.ref,
+                        ticketId: ticket.id,
+                        descriptor: ticket.descriptor,
+                        price_log: [
+                            {
+                                id: uuidv4(),
+                                datetime: DateTime.now().toISO(),
+                                type: "CHARGE",
+                                status: "SUCCESS",
+                                price: ticket.price 
+                            }
+                        ], // we need to sum the prices
+                        refund_request_log: [],
+                        stripe: {},
+                        merchantId: session.ref.partition[0],
+                        target: "TOUR-BOOKING"
+                    }  
+                })
+                return tickets;
+            })
+
+            // now that the tickets have been dealt with we can create the order
+            const order = {
+                id: orderId,
+                code: await generate_order_no(args.customerEmail, context.dataSources.cosmos),
+                userId: context.userId,
+                customerEmail: args.customerEmail,
+                lines: orderLines,
+                stripe: {
+                    setupIntentId: intent.data["id"],
+                    setupIntentSecret: intent.data["client_secret"]
+                },
+                payments: []
+            }
+
+            await context.dataSources.cosmos.add_record("Main-Orders", order, order.id, context.userId ?? "GUEST")
+
+            // now we need to attach the stripe id to each of the tickets on the sessions
+            for (var session_tmp of sessions) {
+                for (var ticket_tmp of session_tmp.tickets) {
+                    ticket_tmp.stripe = {}
+                }
+            }
+
+            // step 4: create the booking
+            const booking = {
+                id: bookingId,
+                code: await generate_order_no(args.customerEmail, context.dataSources.cosmos),
+                type: "TOUR",
+                userId: context.userId,
+                customerEmail: args.customerEmail,
+                vendorId: args.merchantId,
+                sessions: sessions.map((session) => {
+                    return {
+                        ...session,
+                        tickets: session.tickets.map(({ price, ...ticket}) => {
+                            return ticket;
+                        })
+                    }
+                }),
+                datetime: DateTime.now().toISO(),
+                checkedIn: null,
+                lastMessageRef: null,
+                status_log: [
+                    { 
+                        datetime: DateTime.now().toISO(), 
+                        label: "CREATED", 
+                        triggeredBy: "CUSTOMER" 
+                    }
+                ]
+            }
+
+            await context.dataSources.cosmos.add_record("Main-Bookings", booking, ["TOUR", args.customerEmail], context.userId ?? "GUEST")
+
+            //now we'll return the record
+            var record = await context.dataSources.cosmos.get_record("Main-Bookings", booking.id, ["TOUR", args.customerEmail])
+
+            await context.dataSources.sendgrid.sendEmail(
+                sender_details.from,
+                args.customerEmail,
+                "TOUR_BOOKING_CREATED_CUSTOMER",
+                {
+                    tour: {
+                        name: tourDB.name,
+                        location: activityList.activities[0].location.formattedAddress,
+                        date: DateTime.fromISO(sessionDB.date).toLocaleString(DateTime.DATE_FULL),
+                        startTime: DateTime.fromISO(sessionDB.time.start).toLocaleString(DateTime.TIME_SIMPLE),
+                        endTime: DateTime.fromISO(sessionDB.time.end).toLocaleString(DateTime.TIME_SIMPLE),
+                    },
+                    tourBooking: {
+                        code: booking["code"]
+                    }
+                }           
+            )
+
+            // if (booking.length === 0) {
+            //     await context.dataSources.sendgrid.sendEmail(
+            //         sender_details.from,
+            //         merchant.email,
+            //         "TOUR_FIRST_TICKET_BOOKING_MERCHANT",
+            //         {
+            //             tour: {
+            //                 name: tourDB.name,
+            //             }
+            //         }
+            //     )
+            // }
+
+            return {
+                code: "200",
+                success: true,
+                message: `New Booking successfully created`,
+                bookings: [record]
+            }
+        },
+        update_tour_booking: async (_: any, 
+            args: {
+                tickets: { 
+                    index: number, 
+                    id: string, 
+                    person: string, 
+                    price: currency_amount_type, 
+                    refund: currency_amount_type 
+                }[], 
+                notes: string, 
+                sessionRef: recordref_type,
+                bookingRef: recordref_type,
+                requirePayment: boolean
+            }, context: serverContext) => {
+            if (context.userId == null) throw "User must be present for this call";
+
+            const bookingResp = await context.dataSources.cosmos.get_record<booking_type>("Main-Bookings", args.bookingRef.id, args.bookingRef.partition)
+            const session = bookingResp.sessions.find((x: any) => x.ref.id == args.sessionRef.id && partitionsEqual(x.ref.partition, args.sessionRef.partition))
+            const sessionIdx = bookingResp.sessions.findIndex((x: any) => x.ref.id == args.sessionRef.id && partitionsEqual(x.ref.partition, args.sessionRef.partition))
+            if (session == null || sessionIdx == -1) throw `Could not find session ${args.sessionRef.id} in booking ${args.bookingRef.id}`
+            
+            const tourResp = await context.dataSources.cosmos.get_record<tour_type>("Main-Listing", session.ref.partition[1], session.ref.partition[0])
+            if (tourResp == null) throw `Could not find tour ${session.ref.partition[1]}`
+
+            // work out which tickets need to be updated and which need to be created
+            const updatedTickets = args.tickets.filter((x) => session.tickets.find((y => y.id == x.id)) != null)
+            const newTickets = args.tickets.filter((x) => !updatedTickets.find(y => y.id == x.id))
+            
+            // find the order
+            let orderResp = await context.dataSources.cosmos.run_query<order_type>("Main-Orders", {
+                query: `
+                        SELECT VALUE c
+                        FROM c 
+                        JOIN l in c.lines 
+                        WHERE l.target = "TOUR-BOOKING" 
+                            and l.forObject.id = @bookingId`,
+                parameters: [
+                    { name: '@bookingId', value: args.bookingRef.id }
+                ]
+            }, true)
+
+            if (orderResp.length == 0) {
+                //create an order
+                
+                const orderLines = args.tickets.map((ticket) => {
+                    return {
+                        id: uuidv4(),
+                        forObject: args.bookingRef,
+                        sessionRef: session.ref,
+                        ticketId: ticket.id,
+                        descriptor: `TBA`,
+                        price_log: [
+                            {
+                                id: uuidv4(),
+                                datetime: DateTime.now().toISO(),
+                                type: "CHARGE",
+                                status: "SUCCESS",
+                                price: {
+                                    ...ticket.price,
+                                    quantity:1 // because every ticket is assigned to 1 person
+                                }
+                            }
+                        ], // we need to sum the prices
+                        refund_request_log: [],
+                        stripe: {},
+                        merchantId: session.ref.partition[0],
+                        target: "TOUR-BOOKING"
+                    }  
+                })
+
+                const order = {
+                    id: uuidv4(),
+                    code: await generate_order_no(bookingResp.customerEmail, context.dataSources.cosmos),
+                    userId: context.userId,
+                    customerEmail: bookingResp.customerEmail,
+                    lines: orderLines,
+                    stripe: {},
+                    payments: []
+                }
+
+                if (args.requirePayment) {
+                    //create setup intent 
+                    var stripeCustomer = await context.dataSources.stripe.resolveCustomer(bookingResp.customerEmail)
+                    const intent = await context.dataSources.stripe
+                        .callApi("POST", "setup_intents", {
+                            customer: stripeCustomer.id,
+                            metadata: {
+                                target: "Main-Orders",
+                                orderId: order.id,
+                                customerEmail: bookingResp.customerEmail
+                            }
+                    })
+                    if (intent.status != 200) throw "Error creating payment intent in stripe"
+
+                    order.stripe = {
+                        setupIntentId: intent.data["id"],
+                        setupIntentSecret: intent.data["client_secret"]
+                    }
+
+                    context.signalR.addNotificationMessage(
+                        `Booking for ${tourResp.name} has been succesfully created with booking code reference ${bookingResp.code} and this booking is require a payment`,
+                        {
+                            userId: tourResp.id, status: "info"
+                        }
+                    )
+
+                    await context.dataSources.sendgrid.sendEmail(
+                        sender_details.from,
+                        bookingResp.customerEmail,
+                        "TOUR_BOOKING_REQUIRE_PAYMENT_CUSTOMER",
+                        {
+                            tour: {
+                                name: tourResp.name
+                            },
+                            tourBooking: {
+                                code: bookingResp.code
+                            },
+                            order: {
+                                code: order.code
+                            }
+                        }           
+                    )
+                } else {
+
+                    context.signalR.addNotificationMessage(
+                        `Booking for ${tourResp.name} has been succesfully created with booking code reference ${bookingResp.code} and this booking is not require a payment`,
+                        {
+                            userId: tourResp.id, status: "info"
+                        }
+                    )
+    
+                    await context.dataSources.sendgrid.sendEmail(
+                        sender_details.from,
+                        bookingResp.customerEmail,
+                        "TOUR_BOOKING_NOT_REQUIRE_PAYMENT_CUSTOMER",
+                        {
+                            tour: {
+                                name: tourResp.name
+                            },
+                            tourBooking: {
+                                code: bookingResp.code
+                            },
+                            order: {
+                                code: order.code
+                            }
+                        }           
+                    )
+                }
+
+                await context.dataSources.cosmos.add_record("Main-Orders", order, order.id, context.userId ?? "GUEST")
+
+            } else {
+                const order = orderResp[0]
+
+                const booking_operations : PatchOperation[]=[]
+                const order_operations : PatchOperation[]=[]
+
+                let refundsCreated = 0;
+                let chargesCreated = 0;
+
+                // for update tickets
+                for (var i=0; i <= updatedTickets.length - 1; i++) {
+                    const ticket = session.tickets.find((x: any) => x.id == updatedTickets[i].id) as ticket_type
+                    if (ticket == null) throw `Could not find the updated ticket in the list of tickets`
+                    
+                    const ticketPrefix = `sessions/${sessionIdx}/tickets/${ticket.index}`
+                    booking_operations.push({
+                        op: "set",
+                        path: `/${ticketPrefix}/person`,
+                        value: updatedTickets[i].person
+                    })
+
+                    // and refund the ticket if required
+                    if (updatedTickets[i].refund != null) {
+                        const refundAmount = updatedTickets[i].refund.amount;
+                        const chargeId = ticket.stripe.charge.id; 
+                        
+                        const ticketLineIndex = 
+                            (order.lines as orderLine_tourBooking_type[])
+                                .findIndex(x => 
+                                    x.sessionRef.id == session.ref.id 
+                                    && partitionsEqual(x.sessionRef.partition, session.ref.partition)
+                                    && x.ticketId == updatedTickets[i].id
+                                )
+
+                        const refundPriceLogEntryId = uuidv4()
+
+                        if (refundAmount != 0) {
+                        
+                            let requestId: string | null = null
+                            const requestRefundIndex = order.lines[ticketLineIndex].refund_request_log.findIndex(x => x.status == "PENDING");
+                            if (requestRefundIndex !== -1) {
+                                order_operations.push(
+                                    {
+                                        op: "set", 
+                                        value: "APPROVED",
+                                        path: `/lines/${ticketLineIndex}/refund_request_log/${requestRefundIndex}/status`,
+                                    }
+                                )
+
+                                requestId = order.lines[ticketLineIndex].refund_request_log[requestRefundIndex].id
+                            }
+
+                            
+                            order_operations.push(
+                                {
+                                    op: "add",
+                                    path: `/lines/${ticketLineIndex}/price_log/0`,
+                                    value: {
+                                        id: refundPriceLogEntryId,
+                                        datetime: DateTime.now().toISO(),
+                                        type: refundAmount == updatedTickets[i].price.amount ? "FULL_REFUND" : "PARTIAL_REFUND",
+                                        status: "PENDING",
+                                        price: {
+                                            ...updatedTickets[i].refund,
+                                            quantity: -1
+                                        },
+                                        requestId: requestId == null ? undefined : requestId
+                                    }
+                                }
+                            )
+                            
+                            await context.dataSources.stripe
+                            .asConnectedAccount(ticket.stripe.charge.account)
+                            .callApi("POST", `refunds`, {
+                                charge: chargeId,
+                                amount: refundAmount,
+                                metadata: {
+                                    orderId: order.id,
+                                    customerEmail: order.customerEmail,
+                                    orderLineId: order.lines[ticketLineIndex].id,
+                                    priceLogEntryId: refundPriceLogEntryId
+                                }
+                            }) 
+
+                            refundsCreated++;   
+                        } else {
+                            //let requestId: string | null = null
+                            const requestRefundIndex = order.lines[ticketLineIndex].refund_request_log.findIndex(x => x.status == "PENDING");
+                            if (requestRefundIndex !== -1) {
+
+                                order_operations.push(
+                                    {
+                                        op: "set", 
+                                        value: "REJECTED",
+                                        path: `/lines/${ticketLineIndex}/refund_request_log/${requestRefundIndex}/status`,
+                                    }
+                                )
+
+                                //requestId = order.lines[ticketLineIndex].refund_request_log[requestRefundIndex].id
+                            }
+                        }    
+                        
+                    }
+
+                }
+
+                // for new tickets
+                for (var i=0; i <= newTickets.length - 1; i++) {
+
+                    var index = newTickets[i].index
+                    booking_operations.push({
+                        op: "add",
+                        path: `/sessions/${sessionIdx}/tickets/-`,
+                        value: {
+                            id: newTickets[i].id,
+                            index,
+                            person: newTickets[i].person,
+                            sourcedFrom: null,
+                            stripe: {},
+                            price_log: [
+                                { 
+                                    datetime: DateTime.now().toISO(), 
+                                    type: "CHARGE",
+                                    status: "CREATED",
+                                    price: {
+                                        amount: newTickets[i].price.amount,
+                                        currency: "AUD"
+                                    }
+                                }
+                            ],
+                            status_log: [
+                                { 
+                                    datetime: DateTime.now().toISO(), 
+                                    label: "CREATED", 
+                                    triggeredBy: "MERCHANT" 
+                                }
+                            ]
+                        }
+                    })
+
+
+                }
+
+                //TODO: find any tickets which have no charge but have a price
+                // we need to raise an order for these tickets + the new tickets
+
+                booking_operations.push({
+                    op: "set",
+                    path: `/notes`,
+                    value: args.notes
+                })
+
+                booking_operations.push({
+                    op: "add",
+                    path: `/status_log/0`,
+                    value: {
+                        datetime: DateTime.now().toISO(),
+                        label: "UPDATED",
+                        triggeredBy: "MERCHANT"
+                    }
+                })
+
+                await context.dataSources.cosmos.patch_record(
+                    "Main-Bookings", args.bookingRef.id, args.bookingRef.partition,
+                    booking_operations, context.userId
+                )
+
+                await context.dataSources.cosmos.patch_record(
+                    "Main-Orders", order.id, order.id,
+                    order_operations, context.userId
+                )
+
+                if (refundsCreated > 0 || chargesCreated > 0) {
+                    context.signalR.addNotificationMessage(
+                        `${refundsCreated != 0 ? `${refundsCreated} ${refundsCreated > 1 ? "refunds" : "refund"} created${chargesCreated > 0 ? ', ': ''}` : ''}${chargesCreated != 0 ? `${chargesCreated} ${chargesCreated > 1 ? "charges" : "charge"} created` : ''}. ${chargesCreated > 1 || refundsCreated > 1 ? "These" : "This"} will be updated once we are able to process the payment / reversal.`,
+                        { 
+                            userId: context.userId,
+                            status: "info"
+                        }
+                    )
+                }
+
+                if (refundsCreated) {
+                    await context.dataSources.cosmos.add_record("Main-Message", {
+                        id: uuidv4(),
+                        text: `We have approved ${refundsCreated} ${refundsCreated > 1 ? "refunds" : "refund"} on the basis of ${args.notes}`,
+                        topicRef: {
+                            id: order.id,
+                            partition: order.customerEmail,
+                            container: "Main-Orders"
+                        },
+                        forObject: {
+                            id: order.id,
+                            partition: order.customerEmail,
+                            container: "Main-Orders"
+                        },
+                        posted_by_system: true,
+                        sentAt: DateTime.now().toISO()
+                    }, [order.id, order.customerEmail], context.userId)
+                }
+            }
+
+            return {
+                code: "200",
+                success: true,
+                message: `Booking ${args.bookingRef.id} successfully updated`,
+                booking: await context.dataSources.cosmos.get_record("Main-Bookings", args.bookingRef.id, args.bookingRef.partition)
+            }
+        },
+        update_tour: async (_: any, args: any, context: serverContext) => {
+            if (context.userId == null) throw "User must be present for this call";
+
+            var item = args.tour
+            await context.dataSources.cosmos.update_record("Main-Listing", item.id, args.merchantId, item, context.userId)
+
+            return {
+                code: 200,
+                message: `The tour ${item.name} has been updated successfully`,
+                tour: await context.dataSources.cosmos.get_record("Main-Listing", item.id, args.merchantId)
+            }
+        },
+        // complete_tour: async (_: any, args: any, context: serverContext) => {
+        //     if (context.userId == null) throw "User must be present for this call";
+
+        //     const tourDB = await context.dataSources.cosmos.get_record<tour_type>("Main-Listing", args.id, args.partition)
+            
+        //     await context.dataSources.sendgrid.sendEmailToMany(
+        //         sender_details.from,
+        //         [customerEmail],
+        //         "CASE_APPLICATION_OFFER_ACCEPTED_MERCHANT",
+        //         {
+        //             tour: {
+        //                 name: tourDB.name 
+        //             }
+        //         }, (user) => user.email
+        //     )
+        // },
+        createVendorEvent: async (_: any, args: { event: vendor_event_input_type }, context: serverContext) => {
+            if (context.userId == null) throw "User must be present for this call";
+
+            // Use the client-provided ID (now required)
+            const eventId = args.event.id;
+            const now = DateTime.now().toISO();
+            
+            // Calculate TTL (20 days after event end)
+            const endDateTime = DateTime.fromJSDate(args.event.endAt);
+            const ttl = Math.floor(endDateTime.plus({ days: 20 }).toSeconds());
+
+            const vendorEvent: vendor_event_type = {
+                id: eventId,
+                type: "VendorEvent",
+                vendorId: args.event.vendorId,
+                listingId: args.event.listingId,
+                title: args.event.title,
+                startAt: args.event.startAt.toISOString(),
+                endAt: args.event.endAt.toISOString(),
+                timezone: args.event.timezone,
+                location: args.event.location,
+                visibility: args.event.visibility,
+                status: "scheduled",
+                tags: args.event.tags,
+                description: args.event.description,
+                landscapeImage: args.event.landscapeImage,
+                ttl
+            };
+
+            await context.dataSources.cosmos.add_record("Main-ListingSchedules", vendorEvent, args.event.vendorId, context.userId);
+
+            return {
+                code: "200",
+                success: true,
+                message: `Event "${args.event.title}" created successfully`,
+                event: vendorEvent
+            };
+        },
+        updateVendorEvent: async (_: any, args: { event: vendor_event_update_type }, context: serverContext) => {
+            if (context.userId == null) throw "User must be present for this call";
+
+            const existingEvent = await context.dataSources.cosmos.run_query<vendor_event_type>("Main-ListingSchedules", {
+                query: "SELECT * FROM c WHERE c.id = @id AND c.type = 'VendorEvent'",
+                parameters: [
+                    { name: "@id", value: args.event.id }
+                ]
+            }, true);
+
+            if (existingEvent.length === 0) {
+                throw `Event with id ${args.event.id} not found`;
+            }
+
+            const event = existingEvent[0];
+            const updates = { ...args.event } as any;
+            delete updates.id;
+
+            // Recalculate TTL if endAt is being updated
+            if (updates.endAt) {
+                const endDateTime = DateTime.fromJSDate(updates.endAt);
+                updates.ttl = Math.floor(endDateTime.plus({ days: 20 }).toSeconds());
+                updates.endAt = endDateTime.toISO();
+            }
+            if (updates.startAt) {
+                updates.startAt = DateTime.fromJSDate(updates.startAt).toISO();
+            }
+
+            await context.dataSources.cosmos.update_record("Main-ListingSchedules", args.event.id, event.vendorId, updates, context.userId);
+
+            const updatedEvent = await context.dataSources.cosmos.run_query<vendor_event_type>("Main-ListingSchedules", {
+                query: "SELECT * FROM c WHERE c.id = @id AND c.type = 'VendorEvent'",
+                parameters: [
+                    { name: "@id", value: args.event.id }
+                ]
+            }, true);
+
+            return {
+                code: "200",
+                success: true,
+                message: `Event updated successfully`,
+                event: updatedEvent[0]
+            };
+        },
+        deleteVendorEvent: async (_: any, args: { id: string }, context: serverContext) => {
+            if (context.userId == null) throw "User must be present for this call";
+
+            const existingEvent = await context.dataSources.cosmos.run_query<vendor_event_type>("Main-ListingSchedules", {
+                query: "SELECT * FROM c WHERE c.id = @id AND c.type = 'VendorEvent'",
+                parameters: [
+                    { name: "@id", value: args.id }
+                ]
+            }, true);
+
+            if (existingEvent.length === 0) {
+                throw `Event with id ${args.id} not found`;
+            }
+
+            const event = existingEvent[0];
+            await context.dataSources.cosmos.delete_record("Main-ListingSchedules", args.id, event.vendorId, context.userId);
+
+            return {
+                code: "200",
+                success: true,
+                message: `Event deleted successfully`
+            };
+        }
+    },
+    Tour: {
+        activityList: async (parent: tour_type, args: { id: string }, _: serverContext) => {
+            return parent.activityLists.find((x: any) => x.id == args.id)
+        },
+        ticketList: async (parent: tour_type, args: { id: string }, _: serverContext) => {
+            return parent.ticketLists.find((x: any) => x.id == args.id)
+        },
+        ref: async (parent: any, _: any, _context: serverContext) => {
+            return {
+                id: parent.id,
+                partition: [parent.vendorId],
+                container: "Main-Listing"
+            }
+        }
+    },
+    Session: {
+        ref: async (parent: any, _: any, _context: serverContext) => {
+            return {
+                id: parent.id, 
+                partition: [parent.forObject.partition, parent.forObject.id], 
+                container: "Tour-Session"
+            } as recordref_type
+        },
+        forObject: (parent: any, _: any, _context: serverContext) => {
+            // we have to move the partition into an array object
+            return {
+                id: parent.forObject.id,
+                partition: [parent.forObject.partition],
+                container: "Main-Listing"
+            } as recordref_type
+        },
+        bookings: async (parent: any, _: any, context: serverContext) => { 
+
+            var results = await context.dataSources.cosmos.run_query("Main-Bookings", {
+                query: 
+                    `SELECT VALUE b 
+                     FROM b 
+                     JOIN s in b.sessions
+                     WHERE s.ref.id = @id 
+                           AND s.ref.partition = @partition
+                           AND b.type = "TOUR"
+                    `,
+                parameters: [
+                    { name: "@id", value: parent.id },
+                    { name: "@partition", value: [parent.forObject.partition, parent.forObject.id] }
+                ]
+            }, true)
+
+            return results;
+
+        },           
+        activityList: async (parent: session_type, _: any, context: serverContext) => {
+            var listing = await context.dataSources.cosmos.get_record<tour_type>("Main-Listing", parent.forObject.id, parent.forObject.partition)
+            var activityList = listing.activityLists.find((x: any) => x.id == parent.activityListId) as activityList_type & { tourRef: recordref_type }
+            if (activityList == null) throw new Error("Activity list not found")
+            // attach the tour ref so that we can get ticket list later
+            activityList.tourRef = parent.forObject;
+            return activityList;
+        },
+        ticketList: async (parent: session_type, _: any, context: serverContext) => {
+            var listing = await context.dataSources.cosmos.get_record<tour_type>("Main-Listing", parent.forObject.id, parent.forObject.partition)
+            var ticketList = listing.ticketLists.find((x: any) => x.id == parent.ticketListId)
+            if (ticketList == null) throw new Error("Ticket list not found")
+            return ticketList;
+        }
+    },
+    Announcement: {
+        unit: async(parent: { unit: string[] }, _args:any, context: serverContext, _info: any) => {
+            let defaultLocale = "EN"
+
+            const unit = await context.dataSources.cosmos.run_query("System-Settings", {
+              query:  `
+                SELECT o.* FROM c
+                JOIN o in c.options
+                WHERE   c.id = "unit"
+                        o.id in @unit
+              `,
+              parameters: [
+                { name: "@unit", value: parent.unit}
+              ]
+            }, true)
+
+            return unit.map((unit) => {
+                return {
+                    id: unit.id, 
+                    defaultLabel: unit.localizations.filter((x: any) => x.locale == defaultLocale)[0].value,
+                    otherLocales: unit.localizations.filter((x: any) => x.locale != defaultLocale),
+                    status: unit.status
+                }
+            })
+        },
+        timeFrame: async(parent: { timeFrame: string[] }, _args:any, context: serverContext, _info: any) => {
+                let defaultLocale = "EN"
+    
+                const timeFrame = await context.dataSources.cosmos.run_query("System-Settings", {
+                  query:  `
+                    SELECT o.* FROM c
+                    JOIN o in c.options
+                    WHERE   c.id = "timeFrame"
+                            o.id in @timeFrame
+                  `,
+                  parameters: [
+                    { name: "@timeFrame", value: parent.timeFrame}
+                  ]
+                }, true)
+    
+                return timeFrame.map((timeFrame) => {
+                    return {
+                        id: timeFrame.id, 
+                        defaultLabel: timeFrame.localizations.filter((x: any) => x.locale == defaultLocale)[0].value,
+                        otherLocales: timeFrame.localizations.filter((x: any) => x.locale != defaultLocale),
+                        status: timeFrame.status
+                    }
+                })
+        },
+        activity: async (_: any, args: any, context : serverContext) => {
+            var parameters = [{ name: "@vendorId", value: args.vendorId}]
+            var whereConditions = ["l.vendorId = @vendorId"]
+            
+            if (args.listingId != null) {
+                whereConditions.push("l.listingId = @listingId")
+                parameters.push({ name: "@listingId", value: args.listingId})
+            }
+            if (args.activityId != null) {
+                whereConditions.push("a.id = @activityId")
+                parameters.push({ name: "@activityId", value: args.activityId})
+            }
+            
+            var query = `  SELECT a.* FROM c JOIN l in c.activityLists JOIN a in l.activities WHERE ${whereConditions.join(" AND ")}`
+
+            var activities = await context.dataSources.cosmos.run_query("Main-Listing", {query, parameters}, true)
+
+            return activities
+        }
+    },
+    TourBooking: {
+        ref: async (parent: any, _: any, _context: serverContext) => {
+            return {
+                id: parent.id, partition: ["TOUR", parent.customerEmail], container: "Main-Bookings"
+            }
+        },
+        order: async (parent: any, _:any, context: serverContext) => {
+            let orderResp = await context.dataSources.cosmos.run_query<order_type>("Main-Orders", {
+                query: `
+                        SELECT VALUE c
+                        FROM c 
+                        JOIN l in c.lines 
+                        WHERE l.target = "TOUR-BOOKING" 
+                            and l.forObject.id = @bookingId`,
+                parameters: [
+                    { name: '@bookingId', value: parent.id }
+                ]
+            }, true)
+
+            if (orderResp.length == 0) {
+                return null;
+            } else {
+                return orderResp[0]
+            }
+        },
+        sessions: async (parent: any, _:any, context: serverContext) => {
+
+            let orderResp = await context.dataSources.cosmos.run_query<{
+                lines: unknown
+            }>("Main-Orders", {
+                query: `
+                        SELECT VALUE c
+                        FROM c 
+                        JOIN l in c.lines 
+                        WHERE l.target = "TOUR-BOOKING" 
+                            and l.forObject.id = @bookingId`,
+                parameters: [
+                    { name: '@bookingId', value: parent.id }
+                ]
+            }, true)
+
+            if (orderResp.length == 0) {
+                return parent.sessions;
+            }
+
+            // otherwise we can return the order
+            const order = orderResp[0];
+            const lines = order.lines as orderLine_tourBooking_type[]
+            
+            const sessions = parent.sessions.map((session) => {
+                return {
+                    ...session,
+                    tickets: session.tickets.map((ticket) => {
+                        const {id, ...line} = lines.find(x => 
+                            x.ticketId == ticket.id 
+                            && x.sessionRef.id == session.ref.id 
+                            && partitionsEqual(session.ref.partition, x.sessionRef.partition)
+                        )
+                        return {
+                            ...ticket,
+                            ...line
+                        }
+                    })
+                }
+            })
+
+            return sessions
+            
+        },
+        lastMessage: async (parent: any, _: any, context: serverContext) => {
+            if (parent.lastMessageRef == null) return null
+            return await context.dataSources.cosmos.get_record<message_type>("Main-Message", parent.lastMessageRef.id, parent.lastMessageRef.partition)
+        },
+        user: async (parent: any, _: any, context: serverContext) => {
+            return await context.dataSources.cosmos.get_record("Main-User", parent.userId, parent.userId)
+        },
+        payment_link: async (parent: any, _: any, _context: serverContext) => {
+            if(parent.stripe == null || parent.stripe.paymentIntentId == null) return null;
+            return `pay/booking/${parent.stripe.paymentIntentId}`
+        }
+    },
+    AssignedTicket: {     
+        price: async (parent: any, _: any, ___: serverContext) => {
+            if (parent.price_log == undefined || parent.price_log.length == 0) return null;
+            const amount = parent.price_log
+                .filter(x => x.status !== "failed")
+                .reduce((prev, curr) => prev + (curr.price.quantity * curr.price.amount), 0)
+            return {
+                amount,
+                currency: parent.price_log[0].price.currency
+            }
+        },
+        status: async (parent: any, _: any, ___: serverContext) => {
+            return parent.status_log[0];
+        }
+    }
+}
+
+const hydrate_session_dates = async (parent: any, args: any, { userId, dataSources: { cosmos }, logger}: serverContext) => {
+
+    let sessions = [] as session_type[];
+    let months = [] as number[];
+
+    if (args.from != undefined) {
+
+        var from = DateTime.fromJSDate(args.from)
+        var to = args.to == null ? from.plus({ years: 1 }) : DateTime.fromJSDate(args.to)
+        logger.logMessage(`Deriving sessions from date range ${from.toLocaleString()} to ${to.toLocaleString()}`)            
+
+        //1. We look at all existing sessions
+        // we also need to get any sessions already defined in Tour-Sessions that finish after the from date and before the to date
+        logger.logMessage(`Finding existing sessions in cosmos`)
+        filter = ["WHERE CONCAT(c.date, 'T',c.time['start']) >= @start AND CONCAT(c.date, 'T', c.time['end']) <= @end"]
+        parameters = [
+            { name: "@start", value: from.toISO() },
+            { name: "@end", value: to.toFormat("yyyy-MM-dd") + "T23:59:59" + to.toFormat("ZZ") }
+        ]
+        
+        if (args.listingId != null) {
+            parameters.push({ name: "@listingId", value: args.listingId})
+            filter.push("c.forObject.id = @listingId")
+            parameters.push({ name: "@vendorId", value: args.vendorId})
+            filter.push("c.forObject.partition = @vendorId")
+        } else {
+            if (args.vendorId != null) {
+                parameters.push({ name: "@vendorId", value: args.vendorId})
+                filter.push("c.forObject.partition = @vendorId")
+            }
+        }
+
+        var query = `SELECT * FROM c ${filter.join(" AND ")}`
+        var existingSessions =
+        (await cosmos.run_query<session_type>("Tour-Session", {
+            query,
+            parameters
+        }))
+        sessions.push(...existingSessions)
+
+        //2. We look at all schedules
+
+        // lets work out all the months in between from and to
+        const interval = Interval.fromDateTimes(from, to);
+        months = interval.splitBy({ months: 1 }).map(x => x.start.month);
+
+    } else if (args.date != undefined) {
+        // we just have the date
+
+        var date = DateTime.fromJSDate(args.date)
+        logger.logMessage(`Deriving sessions from date ${date.toLocaleString()}`)
+
+        //1. We look at all existing sessions
+        //1. We look at all existing sessions
+        // we also need to get any sessions already defined in Tour-Sessions that finish after the from date and before the to date
+        logger.logMessage(`Finding existing sessions in cosmos`)
+        filter = ["WHERE c.date = @date "]
+        parameters = [
+            { name: "@date", value: date.toISODate() }
+        ]
+        
+        if (args.listingId != null) {
+            parameters.push({ name: "@listingId", value: args.listingId})
+            filter.push("c.forObject.id = @listingId")
+            parameters.push({ name: "@vendorId", value: args.vendorId})
+            filter.push("c.forObject.partition = @vendorId")
+        } else {
+            if (args.vendorId != null) {
+                parameters.push({ name: "@vendorId", value: args.vendorId})
+                filter.push("c.forObject.partition = @vendorId")
+            }
+        }
+
+        var query = `SELECT * FROM c ${filter.join(" AND ")}`
+        var existingSessions =
+        (await cosmos.run_query<session_type>("Tour-Session", {
+            query,
+            parameters
+        }))
+        sessions.push(...existingSessions)
+
+        //2. We look at all schedules
+
+        // lets work out all the months in between from and to
+        months = [date.month]
+
+    } else {
+        throw "You must provide a date, or a date range"
+    }
+
+    // great now in cosmos we need to find all the listingSchedules which have any of these months
+    logger.logMessage(`Finding schedules for months ${months.join(",")} in cosmos`)
+    var parameters: { name: string, value: any}[] = [{ name: "@months", value: months }]
+    var filter = ["WHERE EXISTS (SELECT VALUE z FROM z in c.months WHERE ARRAY_CONTAINS(@months, z))"]
+    if (args.vendorId != null) {
+        filter.push("c.vendorId = @vendorId")
+        parameters.push({ name: "@vendorId", value: args.vendorId})
+    }
+    
+    var schedules = await cosmos.run_query<listingSchedule_type>("Main-ListingSchedules", {
+        query: `SELECT * FROM c ${filter.join(" AND ")}`,
+        parameters             
+    })
+    logger.logMessage(`Found ${schedules.length} schedules`)
+
+    // logger.logMessage(`Deriving sessions from schedules`)
+    for (var schedule of schedules) {
+        var listing = await cosmos.get_record<tour_type>("Main-Listing", schedule.listingId, schedule.vendorId)
+        var activityList = listing.activityLists.find((x: any) => x.id == schedule.activityListId)
+        if (activityList == null) throw new Error("Activity list not found")
+        
+        if (schedule.dates != null) {
+
+            // determine the valid dates
+
+            let validDates : string[] = []
+            if (args.date != undefined) {
+                validDates = schedule.dates
+                    .filter((x: string) => x == date.toISODate())
+                    .filter((x: string) => existingSessions.find((y: session_type) => y.date == x && y.fromSchedule != null && y.fromSchedule.id == schedule.id) == null)
+            } else {
+                validDates = schedule.dates
+                    .filter((x: string) => from <= DateTime.fromISO(x) && DateTime.fromISO(x) <= to)
+                    .filter((x: string) => existingSessions.find((y: session_type) => y.date == x && y.fromSchedule != null && y.fromSchedule.id == schedule.id) == null)
+            }
+            
+            // if we have no valid dates then we can skip this schedule
+            if (validDates.length == 0) continue;
+
+            const newSessionsAsync = validDates.map(async (date: any) => {
+                const id = uuidv4()
+                const startTime = DateTime.fromISO(date + "T" + activityList?.activities[0].time)
+                const endTime = DateTime.fromISO(date + "T" + activityList?.activities[activityList.activities.length - 1].time)
+                const duration_ms = endTime.toMillis() - startTime.toMillis()
+                return {
+                    id,
+                    sessionTitle: listing.name,
+                    code: "",
+                    ref: {
+                        id,
+                        partition: [schedule.vendorId, schedule.listingId],
+                        container: "Tour-Session"
+                    },
+                    forObject: {
+                        partition: schedule.vendorId,
+                        id: schedule.listingId,
+                        container: "Main-Listing"
+                    },
+                    date,
+                    time: {
+                        start: activityList?.activities[0].time,
+                        end: activityList?.activities[activityList.activities.length - 1].time,
+                        duration_ms
+                    }, 
+                    fromSchedule: {
+                        partition: [schedule.vendorId],
+                        id: schedule.id,
+                        container: "Main-ListingSchedules"
+                    },
+                    capacity: { max: 10 },
+                    activityListId: schedule.activityListId,
+                    ticketListId: schedule.ticketListId, 
+                    announcements: [],
+                    bookings: []
+                } as session_type
+            })
+            const newSessions = await Promise.all(newSessionsAsync)
+
+            for (var newSession of newSessions) {
+                newSession.code = await cosmos.generate_unique_code("TS", async () => {
+                    const existingCodes = await cosmos.run_query("Tour-Session", {
+                        query: `SELECT VALUE s.code FROM s WHERE s.forObject.id = @tourId`,
+                        parameters: [{name: "@tourId", value: listing.id}]
+                    }, true)
+                    return existingCodes;
+                })
+
+                await cosmos.add_record("Tour-Session", 
+                {...newSession, ttl: Duration.fromObject({ days: 1 }).as("seconds")}, 
+                [schedule.vendorId, schedule.id], userId ?? "SYSTEM")
+            }
+            sessions.push(...newSessions)
+
+        }
+        else if (schedule.recurrenceRule != null) {
+            // var dates = rrulestr(schedule.recurrenceRule).between(from.toJSDate(), to.toJSDate())
+            //     .filter(x => existingSessions.find((y: session_type) => y.timeline.start == DateTime.fromJSDate(x).toFormat("yyyy-MM-dd") + "T" + activityList?.activities[0].time && y.fromSchedule != null && y.fromSchedule.id == schedule.id) == null)
+            // const newSessions = dates.map((date: Date) => {
+            //     const id = uuidv4()
+            //     return {
+            //         id,
+            //         sessionTitle: listing.title,
+            //         ref: {
+            //             id,
+            //             partition: [schedule.vendorId, schedule.listingId],
+            //             container: "Tour-Session"
+            //         },
+            //         forObject: {
+            //             partition: schedule.vendorId,
+            //             id: schedule.listingId,
+            //             container: "Main-Listing"
+            //         },
+            //         timeline: {
+            //             start: date + "T" + activityList?.activities[0].time,
+            //             finish: date + "T" + activityList?.activities[activityList.activities.length - 1].time
+            //         }, 
+            //         activityListId: activityList?.id as string,
+            //         fromSchedule: {
+            //             partition: [schedule.vendorId],
+            //             id: schedule.id,
+            //             container: "Main-ListingSchedules"
+            //         },
+            //         capacity: { max: 10 },
+            //         announcements: [],
+            //         ttl: Duration.fromObject({ days: 1 }).as("seconds")
+            //     }
+            // })
+            // for (var newSession of newSessions) {
+            //     await dataSources.cosmos.add_record("Tour-Session", newSession, [schedule.vendorId, schedule.id], userId)
+            // }
+        }
+    }
+
+    return sessions;
+}
+
+export {resolvers}

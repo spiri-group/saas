@@ -1,0 +1,156 @@
+enum FeaturingRequestStatus {
+    PENDING
+    ACCEPTED
+    REJECTED
+    EXPIRED
+    TERMINATED
+}
+
+enum FeaturingType {
+    FULL_PROFILE
+    SELECTED_SERVICES
+}
+
+"""Time slot with start and end times"""
+type FeaturingTimeSlot {
+    start: String!
+    end: String!
+}
+
+"""Schedule for a specific day of the week"""
+type FeaturingScheduleWeekday {
+    day: Int!
+    dayName: String!
+    enabled: Boolean!
+    timeSlots: [FeaturingTimeSlot]!
+}
+
+"""Date override for blocking or custom hours"""
+type FeaturingDateOverride {
+    date: String!
+    type: String!
+    timeSlots: [FeaturingTimeSlot]
+    reason: String
+}
+
+"""Store-specific schedule for a featuring relationship"""
+type FeaturingSchedule {
+    scheduleMode: String!
+    timezone: String!
+    weekdays: [FeaturingScheduleWeekday]
+    dateOverrides: [FeaturingDateOverride]
+    bufferMinutes: Int
+    advanceBookingDays: Int
+}
+
+"""Delivery context for a featuring relationship"""
+type FeaturingDeliveryContext {
+    inStore: Boolean!
+    online: Boolean!
+    storeLocation: GooglePlace
+}
+
+"""Service price override for store-specific pricing"""
+type FeaturingServicePriceOverride {
+    serviceId: ID!
+    serviceName: String!
+    overrideType: String!
+    fixedPrice: CurrencyAmount
+    ratePerHour: CurrencyAmount
+}
+
+"""Featuring relationship between a merchant and a practitioner"""
+type FeaturingRelationship {
+    id: ID!
+    merchantId: ID!
+    practitionerId: ID!
+    merchantName: String!
+    merchantSlug: String!
+    merchantLogo: String
+    practitionerName: String!
+    practitionerSlug: String!
+    practitionerHeadline: String
+    practitionerAvatar: String
+    featuringType: FeaturingType!
+    featuredServiceIds: [ID]
+    """Revenue share for merchant in basis points (1500 = 15%)"""
+    merchantRevenueShareBps: Int!
+    """Revenue share for practitioner in basis points (8500 = 85%)"""
+    practitionerRevenueShareBps: Int!
+    requestStatus: FeaturingRequestStatus!
+    requestedAt: DateTime!
+    respondedAt: DateTime
+    terminatedAt: DateTime
+    terminatedBy: String
+    terminationReason: String
+    requestMessage: String
+    responseMessage: String
+    storeSchedule: FeaturingSchedule
+    deliveryContext: FeaturingDeliveryContext
+    servicePriceOverrides: [FeaturingServicePriceOverride]
+    displayOrder: Int
+    highlighted: Boolean
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+"""Featured practitioner with resolved services"""
+type FeaturedPractitioner {
+    relationship: FeaturingRelationship!
+    practitioner: Vendor!
+    services: [Service]!
+}
+
+"""Featured service with practitioner info"""
+type FeaturedService {
+    relationship: FeaturingRelationship!
+    service: Service!
+    practitioner: Vendor!
+}
+
+"""Discovered practitioner with service metadata"""
+type DiscoveredPractitionerEntry {
+    practitioner: Vendor!
+    serviceCount: Int!
+    priceRange: PriceRange
+}
+
+"""Price range for a practitioner's services"""
+type PriceRange {
+    min: CurrencyAmount
+    max: CurrencyAmount
+}
+
+"""Response for practitioner discovery"""
+type PractitionerDiscoveryResponse {
+    practitioners: [DiscoveredPractitionerEntry]!
+    totalCount: Int!
+    hasMore: Boolean!
+}
+
+type Query {
+    """Get all featuring relationships for a merchant (as the featuring merchant)"""
+    merchantFeaturingRelationships(merchantId: ID!): [FeaturingRelationship]!
+
+    """Get all featuring relationships for a practitioner (where they are featured)"""
+    practitionerFeaturingRelationships(practitionerId: ID!): [FeaturingRelationship]!
+
+    """Get pending featuring requests for a practitioner to review"""
+    pendingFeaturingRequests(practitionerId: ID!): [FeaturingRelationship]!
+
+    """Get active featured practitioners for a merchant's shopfront (public)"""
+    featuredPractitioners(merchantId: ID!): [FeaturedPractitioner]!
+
+    """Get featured services for a merchant's shopfront (flattened view)"""
+    featuredServices(merchantId: ID!): [FeaturedService]!
+
+    """Browse practitioners available for featuring (discovery)"""
+    discoverPractitioners(
+        merchantId: ID!
+        modalities: [String]
+        specializations: [String]
+        search: String
+        limit: Int
+        offset: Int
+    ): PractitionerDiscoveryResponse!
+}

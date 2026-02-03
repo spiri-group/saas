@@ -1,0 +1,121 @@
+type Query {
+    """Get a single platform alert by ID"""
+    platformAlert(id: ID!): PlatformAlert
+
+    """Get platform alerts with filtering and pagination"""
+    platformAlerts(
+        alertStatuses: [AlertStatusEnum]
+        severities: [AlertSeverityEnum]
+        alertTypes: [AlertTypeEnum]
+        searchTerm: String
+        dateFrom: DateTime
+        dateTo: DateTime
+        limit: Int
+        offset: Int
+    ): PlatformAlertsResponse!
+
+    """Get dashboard statistics for platform alerts"""
+    platformAlertStats: PlatformAlertStats!
+}
+
+type PlatformAlert {
+    id: ID!
+    code: String!
+    alertType: AlertTypeEnum!
+    severity: AlertSeverityEnum!
+    alertStatus: AlertStatusEnum!
+    title: String!
+    message: String!
+
+    # Affected parties
+    customerId: String
+    customerEmail: String
+    merchantId: String
+    customer: User
+    merchant: Vendor
+
+    # Context
+    context: AlertContext
+
+    # Source
+    source: AlertSource!
+
+    # Workflow
+    assigneeId: String
+    assignee: User
+    resolutionNotes: String
+    resolvedAt: DateTime
+    dismissedAt: DateTime
+
+    # Standard fields
+    createdDate: DateTime!
+    updatedDate: DateTime
+    ref: RecordRef!
+}
+
+type AlertContext {
+    orderId: String
+    setupIntentId: String
+    errorMessage: String
+    url: String
+    stackTrace: String
+    userAgent: String
+    additionalData: JSON
+}
+
+type AlertSource {
+    component: String!
+    environment: String!
+    version: String
+}
+
+type PlatformAlertsResponse {
+    alerts: [PlatformAlert]!
+    totalCount: Int!
+    hasMore: Boolean!
+}
+
+type PlatformAlertStats {
+    total: Int!
+    byStatus: AlertStatusCounts!
+    bySeverity: AlertSeverityCounts!
+}
+
+type AlertStatusCounts {
+    new: Int!
+    investigating: Int!
+    awaitingResponse: Int!
+    resolved: Int!
+    dismissed: Int!
+}
+
+type AlertSeverityCounts {
+    low: Int!
+    medium: Int!
+    high: Int!
+    critical: Int!
+}
+
+enum AlertTypeEnum {
+    PAYMENT_TIMEOUT
+    WEBHOOK_FAILURE
+    ORDER_ERROR
+    FRONTEND_ERROR
+    BACKEND_ERROR
+    INTEGRATION_ERROR
+}
+
+enum AlertSeverityEnum {
+    LOW
+    MEDIUM
+    HIGH
+    CRITICAL
+}
+
+enum AlertStatusEnum {
+    NEW
+    INVESTIGATING
+    AWAITING_RESPONSE
+    RESOLVED
+    DISMISSED
+}

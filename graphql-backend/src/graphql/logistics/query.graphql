@@ -1,0 +1,230 @@
+type Query {
+  availableBoxSizes(merchantId: ID!): [BoxSize!]!
+  delivery(
+    orderRef: RecordRefInput!
+    shipmentId: ID!
+  ): Shipment
+  deliveries(
+    merchantId: ID!
+    statusCode: String
+    fromDate: DateTime
+    toDate: DateTime
+  ): [Shipment!]!
+}
+
+type Shipment {
+  orderRef: RecordRef!
+  id: ID!
+  code: String!
+  sendTo: ShipmentAddress!
+  sendFrom: ShipmentAddress!
+  carrierOptions: [EstimateRecord!]!
+  carrierInfo: CarrierInfo!
+  configuration: PackedBoxConfiguration
+  finalizedConfiguration: PackedBoxConfiguration
+
+  trackingStatus: TrackingEvent
+  trackingEvents: [TrackingEvent!]
+  label: LabelInfo
+}
+
+type TrackingEvent {
+  occurred_at: DateTime!
+  carrier_occurred_at: DateTime
+  description: String
+  city_locality: String
+  state_province: String
+  postal_code: String
+  country_code: String
+  company_name: String
+  signer: String
+  event_code: String
+  event_description: String
+  carrier_detail_code: String
+  status_code: String
+  status_description: String
+  latitude: Float
+  longitude: Float
+  lastUpdatedAt: DateTime
+
+  location: String
+}
+
+
+type ShipmentAddress {
+  id: String!
+  name: String 
+  city: String
+  country: String!
+  line1: String!
+  line2: String
+  postal_code: String!
+  state: String!
+  vendorId: String  
+}
+
+type RateDetail {
+  rate_detail_type: String!
+  carrier_description: String!
+  carrier_billing_code: String!
+  carrier_memo: String
+  amount: CurrencyAmount!
+  billing_source: String!
+}
+
+type EstimateRecord {
+  rate_id: String!
+  rate_type: String!
+  carrier_id: String!
+  shipping_amount: CurrencyAmount!
+  insurance_amount: CurrencyAmount!
+  confirmation_amount: CurrencyAmount!
+  other_amount: CurrencyAmount!
+  requested_comparison_amount: CurrencyAmount!
+  rate_details: [RateDetail!]!
+  tax_amount: CurrencyAmount!
+  total_rate: CurrencyAmount!
+  stripe_fee: CurrencyAmount!
+  zone: String
+  package_type: String
+  delivery_days: Int
+  guaranteed_service: Boolean!
+  estimated_delivery_date: String
+  carrier_delivery_days: Int
+  ship_date: String!
+  negotiated_rate: Boolean!
+  service_type: String!
+  service_code: String!
+  trackable: Boolean!
+  carrier_code: String!
+  carrier_nickname: String!
+  carrier_friendly_name: String!
+  validation_status: String!
+  warning_messages: [String!]!
+  error_messages: [String!]!
+}
+
+type CarrierInfo {
+  rate_id: String!
+  code: String!
+  name: String!
+  service: CarrierService!
+}
+
+type CarrierService {
+  code: String!
+  name: String!
+  delivery_days: Int!
+}
+
+type PackedBoxConfiguration {
+
+  boxes: [PackedBoxConfigurationDetails]!
+  pricing: PackedBoxPricing!
+}
+
+type PackedBoxPricing {
+  tax_amount: CurrencyAmount!
+  subtotal_amount: CurrencyAmount!
+}
+
+type PackedBoxConfigurationDetails {
+  id: String!
+  code: String!
+  name: String!
+  label: LabelInfo
+  dimensions_cm: VariantDimensions!
+  max_weight_kg: Float!
+  volume: Float!
+  items: [PackedItem]!
+  used_volume: Float!
+  used_weight: Float!
+}
+
+type HarmonizedTariffCode {
+  hsCode: String
+  formattedHsCode: String
+  description: String
+}
+
+type PackedItem {
+  id: String!
+  forObject: RecordRef!
+  variantId: String!
+  name: String!
+  quantity: Float!
+  price: CurrencyAmount!
+  tax_code: String
+  country_of_manufacture: String
+  country_of_origin: String
+  harmonized_tariff_code: HarmonizedTariffCode
+  dimensions: VariantDimensions
+  weight: VariantWeight
+}
+
+type BoxSize {
+  label: String!
+  dimensions_cm: Dimensions!
+  max_weight_kg: Float!
+}
+
+type Dimensions {
+  depth: Float!
+  width: Float!
+  height: Float!
+}
+
+type FinalizedShipmentResult {
+  shipmentId: ID!
+  label: LabelInfo!
+  wasDeviated: Boolean!
+  deviationType: String
+}
+
+type LabelInfo {
+  label_id: String!
+  status: String
+  tracking_number: String
+  tracking_status: String
+  tracking_url: String
+  shipment_id: String
+  ship_date: DateTime
+  created_at: DateTime
+  is_return_label: Boolean
+  is_international: Boolean
+  carrier_id: String
+  carrier_code: String
+  service_code: String
+  label_format: String
+  label_layout: String
+  confirmation: String
+  shipment_cost: CurrencyAmount
+  insurance_cost: CurrencyAmount
+  rate_details: [RateDetail!]
+  label_download: LabelDownloadFormats!
+  packages: [LabelPackageInfo!]!
+  # Auto-refund safety tracking
+  paid_at: DateTime
+  delivered_at: DateTime
+  auto_refund_deadline: DateTime
+  label_cost_refund_deadline: DateTime
+  auto_processed: Boolean
+  auto_processed_at: DateTime
+  label_cost_refunded: Boolean
+  label_cost_refunded_at: DateTime
+}
+
+type LabelPackageInfo {
+  package_id: String!
+  tracking_number: String
+  label_download: LabelDownloadFormats!
+  weight: VariantWeight
+  dimensions: VariantDimensions
+  sequence: Int
+}
+
+type LabelDownloadFormats {
+  pdf: String
+  png: String
+  zpl: String
+}

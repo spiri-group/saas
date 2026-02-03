@@ -1,0 +1,89 @@
+extend type Mutation {
+  # Create a reading request (returns checkout URL for payment)
+  createReadingRequest(input: CreateReadingRequestInput!): CreateReadingRequestResponse!
+
+  # Mark request as paid (called by webhook, but can be manual for testing)
+  markReadingRequestPaid(requestId: ID!): ReadingRequestResponse!
+
+  # Claim a request from the bank (merchant)
+  claimReadingRequest(input: ClaimReadingRequestInput!): ReadingRequestResponse!
+
+  # Fulfill a reading request (merchant submits the reading)
+  fulfillReadingRequest(input: FulfillReadingRequestInput!): ReadingRequestResponse!
+
+  # Cancel a reading request (user, before claimed)
+  cancelReadingRequest(requestId: ID!, userId: ID!): ReadingRequestResponse!
+
+  # Release a claimed request back to the bank (merchant can't complete)
+  releaseReadingRequest(requestId: ID!, readerId: ID!): ReadingRequestResponse!
+
+  # Submit a review for a fulfilled reading (user)
+  reviewReadingRequest(input: ReviewReadingRequestInput!): ReviewReadingRequestResponse!
+}
+
+input CreateReadingRequestInput {
+  userId: ID!
+  spreadType: SpreadType!
+  topic: String!
+  context: String
+  paymentMethodId: String # If provided, use existing saved card instead of creating setup intent
+}
+
+input ClaimReadingRequestInput {
+  requestId: ID!
+  readerId: ID!
+}
+
+input FulfillReadingRequestInput {
+  requestId: ID!
+  readerId: ID!
+  photoUrl: String!
+  cards: [ReadingCardInput!]!
+  overallMessage: String
+}
+
+input ReadingCardInput {
+  name: String!
+  reversed: Boolean!
+  position: String!
+  interpretation: String!
+}
+
+type CreateReadingRequestResponse {
+  success: Boolean!
+  message: String
+  readingRequest: ReadingRequest
+  checkoutUrl: String # Stripe checkout URL
+}
+
+type ReadingRequestResponse {
+  success: Boolean!
+  message: String
+  readingRequest: ReadingRequest
+}
+
+# Review input for rating a reading
+input ReviewReadingRequestInput {
+  requestId: ID!
+  userId: ID!
+  rating: Int! # 1-5 stars
+  headline: String!
+  text: String!
+}
+
+type ReviewReadingRequestResponse {
+  success: Boolean!
+  message: String
+  review: ReadingReview
+}
+
+# Review type for a reading
+type ReadingReview {
+  id: ID!
+  rating: Int!
+  headline: String!
+  text: String!
+  createdAt: String!
+  userId: ID!
+  userName: String
+}

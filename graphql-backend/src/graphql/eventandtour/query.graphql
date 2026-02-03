@@ -1,0 +1,327 @@
+type Query {
+  tour(id: ID!, vendorId: ID!): Tour
+  activityLists(listingId: ID!, vendorId: ID!, scheduleIds: [String]) : [ActivityList]
+  activity(id: ID!): Activity
+  session(vendorId: ID!, listingId: ID!, sessionId: ID!): Session,
+  sessionBooking(sessionRef: RecordRefInput!, bookingRef: RecordRefInput!): TourBooking,
+  sessionsSummary(vendorId: ID, listingId: ID, date: Date, from: DateTime, to: DateTime, ticketsRequired: Int): [SessionDateSummary],
+  sessions(vendorId: ID, listingId: ID, date: Date, from: DateTime, to: DateTime, skip: Int, take: Int, ticketsRequired: Int): [Session]
+  messages(forObject: RecordRefInput!): [Message]
+  find_booking_via_paymentIntentId(id: String): TourBooking
+  bookingPayments: [BookingPayment]
+  tourBookings(userId: ID, vendorId: ID): [TourBooking]
+  tourBooking(userId: ID!, bookingId: ID!): TourBooking
+  # Booking lookup by code (for check-in)
+  bookingByCode(code: String!, vendorId: ID!): TourBookingWithDetails
+  vendorEvents(vendorId: ID!): [VendorEvent]
+  vendorEvent(id: ID!): VendorEvent
+  nextVendorEvent(vendorId: ID!): VendorEvent
+  # Waitlist queries
+  waitlistStatus(sessionRef: RecordRefInput!, customerEmail: String): WaitlistStatusResponse
+  myWaitlistEntries(customerEmail: String!, vendorId: ID!): [WaitlistEntry]
+  # Tour analytics
+  tourAnalytics(vendorId: ID!, dateRange: DateRangeInput): TourAnalytics
+  # Public booking lookup (no auth required - for customer self-cancellation portal)
+  publicBookingByCode(code: String!, merchantSlug: String!): PublicBookingDetails
+}
+
+type Tour {
+  id: ID!
+  name: String!
+  country: String
+  description: String
+  terms: String
+  timezone: TimeZone
+  faq: [FAQ]
+  thumbnail: Thumbnail
+  ticketVariants: [TourTicketVariant!]!
+  activityList(id: ID!) : ActivityList
+  activityLists: [ActivityList]
+  productReturnPolicyId: ID
+  productReturnPolicy: ProductReturnPolicy
+  ref: RecordRef
+}
+
+type TourTicketVariant {
+  id: ID!
+  name: String!
+  description: String
+  price: CurrencyAmount!
+  peopleCount: Int!
+  inventory: TourTicketInventory!
+}
+
+type TourTicketInventory {
+  qty_on_hand: Int!
+  qty_committed: Int!
+  qty_available: Int!
+  track_inventory: Boolean!
+  low_stock_threshold: Int
+  allow_backorder: Boolean
+  max_backorders: Int
+}
+
+type Activity {
+  id: ID!
+  name: String!
+  time: String!
+  location: GooglePlace!
+}
+
+type ActivityList {
+  id: ID!
+  name: String
+  activities: [Activity]
+  ref: RecordRef
+}
+
+type Session {
+  id: ID!
+  ref: RecordRef
+  sessionTitle: String!
+  code: String
+  forObject: RecordRef
+  date: Date
+  bookings: [TourBooking]
+  time: TimeRange
+  announcements: [Announcement]
+  activityListId: String!
+  activityList: ActivityList
+  capacity: Capacity
+  waitlistCount: Int
+}
+
+type SessionDateSummary {
+  date: Date!
+  numberOfSessions: Float,
+  attendanceRate: Float
+  overallCapacity: Float
+}
+
+type Capacity {
+  max: Int!
+  mode: String!
+  current: Int
+  remaining: Int
+}
+
+type CheckedInStatus {
+  datetime: DateTime!
+}
+
+type PaidStatus {
+  type: String
+  datetime: DateTime
+}
+
+type Announcement {
+  id: String!
+  time: Float
+  message: String!
+  activity: ActivityList
+  unit: UnitType
+  timeFrame: TimeFrameType
+}
+
+type BookingTicket {
+  id: ID!
+  variantId: ID!
+  person: String
+  quantity: Int!
+  price: CurrencyAmount!
+}
+
+type TourBooking {
+  id: ID!
+  code: String
+  stripe: StripeDetails
+  ref: RecordRef!
+  userId: ID!
+  vendorId: ID!
+  customerEmail: String
+  user: User
+  sessions: [SessionsOnBooking]!
+  ticketStatus: StatusType
+  datetime: DateTime
+  order: Order
+  orderId: ID
+  lastMessage: Message
+  lastMessageRef: RecordRef
+  notes: String
+  checkedIn: CheckedInStatus
+  paid: PaidStatus
+  payment_link: String
+  totalAmount: CurrencyAmount
+}
+
+type SessionsOnBooking {
+  index: Int!
+  tickets: [BookingTicket]!
+  ref: RecordRef!
+}
+
+type Spec {
+  from: Time
+  to: Time
+  capacity: Float
+}
+
+type BookingPayment {
+  tour: Tour
+  merchant: Vendor
+  stripe: StripeDetails
+  createdDate: DateTime!
+  type: String
+}
+
+type VendorEvent {
+  id: ID!
+  type: String!
+  vendorId: ID!
+  listingId: ID
+  title: String!
+  startAt: DateTime!
+  endAt: DateTime!
+  timezone: String!
+  location: VendorEventLocation!
+  visibility: String!
+  status: String!
+  tags: [String!]!
+  description: String
+  landscapeImage: Thumbnail
+  ttl: Int
+}
+
+type VendorEventLocation {
+  type: String!
+  address: GooglePlace
+  externalUrl: String
+}
+
+# Waitlist types
+type WaitlistEntry {
+  id: ID!
+  sessionRef: RecordRef!
+  tourRef: RecordRef!
+  customerEmail: String!
+  vendorId: ID!
+  sessionDate: String!
+  sessionTime: String!
+  tourName: String!
+  positionInQueue: Int!
+  dateJoined: DateTime!
+  ticketPreferences: [WaitlistTicketPreference!]!
+  notificationStatus: String!
+  notificationAttempts: Int!
+  lastNotificationAttempt: DateTime
+  notificationExpiry: DateTime
+  currentPosition: Int
+  session: Session
+  tour: Tour
+  ref: RecordRef!
+}
+
+type WaitlistTicketPreference {
+  variantId: ID!
+  quantity: Int!
+  notes: String
+}
+
+type WaitlistStatusResponse {
+  sessionId: ID!
+  totalInWaitlist: Int!
+  yourPosition: Int
+  isInWaitlist: Boolean!
+}
+
+# Extended booking type with session and tour details for check-in
+type TourBookingWithDetails {
+  id: ID!
+  code: String
+  stripe: StripeDetails
+  ref: RecordRef!
+  userId: ID!
+  vendorId: ID!
+  customerEmail: String
+  user: User
+  sessions: [SessionsOnBooking]!
+  ticketStatus: StatusType
+  datetime: DateTime
+  order: Order
+  orderId: ID
+  lastMessage: Message
+  lastMessageRef: RecordRef
+  notes: String
+  checkedIn: CheckedInStatus
+  paid: PaidStatus
+  payment_link: String
+  totalAmount: CurrencyAmount
+  # Additional details for check-in
+  sessionDetails: Session
+  tourDetails: Tour
+}
+
+# Tour Analytics Types
+input DateRangeInput {
+  from: String
+  to: String
+}
+
+type TourAnalytics {
+  totalBookings: Int!
+  totalRevenue: CurrencyAmount!
+  bookingsByStatus: BookingStatusCounts!
+  topTours: [TourBookingCount!]!
+  bookingsOverTime: [BookingsOverTimeEntry!]!
+  checkInRate: Float!
+  averageBookingValue: CurrencyAmount!
+}
+
+type BookingStatusCounts {
+  confirmed: Int!
+  pending: Int!
+  cancelled: Int!
+}
+
+type TourBookingCount {
+  tourId: ID!
+  tourName: String!
+  bookingCount: Int!
+  revenue: CurrencyAmount!
+}
+
+type BookingsOverTimeEntry {
+  date: String!
+  count: Int!
+  revenue: Float!
+}
+
+# Public booking types for customer self-cancellation portal
+type PublicBookingDetails {
+  code: String!
+  tourName: String!
+  sessionDate: String!
+  sessionTime: TimeRange
+  tickets: [PublicTicketInfo!]!
+  totalAmount: CurrencyAmount
+  canCancel: Boolean!
+  cancellationDeadline: String
+  cancellationPolicy: PublicCancellationPolicy
+  ticketStatus: String!
+  merchantName: String
+  merchantSlug: String
+}
+
+type PublicTicketInfo {
+  variantName: String!
+  quantity: Int!
+  price: CurrencyAmount!
+}
+
+type PublicCancellationPolicy {
+  title: String
+  fullRefundHours: Int
+  partialRefundHours: Int
+  partialRefundPercentage: Float
+  refundPercentage: Float
+}

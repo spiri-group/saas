@@ -1,0 +1,79 @@
+meta {
+  name: Print label
+  type: http
+  seq: 6
+}
+
+post {
+  url: https://api.shipengine.com/v1/labels
+  body: json
+  auth: inherit
+}
+
+headers {
+  API-key: TEST_LzMBK91WEaa8DERmuz5p5Wz1JrGEElpgeiaukkJLWlU
+}
+
+body:json {
+  {
+    "shipment": {
+      "carrier_id": "se-210493",
+      "service_code": "ups_express",
+      "ship_to": {
+        "name": "Travis Sansome",
+        "phone": "000 0000 0000",
+        "company_name": "",
+        "address_line1": "25 Moore Park Rd",
+        "city_locality": "Centennial Park",
+        "state_province": "NSW",
+        "country_code": "AU",
+        "postal_code": "2021",
+        "address_residential_indicator": "no"
+      },
+      "ship_from": {
+        "name": "Spiritual Encounters (NSW AU)",
+        "phone": "000 0000 0000",
+        "company_name": "",
+        "address_line1": "25 Moore Park Rd",
+        "city_locality": "Centennial Park",
+        "state_province": "NSW",
+        "country_code": "AU",
+        "postal_code": "2021",
+        "address_residential_indicator": "no"
+      },
+      "customs": {
+        "contents": "merchandise",
+        "non_delivery": "treat_as_abandoned",
+        "customs_items": [
+          {
+            "harmonized_tariff_code": "0901.21",
+            "country_of_manufacture": "US",
+            "country_of_origin": "US",
+            "quantity": 2,
+            "description": "rare books",
+            "value": {
+              "currency": "usd",
+              "amount": 1000
+            }
+          }
+        ]
+      },
+      "packages": [
+        {
+          "package_code": "package",
+          "weight": {
+            "unit": "kilogram",
+            "value": 23.75
+          },
+          "dimensions": {
+            "unit": "centimeter",
+            "length": 42.75,
+            "width": 33.25,
+            "height": 23.75
+          }
+        }
+      ]
+    }
+  }
+  
+}

@@ -1,0 +1,40 @@
+type Query {
+    comment(forObject: RecordRefInput!) : Comment,
+    replies(replyTo: RecordRefInput!) : [Comment]
+    comments(forObject: RecordRefInput!) : [Comment]
+    review(ref: RecordRefInput!) : Review
+}
+
+type Comment {
+  id: String
+  posted_by: CommentUser
+  text: String
+  status: String
+  type: CommentType
+  replies(limit: Int): [Comment],
+  replyCount: Int!,
+  likeCount: Int!
+  commentCount: Int!
+  liked: Boolean
+  createdDate: DateTime
+  ref: RecordRef
+  isReported: Boolean
+}
+
+type CommentUser {
+  id: String,
+  name: String,
+  isOwner: Boolean
+}
+
+type ConversationMessage {  
+  base: Comment
+  type: CommentType
+}
+
+type Review {
+  headline: String
+  base: Comment!
+  helped: Boolean
+  rating: Int!
+}

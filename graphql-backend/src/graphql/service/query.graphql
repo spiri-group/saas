@@ -1,0 +1,409 @@
+type Query {
+    service(id: ID, slug: String, vendorId: ID!): Service
+    services(merchantId: ID!): [Service]
+    myServicesSchedule(id: ID!, merchantId: ID!): ServicesSchedule
+    servicesCalendar(start: Date!, end: Date!, merchantId: ID!, listingIds: [ID]) : [ServicesCalendarDay],
+    serviceBookings(userId: ID, vendorId: ID): [ServiceBooking]
+    serviceBooking(userId: ID!, bookingId: ID!): ServiceBooking
+    servicePayments: [ServicePayment]
+
+    myServiceOrders(vendorId: ID!, status: String, category: String): [ServiceBooking!]!
+    customerServiceOrders(customerId: ID!, status: String): [ServiceBooking!]!
+    serviceOrderById(orderId: ID!): ServiceBooking
+    serviceCheckoutOrder(orderId: ID!): ServiceBooking
+}
+
+type Service  {
+  id: ID!
+  slug: String
+  vendorId: String
+  vendor: Vendor
+  name: String
+  type: String
+  description: String
+  duration: TimeSpan
+  thumbnail: Thumbnail
+  terms: String
+  faq: [FAQ]
+  ratePerHour: CurrencyAmount
+  availableUntil: AvailableUntil
+  ref: RecordRef
+  requireAppointment: Boolean
+  cancellationPolicyId: ID
+  cancellationPolicy: ServiceCancellationPolicy
+
+  # NEW - Async service fields
+  category: String
+  deliveryMode: String
+  bookingType: String
+  pricing: ServicePricing
+  turnaroundDays: Int
+  deliveryFormats: [ServiceDeliveryFormat]
+  addOns: [ServiceAddOn]
+  questionnaire: [ServiceQuestion]
+  targetTimezones: [String]
+  readingOptions: ReadingServiceOptions
+  healingOptions: HealingServiceOptions
+  coachingOptions: CoachingServiceOptions
+}
+
+type ServiceCancellationPolicy {
+  id: ID!
+  merchantId: String
+  serviceCategory: String
+  title: String
+  fullRefundHours: Int
+  partialRefundHours: Int
+  partialRefundPercentage: Float
+  noRefundHours: Int
+  allowRescheduling: Boolean
+  maxReschedules: Int
+  rescheduleMinHours: Int
+  createdDate: DateTime
+  updatedDate: DateTime
+}
+
+type ServiceDeliveryFormat {
+  format: String!
+  description: String
+}
+
+type ServicePricing {
+  type: String!
+  fixedPrice: CurrencyAmount
+  hourlyRate: CurrencyAmount
+  packages: [ServicePackage]
+}
+
+type ServicePackage {
+  name: String!
+  description: String
+  price: CurrencyAmount!
+  sessions: Int
+}
+
+type ServiceAddOn {
+  id: ID!
+  name: String!
+  description: String
+  price: CurrencyAmount!
+}
+
+type ServiceQuestion {
+  id: ID!
+  question: String!
+  type: String!
+  options: [String]
+  required: Boolean!
+  placeholder: String
+}
+
+type ReadingServiceOptions {
+  readingType: String
+  includePullCardSummary: Boolean
+  includeVoiceNote: Boolean
+  deckUsed: String
+  availableTopics: String
+  astrologyReadingTypes: [String]
+  houseSystem: String
+  requiresBirthTime: Boolean
+  focusAreas: String
+  customReadingDetails: String
+  preReadingQuestions: [PreReadingQuestion!]
+}
+
+type HealingServiceOptions {
+  modalities: [String]
+  sessionLength: Int
+  preparationInstructions: String
+}
+
+type CoachingServiceOptions {
+  specialties: [String]
+  sessionLength: Int
+  programLength: Int
+}
+
+type ServicesSchedule {
+  id: ID!
+  merchantId: ID!
+  name: String
+  ref: RecordRef
+  deliveryMethods: [DeliveryMethods]
+  country: String
+  timezone: TimeZone
+  table: [ScheduleAvailabilityTable]
+  dateOverrides: [ScheduleAvailabilityDateOverride]
+}
+
+type ServicePayment {
+  ref: RecordRef!
+  service: Service
+  stripe: StripeDetails
+  createdDate: DateTime!
+  type: String
+}
+
+type ScheduleAvailabilityTable {
+  weekday_configs: [WeekdayConfig]
+  start: Time
+  end: Time
+  duration_ms: Int
+}
+
+type WeekdayConfig {
+  weekday: [Weekday]
+  serviceIds: [ID] 
+  deliveryMethods: [DeliveryMethods]
+  discount: String
+}
+
+type Weekday {
+  day: String!
+  day_acronym: String
+  enabled: Boolean
+}
+
+type ServicesCalendarDay {
+  date: Date,
+  occurences: [ServicesCalendarOccurence]!
+}
+
+type ServicesCalendarOccurence {
+  time: TimeRange!,
+  serviceIds: [RecordRefWithName]!
+}
+
+type ServiceBooking {
+  id: ID!
+  date: Date
+  time: TimeRange
+  ref: RecordRef!
+  service: Service!
+  price: CurrencyAmount
+  stripe: StripeDetails
+
+  # NEW - Async order fields
+  customerId: ID
+  customerEmail: String
+  vendorId: ID
+  purchaseDate: DateTime
+  # Using "orderStatus" instead of "status" to avoid conflict with Cosmos soft-delete
+  orderStatus: String
+  questionnaireResponses: [QuestionResponse]
+  deliverables: ServiceDeliverables
+  packageInfo: PackageInfo
+
+  # Scheduled booking confirmation flow fields
+  confirmationStatus: String
+  confirmationDeadline: DateTime
+  confirmedDate: DateTime
+  rejectionReason: String
+  rejectedDate: DateTime
+  expiredDate: DateTime
+  cancelledDate: DateTime
+  cancelledBy: String
+  cancellationReason: String
+  meetingLink: String
+  meetingPasscode: String
+  stripePaymentIntentId: String
+  deliveryMethod: String
+  customerAddress: GooglePlace
+  practitionerAddress: String
+  remindersSent: BookingReminders
+  scheduledDateTime: ScheduledDateTime
+}
+
+type QuestionResponse {
+  questionId: ID!
+  question: String!
+  answer: String!
+}
+
+type ServiceDeliverables {
+  files: [DeliverableFile!]!
+  message: String
+  deliveredAt: DateTime
+}
+
+type DeliverableFile {
+  id: ID!
+  url: String!
+  signedUrl: String
+  name: String!
+  type: String!
+  mimeType: String!
+  size: Int!
+  uploadedAt: DateTime!
+}
+
+type PackageInfo {
+  totalSessions: Int!
+  completedSessions: Int!
+  remainingSessions: Int!
+}
+
+type DeliveryMethods {
+  inPerson: DeliveryMethodsInPerson
+  onlineMeeting: DeliveryMethodsOnlineMeeting
+  phoneCall: DeliveryMethodsPhoneCall
+}
+
+type DeliveryMethodsInPerson {
+  place: GooglePlace
+  buffer: TimeSpan
+  surcharge: CurrencyAmount
+}
+
+type DeliveryMethodsOnlineMeeting {
+  meeting_link: String,
+  meeting_passcode: String
+  buffer: TimeSpan
+  surcharge: CurrencyAmount
+}
+
+type DeliveryMethodsPhoneCall {
+  phoneNumber: String
+  buffer: TimeSpan
+  surcharge: CurrencyAmount
+}
+
+type AvailableUntil {
+  intoTheFuture: TimeSpan
+  range: DateFromTo
+  type: String
+}
+
+type DateFromTo {
+  from: DateTime
+  to: DateTime
+}
+
+type ScheduleAvailabilityDateOverride {
+  date: Date!,
+  times: TimeSpan
+}
+
+# Practitioner Availability & Live Booking Types
+
+type BookingReminders {
+  reminder24hSent: Boolean
+  reminder24hSentAt: DateTime
+  reminder1hSent: Boolean
+  reminder1hSentAt: DateTime
+}
+
+type ScheduledDateTime {
+  date: String!
+  time: TimeRange!
+  practitionerTimezone: String!
+  customerTimezone: String
+  utcDateTime: String!
+}
+
+type PractitionerWeekday {
+  day: Int!
+  dayName: String!
+  enabled: Boolean!
+  timeSlots: [TimeSlotConfig!]!
+}
+
+type TimeSlotConfig {
+  id: ID!
+  start: String!
+  end: String!
+  location: GooglePlace
+}
+
+type DateOverride {
+  date: String!
+  type: String!
+  timeSlots: [TimeSlotSimple]
+  reason: String
+}
+
+type TimeSlotSimple {
+  start: String!
+  end: String!
+  location: GooglePlace
+}
+
+type OnlineDeliverySettings {
+  enabled: Boolean!
+  defaultMeetingLink: String
+}
+
+type AtPractitionerDeliverySettings {
+  enabled: Boolean!
+  location: GooglePlace
+  displayArea: String
+}
+
+type MobileDeliverySettings {
+  enabled: Boolean!
+  serviceRadiusKm: Float
+  travelSurcharge: CurrencyAmount
+  baseLocation: GooglePlace
+}
+
+type DeliveryMethodsConfig {
+  online: OnlineDeliverySettings!
+  atPractitionerLocation: AtPractitionerDeliverySettings!
+  mobile: MobileDeliverySettings!
+}
+
+type PractitionerSchedule {
+  id: ID!
+  practitionerId: ID!
+  timezone: String!
+  country: String!
+  weekdays: [PractitionerWeekday!]!
+  dateOverrides: [DateOverride!]!
+  serviceIds: [ID!]!
+  bufferMinutes: Int!
+  advanceBookingDays: Int!
+  minimumNoticeHours: Int!
+  deliveryMethods: DeliveryMethodsConfig!
+  ref: RecordRef!
+}
+
+type AvailableSlot {
+  start: String!
+  end: String!
+  startUtc: String!
+  endUtc: String!
+}
+
+type AvailableDay {
+  date: String!
+  dayName: String!
+  slots: [AvailableSlot!]!
+}
+
+# Extend Query with practitioner availability queries
+extend type Query {
+  # Practitioner fetches own schedule
+  myPractitionerSchedule(practitionerId: ID!): PractitionerSchedule
+
+  # Customer fetches available slots for a service
+  availableSlots(
+    vendorId: ID!
+    serviceId: ID!
+    startDate: Date!
+    endDate: Date!
+    customerTimezone: String
+    deliveryMethod: String
+  ): [AvailableDay!]!
+
+  # Practitioner fetches pending confirmations
+  pendingBookingConfirmations(practitionerId: ID!): [ServiceBooking!]!
+
+  # Practitioner fetches upcoming confirmed bookings
+  upcomingBookings(practitionerId: ID!): [ServiceBooking!]!
+
+  # Customer fetches their booking by id with confirmation details
+  scheduledBooking(customerId: ID!, bookingId: ID!): ServiceBooking
+
+  # Customer fetches all their scheduled service bookings
+  myScheduledBookings(customerId: ID!): [ServiceBooking!]!
+}

@@ -1,0 +1,107 @@
+extend type Query {
+  # Get spread configurations (types and pricing)
+  spreadConfigs: [SpreadConfig!]!
+
+  # Get a user's reading requests
+  myReadingRequests(userId: ID!, status: ReadingRequestStatus): [ReadingRequest!]!
+
+  # Get a single reading request by ID
+  readingRequest(id: ID!, userId: ID!): ReadingRequest
+
+  # Get available requests in the request bank (for merchants)
+  availableReadingRequests(limit: Int = 20, offset: Int = 0): [ReadingRequest!]!
+
+  # Get requests claimed by a specific reader/merchant
+  claimedReadingRequests(readerId: ID!): [ReadingRequest!]!
+
+  # Get fulfilled readings for a user (completed readings they received)
+  myCompletedReadings(userId: ID!): [ReadingRequest!]!
+
+  # Get all reviews for a practitioner (from fulfilled readings)
+  practitionerReviews(practitionerId: ID!): [ReadingReview!]!
+}
+
+# Spread type enum
+enum SpreadType {
+  SINGLE
+  THREE_CARD
+  FIVE_CARD
+}
+
+# Request status enum
+enum ReadingRequestStatus {
+  PENDING_PAYMENT  # Created, waiting for payment method to be saved
+  AWAITING_CLAIM   # Payment method saved, waiting for reader to claim
+  CLAIMED          # Reader has claimed, working on fulfillment
+  FULFILLED        # Reading completed, payment captured
+  CANCELLED
+  EXPIRED
+}
+
+# Spread configuration type
+type SpreadConfig {
+  type: SpreadType!
+  label: String!
+  cardCount: Int!
+  price: Int! # In cents
+  description: String!
+}
+
+# Card in a reading
+type ReadingCard {
+  name: String!
+  reversed: Boolean!
+  position: String!
+  interpretation: String!
+  symbols: [String!] # Auto-extracted symbols from card name
+}
+
+# Stripe payment details
+type ReadingRequestStripe {
+  setupIntentId: String
+  setupIntentSecret: String
+  paymentMethodId: String
+  paymentIntentId: String
+  chargeId: String
+  connectedAccountId: String
+}
+
+# Reading request type
+type ReadingRequest {
+  id: ID!
+  userId: ID!
+  userEmail: String
+  userName: String
+
+  spreadType: SpreadType!
+  topic: String!
+  context: String
+
+  # Payment info
+  stripe: ReadingRequestStripe
+  stripeCustomerId: String
+
+  price: Int!
+  platformFee: Int!
+  readerPayout: Int!
+
+  requestStatus: ReadingRequestStatus!
+  claimedBy: ID
+  claimedAt: String
+  claimDeadline: String # Shotclock - reader must fulfill by this time
+
+  # Fulfilled reading data
+  photoUrl: String
+  cards: [ReadingCard!]
+  overallMessage: String
+  fulfilledAt: String
+
+  createdAt: String!
+  updatedAt: String!
+  expiresAt: String
+
+  # User's review of the reading (only present after review submitted)
+  review: ReadingReview
+
+  ref: RecordRef!
+}

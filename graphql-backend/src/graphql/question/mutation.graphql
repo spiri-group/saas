@@ -1,0 +1,36 @@
+type Mutation {
+  create_question(
+    question: QuestionInput!
+    listingId: String!
+  ): CreateQuestionResponse
+  update_question(
+    question: QuestionInput!
+    id: String!
+    listingId: String!
+  ): CreateQuestionResponse
+  delete_question(id: String!, listingId: String!): MutationResponse
+}
+
+type CreateQuestionResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  question: Question
+}
+
+type QuestionMode {
+  mode: QuestionModeEnum!
+  price: CurrencyAmount!
+  priceId: String!
+}
+
+input QuestionModeInput {
+  mode: QuestionModeEnum!
+  price: Float!
+  currency: String!
+}
+
+input QuestionInput {
+  question: String!
+  price: Float!
+}

@@ -1,0 +1,32 @@
+type Query {
+    """Check if current user is following a merchant"""
+    isFollowing(merchantId: ID!): Boolean!
+
+    """Get list of merchants the current user follows"""
+    myFollowing: [FollowingMerchant]!
+
+    """Get list of followers for a merchant (for merchant dashboard)"""
+    merchantFollowers(merchantId: ID!, limit: Int, offset: Int): MerchantFollowersResponse!
+}
+
+type FollowingMerchant {
+    merchantId: ID!
+    merchantName: String!
+    merchantSlug: String!
+    merchantLogo: Media
+    followedAt: DateTime!
+}
+
+type Follower {
+    id: ID!
+    userId: ID!
+    userName: String!
+    userAvatar: String
+    followedAt: DateTime!
+}
+
+type MerchantFollowersResponse {
+    followers: [Follower]!
+    totalCount: Int!
+    hasMore: Boolean!
+}

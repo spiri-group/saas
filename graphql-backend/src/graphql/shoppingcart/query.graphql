@@ -1,0 +1,32 @@
+type Query {
+    shoppingCart: ShoppingCart
+}
+
+type ShoppingCart {
+    id: ID!
+    items: [ShoppingCartItem]
+}
+
+type ShoppingCartItem {
+    id: ID!
+    itemType: String!
+    name: String
+    descriptor: String
+    quantity: Float
+    price: CurrencyAmount
+    merchantId: ID
+    imageUrl: String
+
+    # Reference to the listing (product or service)
+    listingRef: RecordRef
+
+    # Product-specific fields
+    variantId: ID
+
+    # Service-specific fields
+    isService: Boolean
+    serviceId: ID
+    service: Service
+    questionnaireResponses: [QuestionResponse]
+    selectedAddOns: [ID]
+}

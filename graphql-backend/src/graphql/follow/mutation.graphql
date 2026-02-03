@@ -1,0 +1,15 @@
+type Mutation {
+    """Follow a merchant"""
+    followMerchant(merchantId: ID!): FollowResponse!
+
+    """Unfollow a merchant"""
+    unfollowMerchant(merchantId: ID!): FollowResponse!
+}
+
+type FollowResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    isFollowing: Boolean!
+    followerCount: Int!
+}

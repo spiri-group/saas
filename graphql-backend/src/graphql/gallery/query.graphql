@@ -1,0 +1,102 @@
+extend type Query {
+  galleryCategories(merchantId: ID!): [GalleryCategory!]!
+  galleryAlbums(merchantId: ID!): [GalleryAlbum!]!
+  galleryGroups(merchantId: ID!, categoryId: ID): [GalleryGroup!]!
+  galleryItems(merchantId: ID!, categoryId: ID, albumId: ID, groupId: ID, unalbumedOnly: Boolean): [GalleryItem!]!
+  galleryItem(id: ID!): GalleryItem
+  catalogueGalleryItems(merchantId: ID!, limit: Int = 10): [GalleryItem!]!
+  galleryItemsPaginated(merchantId: ID!, categoryId: ID, albumId: ID, offset: Int!, limit: Int!): GalleryItemsPaginated!
+}
+
+type GalleryCategory {
+  id: ID!
+  merchantId: ID!
+  name: String!
+  description: String
+  color: String
+  icon: String
+  sortOrder: Int!
+  groupCount: Int!
+  itemCount: Int!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type GalleryAlbum {
+  id: ID!
+  merchantId: ID!
+  name: String!
+  description: String
+  coverImageUrl: String
+  itemCount: Int!
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type GalleryGroup {
+  id: ID!
+  merchantId: ID!
+  categoryId: ID!
+  name: String!
+  description: String
+  itemCount: Int!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type GalleryItem {
+  id: ID!
+  merchantId: ID!
+  categoryId: ID
+  albumId: ID
+  groupId: ID
+  ref: RecordRef!
+  type: GalleryItemType!
+  title: String!
+  description: String
+  url: String!
+  thumbnailUrl: String
+  layout: GalleryItemLayout!
+  linkedProducts: [LinkedProduct!]
+  tags: [String!]
+  createdAt: String!
+  updatedAt: String!
+}
+
+type GalleryItemsPaginated {
+  items: [GalleryItem!]!
+  hasMore: Boolean!
+  totalCount: Int!
+}
+
+type LinkedProduct {
+  id: ID!
+  title: String!
+  thumbnailUrl: String
+  price: CurrencyAmount
+}
+
+type CurrencyAmount {
+  amount: Float!
+  currency: String!
+}
+
+enum GalleryItemType {
+  photo
+  video
+}
+
+enum GalleryItemLayout {
+  single
+  double
+}
+
+input GalleryFiltersInput {
+  categoryId: ID
+  albumId: ID
+  groupId: ID
+  type: GalleryItemType
+  layout: GalleryItemLayout
+  tags: [String!]
+}

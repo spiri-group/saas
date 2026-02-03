@@ -1,0 +1,195 @@
+# ============================================
+# Progressive Unlock System Schema
+# ============================================
+# Universal framework for feature gating based on user activity.
+
+# ============================================
+# Enums
+# ============================================
+
+enum UnlockInterestArea {
+  crystals
+  mediumship
+  energy
+  faith
+  tarot
+}
+
+# ============================================
+# Types
+# ============================================
+
+"""
+Progress toward unlocking a feature
+"""
+type UnlockProgress {
+  current: Int!
+  required: Int!
+  label: String!
+  percentage: Int!
+}
+
+"""
+Status of a single unlockable feature
+"""
+type UnlockStatus {
+  featureId: String!
+  featureName: String!
+  featureDescription: String!
+  interestArea: UnlockInterestArea!
+  isUnlocked: Boolean!
+  progress: UnlockProgress
+  unlockedAt: String
+  celebrationShown: Boolean
+  isPromptBased: Boolean
+  promptContext: String
+}
+
+"""
+Celebration content for when a feature is unlocked
+"""
+type UnlockCelebration {
+  title: String!
+  message: String!
+  ctaText: String!
+  route: String
+}
+
+"""
+Feature definition with full details
+"""
+type FeatureDefinition {
+  id: String!
+  name: String!
+  description: String!
+  interestArea: UnlockInterestArea!
+  icon: String
+  route: String
+  celebration: UnlockCelebration!
+}
+
+"""
+User's entry counts for activity metrics
+"""
+type EntryCounts {
+  # Mediumship
+  dreams: Int!
+  readingEntries: Int!
+  readingReflections: Int!
+  synchronicities: Int!
+  spiritMessages: Int!
+  developmentExercises: Int!
+  # Energy
+  energyJournalEntries: Int!
+  chakraCheckins: Int!
+  sessionReflections: Int!
+  attunements: Int!
+  protectionRituals: Int!
+  auraObservations: Int!
+  clearingEntries: Int!
+  sessionsGiven: Int!
+  # Crystals
+  crystalsInCollection: Int!
+  crystalCleansings: Int!
+  crystalGrids: Int!
+  acquisitionsWithVendor: Int!
+  # Faith
+  dailyPassagesRead: Int!
+  prayerEntries: Int!
+  scriptureReflections: Int!
+  # Tarot
+  cardPulls: Int!
+}
+
+"""
+User settings relevant to unlocks
+"""
+type UnlockSettings {
+  moonNotificationsEnabled: Boolean!
+}
+
+"""
+User's activity metrics used for unlock calculations
+"""
+type UserActivityMetrics {
+  userId: ID!
+  accountCreatedAt: String!
+  daysActive: Int!
+  currentStreak: Int!
+  longestStreak: Int!
+  lastActiveDate: String!
+  entryCounts: EntryCounts!
+  settings: UnlockSettings!
+}
+
+"""
+Complete unlock state for a user
+"""
+type UserUnlockState {
+  userId: ID!
+  activityMetrics: UserActivityMetrics!
+  # Unlock status by interest area
+  crystals: [UnlockStatus!]!
+  mediumship: [UnlockStatus!]!
+  energy: [UnlockStatus!]!
+  faith: [UnlockStatus!]!
+  tarot: [UnlockStatus!]!
+  # Recently unlocked features (celebration not yet shown)
+  recentlyUnlocked: [UnlockStatus!]!
+  # Features closest to being unlocked
+  upcomingUnlocks: [UnlockStatus!]!
+}
+
+# ============================================
+# Query Extensions
+# ============================================
+
+type Query {
+  """
+  Get complete unlock state for a user
+  Returns all features with their unlock status, progress, and celebrations
+  """
+  getUserUnlockState(userId: ID!): UserUnlockState!
+
+  """
+  Get unlock status for a specific feature
+  """
+  getFeatureUnlockStatus(userId: ID!, featureId: String!): UnlockStatus
+
+  """
+  Get user's activity metrics (for display and debugging)
+  """
+  getUserActivityMetrics(userId: ID!): UserActivityMetrics!
+
+  """
+  Get feature definition (for UI rendering)
+  """
+  getFeatureDefinition(featureId: String!): FeatureDefinition
+
+  """
+  Get all feature definitions for an interest area
+  """
+  getFeaturesForInterest(interest: String!): [FeatureDefinition!]!
+
+  """
+  Quick check if a feature is unlocked
+  """
+  isFeatureUnlocked(userId: ID!, featureId: String!): Boolean!
+
+  """
+  Get list of unlocked feature IDs for an interest
+  """
+  getUnlockedFeatures(userId: ID!, interest: String!): [String!]!
+}
+
+# ============================================
+# Mutation Extensions
+# ============================================
+
+type Mutation {
+  """
+  Mark that the celebration for a feature has been shown
+  Call this after displaying the unlock celebration modal
+  """
+  markCelebrationShown(userId: ID!, featureId: String!): Boolean!
+}

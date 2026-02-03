@@ -1,0 +1,44 @@
+type Mutation {
+  create_comment(
+    text: String!
+    forObject: RecordRefInput!
+  ): CreateCommentResponse
+  create_review(
+    review : ReviewInput!
+    objectId: String!
+    objectPartition: String!
+  ) : CreateReviewResponse
+  reply_to_comment(
+    text: String!
+    replyTo: RecordRefInput!
+  ) : CreateCommentResponse
+  update_comment(
+    id: String!, 
+    listingRef: RecordRefInput!, 
+    comment: CommentInput
+  ): CreateCommentResponse
+}
+
+type CreateCommentResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  comment: Comment
+}
+
+type CreateReviewResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  review: Review
+}
+
+input CommentInput {
+  text: String!
+}
+
+input ReviewInput {
+  headline: String!
+  text: String!
+  rating: Float!
+}

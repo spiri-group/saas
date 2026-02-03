@@ -1,0 +1,8 @@
+type Question {
+  id: String
+  posted_by: User
+  question: String
+  price: Float
+  priceForTopFive: Float
+  position: Int
+}

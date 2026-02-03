@@ -1,0 +1,88 @@
+meta {
+  name: webhook_track
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:7071/api/logistics?s=AxpP3yO7u3qB4e1mL9q8jw==
+  body: json
+  auth: inherit
+}
+
+params:query {
+  s: AxpP3yO7u3qB4e1mL9q8jw==
+}
+
+body:json {
+  {
+    "resource_url": "https://api.shipengine.com/v1/tracking?carrier_code=ups&tracking_number=1Z47W89E0356789424",
+    "resource_type": "API_TRACK",
+    "data": {
+      "label_url": null,
+      "tracking_number": "1Z47W89E0356789424",
+      "status_code": "DE",
+      "carrier_detail_code": null,
+      "status_description": "Delivered",
+      "carrier_status_code": "DE",
+      "carrier_status_description": "Your package has been delivered",
+      "ship_date": "2020-06-30T16:09:00",
+      "estimated_delivery_date": "2020-07-06T00:00:00",
+      "actual_delivery_date": null,
+      "exception_description": null,
+      "events": [
+        {
+          "occurred_at": "2020-07-05T00:00:00Z",
+          "carrier_occurred_at": "2020-07-02T00:00:00",
+          "description": "Delivered",
+          "city_locality": "",
+          "state_province": "",
+          "postal_code": "",
+          "country_code": "",
+          "company_name": "",
+          "signer": "",
+          "event_code": "NT",
+          "event_description": "Delivered",
+          "carrier_detail_code": null,
+          "status_code": null,
+          "latitude": null,
+          "longitude": null
+        },
+        {
+          "occurred_at": "2020-07-02T00:00:00Z",
+          "carrier_occurred_at": "2020-07-02T00:00:00",
+          "description": "In Transit, Arriving On Time",
+          "city_locality": "",
+          "state_province": "",
+          "postal_code": "",
+          "country_code": "",
+          "company_name": "",
+          "signer": "",
+          "event_code": "NT",
+          "event_description": "In Transit, Arriving on Time",
+          "carrier_detail_code": null,
+          "status_code": null,
+          "latitude": null,
+          "longitude": null
+        },
+        {
+          "occurred_at": "2020-06-30T20:09:00Z",
+          "carrier_occurred_at": "2020-06-30T16:09:00",
+          "description": "Shipment Received, Package Acceptance Pending",
+          "city_locality": "VERSAILLES",
+          "state_province": "KY",
+          "postal_code": "40383",
+          "country_code": "",
+          "company_name": "",
+          "signer": "",
+          "event_code": "TM",
+          "event_description": "Shipment Received, Package Acceptance Pending",
+          "carrier_detail_code": null,
+          "status_code": null,
+          "latitude": 37.8614,
+          "longitude": -84.6646
+        }
+      ]
+    }
+  }
+}

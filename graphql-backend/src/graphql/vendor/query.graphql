@@ -1,0 +1,541 @@
+type Query {
+    vendor(id: String!): Vendor
+    vendors(search: String): [Vendor],
+    vendorFromSubscriptionSetupIntent(setupIntentId: String!, setupIntentSecret: String!): Vendor,
+    vendorIdFromSlug(slug: String!, requiresEncoding: Boolean): VendorSlugResponse,
+    productReturnPolicies(merchantId: ID!, listingType: String, country: String): [ProductReturnPolicy],
+    productReturnPolicy(merchantId: ID!, policyId: ID!): ProductReturnPolicy,
+    serviceCancellationPolicies(merchantId: ID!, serviceCategory: String): [ServiceCancellationPolicy],
+    serviceCancellationPolicy(merchantId: ID!, policyId: ID!): ServiceCancellationPolicy,
+
+    # Practitioner queries
+    practitioner(slug: String!): Vendor,
+    practitioners(
+        modalities: [PractitionerModality],
+        specializations: [PractitionerSpecialization],
+        minRating: Float,
+        acceptingClients: Boolean,
+        verifiedOnly: Boolean,
+        search: String,
+        sort: PractitionerSort,
+        limit: Int,
+        offset: Int
+    ): PractitionerSearchResult!,
+    featuredPractitionersByModality(modality: PractitionerModality!, limit: Int): [Vendor!]!,
+
+    # Practitioner messaging
+    practitionerConversations(practitionerId: ID!): [PractitionerConversation!]!,
+    customerConversation(practitionerId: ID!): CustomerConversation,
+
+    # Practitioner testimonials
+    practitionerTestimonials(practitionerId: ID!): [Testimonial!]!,
+    testimonialRequest(token: String!): TestimonialRequestInfo,
+
+    # Recommendations
+    recommendedVendors(limit: Int): [RecommendedVendor]!
+}
+
+type RecommendedVendor {
+  id: String!
+  name: String!
+  slug: String!
+  logo: Media
+  docType: String!
+  followerCount: Int
+  headline: String
+  modalities: [String]
+  matchReason: String
+}
+
+# Conversation types for practitioner messaging
+type PractitionerConversation {
+    conversationId: String!
+    customer: User!
+    lastMessage: Message
+    messageCount: Int!
+    lastMessageAt: DateTime
+}
+
+type CustomerConversation {
+    conversationId: String!
+    practitioner: Vendor!
+    messages: [Message!]!
+    forObject: RecordRef!
+}
+
+# Practitioner Enums
+enum VendorDocType {
+    MERCHANT
+    PRACTITIONER
+}
+
+enum PractitionerModality {
+    TAROT
+    ORACLE
+    ASTROLOGY
+    NUMEROLOGY
+    MEDIUMSHIP
+    CHANNELING
+    REIKI
+    ENERGY_HEALING
+    CRYSTAL_HEALING
+    AKASHIC_RECORDS
+    PAST_LIFE
+    BREATHWORK
+    SOUND_HEALING
+    COACHING
+    COUNSELING
+    OTHER
+}
+
+enum PractitionerSpecialization {
+    GRIEF_LOSS
+    RELATIONSHIPS
+    CAREER
+    LIFE_PURPOSE
+    SPIRITUAL_AWAKENING
+    ANCESTRAL_HEALING
+    SHADOW_WORK
+    SELF_DISCOVERY
+    DECISION_MAKING
+    HEALTH_WELLNESS
+    PAST_LIVES
+    SPIRIT_COMMUNICATION
+    OTHER
+}
+
+enum PractitionerReadingStyle {
+    GENTLE
+    DIRECT
+    INTUITIVE
+    STRUCTURED
+}
+
+enum PractitionerAvailability {
+    ACCEPTING_CLIENTS
+    WAITLIST
+    NOT_ACCEPTING
+}
+
+enum PractitionerBadge {
+    FEATURED
+    TOP_RATED
+    ESTABLISHED
+}
+
+enum PractitionerSort {
+    RATING_HIGH
+    REVIEWS_MOST
+    READINGS_MOST
+    NEWEST
+    RELEVANCE
+}
+
+# Practitioner Types
+type TrainingCredential {
+    id: ID!
+    title: String!
+    institution: String
+    year: Int
+    description: String
+}
+
+type PractitionerTool {
+    id: ID!
+    name: String!
+    description: String
+    image: Media
+}
+
+type PractitionerVerification {
+    identityVerified: Boolean!
+    practitionerVerified: Boolean!
+    verifiedAt: DateTime
+    badges: [PractitionerBadge!]
+}
+
+type PractitionerProfile {
+    # Identity
+    pronouns: String
+    headline: String!
+
+    # Personal Story
+    bio: String!
+    spiritualJourney: String
+
+    # Gifts & Modalities
+    modalities: [PractitionerModality!]!
+    gifts: [String!]
+    tools: [PractitionerTool!]
+
+    # Specializations
+    specializations: [PractitionerSpecialization!]!
+    customSpecializations: [String!]
+
+    # Experience & Credentials
+    yearsExperience: Int
+    training: [TrainingCredential!]
+
+    # Reading Style
+    readingStyle: PractitionerReadingStyle
+    approach: String
+    whatToExpect: String
+    clientPrepGuidance: String
+
+    # Availability
+    availability: PractitionerAvailability!
+    acceptingNewClients: Boolean!
+    responseTime: String
+    timezone: String
+
+    # Verification
+    verification: PractitionerVerification!
+
+    # Audio & Media
+    audioIntro: Media
+    oracleMessage: OracleMessage
+
+    # Pinned Content
+    pinnedReviewIds: [ID!]
+    pinnedTestimonialIds: [ID!]
+
+    # Linked Shopfronts - merchants owned by this practitioner
+    linkedShopfronts: [LinkedShopfront!]
+}
+
+# Linked shopfront reference for practitioner profiles
+type LinkedShopfront {
+    merchantId: ID!
+    merchantSlug: String!
+    merchantName: String!
+    merchantLogo: String
+    displayOrder: Int!
+}
+
+# Daily Oracle Message (audio-only)
+type OracleMessage {
+    id: ID!
+    audio: Media!
+    message: String
+    postedAt: DateTime!
+    expiresAt: DateTime!
+}
+
+type PractitionerSearchResult {
+    practitioners: [Vendor!]!
+    total: Int!
+    hasMore: Boolean!
+}
+
+type CreateVendorResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  vendor: Vendor
+  order: Order
+  stripeAccountId: String
+}
+
+type CreateTeamMembersResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  teamMembers: [TeamMember]!
+}
+
+type UpsertPolicyResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  policies: [ProductReturnPolicy]!
+}
+
+type UpsertCancellationPolicyResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  policies: [ServiceCancellationPolicy]!
+}
+
+type VendorContact {
+  email: EmailAddress
+  phoneNumber: ContactNumber
+}
+
+type VendorSlugResponse {
+  merchantId: String
+  slug: String!
+  available: Boolean!
+}
+
+type VendorContactDetails {
+  internal: VendorContact
+  public: VendorContact
+}
+
+type Vendor {
+  id: String!
+  name: String
+  slug: String
+  docType: VendorDocType
+  practitioner: PractitionerProfile
+  onStart: String
+  country: CountryCode
+  currency: Currency
+  contact: VendorContactDetails
+  address: String
+  website: String
+  postcode: Int
+  stripe: StripeAccount
+  stripe_business: StripeBusinessAccount
+  autho: AuthOAccount
+  listings: [Listing]
+  followerCount: Int
+  intro: String
+  rating: Rating
+  banner: Media
+  bannerConfig: BannerConfig
+  promiseBanner: String
+  reviews: [Review]
+  socialPosts: [SocialPost]
+  ref: RecordRef
+  teamMembers: [TeamMember]
+  customers: [Customer]
+  descriptions: [MerchantDescription]
+  locations: [MerchantLocation]
+  videos: [Video]
+  videoSettings: VideoSettings
+  subscription: VendorSubscription
+  social: MerchantSocial
+  profileVisibility: ProfileVisibilitySettings
+  storage: VendorStorage
+  hasRole(role: String!): Boolean
+  cards: [Card]
+
+  thumbnail: Thumbnail
+
+  # now we have all the branding related fields
+  logo: Media
+  mode: String
+  selectedTheme: String
+  selectedScheme: String
+  font: MerchantFontSelection
+  colors: MerchantColors
+  background: BackgroundFormat
+  panels: MerchantPanelsFormat
+
+  shipments(onlyUnfinalized: Boolean): [Shipment]
+
+  # Reading/Practitioner stats
+  readingRating: ReadingRating
+}
+
+type ReadingRating {
+  total_count: Int!
+  average: Float!
+  rating1: Int!
+  rating2: Int!
+  rating3: Int!
+  rating4: Int!
+  rating5: Int!
+}
+
+type MerchantSocial {
+  style: String!
+  platforms: [SocialPlatform]
+}
+
+type SocialPlatform {
+  platform: String!
+  id: ID,
+  url: String!
+  handle: String
+}
+
+type MerchantFontSelection {
+  brand: TextFormat,
+  headings: TextFormat,
+  default: TextFormat,
+  accent: TextFormat
+}
+
+type MerchantPanelsFormat {
+  primary: TextFormat
+  accent: TextFormat
+  background: BackgroundFormat
+}
+
+type MerchantColors {
+  primary: ColorChoice
+  links: String
+}
+
+type VendorSubscription {
+  plans: [Plan]
+}
+
+type Plan {
+  productId: ID!
+  variantId: ID!
+  price: CurrencyAmount!
+  name: String!
+}
+
+type StripeBusinessAccount {
+  id: String
+  currency: Currency
+  country: CountryCode,
+  disabled_reason: String,
+  charges_enabled: Boolean,
+  payouts_enabled: Boolean,
+  currently_due: [String],
+  past_due: [String],
+  token(components: [String]!): String,
+  onboarding_link(return_url: String): StripeAccountLink
+  onboarding_status: Boolean!
+  update_link(return_url: String): StripeAccountLink
+}
+
+type TeamMember {
+  id: String!
+  name: String
+  tagline: String
+  bio: String
+  image: Media
+}
+
+type MerchantLocation {
+  id: ID!
+  title: String!
+  address: GooglePlace!
+  services: [String]!
+}
+
+type VendorUser {
+  vendorId: String,
+  vendor: Vendor,
+  userId: String,
+  user: User
+}
+
+type VendorSetup {
+  id: ID!
+}
+
+type MerchantDescription {
+  id: String!
+  title: String
+  body: String
+  supporting_images: [Media]
+}
+
+type ProductReturnPolicy {
+  id: ID!
+  merchantId: String
+  listingType: String
+  title: String
+  country: String
+  reasons: [ProductReturnReason]
+  createdDate: DateTime
+  updatedDate: DateTime
+}
+
+type ProductReturnReason {
+  id: ID!
+  code: String
+  title: String
+  whoPayShipping: String
+  conditions: [ProductReturnPolicyDetail]
+  tiers: [ProductReturnTier]
+  confirmed: Boolean
+  no_refund: Boolean
+}
+
+type ProductReturnPolicyDetail {
+  id: ID!
+  code: String
+  isCustom: Boolean
+  title: String
+  description: String
+}
+
+type ProductReturnTier {
+  id: ID!
+  daysUpTo: Int
+  refundPercentage: Float
+  refundCustomerFees: Boolean
+}
+
+type ServiceCancellationPolicy {
+  id: ID!
+  merchantId: String
+  serviceCategory: String
+  title: String
+  fullRefundHours: Int
+  partialRefundHours: Int
+  partialRefundPercentage: Float
+  noRefundHours: Int
+  allowRescheduling: Boolean
+  maxReschedules: Int
+  rescheduleMinHours: Int
+  createdDate: DateTime
+  updatedDate: DateTime
+}
+
+type ProfileVisibilitySettings {
+  contactInformation: Boolean
+  locations: Boolean
+  teamMembers: Boolean
+  sections: Boolean
+}
+
+type VendorStorage {
+  usedBytes: Float!
+}
+
+type VideoSettings {
+  autoplay: Boolean!
+  autoplayDelay: Int!
+}
+
+# Testimonial Types (practitioner endorsements - NOT tied to orders)
+type Testimonial {
+  id: ID!
+  practitionerId: ID!
+  clientName: String!
+  clientEmail: String
+  rating: Int!
+  headline: String!
+  text: String!
+  relationship: String
+  createdAt: DateTime!
+}
+
+type TestimonialRequest {
+  id: ID!
+  practitionerId: ID!
+  token: String!
+  clientEmail: String
+  clientName: String
+  requestStatus: TestimonialRequestStatus!
+  createdAt: DateTime!
+  expiresAt: DateTime!
+  submittedAt: DateTime
+}
+
+enum TestimonialRequestStatus {
+  PENDING
+  SUBMITTED
+  EXPIRED
+}
+
+# Response type for testimonialRequest query (public info for submission page)
+type TestimonialRequestInfo {
+  practitionerId: ID!
+  practitionerName: String!
+  practitionerSlug: String!
+  practitionerThumbnail: String
+  clientName: String
+  requestStatus: TestimonialRequestStatus!
+  expiresAt: DateTime!
+}

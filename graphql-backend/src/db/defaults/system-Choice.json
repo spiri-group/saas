@@ -1,0 +1,179 @@
+{
+    "partitionColumn": "id",
+    "items": [
+        {
+            "id": "services",
+            "status": "ACTIVE",
+            "options": [
+                {
+                    "id": "GhostTours",
+                    "status": "ACTIVE",
+                    "localizations": [
+                        {
+                            "locale": "EN",
+                            "value": "Ghost Tours"
+                        },
+                        {
+                            "locale": "NL",
+                            "value": "Geistertouren"
+                        },
+                        {
+                            "locale": "ID",
+                            "value": "wisata hantu"
+                        }
+                    ]
+                },
+                {
+                    "id": "SpiritualEvents",
+                    "status": "ACTIVE",
+                    "localizations": [
+                        {
+                            "locale": "EN",
+                            "value": "Spiritual events"
+                        },
+                        {
+                            "locale": "NL",
+                            "value": "Geistertouren"
+                        },
+                        {
+                            "locale": "ID",
+                            "value": "wisata hantu"
+                        }
+                    ]
+                },
+                {
+                    "id": "Healing",
+                    "status": "ACTIVE",
+                    "localizations": [
+                        {
+                            "locale": "EN",
+                            "value": "Healings"
+                        },
+                        {
+                            "locale": "DE",
+                            "value": "Geistertouren"
+                        },
+                        {
+                            "locale": "ID",
+                            "value": "wisata hantu"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "religions",
+            "status": "ACTIVE",
+            "options": [
+                {
+                    "id": "No affiliation",
+                    "status": "ACTIVE",
+                    "localizations": [
+                        {
+                            "locale": "EN",
+                            "value": "No affiliation"
+                        },
+                        {
+                            "locale": "NL",
+                            "value": ""
+                        },
+                        {
+                            "locale": "ID",
+                            "value": ""
+                        }
+                    ]
+                },
+                {
+                    "id": "Christian",
+                    "status": "ACTIVE",
+                    "localizations": [
+                        {
+                            "locale": "EN",
+                            "value": "Christian"
+                        },
+                        {
+                            "locale": "NL",
+                            "value": "Christlich"
+                        },
+                        {
+                            "locale": "ID",
+                            "value": "Kristen"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "languages",
+            "status": "ACTIVE",
+            "options": [
+                {
+                    "id": "EN",
+                    "status": "ACTIVE",
+                    "localizations": [
+                        {
+                            "locale": "EN",
+                            "value": "English"
+                        }
+                    ]
+                },
+                {
+                    "id": "ID",
+                    "status": "ACTIVE",
+                    "localizations": [
+                        {
+                            "locale": "EN",
+                            "value": "Indonesian"
+                        }
+                    ]
+                },
+                {
+                    "id": "NL",
+                    "status": "ACTIVE",
+                    "localizations": [
+                        {
+                            "locale": "EN",
+                            "value": "Dutch"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "liveStreamTopics",
+            "status": "ACTIVE",
+            "options": [
+                {
+                    "id": "LIFESTYLE",
+                    "status": "ACTIVE",
+                    "localizations": [
+                        {
+                            "locale": "EN",
+                            "value": "Lifestyle"
+                        }
+                    ]
+                },
+                {
+                    "id": "RELATIONSHIP",
+                    "status": "ACTIVE",
+                    "localizations": [
+                        {
+                            "locale": "EN",
+                            "value": "Relationship"
+                        }
+                    ]
+                },
+                {
+                    "id": "PREGNANCY",
+                    "status": "ACTIVE",
+                    "localizations": [
+                        {
+                            "locale": "EN",
+                            "value": "pregnancy"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

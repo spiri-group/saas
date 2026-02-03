@@ -1,0 +1,13 @@
+type Query {
+  report(id: ID!, partition: [String]) : Report
+  reports(forObject: RecordRefInput!) : [Report]
+  reasons(ref: RecordRefInput!) : [Report],
+  reportReasons(objectType: String!, defaultLocale: String): [ChoiceOption]
+}
+
+type Report {
+  id: String
+  posted_by: User
+  reasons: [ChoiceOption]
+  ref: RecordRef
+}

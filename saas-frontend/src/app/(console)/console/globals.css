@@ -1,0 +1,312 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* -------------------- CONSOLE THEME TOKENS -------------------- */
+@theme {
+  /* Console-specific color palette - Dark theme */
+  --color-console-background: rgb(2, 6, 23);      /* slate-950 */
+  --color-console-foreground: rgb(248, 250, 252); /* slate-50 */
+  
+  --color-console-surface: rgba(15, 23, 42, 0.5); /* slate-900/50 */
+  --color-console-surface-hover: rgba(30, 41, 59, 0.5); /* slate-800/50 */
+  --color-console-border: rgba(30, 41, 59, 0.5);  /* slate-800/50 */
+  
+  --color-console-primary: rgb(59, 130, 246);     /* blue-500 */
+  --color-console-primary-hover: rgb(37, 99, 235); /* blue-600 */
+  --color-console-primary-foreground: rgb(255, 255, 255);
+  
+  --color-console-secondary: rgb(100, 116, 139);  /* slate-500 */
+  --color-console-secondary-foreground: rgb(203, 213, 225); /* slate-300 */
+  
+  --color-console-muted: rgb(71, 85, 105);        /* slate-600 */
+  --color-console-muted-foreground: rgb(148, 163, 184); /* slate-400 */
+  
+  --color-console-success: rgb(34, 197, 94);      /* green-500 */
+  --color-console-success-foreground: rgb(255, 255, 255);
+  
+  --color-console-warning: rgb(251, 191, 36);     /* yellow-500 */
+  --color-console-warning-foreground: rgb(0, 0, 0);
+  
+  --color-console-error: rgb(239, 68, 68);        /* red-500 */
+  --color-console-error-foreground: rgb(255, 255, 255);
+  
+  --color-console-info: rgb(59, 130, 246);        /* blue-500 */
+  --color-console-info-foreground: rgb(255, 255, 255);
+
+  /* Console gradients */
+  --gradient-console-brand: linear-gradient(135deg, rgb(59, 130, 246), rgb(147, 51, 234)); /* blue-500 to purple-600 */
+  --gradient-console-surface: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.4));
+  
+  /* Console shadows with blur effects */
+  --shadow-console-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-console-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-console-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-console-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  --shadow-console-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  
+  /* Console specific spacing */
+  --spacing-console-header: 4rem; /* 64px header height */
+  --spacing-console-sidebar: 16rem; /* 256px sidebar width */
+  --spacing-console-content: calc(100vh - var(--spacing-console-header));
+  
+  /* Console animation timings */
+  --duration-console-fast: 150ms;
+  --duration-console-normal: 200ms;
+  --duration-console-slow: 300ms;
+}
+
+body {
+  background: var(--color-console-background);
+  color: var(--color-console-foreground);
+}
+
+/* -------------------- CONSOLE BASE STYLES -------------------- */
+.console-root {
+  background: var(--color-console-background);
+  color: var(--color-console-foreground);
+  min-height: 100vh;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-variation-settings: normal;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.console-surface {
+  background: var(--color-console-surface);
+  border: 1px solid var(--color-console-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.console-surface:hover {
+  background: var(--color-console-surface-hover);
+}
+
+/* -------------------- CONSOLE COMPONENT UTILITIES -------------------- */
+@layer utilities {
+  /* Background utilities */
+  .bg-console {
+    background-color: var(--color-console-background);
+  }
+  
+  .bg-console-surface {
+    background: var(--color-console-surface);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  
+  .hover\:bg-console-surface-hover:hover {
+    background: var(--color-console-surface-hover);
+  }
+  
+  /* Text utilities */
+  .text-console {
+    color: var(--color-console-foreground);
+  }
+  
+  .text-console-muted {
+    color: var(--color-console-muted-foreground);
+  }
+  
+  .text-console-secondary {
+    color: var(--color-console-secondary-foreground);
+  }
+  
+  .hover\:text-console:hover {
+    color: var(--color-console-foreground);
+  }
+  
+  .placeholder-console-muted::placeholder {
+    color: var(--color-console-muted-foreground);
+  }
+  
+  /* Border utilities */
+  .border-console {
+    border-color: var(--color-console-border);
+  }
+  
+  .border-console-primary {
+    border-color: var(--color-console-primary);
+  }
+  
+  /* Shadow utilities */
+  .shadow-console-sm {
+    box-shadow: var(--shadow-console-sm);
+  }
+  
+  .shadow-console-md {
+    box-shadow: var(--shadow-console-md);
+  }
+  
+  .shadow-console-lg {
+    box-shadow: var(--shadow-console-lg);
+  }
+  
+  .shadow-console-xl {
+    box-shadow: var(--shadow-console-xl);
+  }
+  
+  .shadow-console-2xl {
+    box-shadow: var(--shadow-console-2xl);
+  }
+  
+  /* Gradient utilities */
+  .bg-console-gradient-brand {
+    background: var(--gradient-console-brand);
+  }
+  
+  .bg-console-gradient-surface {
+    background: var(--gradient-console-surface);
+  }
+  
+  /* Interactive states */
+  .console-interactive {
+    transition: all var(--duration-console-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .console-interactive:hover {
+    transform: translateY(-1px);
+  }
+  
+  /* Status colors */
+  .console-status-success {
+    color: var(--color-console-success);
+  }
+  
+  .console-status-warning {
+    color: var(--color-console-warning);
+  }
+  
+  .console-status-error {
+    color: var(--color-console-error);
+  }
+  
+  .console-status-info {
+    color: var(--color-console-info);
+  }
+  
+  /* Console-specific layout utilities */
+  .console-header-height {
+    height: var(--spacing-console-header);
+  }
+  
+  .console-content-height {
+    height: var(--spacing-console-content);
+  }
+  
+  .console-sidebar-width {
+    width: var(--spacing-console-sidebar);
+  }
+  
+  /* Focus styles for console */
+  .console-focus:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: var(--color-console-primary);
+    ring-opacity: 0.5;
+    border-color: var(--color-console-primary);
+  }
+  
+  /* Scrollbar styling for console */
+  .console-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-console-muted) transparent;
+  }
+  
+  .console-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .console-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .console-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--color-console-muted);
+    border-radius: 3px;
+  }
+  
+  .console-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-console-secondary);
+  }
+}
+
+/* -------------------- CONSOLE ANIMATIONS -------------------- */
+@keyframes console-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes console-slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes console-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes console-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animation utilities */
+@layer utilities {
+  .animate-console-fade-in {
+    animation: console-fade-in var(--duration-console-normal) ease-out;
+  }
+  
+  .animate-console-slide-in {
+    animation: console-slide-in var(--duration-console-normal) ease-out;
+  }
+  
+  .animate-console-pulse {
+    animation: console-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-console-spin {
+    animation: console-spin 1s linear infinite;
+  }
+}
+
+/* -------------------- CONSOLE RESPONSIVE BREAKPOINTS -------------------- */
+@media (max-width: 768px) {
+  :root {
+    --spacing-console-sidebar: 0; /* Hide sidebar on mobile */
+    --spacing-console-header: 3.5rem; /* Smaller header on mobile */
+  }
+}
+
+/* -------------------- CONSOLE PRINT STYLES -------------------- */
+@media print {
+  .console-no-print {
+    display: none !important;
+  }
+  
+  .console-root {
+    background: white !important;
+    color: black !important;
+  }
+}

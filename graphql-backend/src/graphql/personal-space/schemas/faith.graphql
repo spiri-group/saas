@@ -1,0 +1,373 @@
+# ============================================
+# Prayer & Faith Types
+# Help people of faith deepen their walk with God
+# ============================================
+
+enum PrayerType {
+  praise
+  thanksgiving
+  petition
+  intercession
+  confession
+  meditation
+  contemplation
+  devotional
+}
+
+enum PrayerStatus {
+  active
+  answered
+  answered_differently
+  waiting
+  ongoing
+}
+
+enum ScriptureBookType {
+  old_testament
+  new_testament
+  psalms
+  proverbs
+  gospels
+  epistles
+  prophets
+  wisdom
+  other
+}
+
+# ============================================
+# Daily Passage (Easy Daily Habit)
+# A passage is served to the user, they reflect on it
+# ============================================
+
+type DailyPassage {
+  id: ID!
+  userId: ID!
+  date: String!
+  reference: String!
+  text: String!
+  book: String
+  chapter: Int
+  verseStart: Int
+  verseEnd: Int
+  version: String
+  reflection: String
+  prayerResponse: String
+  personalApplication: String
+  isRead: Boolean!
+  readAt: String
+  isReflected: Boolean!
+  reflectedAt: String
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# ============================================
+# Prayer Journal Entry (with Gratitude)
+# ============================================
+
+type PrayerJournalEntry {
+  id: ID!
+  userId: ID!
+  date: String!
+  title: String
+  prayerType: PrayerType!
+  content: String!
+  status: PrayerStatus
+  prayingFor: String
+  requests: [String!]
+  gratitude: [String!]
+  scriptureReference: String
+  scriptureText: String
+  insights: String
+  feelingBefore: String
+  feelingAfter: String
+  answeredDate: String
+  answerDescription: String
+  tags: [String!]
+  isPrivate: Boolean
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# ============================================
+# Scripture Reflection (Own Reading)
+# ============================================
+
+type ScriptureReflection {
+  id: ID!
+  userId: ID!
+  date: String!
+  reference: String!
+  book: String
+  chapter: Int
+  verseStart: Int
+  verseEnd: Int
+  bookType: ScriptureBookType
+  text: String
+  whatSpokeToMe: String!
+  personalApplication: String
+  questions: [String!]
+  crossReferences: [String!]
+  readingContext: String
+  version: String
+  prayerResponse: String
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# ============================================
+# Faith Statistics
+# ============================================
+
+type PrayerTypeCount {
+  type: PrayerType!
+  count: Int!
+}
+
+type TagCount {
+  tag: String!
+  count: Int!
+}
+
+type BookCount {
+  book: String!
+  count: Int!
+}
+
+type FaithStats {
+  # Daily Passage
+  dailyPassageStreak: Int!
+  totalPassagesRead: Int!
+  totalPassagesReflected: Int!
+  passagesThisWeek: Int!
+
+  # Prayer Journal
+  totalPrayers: Int!
+  prayersThisWeek: Int!
+  prayersThisMonth: Int!
+  prayerTypeBreakdown: [PrayerTypeCount!]!
+  answeredPrayersCount: Int!
+  waitingPrayersCount: Int!
+  activePrayersCount: Int!
+  prayerStreak: Int!
+
+  # Scripture Reflections
+  totalScriptureReflections: Int!
+  reflectionsThisWeek: Int!
+
+  # Common themes
+  commonTags: [TagCount!]!
+  favoriteBooks: [BookCount!]!
+}
+
+# ============================================
+# Queries
+# ============================================
+
+extend type Query {
+  # Daily Passage
+  todaysPassage(userId: ID!): DailyPassage
+  dailyPassages(userId: ID!, filters: DailyPassageFiltersInput): [DailyPassage!]!
+  dailyPassage(id: ID!, userId: ID!): DailyPassage
+
+  # Prayer Journal
+  prayerJournalEntries(userId: ID!, filters: PrayerJournalFiltersInput): [PrayerJournalEntry!]!
+  prayerJournalEntry(id: ID!, userId: ID!): PrayerJournalEntry
+  recentPrayers(userId: ID!, limit: Int = 5): [PrayerJournalEntry!]!
+  answeredPrayers(userId: ID!, limit: Int = 10): [PrayerJournalEntry!]!
+  prayerRequests(userId: ID!, status: PrayerStatus): [PrayerJournalEntry!]!
+
+  # Scripture Reflections
+  scriptureReflections(userId: ID!, filters: ScriptureReflectionFiltersInput): [ScriptureReflection!]!
+  scriptureReflection(id: ID!, userId: ID!): ScriptureReflection
+  recentScriptureReflections(userId: ID!, limit: Int = 5): [ScriptureReflection!]!
+  scriptureByBook(userId: ID!, book: String!, limit: Int = 20): [ScriptureReflection!]!
+
+  # Stats
+  faithStats(userId: ID!): FaithStats!
+}
+
+# ============================================
+# Filter Inputs
+# ============================================
+
+input DailyPassageFiltersInput {
+  startDate: String
+  endDate: String
+  isRead: Boolean
+  isReflected: Boolean
+  limit: Int
+  offset: Int
+}
+
+input PrayerJournalFiltersInput {
+  startDate: String
+  endDate: String
+  prayerType: PrayerType
+  status: PrayerStatus
+  tag: String
+  limit: Int
+  offset: Int
+}
+
+input ScriptureReflectionFiltersInput {
+  startDate: String
+  endDate: String
+  book: String
+  bookType: ScriptureBookType
+  limit: Int
+  offset: Int
+}
+
+# ============================================
+# Mutations
+# ============================================
+
+extend type Mutation {
+  # Daily Passage
+  markPassageRead(id: ID!, userId: ID!): DailyPassageResponse!
+  reflectOnPassage(input: ReflectOnPassageInput!): DailyPassageResponse!
+
+  # Prayer Journal
+  createPrayerJournalEntry(input: CreatePrayerJournalInput!): CreatePrayerJournalResponse!
+  updatePrayerJournalEntry(input: UpdatePrayerJournalInput!): UpdatePrayerJournalResponse!
+  deletePrayerJournalEntry(id: ID!, userId: ID!): DeleteFaithResponse!
+  markPrayerAnswered(id: ID!, userId: ID!, answeredDate: String, answerDescription: String): UpdatePrayerJournalResponse!
+
+  # Scripture Reflections
+  createScriptureReflection(input: CreateScriptureReflectionInput!): CreateScriptureReflectionResponse!
+  updateScriptureReflection(input: UpdateScriptureReflectionInput!): UpdateScriptureReflectionResponse!
+  deleteScriptureReflection(id: ID!, userId: ID!): DeleteFaithResponse!
+}
+
+# ============================================
+# Mutation Inputs
+# ============================================
+
+input ReflectOnPassageInput {
+  id: ID!
+  userId: ID!
+  reflection: String
+  prayerResponse: String
+  personalApplication: String
+}
+
+input CreatePrayerJournalInput {
+  userId: ID!
+  date: String
+  title: String
+  prayerType: PrayerType!
+  content: String!
+  status: PrayerStatus
+  prayingFor: String
+  requests: [String!]
+  gratitude: [String!]
+  scriptureReference: String
+  scriptureText: String
+  insights: String
+  feelingBefore: String
+  feelingAfter: String
+  tags: [String!]
+  isPrivate: Boolean
+}
+
+input UpdatePrayerJournalInput {
+  id: ID!
+  userId: ID!
+  title: String
+  prayerType: PrayerType
+  content: String
+  status: PrayerStatus
+  prayingFor: String
+  requests: [String!]
+  gratitude: [String!]
+  scriptureReference: String
+  scriptureText: String
+  insights: String
+  feelingBefore: String
+  feelingAfter: String
+  answeredDate: String
+  answerDescription: String
+  tags: [String!]
+  isPrivate: Boolean
+}
+
+input CreateScriptureReflectionInput {
+  userId: ID!
+  date: String
+  reference: String!
+  book: String
+  chapter: Int
+  verseStart: Int
+  verseEnd: Int
+  bookType: ScriptureBookType
+  text: String
+  whatSpokeToMe: String!
+  personalApplication: String
+  questions: [String!]
+  crossReferences: [String!]
+  readingContext: String
+  version: String
+  prayerResponse: String
+}
+
+input UpdateScriptureReflectionInput {
+  id: ID!
+  userId: ID!
+  reference: String
+  book: String
+  chapter: Int
+  verseStart: Int
+  verseEnd: Int
+  bookType: ScriptureBookType
+  text: String
+  whatSpokeToMe: String
+  personalApplication: String
+  questions: [String!]
+  crossReferences: [String!]
+  readingContext: String
+  version: String
+  prayerResponse: String
+}
+
+# ============================================
+# Response Types
+# ============================================
+
+type DailyPassageResponse {
+  success: Boolean!
+  message: String
+  passage: DailyPassage
+}
+
+type CreatePrayerJournalResponse {
+  success: Boolean!
+  message: String
+  prayer: PrayerJournalEntry
+}
+
+type UpdatePrayerJournalResponse {
+  success: Boolean!
+  message: String
+  prayer: PrayerJournalEntry
+}
+
+type CreateScriptureReflectionResponse {
+  success: Boolean!
+  message: String
+  reflection: ScriptureReflection
+}
+
+type UpdateScriptureReflectionResponse {
+  success: Boolean!
+  message: String
+  reflection: ScriptureReflection
+}
+
+type DeleteFaithResponse {
+  success: Boolean!
+  message: String
+}

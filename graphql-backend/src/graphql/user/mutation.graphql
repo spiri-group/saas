@@ -1,0 +1,106 @@
+type Mutation {
+  create_user: Boolean!
+  update_user(customer: CustomerUpdateInput!): CreateCustomerResponse
+  delete_user(userId: ID!): MutationResponse
+  purge_user(userId: ID!): MutationResponse
+  upsert_address(customerId: ID!, address: AddressInput!): UpsertCustomerAddressResponse
+  upsert_deliveryInstructions(customerId: ID, addressId: ID, deliveryInstructions: DeliveryInstructionsInput): UpsertCustomerAddressResponse
+  remove_address(customerId: ID, addressId: ID!): MutationResponse
+  set_default_address(customerId: ID, addressId: ID!): MutationResponse
+  # User card management
+  create_user_card_setup_intent(userId: ID!): CreateCardSetupIntentResponse
+  delete_user_card(userId: ID!, paymentMethodId: String!): MutationResponse
+  set_default_user_card(userId: ID!, paymentMethodId: String!): MutationResponse
+
+  # TEST ONLY: Add a test card to a user's Stripe customer account
+  # Uses Stripe's test token pm_card_visa for testing
+  add_test_card_for_user(userId: ID!): AddTestCardResponse
+}
+
+type AddTestCardResponse {
+  success: Boolean!
+  message: String
+  paymentMethodId: String
+}
+
+input UserInput {
+  firstname: String!
+  lastname: String!
+  email: EmailAddress!
+  phoneNumber: ContactNumberInput!
+  securityQuestions: [SecurityQuestionInput!]
+}
+
+input SecurityQuestionInput {
+  id: ID!
+  question: String!
+  answer: String!
+}
+
+input CustomerInput {
+  firstname: String!
+  lastname: String!
+  email: String
+  phoneNumber: ContactNumberInput
+  address: GooglePlaceInput
+  securityQuestions: [SecurityQuestionInput!]
+  # country: CountryCode!
+  # postcode: Int!
+}
+
+input CustomerUpdateInput {
+  id: ID!
+  firstname: String
+  lastname: String
+  email: String
+  phoneNumber: ContactNumberInput
+  address: GooglePlaceInput
+  locale: String
+  currency: Currency
+  religionId: String
+  openToOtherExperiences: Boolean
+  primarySpiritualInterest: SpiritualInterest
+  secondarySpiritualInterests: [SpiritualInterest]
+  securityQuestions: [SecurityQuestionInput!]
+  # country: CountryCode!
+  # postcode: Int!
+}
+
+input AddressInput {
+  id: ID
+  firstname: String
+  lastname: String
+  phoneNumber: ContactNumberInput
+  address: GooglePlaceInput
+  deliveryInstructions: DeliveryInstructionsInput
+}
+
+input DeliveryInstructionsInput {
+  propertyType: PropertyType,
+  dropOffPackage: DropOffPackage,
+  onFederalHolidays: Boolean,
+  onDefaultDays: [String],
+  openSaturday: Boolean,
+  openSunday: Boolean,
+  haveDog: Boolean,
+  securityCode: String,
+  callBox: String,
+  details: String
+}
+
+input FeedInput {
+  userId: String
+  message: String,
+  datePosted: DateTime
+}
+
+input PinnedInput {
+  userId: String,
+  messages: String,
+  thumbnail: MediaInput
+}
+
+input ItemLineInput {
+  priceId: String!
+  quantity: Int!
+}

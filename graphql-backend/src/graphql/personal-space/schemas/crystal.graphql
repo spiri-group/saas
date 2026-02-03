@@ -1,0 +1,597 @@
+# ============================================
+# Crystal & Stones Enums
+# ============================================
+
+enum CrystalColor {
+  clear
+  white
+  black
+  red
+  orange
+  yellow
+  green
+  blue
+  purple
+  pink
+  brown
+  gray
+  multicolor
+  iridescent
+}
+
+enum CrystalForm {
+  raw
+  tumbled
+  point
+  cluster
+  sphere
+  palm_stone
+  wand
+  pyramid
+  heart
+  skull
+  cabochon
+  faceted
+  slice
+  geode
+  jewelry
+  other
+}
+
+enum CrystalAcquisitionSource {
+  SPIRIVERSE
+  ONLINE_SHOP
+  LOCAL_SHOP
+  FAIR_SHOW
+  GIFT
+  FOUND
+  INHERITED
+  TRADE
+  OTHER
+}
+
+enum CleansingMethod {
+  moonlight
+  sunlight
+  smoke
+  sound
+  water
+  salt
+  earth
+  selenite
+  breath
+  visualization
+  reiki
+  other
+}
+
+enum ChargingMethod {
+  moonlight
+  sunlight
+  crystal_cluster
+  intention
+  grid
+  meditation
+  earth
+  other
+}
+
+enum ChakraType {
+  root
+  sacral
+  solar_plexus
+  heart
+  throat
+  third_eye
+  crown
+  earth_star
+  soul_star
+}
+
+# ============================================
+# Crystal Collection Types
+# ============================================
+
+type CrystalCollectionItem {
+  id: ID!
+  userId: ID!
+  name: String!
+  crystalRefId: ID                    # Link to crystal reference database
+  crystalRef: CrystalReference        # Resolved crystal reference data
+  addedDate: String!
+  color: CrystalColor
+  form: CrystalForm
+  size: String
+  weight: Float
+  origin: String
+  primaryPurpose: String
+  chakras: [ChakraType!]
+  elements: [String!]
+  zodiacSigns: [String!]
+  nickname: String
+  personalMeaning: String
+  specialBond: Boolean!
+  energyNotes: String
+  acquisitionSource: CrystalAcquisitionSource
+  acquiredFrom: String
+  acquiredDate: String
+  purchasePrice: Float
+  currency: String
+  isActive: Boolean!
+  location: String
+  photoUrl: String
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type CrystalWishlistItem {
+  id: ID!
+  userId: ID!
+  name: String!
+  crystalRefId: ID                    # Link to crystal reference database
+  crystalRef: CrystalReference        # Resolved crystal reference data
+  addedDate: String!
+  preferredForm: CrystalForm
+  preferredSize: String
+  preferredOrigin: String
+  maxBudget: Float
+  currency: String
+  purpose: String
+  reason: String
+  alertEnabled: Boolean
+  priority: Int
+  isAcquired: Boolean!
+  acquiredDate: String
+  collectionItemId: ID
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type CrystalCompanionLog {
+  id: ID!
+  userId: ID!
+  date: String!
+  crystalId: ID
+  crystalName: String!
+  reason: String
+  intention: String
+  location: String
+  howItFelt: String
+  effectivenessScore: Int
+  willContinue: Boolean
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type CrystalCleansingLog {
+  id: ID!
+  userId: ID!
+  date: String!
+  crystalIds: [ID!]
+  crystalNames: [String!]!
+  method: CleansingMethod!
+  methodDetails: String
+  duration: Int
+  moonPhase: String
+  didCharge: Boolean
+  chargingMethod: ChargingMethod
+  chargingDetails: String
+  intention: String
+  notes: String
+  photoUrl: String
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type GridCrystalPlacement {
+  position: String!
+  crystalId: ID
+  crystalName: String!
+  role: String
+}
+
+type CrystalGrid {
+  id: ID!
+  userId: ID!
+  name: String!
+  createdDate: String!
+  purpose: String!
+  gridShape: String
+  crystals: [GridCrystalPlacement!]!
+  activatedDate: String
+  deactivatedDate: String
+  isActive: Boolean!
+  duration: String
+  outcome: String
+  effectivenessScore: Int
+  notes: String
+  photoUrl: String
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# ============================================
+# Crystal Statistics
+# ============================================
+
+type ColorDistribution {
+  color: String!
+  count: Int!
+  percentage: Float!
+}
+
+type FormDistribution {
+  form: String!
+  count: Int!
+  percentage: Float!
+}
+
+type ChakraDistribution {
+  chakra: String!
+  count: Int!
+}
+
+type CrystalStats {
+  totalCrystals: Int!
+  activeCrystals: Int!
+  inactiveCrystals: Int!
+  colorDistribution: [ColorDistribution!]!
+  formDistribution: [FormDistribution!]!
+  chakraDistribution: [ChakraDistribution!]!
+  specialBondCount: Int!
+  recentlyAdded: [CrystalCollectionItem!]!
+  companionStreak: Int!
+  totalCleansingsSessions: Int!
+  activeGrids: Int!
+  wishlistCount: Int!
+  acquiredFromWishlist: Int!
+}
+
+# ============================================
+# Crystal Queries
+# ============================================
+
+extend type Query {
+  # Collection
+  crystalCollection(userId: ID!, filters: CrystalCollectionFiltersInput): [CrystalCollectionItem!]!
+  crystal(id: ID!, userId: ID!): CrystalCollectionItem
+
+  # Wishlist
+  crystalWishlist(userId: ID!, filters: CrystalWishlistFiltersInput): [CrystalWishlistItem!]!
+  wishlistItem(id: ID!, userId: ID!): CrystalWishlistItem
+  wishlistItemByCrystalRef(userId: ID!, crystalRefId: ID!): CrystalWishlistItem
+
+  # Companion
+  crystalCompanionLogs(userId: ID!, filters: CrystalCompanionFiltersInput): [CrystalCompanionLog!]!
+  todaysCompanion(userId: ID!): CrystalCompanionLog
+
+  # Cleansing
+  crystalCleansingLogs(userId: ID!, filters: CrystalCleansingFiltersInput): [CrystalCleansingLog!]!
+
+  # Grids
+  crystalGrids(userId: ID!, filters: CrystalGridFiltersInput): [CrystalGrid!]!
+  crystalGrid(id: ID!, userId: ID!): CrystalGrid
+
+  # Stats
+  crystalStats(userId: ID!): CrystalStats!
+}
+
+input CrystalCollectionFiltersInput {
+  color: CrystalColor
+  form: CrystalForm
+  chakra: ChakraType
+  isActive: Boolean
+  specialBond: Boolean
+  search: String
+  limit: Int
+  offset: Int
+}
+
+input CrystalWishlistFiltersInput {
+  priority: Int
+  isAcquired: Boolean
+  alertEnabled: Boolean
+  limit: Int
+  offset: Int
+}
+
+input CrystalCompanionFiltersInput {
+  startDate: String
+  endDate: String
+  crystalId: ID
+  limit: Int
+  offset: Int
+}
+
+input CrystalCleansingFiltersInput {
+  startDate: String
+  endDate: String
+  method: CleansingMethod
+  crystalId: ID
+  limit: Int
+  offset: Int
+}
+
+input CrystalGridFiltersInput {
+  isActive: Boolean
+  limit: Int
+  offset: Int
+}
+
+# ============================================
+# Crystal Mutations
+# ============================================
+
+extend type Mutation {
+  # Collection
+  createCrystal(input: CreateCrystalInput!): CrystalCollectionResponse!
+  updateCrystal(input: UpdateCrystalInput!): CrystalCollectionResponse!
+  deleteCrystal(id: ID!, userId: ID!): DeleteCrystalResponse!
+
+  # Wishlist
+  createWishlistItem(input: CreateWishlistItemInput!): CrystalWishlistResponse!
+  updateWishlistItem(input: UpdateWishlistItemInput!): CrystalWishlistResponse!
+  deleteWishlistItem(id: ID!, userId: ID!): DeleteCrystalResponse!
+  acquireFromWishlist(input: AcquireFromWishlistInput!): AcquireFromWishlistResponse!
+
+  # Companion
+  createCompanionLog(input: CreateCompanionLogInput!): CrystalCompanionResponse!
+  updateCompanionLog(input: UpdateCompanionLogInput!): CrystalCompanionResponse!
+
+  # Cleansing
+  createCleansingLog(input: CreateCleansingLogInput!): CrystalCleansingResponse!
+  updateCleansingLog(input: UpdateCleansingLogInput!): CrystalCleansingResponse!
+  deleteCleansingLog(id: ID!, userId: ID!): DeleteCrystalResponse!
+
+  # Grids
+  createCrystalGrid(input: CreateCrystalGridInput!): CrystalGridResponse!
+  updateCrystalGrid(input: UpdateCrystalGridInput!): CrystalGridResponse!
+  deleteCrystalGrid(id: ID!, userId: ID!): DeleteCrystalResponse!
+}
+
+# ============================================
+# Crystal Input Types
+# ============================================
+
+input CreateCrystalInput {
+  userId: ID!
+  name: String!
+  crystalRefId: ID                    # Optional link to crystal reference
+  addedDate: String
+  color: CrystalColor
+  form: CrystalForm
+  size: String
+  weight: Float
+  origin: String
+  primaryPurpose: String
+  chakras: [ChakraType!]
+  elements: [String!]
+  zodiacSigns: [String!]
+  nickname: String
+  personalMeaning: String
+  specialBond: Boolean
+  energyNotes: String
+  acquisitionSource: CrystalAcquisitionSource
+  acquiredFrom: String
+  acquiredDate: String
+  purchasePrice: Float
+  currency: String
+  location: String
+  photoUrl: String
+}
+
+input UpdateCrystalInput {
+  id: ID!
+  userId: ID!
+  name: String
+  crystalRefId: ID                    # Optional link to crystal reference
+  color: CrystalColor
+  form: CrystalForm
+  size: String
+  weight: Float
+  origin: String
+  primaryPurpose: String
+  chakras: [ChakraType!]
+  elements: [String!]
+  zodiacSigns: [String!]
+  nickname: String
+  personalMeaning: String
+  specialBond: Boolean
+  energyNotes: String
+  acquisitionSource: CrystalAcquisitionSource
+  acquiredFrom: String
+  acquiredDate: String
+  purchasePrice: Float
+  currency: String
+  isActive: Boolean
+  location: String
+  photoUrl: String
+}
+
+input CreateWishlistItemInput {
+  userId: ID!
+  name: String!
+  crystalRefId: ID                    # Optional link to crystal reference
+  preferredForm: CrystalForm
+  preferredSize: String
+  preferredOrigin: String
+  maxBudget: Float
+  currency: String
+  purpose: String
+  reason: String
+  alertEnabled: Boolean
+  priority: Int
+}
+
+input UpdateWishlistItemInput {
+  id: ID!
+  userId: ID!
+  name: String
+  crystalRefId: ID                    # Optional link to crystal reference
+  preferredForm: CrystalForm
+  preferredSize: String
+  preferredOrigin: String
+  maxBudget: Float
+  currency: String
+  purpose: String
+  reason: String
+  alertEnabled: Boolean
+  priority: Int
+  isAcquired: Boolean
+  acquiredDate: String
+  collectionItemId: ID
+}
+
+input AcquireFromWishlistInput {
+  wishlistItemId: ID!
+  userId: ID!
+  vendorName: String
+  purchasePrice: Float
+  currency: String
+  form: CrystalForm
+  origin: String
+  photoUrl: String
+}
+
+input CreateCompanionLogInput {
+  userId: ID!
+  date: String
+  crystalId: ID
+  crystalName: String!
+  reason: String
+  intention: String
+  location: String
+}
+
+input UpdateCompanionLogInput {
+  id: ID!
+  userId: ID!
+  crystalId: ID
+  crystalName: String
+  reason: String
+  intention: String
+  location: String
+  howItFelt: String
+  effectivenessScore: Int
+  willContinue: Boolean
+}
+
+input CreateCleansingLogInput {
+  userId: ID!
+  date: String
+  crystalIds: [ID!]
+  crystalNames: [String!]!
+  method: CleansingMethod!
+  methodDetails: String
+  duration: Int
+  moonPhase: String
+  didCharge: Boolean
+  chargingMethod: ChargingMethod
+  chargingDetails: String
+  intention: String
+  notes: String
+  photoUrl: String
+}
+
+input UpdateCleansingLogInput {
+  id: ID!
+  userId: ID!
+  crystalIds: [ID!]
+  crystalNames: [String!]
+  method: CleansingMethod
+  methodDetails: String
+  duration: Int
+  moonPhase: String
+  didCharge: Boolean
+  chargingMethod: ChargingMethod
+  chargingDetails: String
+  intention: String
+  notes: String
+  photoUrl: String
+}
+
+input GridCrystalPlacementInput {
+  position: String!
+  crystalId: ID
+  crystalName: String!
+  role: String
+}
+
+input CreateCrystalGridInput {
+  userId: ID!
+  name: String!
+  createdDate: String
+  purpose: String!
+  gridShape: String
+  crystals: [GridCrystalPlacementInput!]!
+  notes: String
+  photoUrl: String
+}
+
+input UpdateCrystalGridInput {
+  id: ID!
+  userId: ID!
+  name: String
+  purpose: String
+  gridShape: String
+  crystals: [GridCrystalPlacementInput!]
+  activatedDate: String
+  deactivatedDate: String
+  isActive: Boolean
+  duration: String
+  outcome: String
+  effectivenessScore: Int
+  notes: String
+  photoUrl: String
+}
+
+# ============================================
+# Crystal Response Types
+# ============================================
+
+type CrystalCollectionResponse {
+  success: Boolean!
+  message: String
+  crystal: CrystalCollectionItem
+}
+
+type CrystalWishlistResponse {
+  success: Boolean!
+  message: String
+  wishlistItem: CrystalWishlistItem
+}
+
+type AcquireFromWishlistResponse {
+  success: Boolean!
+  message: String
+  collectionItem: CrystalCollectionItem
+  wishlistItem: CrystalWishlistItem
+}
+
+type CrystalCompanionResponse {
+  success: Boolean!
+  message: String
+  companionLog: CrystalCompanionLog
+}
+
+type CrystalCleansingResponse {
+  success: Boolean!
+  message: String
+  cleansingLog: CrystalCleansingLog
+}
+
+type CrystalGridResponse {
+  success: Boolean!
+  message: String
+  grid: CrystalGrid
+}
+
+type DeleteCrystalResponse {
+  success: Boolean!
+  message: String
+}

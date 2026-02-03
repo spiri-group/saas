@@ -1,0 +1,25 @@
+type Mutation {
+    delete(ref: RecordRefInput!): MutationResponse
+    add_like(ref: RecordRefInput!, like: Boolean) : CreateLikeResponse
+    review_helped(ref: RecordRefInput!, helped: Boolean) : CreateReviewHelpedResponse
+}
+
+type CreateLikeResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  likeState: LikeState
+}
+
+type CreateReviewHelpedResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  helpedState: HelpedState
+}
+
+input RecordFeeInput {
+  id: String!
+  fee: Float!
+  activityIds: [String]!
+}

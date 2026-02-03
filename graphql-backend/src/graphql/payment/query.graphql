@@ -1,0 +1,14 @@
+type Query {
+    getStoredPaymentMethods(merchantId: String!): [StoredPaymentMethod!]!
+}
+
+type StoredPaymentMethod {
+    id: String!
+    last4: String!
+    brand: String!
+    expMonth: Int!
+    expYear: Int!
+    isDefault: Boolean!
+    customerId: String!
+    createdAt: DateTime!
+}

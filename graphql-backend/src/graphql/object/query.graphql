@@ -1,0 +1,29 @@
+type Query {
+    object(ref: RecordRefInput!) : Object
+}
+
+type Object {
+  id: String,
+  partition: [String],
+  container: String,
+  comments: [Comment],
+  liked: Boolean,
+  likeCount: Int,
+  helped: Boolean,
+  helpedCount: Int
+}
+
+type Fee {
+  id: String!,
+  fee: Float!,
+  activityIds: [String]!,
+  activities: [CaseInteraction]!
+}
+
+type LikeState {
+  count: Int
+}
+
+type HelpedState {
+  count: Int
+}

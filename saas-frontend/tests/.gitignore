@@ -1,0 +1,25 @@
+# Playwright Test Artifacts
+
+# Authentication states (contains session tokens)
+.auth/
+
+# Test results
+test-results/
+playwright-report/
+screenshots/
+
+# Trace files
+trace.zip
+*.trace
+
+# Video recordings
+videos/
+*.webm
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Environment variables
+.env.test
+.env.test.local

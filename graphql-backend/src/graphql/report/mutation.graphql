@@ -1,0 +1,17 @@
+type Mutation {
+    create_report(
+    report: ReportInput!
+    forObject: RecordRefInput!
+  ) : CreateReportResponse
+}
+
+type CreateReportResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  report: Report
+}
+
+input ReportInput {
+  reasonIds: [String]!
+}

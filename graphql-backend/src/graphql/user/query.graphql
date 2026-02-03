@@ -1,0 +1,194 @@
+type Query {
+    customer(id: String!): Customer
+    customers: [Customer]
+    me: User
+    user(id: String, email: String): User,
+    userAddress(userId: ID!, addressId: ID!): Address
+    users(emails: [String]!): [User]
+}
+
+type UpsertCustomerAddressResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  address: Address
+}
+
+type CreateCustomerResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  customer: Customer
+}
+
+type CreateUserResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  user: User
+}
+
+type CreateBookingResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  userDetails: [TourBooking]
+}
+
+type User {
+  id: String
+  requiresSetup: Boolean,
+  setup: Setup
+  firstname: String
+  lastname: String
+  name: String
+  email: String
+  phoneNumber: ContactNumber
+  currency: String
+  locale: String
+  religion: Religion
+  openToOtherExperiences: Boolean
+  primarySpiritualInterest: SpiritualInterest
+  secondarySpiritualInterests: [SpiritualInterest]
+  vendors: [Vendor]
+  ref: RecordRef
+  pinned: [Pinned]
+  orders(orderStatus: [String]): [Order]
+  tickets(ticketStatus: [String]): [TourBooking]
+  feed: [Feed]
+  cases(caseStatus: [String]): [Case]
+  lastViewed: LastViewed
+  wishlists: [Wishlist]
+  requiresInput: Boolean
+  address: GooglePlace
+  addresses: [Address],
+  securityQuestions: [SecurityQuestion]
+  cards: [Card]
+}
+
+enum SpiritualInterest {
+  MEDIUMSHIP
+  PARANORMAL
+  CRYSTALS
+  WITCHCRAFT
+  ENERGY
+  HERBALISM
+  FAITH
+}
+
+type Religion {
+  id: String!
+  name: String!
+}
+
+type SecurityQuestion {
+  id: ID!
+  question: String!
+  answer: String!
+}
+
+type Address {
+  id: String
+  firstname: String
+  lastname: String
+  address: GooglePlace
+  phoneNumber: ContactNumber
+  isDefault: Boolean
+  deliveryInstructions: DeliveryInstructions
+}
+
+type Setup {
+  id: String
+  path: String
+}
+
+type Customer {
+  id: String
+  firstname: String
+  lastname: String
+  email: String
+  phoneNumber: ContactNumber
+  currency: Currency
+  locale: String
+  ref: RecordRef
+  address: GooglePlace
+  addresses: [Address]
+  primarySpiritualInterest: SpiritualInterest
+  secondarySpiritualInterests: [SpiritualInterest]
+}
+
+type DeliveryInstructions {
+  propertyType: PropertyType,
+  dropOffPackage: DropOffPackage,
+  onFederalHolidays: Boolean,
+  onDefaultDays: [String],
+  openSaturday: Boolean,
+  openSunday: Boolean,
+  haveDog: Boolean,
+  securityCode: String,
+  callBox: String,
+  details: String
+}
+
+type MyProfile {
+  id: String,
+  name: String,
+  pinned: Pinned
+  lastViewed: LastViewed
+  feed: Feed
+}
+
+type Pinned {
+  user: User,
+  messages: String,
+  thumbnail: Media
+}
+
+type LastViewed {
+  id: String,
+  type: ListingType,
+  percentageComplete: Int,
+  thumbnail: Media
+}
+
+type Feed {
+  id: String,
+  user: User,
+  message: String,
+  datePosted: DateTime
+  thumbnail: Media
+}
+
+type RelativeLocationFromMe {
+  value: Float!,
+  units: String!
+}
+
+type StripeInvoice {
+  id: String,
+  paymentIntent: StripePaymentIntent
+}
+
+type StripePaymentIntent {
+  id: String,
+  clientSecret: String
+}
+
+enum PropertyType {
+    HOUSE
+    APARTMENT
+    BUSINESS
+}
+
+enum DropOffPackage {
+    FRONT_DOOR
+    MAIL_ROOM
+    PROPERTY_STAFF
+    BUILDING_RECEPTION
+    LEASING_OFFICE
+    LOADING_DOCK
+    BACK_DOOR
+    SIDE_PORCH
+    OUTSIDE_GARAGE
+    NO_PREFERENCE
+}

@@ -1,0 +1,67 @@
+meta {
+  name: stripe setup
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:7071/api/payments
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "evt_1SAlo4PLo8nTO6jasGuIvmWs",
+    "object": "event",
+    "api_version": "2022-11-15",
+    "created": 1758693840,
+    "data": {
+      "object": {
+        "id": "seti_1SAlnAPLo8nTO6jafUo1IsC3",
+        "object": "setup_intent",
+        "application": null,
+        "automatic_payment_methods": null,
+        "cancellation_reason": null,
+        "client_secret": "seti_1SAlnAPLo8nTO6jafUo1IsC3_secret_T6zmgXe44Pwi5pUtQftPecuGejgOhcO",
+        "created": 1758693784,
+        "customer": "cus_SPPX3gd6m3oH3a",
+        "description": null,
+        "flow_directions": null,
+        "last_setup_error": null,
+        "latest_attempt": "setatt_1SAlo4PLo8nTO6jaFsJFcTzb",
+        "livemode": false,
+        "mandate": null,
+        "metadata": {
+          "target": "Main-Orders",
+          "customerEmail": "travis.sansome@gmail.com",
+          "orderId": "1771a41a-a99a-44ab-a5d8-c65b911e30a8"
+        },
+        "next_action": null,
+        "on_behalf_of": null,
+        "payment_method": "pm_1SAlo4PLo8nTO6jaSvU9KlDH",
+        "payment_method_configuration_details": null,
+        "payment_method_options": {
+          "card": {
+            "mandate_options": null,
+            "network": null,
+            "request_three_d_secure": "automatic"
+          }
+        },
+        "payment_method_types": [
+          "card"
+        ],
+        "single_use_mandate": null,
+        "status": "succeeded",
+        "usage": "off_session"
+      }
+    },
+    "livemode": false,
+    "pending_webhooks": 1,
+    "request": {
+      "id": "req_IbXV2f8hqgzMlm",
+      "idempotency_key": "9679a47c-670f-4563-9655-20a6731581b4"
+    },
+    "type": "setup_intent.succeeded"
+  }
+}

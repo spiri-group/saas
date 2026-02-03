@@ -1,0 +1,44 @@
+type EmailTemplate {
+  id: ID!
+  name: String!
+  subject: String!
+  html: String!
+  variables: [String!]!
+  category: String
+  description: String
+  isActive: Boolean!
+  headerId: String
+  footerId: String
+  createdAt: String!
+  updatedAt: String!
+  updatedBy: String!
+}
+
+type EmailHeaderFooter {
+  id: ID!
+  name: String!
+  type: String!
+  content: String!
+  description: String
+  isDefault: Boolean!
+  isActive: Boolean!
+  createdAt: String!
+  updatedAt: String!
+  updatedBy: String!
+}
+
+type EmailAsset {
+  name: String!
+  url: String!
+  size: Int!
+  lastModified: String!
+  contentType: String
+}
+
+type Query {
+  emailTemplates(category: String): [EmailTemplate!]!
+  emailTemplate(id: ID!): EmailTemplate
+  emailHeadersFooters(type: String): [EmailHeaderFooter!]!
+  emailHeaderFooter(id: ID!): EmailHeaderFooter
+  emailAssets(prefix: String, maxResults: Int): [EmailAsset!]!
+}

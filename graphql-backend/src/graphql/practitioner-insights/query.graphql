@@ -1,0 +1,81 @@
+type Query {
+  # Get all approved insights for a specific crystal
+  insightsForCrystal(crystalId: ID!, filters: PractitionerInsightFiltersInput): PractitionerInsightListResponse!
+
+  # Get all insights created by a specific practitioner
+  practitionerInsights(practitionerId: ID!, filters: PractitionerInsightFiltersInput): PractitionerInsightListResponse!
+
+  # Get pending insights for moderation (admin only)
+  pendingInsights(limit: Int, offset: Int): PractitionerInsightListResponse!
+
+  # Get a single insight by ID
+  practitionerInsight(id: ID!, userId: ID!): PractitionerInsight
+
+  # Get insights that the current user has agreed with
+  agreedInsights(userId: ID!, limit: Int): [PractitionerInsight!]!
+
+  # Get flagged insights for review (admin only)
+  flaggedInsights(limit: Int, offset: Int): PractitionerInsightListResponse!
+}
+
+# Main Practitioner Insight type
+type PractitionerInsight {
+  id: ID!
+  ref: RecordRef!
+
+  # Crystal Reference
+  crystalId: ID!
+
+  # Insight Details
+  practitionerId: ID!
+  insightType: InsightType!
+  content: String!
+
+  # Community Engagement
+  agreeCount: Int!
+  agreedBy: [ID!]!
+
+  # Moderation
+  insightStatus: InsightStatus!
+  reportCount: Int!
+  moderationNotes: String
+  moderatedBy: ID
+  moderatedAt: String
+
+  # Metadata
+  status: RecordStatus!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# Enum for insight types
+enum InsightType {
+  usage_tip
+  pairing
+  personal_experience
+  warning
+  alternative_use
+}
+
+# Enum for insight moderation status
+enum InsightStatus {
+  pending
+  approved
+  flagged
+  removed
+}
+
+# Filter input for insight queries
+input PractitionerInsightFiltersInput {
+  crystalId: ID
+  insightType: InsightType
+  insightStatus: InsightStatus
+  limit: Int
+  offset: Int
+}
+
+# Response types
+type PractitionerInsightListResponse {
+  insights: [PractitionerInsight!]!
+  totalCount: Int!
+}

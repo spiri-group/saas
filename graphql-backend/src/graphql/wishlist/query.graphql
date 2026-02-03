@@ -1,0 +1,17 @@
+type Wishlist {
+  id: String!
+  user: User
+  name: String
+  lines: [WishlistLine]
+  visible: VisibleType
+  ref: RecordRef
+}
+
+type WishlistLine {
+  ref: RecordRef
+  productRef: RecordRef
+  listing: Listing
+  skuId: String
+  sale_price: String
+  quantity: String
+}

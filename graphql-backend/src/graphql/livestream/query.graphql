@@ -1,0 +1,28 @@
+type Query { 
+  livestream(id: String!, vendorId: String!): LiveStream
+}
+
+type LiveStream {
+  id: ID!
+  name: String!
+  topic: String!
+  type: ListingType!
+  description: String!
+  thumbnail: Media!
+  price: CurrencyAmount!
+  questionMode: QuestionMode!
+  ref: RecordRef
+  moderate: [Moderate]
+}
+
+type Moderate {
+  userId: ID!
+  alias: String
+}
+
+type CreateLiveStreamResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  livestream: LiveStream
+}

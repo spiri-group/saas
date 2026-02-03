@@ -1,0 +1,39 @@
+type Mutation {
+    createSetupIntent(merchantId: String!): CreateSetupIntentResponse!
+    addPaymentMethod(merchantId: String!, setupIntentId: String!, paymentMethodId: String!): AddPaymentMethodResponse!
+    deletePaymentMethod(merchantId: String!, paymentMethodId: String!): DeletePaymentMethodResponse!
+    setDefaultPaymentMethod(merchantId: String!, paymentMethodId: String!): SetDefaultPaymentMethodResponse!
+}
+
+type CreateSetupIntentResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    setupIntent: SetupIntent
+}
+
+type AddPaymentMethodResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    paymentMethod: StoredPaymentMethod
+}
+
+type DeletePaymentMethodResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+}
+
+type SetDefaultPaymentMethodResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+}
+
+
+type SetupIntent {
+    setupIntentId: String!
+    clientSecret: String!
+    customerId: String!
+}

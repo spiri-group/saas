@@ -1,0 +1,141 @@
+type Mutation {
+  upsert_case(case: CaseInput!): CreateCaseResponse
+  upsert_caseOffer(offer: CaseOfferInput): CreateCaseOfferResponse
+  close_case(ref: RecordRefInput!): CreateCaseResponse
+  request_release_case(ref: RecordRefInput!): CreateCaseOfferResponse
+  accept_caseOffer(ref: RecordRefInput!): CreateCaseOfferResponse
+  reject_caseOffer(ref: RecordRefInput!): CreateCaseOfferResponse
+  create_activity_log(interaction: ActivityLogInput!, caseRef: RecordRefInput!, vendorId: String!) : CreateCaseInteractionResponse
+  add_case_comment(interaction: CaseInteractionCommentInput!, caseRef: RecordRefInput!, vendorId: String!) : CreateCaseInteractionResponse
+  create_caseInvoice(merchantId: String!, caseRef: RecordRefInput!, invoice: CaseInvoiceInput!) : CaseInvoiceResponse
+  charge_customer(feeIds: [String]!, caseRef: RecordRefInput!, vendorId: String!) : MutationResponse
+  refund_case(chargeId: String!, amountToRefund: Float!): RefundCaseResponse
+  mark_case_invoice_void(id: String!): MarkInvoiceResponse,
+  cancel_request(ref: RecordRefInput!): CreateCaseResponse
+}
+
+type CreateCaseResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  case: Case
+}
+
+type CreateCaseOfferResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  offer: CaseOffer
+}
+
+type CreateCaseInteractionResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  caseInteraction: CaseInteraction
+}
+
+type CaseInvoiceResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  invoice: Order
+}
+
+type RefundCaseResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  charge: StripeCharge!
+}
+
+type MarkInvoiceResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  invoice: StripeInvoice!
+}
+
+input CaseInput {
+  id: String!
+  categoryId: String! 
+  contact: ContactInput
+  location: GooglePlaceInput
+  description: String
+  religionId: String
+  urgencyFee: VariantInput
+  startedFrom: StartedFromInput
+  affectedAreas: [AffectedAreaInput]
+  affectedPeople: [AffectedPersonInput]
+}
+
+input CaseOfferInput {
+  id: ID
+  merchantId: ID
+  caseId: ID
+  description: String
+  type: CaseOfferType
+  price: CurrencyAmountInput
+}
+
+input StartedFromInput {
+  amount: Float
+  unitId: String
+}
+
+input ContactInput {
+  email: String!
+  name: String
+  phoneNumber: ContactNumberInput
+}
+
+input AffectedAreaInput {
+  id: String!
+  name: String
+  coldTemperature: Boolean
+  physicalActivity: Boolean
+  negativeSensations: Boolean
+  evidence: [MediaInput]
+}
+
+input AffectedPersonInput {
+  id: String!
+  name: String
+  mentallyInjured: Boolean
+  physicallyInjured: Boolean
+  isChild: Boolean
+  evidence: [MediaInput]
+}
+
+input ActivityLogInput {
+  id: String!
+  title: String!
+  details: String!
+  conductedAtDate: DateTime!
+  attachedFiles: [MediaInput]
+}
+
+input CaseInteractionCommentInput {
+  id: String!,
+  title: String!,
+  details: String!
+  attachedFiles: [MediaInput]
+}
+
+input CaseInvoiceInput {
+  id: String
+  userId: String
+  lines: [CaseInvoiceInteractionInput]
+}
+
+input CaseInvoiceInteractionInput {
+  interactionId: String
+  invoiceDescription: String
+  amount: CurrencyAmountInput!
+}
+
+input InvoiceToDiscount {
+  orderId: ID!
+  customerEmail: String!
+  discount: Float!
+}

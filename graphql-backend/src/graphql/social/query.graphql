@@ -1,0 +1,48 @@
+type Query {
+    socialpost(id: String, vendorId: String): SocialPost
+    myFeed(limit: Int, offset: Int): MyFeedResponse
+}
+
+type MyFeedResponse {
+  posts: [FeedPost]!
+  hasMore: Boolean!
+}
+
+type FeedPost {
+  vendorId: String!
+  vendorName: String!
+  vendorSlug: String!
+  vendorLogo: Media
+  vendorDocType: String!
+  postType: String!
+  video: Video
+  oracleMessage: OracleMessage
+}
+
+type SocialPost {
+  id: String!
+  vendorId: String!
+  type: String,
+  title: String
+  description: String,
+  hashtags: [String]
+  availableAfter: DateTime
+  isPublished: Boolean
+  content: SocialPostContent
+  ref: RecordRef
+}
+
+union SocialPostContent = SocialPostTextOnlyContent | SocialPostMediaContent
+
+type SocialPostMediaContent {
+  media: [Media]
+}
+
+type SocialPostTextOnlyContent {
+  mainText: TextSchema
+  subText: TextSchema
+  textVerticalAlignment: String
+  backgroundType: String
+  backgroundColor: String
+  backgroundImage: Media
+}

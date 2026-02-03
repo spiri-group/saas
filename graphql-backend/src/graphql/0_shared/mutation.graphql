@@ -1,0 +1,296 @@
+type Mutation {
+  upsertThumbnail(forObject: RecordRefInput!, thumbnail: ThumbnailInput!): MutationResponse
+}
+
+
+interface MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+}
+
+type MutationResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+}
+
+input MediaInput {
+  code: ID
+  name: String!
+  urlRelative: String!
+  size: String!
+  type: FileFormatType
+  title: String
+  description: String
+  hashtags: [String]
+  sizeBytes: Int
+  durationSeconds: Int
+}
+
+input VideoInput {
+  media: MediaInput!
+  coverPhoto: MediaInput
+}
+
+input BannerConfigInput {
+  backgroundType: BannerBackgroundType!
+  backgroundColor: String
+  gradientStart: String
+  gradientEnd: String
+  gradientDirection: GradientDirection
+  backgroundImage: MediaInput
+  promiseText: String!
+  textColor: String!
+  textAlignment: TextAlignment!
+  textSize: BannerTextSize!
+}
+
+input ContactNumberInput {
+  raw: String!
+  displayAs: String!
+  value: String!
+}
+
+input AddressDetailsInput {
+  line1: String
+  line2: String
+  city: String
+  state: String
+  postal_code: String
+  country: String
+}
+
+input GooglePlaceInput {
+  id: String!,
+  formattedAddress: String!,
+  components: StripePlaceComponentsInput,
+  point: GooglePointInput
+}
+
+input StripePlaceComponentsInput {
+  city: String,
+  country: String!,
+  line1: String,
+  line2: String,
+  postal_code: String,
+  state: String
+}
+
+input GooglePointInput {
+  type: String!,
+  coordinates: LocationCoordinatesInput!
+}
+
+input TimeSpanInput {
+  amount: Float
+  unitId: String
+}
+
+input LocationCoordinatesInput {
+  lat: Float!,
+  lng: Float!
+}
+
+input PriceInput {
+  id: ID
+  price: CurrencyAmountInput
+  recurring: PriceRecurringDefinitionInput
+}
+
+input CurrencyAmountInput {
+  id: String
+  currency: String,
+  amount: Float
+}
+
+input PriceRecurringDefinitionInput {
+  interval: String
+  interval_count: String
+}
+
+input RecordRefInput {
+  id: String!
+  partition: [String]!
+  container: String
+}
+
+input TimeRangeInput {
+  start: Time,
+  end: Time,
+  duration_ms: Int
+}
+
+input ColorChoiceInput {
+  background: String
+  foreground: String
+}
+
+input BackgroundFormatInput {
+  color: String
+  image: MediaInput
+  transparency: Float
+}
+
+input ThumbnailInput {
+  image: ThumbnailImageInput
+  dynamicMode: ThumbnailDynamicModeInput
+  title: ThumbnailTitleInput
+  moreInfo: ThumbnailMoreInfoInput
+  stamp: ThumbnailStampInput
+  bgColor: String
+  panelTone: String
+  themeBase: String
+}
+
+input ThumbnailDynamicModeInput {
+  type: ThumbnailDynamicModeType!
+  video: ThumbnailVideoModeInput
+  collage: ThumbnailCollageModeInput
+}
+
+enum ThumbnailDynamicModeType {
+  VIDEO
+  COLLAGE
+}
+
+input ThumbnailVideoModeInput {
+  media: MediaInput!
+  autoplay: Boolean
+  muted: Boolean
+}
+
+input ThumbnailCollageModeInput {
+  images: [MediaInput!]!
+  transitionDuration: Int
+  crossFade: Boolean
+}
+
+input ThumbnailImageInput {
+  media: MediaInput
+  zoom: Float
+  objectFit: String
+}
+
+input ThumbnailTitleInput {
+  content: String
+  panel: ThumbnailPanelInput
+  bgColor: String
+}
+
+input ThumbnailMoreInfoInput {
+  content: String
+}
+
+input ThumbnailPanelInput {
+  bgColor: String
+  textColor: String
+  bgOpacity: Float
+}
+
+input ThumbnailStampInput {
+  text: String
+  enabled: Boolean
+  bgColor: String
+  textColor: String
+}
+
+# Pre-Reading Questions Input
+input QuestionOptionInput {
+  id: String!
+  label: String!
+}
+
+input PreReadingQuestionInput {
+  id: String!
+  type: PreReadingQuestionType!
+  question: String!
+  description: String
+  required: Boolean!
+  options: [QuestionOptionInput!]
+}
+
+enum PreReadingQuestionType {
+  SHORT_TEXT
+  LONG_TEXT
+  MULTIPLE_CHOICE
+  CHECKBOXES
+  DROPDOWN
+  DATE
+  NUMBER
+  EMAIL
+}
+
+input TextSchemaInput {
+  content: String!
+  format: TextFormatInput
+  verticalAlignment: TextVerticalAlignment
+}
+
+input TextFormatInput {
+  family: String
+  size: String
+  color: String
+  backgroundColor: String
+  bold: Boolean
+  italic: Boolean
+  alignment: TextAlignment
+  decoration: String
+  case: TextCase
+  margin: TopBottomLeftRightInput
+  padding: TopBottomLeftRightInput
+  withQuotes: Boolean
+  borderRadius: BorderRadiusInput
+}
+
+input PriceLogEntryInput {
+  datetime: DateTime
+  type: String
+  status: String
+  price: CurrencyAmountInput
+}
+
+input TopBottomLeftRightInput {
+  top: Int
+  bottom: Int
+  left: Int
+  right: Int
+}
+
+input BorderRadiusInput {
+  topLeft: Int
+  topRight: Int
+  bottomLeft: Int
+  bottomRight: Int
+}
+
+input FAQInput {
+  id: ID!
+  title: String,
+  description: String
+}
+
+enum TextAlignment {
+  left
+  right
+  center
+}
+
+enum TextCase {
+  none
+  upper
+  lower
+  name
+}
+
+enum TextVerticalAlignment {
+  top
+  center
+  bottom
+}
+
+enum BackgroundType {
+  none
+  color
+  image
+}

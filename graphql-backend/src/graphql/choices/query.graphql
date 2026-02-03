@@ -1,0 +1,106 @@
+type Query {
+  # flat choices
+  flatChoices(fields: [String], defaultLocale: Locale): [Choice]
+  flatChoice(field: String!, defaultLocale: Locale): Choice
+
+  # choice configuration
+  choiceConfigs: [ChoiceConfig!]!
+  choiceConfig(id: String!): ChoiceConfig
+
+  # new hierarchical choices
+  choiceRootNodes(ref: RecordRefInput!, defaultLocale: Locale): [ChoiceNode!]!
+  choiceTreeFlat(field: String!, locale: Locale): [ChoiceFlatOption!]!
+
+  # convenience queries for specific hierarchical choices
+  religions(defaultLocale: Locale): [ChoiceNode!]!
+  merchantTypes(defaultLocale: Locale): [ChoiceNode!]!
+
+}
+
+type Choice {
+  id: String
+  options: [ChoiceOption]
+}
+
+type ChoiceOption {
+  id: String
+  defaultLabel: String
+  localizations: [Localization]
+  status: RecordStatus
+}
+
+# Choice configuration types
+type ChoiceConfig {
+  id: ID! # This IS the backing identifier (e.g., "category", "product-types")
+  kind: ChoiceKind!
+  label: String!
+  metadataSchema: MetadataSchema
+  createdAt: String!
+  updatedAt: String!
+  ref: RecordRef!
+}
+
+
+enum ChoiceKind {
+  FLAT
+  HIERARCHICAL
+}
+
+# Hierarchical choice types
+type ChoiceNode {
+  ref: RecordRef!
+  configId: String!
+  id: ID!
+  type: String!
+  label: String!
+  localizations: [NodeLocalization!]!
+  parentRef: RecordRef
+  sortOrder: Int!
+  ancestors: [String!]!
+  path: String!
+  icon: String
+  level: Int!
+  childIds: [String!]!
+  status: RecordStatus!
+  children: [ChoiceNode!]!
+  metadata: JSON
+  createdAt: String!
+  updatedAt: String!
+}
+
+type NodeLocalization {
+  locale: Locale!
+  label: String!
+  slug: String
+}
+
+# Flat projection for dropdowns
+type ChoiceFlatOption {
+  id: ID!
+  label: String!
+  path: String!
+  slug: String!
+  level: Int!
+}
+
+# Metadata schema types
+type MetadataSchema {
+  fields: [MetadataSchemaField!]!
+}
+
+type MetadataSchemaField {
+  id: String!
+  name: String!
+  type: MetadataFieldType!
+  required: Boolean!
+}
+
+enum MetadataFieldType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  DATE
+  PERCENTAGE
+  CURRENCY
+}
+

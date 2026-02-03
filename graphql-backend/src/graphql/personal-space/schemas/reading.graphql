@@ -1,0 +1,327 @@
+# ============================================
+# Reading Entry Types (Tarot/Oracle Card Pulls)
+# ============================================
+
+enum ReadingSourceType {
+  SELF        # Pulled cards myself
+  SPIRIVERSE  # Reading from a practitioner on SpiriVerse
+  EXTERNAL    # External source (TikTok, YouTube, in-person, etc.)
+}
+
+enum ExternalPlatform {
+  TIKTOK
+  YOUTUBE
+  IN_PERSON
+  PODCAST
+  OTHER
+}
+
+type ReadingSourceDetails {
+  # SELF
+  deck: String
+
+  # SPIRIVERSE
+  spiriReadingId: ID
+  practitionerName: String
+  practitionerId: ID
+
+  # EXTERNAL
+  platform: ExternalPlatform
+  readerName: String
+  sourceUrl: String
+  channelName: String
+}
+
+type Card {
+  name: String!
+  reversed: Boolean!
+  spreadPosition: String
+  interpretation: String
+}
+
+type ReadingEntry {
+  id: ID!
+  userId: ID!
+  date: String!
+
+  # Source
+  sourceType: ReadingSourceType!
+  sourceDetails: ReadingSourceDetails!
+
+  # Cards
+  cards: [Card!]!
+  spreadType: String
+
+  # Reflection
+  question: String
+  firstImpression: String
+  reflection: String
+  resonanceScore: Int
+
+  # Symbols
+  symbols: [SymbolTag!]!
+  themes: [String!]!
+
+  # Tracking
+  followUpDate: String
+  outcome: String
+
+  # Media
+  photoUrl: String
+
+  # Metadata
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# Legacy alias - maps to ReadingEntry for backwards compatibility
+type DailyCardPull {
+  id: ID!
+  userId: ID!
+  date: String!
+  deck: String
+  cards: [Card!]!
+  question: String
+  firstImpression: String
+  reflection: String
+  photoUrl: String
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+
+  # New fields available on legacy type too
+  sourceType: ReadingSourceType
+  sourceDetails: ReadingSourceDetails
+  spreadType: String
+  resonanceScore: Int
+  symbols: [SymbolTag!]
+  themes: [String!]
+  followUpDate: String
+  outcome: String
+}
+
+# ============================================
+# Reading Queries
+# ============================================
+
+extend type Query {
+  readingEntries(userId: ID!, filters: ReadingEntryFiltersInput): [ReadingEntry!]!
+  readingEntry(id: ID!, userId: ID!): ReadingEntry
+  readingEntryByDate(userId: ID!, date: String!): ReadingEntry
+  recentReadingEntries(userId: ID!, limit: Int = 5): [ReadingEntry!]!
+
+  # Legacy aliases
+  cardPulls(userId: ID!, filters: CardPullFiltersInput): [DailyCardPull!]!
+  cardPull(id: ID!, userId: ID!): DailyCardPull
+  cardPullByDate(userId: ID!, date: String!): DailyCardPull
+  recentCardPulls(userId: ID!, limit: Int = 5): [DailyCardPull!]!
+
+  # Statistics
+  cardPatternStats(userId: ID!, period: PatternPeriod): CardPatternStats!
+}
+
+# Time period for pattern analysis
+enum PatternPeriod {
+  WEEK
+  MONTH
+  THREE_MONTHS
+  SIX_MONTHS
+  YEAR
+  ALL_TIME
+}
+
+input ReadingEntryFiltersInput {
+  startDate: String
+  endDate: String
+  sourceType: ReadingSourceType
+  deck: String
+  hasQuestion: Boolean
+  hasSymbol: String
+  limit: Int
+  offset: Int
+}
+
+input CardPullFiltersInput {
+  startDate: String
+  endDate: String
+  deck: String
+  hasQuestion: Boolean
+  limit: Int
+  offset: Int
+}
+
+# ============================================
+# Reading Mutations
+# ============================================
+
+extend type Mutation {
+  createReadingEntry(input: CreateReadingEntryInput!): CreateReadingEntryResponse!
+  updateReadingEntry(input: UpdateReadingEntryInput!): UpdateReadingEntryResponse!
+  deleteReadingEntry(id: ID!, userId: ID!): DeleteReadingEntryResponse!
+
+  # Legacy aliases
+  createCardPull(input: CreateCardPullInput!): CreateCardPullResponse!
+  updateCardPull(input: UpdateCardPullInput!): UpdateCardPullResponse!
+  deleteCardPull(id: ID!, userId: ID!): DeleteCardPullResponse!
+}
+
+input ReadingSourceDetailsInput {
+  deck: String
+  spiriReadingId: ID
+  practitionerName: String
+  practitionerId: ID
+  platform: ExternalPlatform
+  readerName: String
+  sourceUrl: String
+  channelName: String
+}
+
+input CardInput {
+  name: String!
+  reversed: Boolean!
+  spreadPosition: String
+  interpretation: String
+}
+
+input CreateReadingEntryInput {
+  userId: ID!
+  date: String
+  sourceType: ReadingSourceType!
+  sourceDetails: ReadingSourceDetailsInput!
+  cards: [CardInput!]!
+  spreadType: String
+  question: String
+  firstImpression: String
+  reflection: String
+  resonanceScore: Int
+  symbols: [SymbolTagInput!]
+  themes: [String!]
+  followUpDate: String
+  photoUrl: String
+}
+
+input UpdateReadingEntryInput {
+  id: ID!
+  userId: ID!
+  sourceDetails: ReadingSourceDetailsInput
+  cards: [CardInput!]
+  spreadType: String
+  question: String
+  firstImpression: String
+  reflection: String
+  resonanceScore: Int
+  symbols: [SymbolTagInput!]
+  themes: [String!]
+  followUpDate: String
+  outcome: String
+  photoUrl: String
+}
+
+type CreateReadingEntryResponse {
+  success: Boolean!
+  message: String
+  readingEntry: ReadingEntry
+}
+
+type UpdateReadingEntryResponse {
+  success: Boolean!
+  message: String
+  readingEntry: ReadingEntry
+}
+
+type DeleteReadingEntryResponse {
+  success: Boolean!
+  message: String
+}
+
+# Legacy input/response types
+input CreateCardPullInput {
+  userId: ID!
+  date: String
+  deck: String!
+  cards: [CardInput!]!
+  question: String
+  firstImpression: String
+  reflection: String
+  photoUrl: String
+}
+
+input UpdateCardPullInput {
+  id: ID!
+  userId: ID!
+  deck: String
+  cards: [CardInput!]
+  question: String
+  firstImpression: String
+  reflection: String
+  photoUrl: String
+}
+
+type CreateCardPullResponse {
+  success: Boolean!
+  message: String
+  cardPull: DailyCardPull
+}
+
+type UpdateCardPullResponse {
+  success: Boolean!
+  message: String
+  cardPull: DailyCardPull
+}
+
+type DeleteCardPullResponse {
+  success: Boolean!
+  message: String
+}
+
+# ============================================
+# Card Pattern Statistics
+# ============================================
+
+type CardFrequency {
+  name: String!
+  count: Int!
+  reversedCount: Int!
+  lastPulled: String!
+}
+
+type SuitDistribution {
+  suit: String!
+  count: Int!
+  percentage: Float!
+}
+
+type CardPatternStats {
+  # Current period stats
+  totalReadings: Int!
+  totalCards: Int!
+  uniqueCards: Int!
+  readingsThisWeek: Int!
+  readingsThisMonth: Int!
+  topCards: [CardFrequency!]!
+  recentCards: [CardFrequency!]!
+  suitDistribution: [SuitDistribution!]!
+  majorArcanaCount: Int!
+  minorArcanaCount: Int!
+  majorArcanaPercentage: Float!
+  totalReversed: Int!
+  reversedPercentage: Float!
+  selfReadings: Int!
+  externalReadings: Int!
+  spiriverseReadings: Int!
+
+  # Period info
+  periodStart: String
+  periodEnd: String
+
+  # Comparison with previous period (optional)
+  previousPeriodReadings: Int
+  readingsChange: Int
+  readingsChangePercent: Float
+
+  # Emerging patterns - cards appearing more frequently recently
+  emergingCards: [CardFrequency!]
+  # Cards that appeared in previous period but not this one
+  fadingCards: [CardFrequency!]
+}

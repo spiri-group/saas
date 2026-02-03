@@ -1,0 +1,465 @@
+# ============================================
+# Energy Healing Enums
+# ============================================
+
+enum EnergyModality {
+  reiki
+  pranic_healing
+  quantum_touch
+  theta_healing
+  healing_touch
+  chakra_balancing
+  aura_cleansing
+  crystal_healing
+  sound_healing
+  breathwork
+  grounding
+  shielding
+  cord_cutting
+  entity_clearing
+  space_clearing
+  distance_healing
+  self_healing
+  other
+}
+
+enum EnergyEntryType {
+  meditation
+  clearing
+  grounding
+  session_given
+  session_received
+  self_practice
+  attunement
+  protection_ritual
+  observation
+}
+
+enum SessionRole {
+  practitioner
+  recipient
+}
+
+enum ChakraStatus {
+  open
+  balanced
+  overactive
+  blocked
+  weak
+  unclear
+}
+
+# ============================================
+# Energy Journal (Core - Day One)
+# ============================================
+
+type EnergyJournalEntry {
+  id: ID!
+  userId: ID!
+  date: String!
+  entryType: EnergyEntryType!
+  title: String
+
+  # Session details
+  modality: EnergyModality
+  duration: Int
+  role: SessionRole
+
+  # For sessions received
+  bookingId: ID
+  practitionerName: String
+  practitionerId: ID
+
+  # For sessions given
+  clientInitials: String
+  sessionNotes: String
+
+  # Experience
+  preSessionFeeling: String
+  postSessionFeeling: String
+  energyLevel: Int
+  sensations: [String!]
+  insights: String
+
+  # Techniques
+  techniquesUsed: [String!]
+  toolsUsed: [String!]
+
+  # General
+  notes: String
+  intention: String
+  photoUrl: String
+
+  # Metadata
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# ============================================
+# Chakra Check-In (Core - Day One)
+# ============================================
+
+type ChakraState {
+  chakra: ChakraType!
+  status: ChakraStatus!
+  notes: String
+}
+
+type ChakraCheckin {
+  id: ID!
+  userId: ID!
+  date: String!
+  checkInTime: String
+
+  # Chakra states
+  chakras: [ChakraState!]!
+
+  # Overall assessment
+  overallBalance: Int
+  dominantChakra: ChakraType
+  weakestChakra: ChakraType
+
+  # Context
+  physicalState: String
+  emotionalState: String
+  mentalState: String
+
+  # Notes
+  observations: String
+  actionTaken: String
+
+  # Metadata
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# ============================================
+# Session Reflection (Core - Day One)
+# ============================================
+
+type SessionReflection {
+  id: ID!
+  userId: ID!
+  date: String!
+  practitionerName: String!
+
+  # Session info
+  modality: EnergyModality
+  sessionType: String
+  duration: Int
+
+  # SpiriVerse integration
+  bookingId: ID
+  practitionerId: ID
+
+  # Experience
+  preSessionState: String
+  duringSession: String
+  postSessionState: String
+  sensations: [String!]
+
+  # Healing areas
+  areasWorkedOn: [String!]
+  messagesReceived: String
+
+  # Follow-up
+  aftercare: String
+  personalNotes: String
+  wouldRecommend: Boolean
+  overallRating: Int
+
+  # Tracking
+  shiftsNoticed: String
+  followUpDate: String
+
+  # Media
+  photoUrl: String
+
+  # Metadata
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# ============================================
+# Energy Statistics
+# ============================================
+
+type EnergyEntryTypeBreakdown {
+  type: EnergyEntryType!
+  count: Int!
+}
+
+type ChakraTrend {
+  chakra: ChakraType!
+  recentStatus: ChakraStatus!
+  blockedCount: Int!
+  openCount: Int!
+  trend: String!  # improving, declining, stable
+}
+
+type EnergyStats {
+  # Journal overview
+  totalJournalEntries: Int!
+  entriesThisWeek: Int!
+  entriesThisMonth: Int!
+
+  # Entry type breakdown
+  entryTypeBreakdown: [EnergyEntryTypeBreakdown!]!
+
+  # Sessions
+  sessionsGiven: Int!
+  sessionsReceived: Int!
+
+  # Chakra health
+  chakraCheckinsCount: Int!
+  chakraTrends: [ChakraTrend!]!
+  mostBlockedChakra: ChakraType
+  mostOpenChakra: ChakraType
+
+  # Practice
+  totalPracticeMinutes: Int!
+  averageSessionLength: Int!
+  practiceStreak: Int!
+}
+
+# ============================================
+# Energy Queries
+# ============================================
+
+extend type Query {
+  # Energy Journal
+  energyJournalEntries(userId: ID!, filters: EnergyJournalFiltersInput): [EnergyJournalEntry!]!
+  energyJournalEntry(id: ID!, userId: ID!): EnergyJournalEntry
+  recentEnergyJournalEntries(userId: ID!, limit: Int = 5): [EnergyJournalEntry!]!
+
+  # Chakra Check-In
+  chakraCheckins(userId: ID!, filters: ChakraCheckinFiltersInput): [ChakraCheckin!]!
+  chakraCheckin(id: ID!, userId: ID!): ChakraCheckin
+  todaysChakraCheckin(userId: ID!): ChakraCheckin
+
+  # Session Reflections
+  sessionReflections(userId: ID!, filters: SessionReflectionFiltersInput): [SessionReflection!]!
+  sessionReflection(id: ID!, userId: ID!): SessionReflection
+  recentSessionReflections(userId: ID!, limit: Int = 5): [SessionReflection!]!
+
+  # Statistics
+  energyStats(userId: ID!): EnergyStats!
+}
+
+input EnergyJournalFiltersInput {
+  startDate: String
+  endDate: String
+  entryType: EnergyEntryType
+  modality: EnergyModality
+  role: SessionRole
+  limit: Int
+  offset: Int
+}
+
+input ChakraCheckinFiltersInput {
+  startDate: String
+  endDate: String
+  chakra: ChakraType
+  status: ChakraStatus
+  limit: Int
+  offset: Int
+}
+
+input SessionReflectionFiltersInput {
+  startDate: String
+  endDate: String
+  modality: EnergyModality
+  practitionerId: ID
+  minRating: Int
+  limit: Int
+  offset: Int
+}
+
+# ============================================
+# Energy Mutations
+# ============================================
+
+extend type Mutation {
+  # Energy Journal
+  createEnergyJournalEntry(input: CreateEnergyJournalInput!): EnergyJournalResponse!
+  updateEnergyJournalEntry(input: UpdateEnergyJournalInput!): EnergyJournalResponse!
+  deleteEnergyJournalEntry(id: ID!, userId: ID!): DeleteEnergyResponse!
+
+  # Chakra Check-In
+  createChakraCheckin(input: CreateChakraCheckinInput!): ChakraCheckinResponse!
+  updateChakraCheckin(input: UpdateChakraCheckinInput!): ChakraCheckinResponse!
+  deleteChakraCheckin(id: ID!, userId: ID!): DeleteEnergyResponse!
+
+  # Session Reflection
+  createSessionReflection(input: CreateSessionReflectionInput!): SessionReflectionResponse!
+  updateSessionReflection(input: UpdateSessionReflectionInput!): SessionReflectionResponse!
+  deleteSessionReflection(id: ID!, userId: ID!): DeleteEnergyResponse!
+}
+
+# ============================================
+# Energy Input Types
+# ============================================
+
+input CreateEnergyJournalInput {
+  userId: ID!
+  date: String
+  entryType: EnergyEntryType!
+  title: String
+  modality: EnergyModality
+  duration: Int
+  role: SessionRole
+  bookingId: ID
+  practitionerName: String
+  practitionerId: ID
+  clientInitials: String
+  sessionNotes: String
+  preSessionFeeling: String
+  postSessionFeeling: String
+  energyLevel: Int
+  sensations: [String!]
+  insights: String
+  techniquesUsed: [String!]
+  toolsUsed: [String!]
+  notes: String
+  intention: String
+  photoUrl: String
+}
+
+input UpdateEnergyJournalInput {
+  id: ID!
+  userId: ID!
+  entryType: EnergyEntryType
+  title: String
+  modality: EnergyModality
+  duration: Int
+  role: SessionRole
+  bookingId: ID
+  practitionerName: String
+  practitionerId: ID
+  clientInitials: String
+  sessionNotes: String
+  preSessionFeeling: String
+  postSessionFeeling: String
+  energyLevel: Int
+  sensations: [String!]
+  insights: String
+  techniquesUsed: [String!]
+  toolsUsed: [String!]
+  notes: String
+  intention: String
+  photoUrl: String
+}
+
+input ChakraStateInput {
+  chakra: ChakraType!
+  status: ChakraStatus!
+  notes: String
+}
+
+input CreateChakraCheckinInput {
+  userId: ID!
+  date: String
+  checkInTime: String
+  chakras: [ChakraStateInput!]!
+  overallBalance: Int
+  dominantChakra: ChakraType
+  weakestChakra: ChakraType
+  physicalState: String
+  emotionalState: String
+  mentalState: String
+  observations: String
+  actionTaken: String
+}
+
+input UpdateChakraCheckinInput {
+  id: ID!
+  userId: ID!
+  checkInTime: String
+  chakras: [ChakraStateInput!]
+  overallBalance: Int
+  dominantChakra: ChakraType
+  weakestChakra: ChakraType
+  physicalState: String
+  emotionalState: String
+  mentalState: String
+  observations: String
+  actionTaken: String
+}
+
+input CreateSessionReflectionInput {
+  userId: ID!
+  date: String
+  practitionerName: String!
+  modality: EnergyModality
+  sessionType: String
+  duration: Int
+  bookingId: ID
+  practitionerId: ID
+  preSessionState: String
+  duringSession: String
+  postSessionState: String
+  sensations: [String!]
+  areasWorkedOn: [String!]
+  messagesReceived: String
+  aftercare: String
+  personalNotes: String
+  wouldRecommend: Boolean
+  overallRating: Int
+  shiftsNoticed: String
+  followUpDate: String
+  photoUrl: String
+}
+
+input UpdateSessionReflectionInput {
+  id: ID!
+  userId: ID!
+  practitionerName: String
+  modality: EnergyModality
+  sessionType: String
+  duration: Int
+  bookingId: ID
+  practitionerId: ID
+  preSessionState: String
+  duringSession: String
+  postSessionState: String
+  sensations: [String!]
+  areasWorkedOn: [String!]
+  messagesReceived: String
+  aftercare: String
+  personalNotes: String
+  wouldRecommend: Boolean
+  overallRating: Int
+  shiftsNoticed: String
+  followUpDate: String
+  photoUrl: String
+}
+
+# ============================================
+# Energy Response Types
+# ============================================
+
+type EnergyJournalResponse {
+  success: Boolean!
+  message: String
+  entry: EnergyJournalEntry
+}
+
+type ChakraCheckinResponse {
+  success: Boolean!
+  message: String
+  checkin: ChakraCheckin
+}
+
+type SessionReflectionResponse {
+  success: Boolean!
+  message: String
+  reflection: SessionReflection
+}
+
+type DeleteEnergyResponse {
+  success: Boolean!
+  message: String
+}

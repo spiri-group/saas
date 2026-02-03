@@ -1,0 +1,16 @@
+type Mutation {
+    create_livestream(
+    vendorId: String!
+    livestream: LiveStreamInput!
+  ): CreateLiveStreamResponse
+}
+
+input LiveStreamInput {
+  id: String!
+  name: String!
+  type: FileFormatType!
+  topic: String!
+  description: String!
+  thumbnail: MediaInput!
+  questionMode: QuestionModeInput!
+}

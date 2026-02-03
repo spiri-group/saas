@@ -1,0 +1,90 @@
+type Mutation {
+  # choice configuration management
+  upsertChoiceConfig(input: UpsertChoiceConfigInput!): ChoiceConfig!
+  updateMetadataSchema(configId: ID!, metadataSchema: MetadataSchemaInput!): ChoiceConfig!
+  deleteChoiceConfig(id: String!): Boolean!
+  
+  # flat choice management
+  upsertFlatChoiceOption(input: UpsertFlatChoiceOptionInput!): ChoiceOption!
+  deleteFlatChoiceOption(choiceId: String!, optionId: String!): Boolean!
+  
+  # hierarchical category management (simplified)
+  createCategory(input: CreateCategoryInput!): ChoiceNode!
+  updateCategory(id: ID!, input: UpdateCategoryInput!, configId: ID!): ChoiceNode!
+  deleteCategory(id: ID!, configId: ID!): Boolean!
+  moveCategory(id: ID!, newParentId: ID, configId: ID!): ChoiceNode!
+}
+
+# Input types
+input UpsertChoiceConfigInput {
+  id: ID # The backing identifier (e.g., "category", "product-types")
+  kind: ChoiceKind!
+  label: String!
+  metadataSchema: MetadataSchemaInput
+}
+
+input UpsertFlatChoiceOptionInput {
+  choiceId: String! # The choice configuration ID
+  option: ChoiceOptionInput!
+}
+
+input ChoiceOptionInput {
+  id: String!
+  status: RecordStatus!
+  localizations: [LocalizationInput!]!
+}
+
+input CreateCategoryInput {
+  configRef: RecordRefInput!
+  defaultLabel: String!
+  parentRef: RecordRefInput
+  sortOrder: Int
+  icon: String
+  metadata: JSON
+  placement: CategoryPlacementInput
+}
+
+input CategoryPlacementInput {
+  type: CategoryPlacementType!
+  referenceNodeId: String
+}
+
+enum CategoryPlacementType {
+  AT_START
+  BEFORE
+  AFTER
+  AT_END
+}
+
+input UpdateCategoryInput {
+  defaultLabel: String
+  sortOrder: Int
+  icon: String
+  metadata: JSON
+}
+
+input LocalizationInput {
+  locale: Locale!
+  value: String!
+}
+
+# Metadata schema input types
+input MetadataSchemaInput {
+  fields: [MetadataSchemaFieldInput!]!
+}
+
+input MetadataSchemaFieldInput {
+  id: String!
+  name: String!
+  type: MetadataFieldType!
+  required: Boolean!
+}
+
+enum MetadataFieldType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  DATE
+  PERCENTAGE
+  CURRENCY
+}

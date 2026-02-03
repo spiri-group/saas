@@ -1,0 +1,241 @@
+type Mutation {
+  create_tour(merchantId: String!, tour: TourInput!): CreateTourResponse
+  create_listingGrouping(vendorId: String! listingGrouping: ListingGroupingInput!): CreateListingGroupingResponse
+  create_activitylist(listingId: String!, vendorId: String!, activityList: ActivityListInput!): CreateTourResponse!
+  update_activitylist(id: String!, listingId: String!, vendorId: String!, activityList: ActivityListInput!): CreateTourResponse!
+  update_schedule(id: String!, vendorId: String!, schedule: ListingScheduleInput): ScheduleListingResponse
+  delete_schedule(id: String!, vendorId: String!): MutationResponse
+  create_announcement(announcement: AnnouncementInput!, sessionRef: RecordRefInput!, vendorId: String!) : CreateAnnouncementResponse
+  activate_session(sessionRef: RecordRefInput!): MutationResponse
+  create_manual_tour_bookings(bookings: [ManualBookingInput]!, sessionRef: RecordRefInput!): CreateBookingResponse
+  create_tour_booking(customerEmail: String!, merchantId: String!, sessions: [SessionBookingInput]!) : CreateBookingResponse
+  update_tour_booking(tickets: [BookingTicketUpdateInput]!, notes: String, bookingRef: RecordRefInput!, sessionRef: RecordRefInput!, requirePayment: Boolean): UpdateBookingResponse
+  update_tour(merchantId: String!, tour: TourUpdateInput!): CreateTourResponse,
+  complete_tour(merchantId: String!): CreateTourResponse
+  createVendorEvent(event: VendorEventInput!): CreateVendorEventResponse
+  updateVendorEvent(event: VendorEventUpdateInput!): UpdateVendorEventResponse
+  deleteVendorEvent(id: ID!): MutationResponse
+  # Check-in mutation
+  check_in_booking(bookingCode: String!, sessionId: ID!, vendorId: ID!): CheckInBookingResponse
+  # Waitlist mutations
+  join_tour_waitlist(sessionRef: RecordRefInput!, tourId: ID!, vendorId: ID!, customerEmail: String!, ticketPreferences: [WaitlistTicketPreferenceInput!]!): JoinWaitlistResponse
+  cancel_waitlist_entry(waitlistEntryId: ID!, sessionId: ID!, vendorId: ID!): MutationResponse
+  # Booking cancellation
+  cancel_tour_booking(bookingRef: RecordRefInput!, sessionRef: RecordRefInput!, vendorId: ID!, reason: String): CancelBookingResponse
+  # Customer self-cancellation (no auth required - verifies email matches booking)
+  customer_cancel_booking(bookingCode: String!, customerEmail: String!, merchantSlug: String!): CustomerCancelBookingResponse
+}
+
+type CreateTourResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  impactedRecordRef: RecordRef!
+  tour: Tour
+}
+
+type CreateAnnouncementResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  announcement: Announcement
+}
+
+type CreateBookingResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  bookings: [TourBooking]
+}
+
+type UpdateBookingResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  booking: TourBooking
+}
+
+input TourInput {
+  id: ID!
+  country: CountryCode
+  timezone: TimeZone
+  name: String!
+  description: String!
+  terms: String
+  faq: [FAQInput]
+  thumbnail: ThumbnailInput
+  activityList: ActivityListInput!
+  ticketVariants: [TourTicketVariantInput!]!
+  productReturnPolicyId: ID
+}
+
+input TourTicketVariantInput {
+  id: ID!
+  name: String!
+  description: String
+  price: CurrencyAmountInput!
+  peopleCount: Int!
+  qty_on_hand: Int!
+  track_inventory: Boolean
+  low_stock_threshold: Int
+  allow_backorder: Boolean
+  max_backorders: Int
+}
+
+input TourUpdateInput {
+  id: ID!
+  name: String
+  description: String
+  terms: String
+  faq: [FAQInput]
+  thumbnail: ThumbnailInput
+  ticketVariants: [TourTicketVariantInput!]
+  productReturnPolicyId: ID
+}
+
+input ManualBookingInput {
+  userDetails: CustomerInput!
+  tickets: [ManualBookingTicketInput!]!
+  markAsPaid: Boolean
+  paymentMethod: String
+  notes: String
+}
+
+input ManualBookingTicketInput {
+  variantId: ID!
+  quantity: Int!
+}
+
+input BookingTicketUpdateInput {
+  index: Int
+  id: String
+  person: String
+  price: CurrencyAmountInput
+  price_log: [PriceLogEntryInput]
+  refund: CurrencyAmountInput
+  notes: String
+}
+
+input SessionBookingInput {
+  ref: RecordRefInput!
+  tickets: [BookingTicketInput]!
+}
+
+input BookingTicketInput {
+  variantId: ID!
+  quantity: Int!
+}
+
+input ActivityListInput {
+  id: String!
+  name: String
+  activities: [ActivityInput]
+}
+
+input ActivityInput {
+  id: String!
+  location: GooglePlaceInput!
+  name: String!
+  time: String!
+}
+
+input SpecInput {
+  from: Time
+  to: Time
+  capacity: Float
+}
+
+input AnnouncementInput {
+  time: Float
+  timeFrameId: String
+  unitId: String
+  message: String!
+}
+
+type CreateVendorEventResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  event: VendorEvent
+}
+
+type UpdateVendorEventResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  event: VendorEvent
+}
+
+input VendorEventInput {
+  id: ID!
+  vendorId: ID!
+  listingId: ID
+  title: String!
+  startAt: DateTime!
+  endAt: DateTime!
+  timezone: String!
+  location: VendorEventLocationInput!
+  visibility: String!
+  tags: [String!]!
+  description: String
+  landscapeImage: ThumbnailInput
+}
+
+input VendorEventUpdateInput {
+  id: ID!
+  title: String
+  startAt: DateTime
+  endAt: DateTime
+  timezone: String
+  location: VendorEventLocationInput
+  visibility: String
+  status: String
+  tags: [String!]
+  description: String
+  landscapeImage: ThumbnailInput
+}
+
+input VendorEventLocationInput {
+  type: String!
+  address: GooglePlaceInput
+  externalUrl: String
+}
+
+# Waitlist types
+input WaitlistTicketPreferenceInput {
+  variantId: ID!
+  quantity: Int!
+  notes: String
+}
+
+type JoinWaitlistResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  waitlistEntry: WaitlistEntry
+  queuePosition: Int
+  estimatedNotification: String
+}
+
+type CancelBookingResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  waitlistNotified: Int
+}
+
+type CheckInBookingResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  booking: TourBooking
+}
+
+type CustomerCancelBookingResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  refundAmount: CurrencyAmount
+  refundPercentage: Float
+  refundInitiated: Boolean!
+}

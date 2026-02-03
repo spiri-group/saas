@@ -1,0 +1,472 @@
+# ============================================
+# Astrology Schema
+# ============================================
+# Types and operations for astrology features:
+# - Birth Chart storage and calculation
+# - City search for birth location
+# - Planetary positions and aspects
+
+# ============================================
+# Enums
+# ============================================
+
+enum ZodiacSign {
+  aries
+  taurus
+  gemini
+  cancer
+  leo
+  virgo
+  libra
+  scorpio
+  sagittarius
+  capricorn
+  aquarius
+  pisces
+}
+
+enum CelestialBody {
+  sun
+  moon
+  mercury
+  venus
+  mars
+  jupiter
+  saturn
+  uranus
+  neptune
+  pluto
+  chiron
+  northnode
+  ascendant
+  midheaven
+}
+
+enum AspectType {
+  conjunction
+  sextile
+  square
+  trine
+  opposition
+}
+
+enum BirthTimePrecision {
+  exact
+  approximate
+  unknown
+}
+
+enum ApproximateTimeRange {
+  morning
+  afternoon
+  evening
+  night
+}
+
+# ============================================
+# Birth Location
+# ============================================
+
+type BirthLocation {
+  city: String!
+  country: String!
+  countryCode: String!
+  latitude: Float!
+  longitude: Float!
+  timezone: String!
+  note: String
+}
+
+input BirthLocationInput {
+  city: String!
+  country: String!
+  countryCode: String!
+  latitude: Float!
+  longitude: Float!
+  timezone: String!
+  note: String
+}
+
+# ============================================
+# Planetary Position
+# ============================================
+
+type PlanetPosition {
+  body: CelestialBody!
+  sign: ZodiacSign!
+  degree: Float!
+  absoluteDegree: Float!
+  house: Int
+  retrograde: Boolean!
+}
+
+# ============================================
+# House Cusp
+# ============================================
+
+type HouseCusp {
+  house: Int!
+  sign: ZodiacSign!
+  degree: Float!
+}
+
+# ============================================
+# Aspect
+# ============================================
+
+type Aspect {
+  body1: CelestialBody!
+  body2: CelestialBody!
+  aspect: AspectType!
+  orb: Float!
+  applying: Boolean!
+}
+
+# ============================================
+# Birth Chart
+# ============================================
+
+type BirthChart {
+  id: ID!
+  userId: ID!
+
+  # Birth data
+  birthDate: String!
+  birthTimePrecision: BirthTimePrecision!
+  birthTime: String
+  birthTimeApproximate: ApproximateTimeRange
+  birthLocation: BirthLocation!
+
+  # Calculated data
+  calculatedAt: String!
+  planets: [PlanetPosition!]!
+  houses: [HouseCusp!]
+  aspects: [Aspect!]!
+
+  # Convenience fields
+  sunSign: ZodiacSign!
+  moonSign: ZodiacSign!
+  risingSign: ZodiacSign
+
+  # Flags
+  housesAreApproximate: Boolean
+  moonMayBeInaccurate: Boolean
+
+  # Metadata
+  createdAt: String!
+  updatedAt: String!
+  ref: RecordRef!
+}
+
+type BirthChartResponse {
+  success: Boolean!
+  message: String
+  birthChart: BirthChart
+}
+
+# ============================================
+# City Search
+# ============================================
+
+type CitySearchResult {
+  id: ID!
+  city: String!
+  country: String!
+  countryCode: String!
+  latitude: Float!
+  longitude: Float!
+  timezone: String!
+  population: Int
+  adminRegion: String
+}
+
+# ============================================
+# Transit Types
+# ============================================
+
+enum MoonPhase {
+  new
+  waxing_crescent
+  first_quarter
+  waxing_gibbous
+  full
+  waning_gibbous
+  last_quarter
+  waning_crescent
+}
+
+# Current position of a transit planet
+type TransitPosition {
+  body: CelestialBody!
+  sign: ZodiacSign!
+  degree: Float!
+  absoluteDegree: Float!
+  retrograde: Boolean!
+  speed: Float
+}
+
+# Aspect between transit planet and natal planet
+type TransitToNatalAspect {
+  transitPlanet: CelestialBody!
+  transitSign: ZodiacSign!
+  transitDegree: Float!
+  natalPlanet: CelestialBody!
+  natalSign: ZodiacSign!
+  natalDegree: Float!
+  aspect: AspectType!
+  orb: Float!
+  applying: Boolean!
+  exactDate: String
+  isActive: Boolean!
+}
+
+# Aspect between two transit planets
+type TransitToTransitAspect {
+  planet1: CelestialBody!
+  planet1Sign: ZodiacSign!
+  planet2: CelestialBody!
+  planet2Sign: ZodiacSign!
+  aspect: AspectType!
+  orb: Float!
+  applying: Boolean!
+  exactDate: String
+}
+
+# Upcoming transit prediction
+type UpcomingTransit {
+  transitPlanet: CelestialBody!
+  natalPlanet: CelestialBody!
+  aspect: AspectType!
+  exactDate: String!
+  orb: Float!
+  daysUntilExact: Float!
+  description: String
+}
+
+# Moon phase information
+type MoonPhaseInfo {
+  phase: MoonPhase!
+  phaseName: String!
+  illumination: Int!
+  sign: ZodiacSign!
+  degree: Float!
+  nextPhase: MoonPhase!
+  nextPhaseDate: String!
+}
+
+# Full transit data for a given time
+type CurrentTransits {
+  calculatedAt: String!
+  calculatedFor: String!
+  planets: [TransitPosition!]!
+  moonPhase: MoonPhaseInfo!
+  transitsToNatal: [TransitToNatalAspect!]
+  activeTransits: [TransitToNatalAspect!]
+  upcomingTransits: [UpcomingTransit!]
+  generalTransits: [TransitToTransitAspect!]
+}
+
+type TransitsResponse {
+  success: Boolean!
+  message: String
+  transits: CurrentTransits
+  hasBirthChart: Boolean!
+}
+
+# ============================================
+# Inputs
+# ============================================
+
+input GetTransitsInput {
+  userId: ID
+  date: String
+  timezone: String
+  latitude: Float
+  longitude: Float
+}
+
+input CreateBirthChartInput {
+  userId: ID!
+  birthDate: String!
+  birthTimePrecision: BirthTimePrecision!
+  birthTime: String
+  birthTimeApproximate: ApproximateTimeRange
+  birthLocation: BirthLocationInput!
+}
+
+input UpdateBirthChartInput {
+  id: ID!
+  userId: ID!
+  birthDate: String
+  birthTimePrecision: BirthTimePrecision
+  birthTime: String
+  birthTimeApproximate: ApproximateTimeRange
+  birthLocation: BirthLocationInput
+}
+
+# ============================================
+# Queries
+# ============================================
+
+extend type Query {
+  # Get user's birth chart
+  birthChart(userId: ID!): BirthChart
+
+  # Search cities for birth location
+  searchCities(query: String!, limit: Int): [CitySearchResult!]!
+
+  # Get current transits (optionally compared to user's natal chart)
+  currentTransits(input: GetTransitsInput): TransitsResponse!
+}
+
+# ============================================
+# Mutations
+# ============================================
+
+extend type Mutation {
+  # Create birth chart (one per user)
+  createBirthChart(input: CreateBirthChartInput!): BirthChartResponse!
+
+  # Update birth chart
+  updateBirthChart(input: UpdateBirthChartInput!): BirthChartResponse!
+
+  # Delete birth chart
+  deleteBirthChart(id: ID!, userId: ID!): DeleteAstrologyResponse!
+
+  # Astrology Journal
+  createAstrologyJournalEntry(input: CreateAstrologyJournalInput!): AstrologyJournalResponse!
+  updateAstrologyJournalEntry(input: UpdateAstrologyJournalInput!): AstrologyJournalResponse!
+  deleteAstrologyJournalEntry(id: ID!, userId: ID!): DeleteAstrologyResponse!
+}
+
+type DeleteAstrologyResponse {
+  success: Boolean!
+  message: String
+}
+
+# ============================================
+# Astrology Journal Types
+# ============================================
+
+enum JournalMood {
+  heavy
+  energised
+  reflective
+  anxious
+  peaceful
+  confused
+}
+
+enum JournalPromptCategory {
+  moon_sign
+  planetary_transit
+  retrograde
+  general
+}
+
+# Transit snapshot captured at time of entry
+type TransitSnapshotAspect {
+  transitingBody: CelestialBody!
+  natalBody: CelestialBody!
+  aspect: AspectType!
+  orb: Float!
+}
+
+type TransitSnapshot {
+  moonSign: ZodiacSign!
+  moonPhase: MoonPhase!
+  moonPhaseName: String!
+  activeTransits: [TransitSnapshotAspect!]!
+  retrogradePlanets: [CelestialBody!]!
+  capturedAt: String!
+}
+
+# Journal entry
+type AstrologyJournalEntry {
+  id: ID!
+  userId: ID!
+  transitSnapshot: TransitSnapshot!
+  promptShown: String
+  promptDismissed: Boolean!
+  content: String!
+  planetaryThemes: [CelestialBody!]!
+  mood: JournalMood
+  linkedReadingId: ID
+  createdAt: String!
+  updatedAt: String!
+  ref: RecordRef!
+}
+
+type AstrologyJournalResponse {
+  success: Boolean!
+  message: String
+  entry: AstrologyJournalEntry
+}
+
+# Journal prompt
+type JournalPrompt {
+  id: ID!
+  category: JournalPromptCategory!
+  triggerBody: CelestialBody
+  triggerSign: ZodiacSign
+  prompt: String!
+}
+
+# Journal stats
+type PlanetCount {
+  planet: CelestialBody!
+  count: Int!
+}
+
+type AstrologyJournalStats {
+  totalEntries: Int!
+  entriesByMoonPhase: JSON!
+  entriesByMood: JSON!
+  mostTaggedPlanets: [PlanetCount!]!
+}
+
+# Inputs
+input CreateAstrologyJournalInput {
+  userId: ID!
+  content: String!
+  promptShown: String
+  promptDismissed: Boolean
+  planetaryThemes: [CelestialBody!]
+  mood: JournalMood
+  linkedReadingId: ID
+}
+
+input UpdateAstrologyJournalInput {
+  id: ID!
+  userId: ID!
+  content: String
+  planetaryThemes: [CelestialBody!]
+  mood: JournalMood
+  linkedReadingId: ID
+}
+
+input AstrologyJournalFilters {
+  startDate: String
+  endDate: String
+  planetaryThemes: [CelestialBody!]
+  mood: JournalMood
+  hasLinkedReading: Boolean
+  duringRetrograde: CelestialBody
+  moonSign: ZodiacSign
+  moonPhase: MoonPhase
+  limit: Int
+  offset: Int
+}
+
+# Extend queries for journal
+extend type Query {
+  # Journal entries
+  astrologyJournalEntries(userId: ID!, filters: AstrologyJournalFilters): [AstrologyJournalEntry!]!
+  astrologyJournalEntry(id: ID!, userId: ID!): AstrologyJournalEntry
+
+  # Get a contextual prompt for new entry
+  astrologyJournalPrompt(userId: ID!): JournalPrompt
+
+  # Stats
+  astrologyJournalStats(userId: ID!): AstrologyJournalStats!
+}

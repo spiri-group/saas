@@ -1,0 +1,153 @@
+# ============================================
+# Meditation Journal Types
+# ============================================
+
+enum MeditationTechnique {
+  mindfulness
+  breathing
+  guided
+  mantra
+  visualization
+  body_scan
+  loving_kindness
+  transcendental
+  walking
+  chakra
+  sound
+  other
+}
+
+enum MeditationMood {
+  peaceful
+  calm
+  refreshed
+  energized
+  grounded
+  clear
+  relaxed
+  sleepy
+  restless
+  neutral
+}
+
+type MeditationJournalEntry {
+  id: ID!
+  userId: ID!
+  date: String!
+  duration: Int!
+  technique: MeditationTechnique
+  guidedBy: String
+  focus: String
+  preSessionMood: MeditationMood
+  postSessionMood: MeditationMood
+  depth: Int
+  distractionLevel: Int
+  insights: String
+  experiences: String
+  intentions: String
+  gratitude: [String!]
+  location: String
+  posture: String
+  photoUrl: String
+  ref: RecordRef!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type MeditationStats {
+  totalSessions: Int!
+  totalMinutes: Int!
+  averageDuration: Int!
+  currentStreak: Int!
+  longestStreak: Int!
+  favoriteTime: String
+  favoriteTechnique: MeditationTechnique
+}
+
+# ============================================
+# Meditation Queries
+# ============================================
+
+extend type Query {
+  meditations(userId: ID!, filters: MeditationFiltersInput): [MeditationJournalEntry!]!
+  meditation(id: ID!, userId: ID!): MeditationJournalEntry
+  recentMeditations(userId: ID!, limit: Int = 5): [MeditationJournalEntry!]!
+  meditationStats(userId: ID!): MeditationStats
+}
+
+input MeditationFiltersInput {
+  startDate: String
+  endDate: String
+  technique: MeditationTechnique
+  minDuration: Int
+  maxDuration: Int
+  limit: Int
+  offset: Int
+}
+
+# ============================================
+# Meditation Mutations
+# ============================================
+
+extend type Mutation {
+  createMeditation(input: CreateMeditationInput!): CreateMeditationResponse!
+  updateMeditation(input: UpdateMeditationInput!): UpdateMeditationResponse!
+  deleteMeditation(id: ID!, userId: ID!): DeleteMeditationResponse!
+}
+
+input CreateMeditationInput {
+  userId: ID!
+  date: String
+  duration: Int!
+  technique: MeditationTechnique
+  guidedBy: String
+  focus: String
+  preSessionMood: MeditationMood
+  postSessionMood: MeditationMood
+  depth: Int
+  distractionLevel: Int
+  insights: String
+  experiences: String
+  intentions: String
+  gratitude: [String!]
+  location: String
+  posture: String
+  photoUrl: String
+}
+
+input UpdateMeditationInput {
+  id: ID!
+  userId: ID!
+  duration: Int
+  technique: MeditationTechnique
+  guidedBy: String
+  focus: String
+  preSessionMood: MeditationMood
+  postSessionMood: MeditationMood
+  depth: Int
+  distractionLevel: Int
+  insights: String
+  experiences: String
+  intentions: String
+  gratitude: [String!]
+  location: String
+  posture: String
+  photoUrl: String
+}
+
+type CreateMeditationResponse {
+  success: Boolean!
+  message: String
+  meditation: MeditationJournalEntry
+}
+
+type UpdateMeditationResponse {
+  success: Boolean!
+  message: String
+  meditation: MeditationJournalEntry
+}
+
+type DeleteMeditationResponse {
+  success: Boolean!
+  message: String
+}

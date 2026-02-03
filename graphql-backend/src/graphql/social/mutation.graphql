@@ -1,0 +1,40 @@
+type Mutation {
+  create_textOnly_socialpost(vendorId: String!, socialPost: SocialPostTextOnlyInput!): CreateSocialPostResponse
+  update_socialpost(socialPost: SocialPostUpdateInput!): CreateSocialPostResponse
+  delete_socialpost(id: String!, vendorId: String!): MutationResponse
+}
+
+type CreateSocialPostResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  socialPost: SocialPost
+}
+
+input SocialPostTextOnlyInput {
+  id: String!
+  type: String!
+  availableAfter: DateTime
+  title: String
+  description: String
+  hashtags: [String]
+  content: SocialPostTextOnlyContentInput!
+}
+
+input SocialPostTextOnlyContentInput {
+  mainText: TextSchemaInput!
+  subText: TextSchemaInput
+  textVerticalAlignment: String
+  backgroundType: BackgroundType
+  backgroundColor: String
+  backgroundImage: MediaInput
+  media: [MediaInput]
+}
+
+input SocialPostUpdateInput {
+  id: String!
+  availableAfter: DateTime
+  description: String
+  media: [MediaInput]
+  hashtags: [String]
+}

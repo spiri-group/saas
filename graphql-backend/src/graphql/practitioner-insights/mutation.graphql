@@ -1,0 +1,86 @@
+type Mutation {
+  # Create a new insight (practitioner adds insight about a crystal)
+  createInsight(input: CreateInsightInput!): PractitionerInsightResponse!
+
+  # Update an existing insight (only the creator can update)
+  updateInsight(input: UpdateInsightInput!): PractitionerInsightResponse!
+
+  # Delete an insight (only the creator can delete)
+  deleteInsight(id: ID!, userId: ID!): DeleteInsightResponse!
+
+  # Agree with an insight (practitioner validates/endorses)
+  agreeWithInsight(input: AgreeWithInsightInput!): AgreeInsightResponse!
+
+  # Remove agreement from an insight
+  removeAgreement(input: AgreeWithInsightInput!): AgreeInsightResponse!
+
+  # Report an insight as inappropriate
+  reportInsight(input: ReportInsightInput!): ReportInsightResponse!
+
+  # Moderate an insight (admin only - approve, flag, or remove)
+  moderateInsight(input: ModerateInsightInput!): ModerateInsightResponse!
+}
+
+# Input types
+input CreateInsightInput {
+  userId: ID!
+  crystalId: ID!
+  insightType: InsightType!
+  content: String!
+}
+
+input UpdateInsightInput {
+  id: ID!
+  userId: ID!
+  insightType: InsightType
+  content: String
+}
+
+input AgreeWithInsightInput {
+  insightId: ID!
+  insightOwnerId: ID!
+}
+
+input ReportInsightInput {
+  insightId: ID!
+  insightOwnerId: ID!
+  reason: String
+}
+
+input ModerateInsightInput {
+  insightId: ID!
+  insightOwnerId: ID!
+  newStatus: InsightStatus!
+  moderationNotes: String
+}
+
+# Response types
+type PractitionerInsightResponse {
+  success: Boolean!
+  message: String
+  insight: PractitionerInsight
+}
+
+type DeleteInsightResponse {
+  success: Boolean!
+  message: String
+}
+
+type AgreeInsightResponse {
+  success: Boolean!
+  message: String
+  insight: PractitionerInsight
+  alreadyAgreed: Boolean
+}
+
+type ReportInsightResponse {
+  success: Boolean!
+  message: String
+  alreadyReported: Boolean
+}
+
+type ModerateInsightResponse {
+  success: Boolean!
+  message: String
+  insight: PractitionerInsight
+}

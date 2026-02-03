@@ -1,0 +1,48 @@
+type Mutation {
+  schedule_listing(vendorId: ID!, listingId: ID!, schedule: ListingScheduleInput!): ScheduleListingResponse
+  discontinue_listing(id: String!, vendorId: String!): MutationResponse
+  delete_listing(id: String!, vendorId: String!): MutationResponse,
+  upsert_listingGrouping(vendorId: ID!, listingGrouping: ListingGroupingInput!): CreateListingGroupingResponse,
+  score_catalogue: MutationResponse
+}
+
+type CreateListingGroupingResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  listingGrouping: ListingGrouping
+}
+
+type ScheduleListingResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  schedule: ListingSchedule
+}
+
+input ListingInput {
+  name: String!
+  thumbnail: MediaInput!
+  thumbnailMode: String
+  rating: Float
+  pricing_descriptor: String
+  type: ListingType
+}
+
+input ListingScheduleInput {
+  recurrenceRule: String
+  dates: [DateTime]
+  capacity: Int
+  fromTime: Time
+  toTime: Time
+  activityListId: ID
+  ticketListId: ID
+}
+
+input ListingGroupingInput {
+  id: ID
+  name: String!
+  type: GroupingsType!
+  overall_price: PriceInput
+  description: String
+}

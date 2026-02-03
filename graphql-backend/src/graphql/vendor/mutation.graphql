@@ -1,0 +1,499 @@
+type Mutation {
+  create_draft_merchant(merchantId: ID!): DraftMerchantResponse
+  create_vendor(vendor: VendorInput!): CreateVendorResponse
+
+  # Practitioner mutations
+  create_practitioner(input: CreatePractitionerInput!): CreatePractitionerResponse
+  sendMessageToPractitioner(practitionerId: ID!, message: String!): SendMessageResponse
+  update_practitioner(input: UpdatePractitionerInput!): CreatePractitionerResponse
+  update_practitioner_profile(practitionerId: ID!, profile: PractitionerProfileInput!): CreatePractitionerResponse
+  update_practitioner_audio_intro(practitionerId: ID!, audioIntro: MediaInput): CreatePractitionerResponse
+  update_practitioner_oracle_message(practitionerId: ID!, oracleMessage: OracleMessageInput): CreatePractitionerResponse
+  update_practitioner_pinned_reviews(practitionerId: ID!, pinnedReviewIds: [ID!]!): CreatePractitionerResponse
+
+  # Linked Shopfronts - practitioners can link their merchant shops to their profile
+  link_shopfront_to_practitioner(practitionerId: ID!, merchantId: ID!): CreatePractitionerResponse
+  unlink_shopfront_from_practitioner(practitionerId: ID!, merchantId: ID!): CreatePractitionerResponse
+  update_linked_shopfront_order(practitionerId: ID!, merchantId: ID!, displayOrder: Int!): CreatePractitionerResponse
+
+  # Testimonial mutations (practitioner endorsements - NOT tied to orders)
+  create_testimonial_request(practitionerId: ID!, clientEmail: String, clientName: String): CreateTestimonialRequestResponse
+  submit_testimonial(token: String!, input: SubmitTestimonialInput!): SubmitTestimonialResponse
+  delete_testimonial(practitionerId: ID!, testimonialId: ID!): MutationResponse
+  update_practitioner_pinned_testimonials(practitionerId: ID!, pinnedTestimonialIds: [ID!]!): CreatePractitionerResponse
+  complete_stripe_test_onboarding(merchantId: ID!): CompleteStripeOnboardingResponse
+  add_test_card(merchantId: ID!): AddTestCardResponse
+  create_card_setup_intent(merchantId: ID!): CreateCardSetupIntentResponse
+  update_vendor(vendor: VendorUpdateInput!): CreateVendorResponse
+  update_teamMembers(merchantId: ID!, teamMembers: [TeamMemberUpdateInput]!): CreateTeamMembersResponse
+  update_merchant_descriptions(merchantId: ID!, descriptions: [MerchantDescriptionInput]!): CreateVendorResponse
+  update_merchant_theme(merchantId: ID!, theme: VendorThemeUpdateInput!): CreateVendorResponse
+  update_merchant_locations(merchantId: ID!, locations: [MerchantLocationInput]!): CreateVendorResponse,
+  update_merchant_intro(merchantId: ID!, intro: String!): CreateVendorResponse,
+  update_merchant_promise_banner(merchantId: ID!, promiseBanner: String!): CreateVendorResponse,
+  update_merchant_banner_config(merchantId: ID!, bannerConfig: BannerConfigInput!): CreateVendorResponse,
+  update_merchant_video(merchantId: ID!, video: VideoInput, videoSettings: VideoSettingsInput): CreateVendorResponse,
+  update_merchant_socials(merchantId: ID!, style: String!, socials: [SocialPlatformInput]!): CreateVendorResponse,
+  upsert_product_return_policies(merchantId: ID!, policies: [ProductReturnPolicyInput]!): UpsertPolicyResponse,
+  delete_product_return_policy(merchantId: ID!, policyId: ID!): MutationResponse,
+  upsert_service_cancellation_policies(merchantId: ID!, policies: [ServiceCancellationPolicyInput]!): UpsertCancellationPolicyResponse,
+  delete_service_cancellation_policy(merchantId: ID!, policyId: ID!): MutationResponse,
+  sendMerchantRequest(
+    merchantId: ID!,
+    customerDetails: MerchantRequestCustomerDetailsInput,
+    request: String!
+  ) : MutationResponse,
+  attachBankAccount(
+    vendorId: String!, 
+    bankTokenId: String!, 
+    ip_address: String
+    ) : MutationResponse
+  updateBusinessProfile(
+    vendorId: String!,
+    physicalAddress: String, 
+    taxId: String,
+    legalName:String,
+  ) : MutationResponse,
+  clearMerchantWelcomeMessage(
+    vendorId: String!
+  ): MutationResponse,
+  reset_colour_preference(
+    id: String!
+    area: String!
+    field: String
+  ): MutationResponse
+  setPaymentAsDefaultForVendor(
+    vendorId: String!
+    paymentMethodId: String!
+  ): setDefaultPaymentmethodResponse,
+  deleteOrphanedStripeAssets: Int
+  delete_vendor(vendorId: ID!): MutationResponse
+  purge_vendor(vendorId: ID!): MutationResponse
+  update_profile_visibility(merchantId: ID!, visibility: ProfileVisibilityInput!): CreateVendorResponse
+}
+
+type DraftMerchantResponse {
+  id: ID!
+}
+
+type CompleteStripeOnboardingResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  chargesEnabled: Boolean
+  payoutsEnabled: Boolean
+}
+
+type AddTestCardResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  card: TestCard
+}
+
+type TestCard {
+  id: String!
+  last4: String!
+  brand: String!
+  exp_month: Int!
+  exp_year: Int!
+}
+
+type CreateCardSetupIntentResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  clientSecret: String
+}
+
+type setDefaultPaymentmethodResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  vendor: Vendor
+}
+
+input VendorInput {
+  id: ID!
+  name: String!
+  email: EmailAddress!
+  currency: Currency!
+  country: CountryCode!
+  state: String
+  slug: String
+  logo: MediaInput
+  merchantTypeIds: [String]!
+  religionId: String!
+  subscription: VendorSubscriptionInput
+}
+
+input VendorSubscriptionInput {
+  plans: [PlanInput]
+}
+
+input PlanInput {
+  productId: ID!
+  variantId: ID!
+  price: CurrencyAmountInput!
+  name: String!
+}
+
+input VendorUserInput {
+  vendorId: String,
+  userId: String
+}
+
+input MerchantRequestCustomerDetailsInput {
+  name: String
+  email: EmailAddress
+  phone: String
+}
+
+input VendorContactInput {
+  email: EmailAddress
+  phoneNumber: ContactNumberInput
+}
+
+input VendorContactDetailsInput {
+  internal: VendorContactInput
+  public: VendorContactInput
+}
+
+input VendorUpdateInput {
+  id: ID!
+  country: CountryCode
+  postcode: Int
+  intro: String
+  promiseBanner: String
+  bannerConfig: BannerConfigInput
+  address: String
+  website: String
+  contact: VendorContactDetailsInput
+  name: String
+  banner: MediaInput
+  merchantTypeIds: [ID]
+  religionId: ID
+  locations: [MerchantLocationInput]
+  teamMembers: [TeamMemberUpdateInput]
+  descriptions: [MerchantDescriptionInput]
+}
+
+input VendorThemeUpdateInput {
+  logo: MediaInput
+  mode: String
+  selectedTheme: String
+  selectedScheme: String
+  font: MerchantFontSelectionInput
+  colors: MerchantColorsInput
+  background: BackgroundFormatInput
+  panels: MerchantPanelsFormatInput
+  socialStyle: String
+}
+
+input TeamMemberUpdateInput {
+  id: String!
+  name: String
+  tagline: String
+  bio: String
+  image: MediaInput
+}
+
+input MerchantFontSelectionInput {
+  brand: TextFormatInput,
+  headings: TextFormatInput,
+  default: TextFormatInput,
+  accent: TextFormatInput
+}
+
+input MerchantColorsInput {
+  primary: ColorChoiceInput
+  links: String!
+}
+
+input MerchantPanelsFormatInput {
+  background: BackgroundFormatInput
+  primary: TextFormatInput
+  accent: TextFormatInput
+}
+
+input MerchantLocationInput {
+  id: ID!,
+  title: String!,
+  address: GooglePlaceInput!
+  services: [String]!
+}
+
+input SocialPlatformInput {
+  id: ID!
+  platform: String!
+  url: String!
+  handle: String
+}
+
+type AuthOAccount {
+  id: String
+}
+
+type StripeAccount {
+  customerId: String
+  accountId: String
+  defaultPaymentMethod: StripePaymentMethod
+  setupIntent: StripeSetupIntent
+}
+
+type StripePaymentMethod {
+  type: String!
+  descriptor: String!
+}
+
+type StripeAccountLink {
+  created: Int!,
+  expires_at: Int!,
+  url: String!
+}
+
+type StripeSetupIntent {
+  id: String
+  secret: String
+}
+
+type areaColorSettings {
+  id: String
+  general: areaColorSetting
+}
+
+type areaColorSetting {
+  name: String
+  background: colorSetting
+  text: colorSetting
+  heading: colorSetting
+  subtitle: colorSetting
+  icon: colorSetting
+}
+
+input areaColorSettingInput {
+  name: String
+  background: colorSettingInput
+  text: colorSettingInput
+  heading: colorSettingInput
+  subtitle: colorSettingInput
+  icon: colorSettingInput
+}
+
+type colorSetting {
+  value: String
+  name: String
+}
+
+input colorSettingInput {
+  value: String
+  name: String
+}
+
+input MerchantDescriptionInput {
+  id: ID!
+  title: String,
+  body: String
+  supporting_images: [MediaInput]
+}
+
+input ProductReturnPolicyInput {
+  id: ID!
+  merchantId: String
+  listingType: String
+  title: String
+  country: String
+  reasons: [ProductReturnReasonInput]
+}
+
+input ProductReturnReasonInput {
+  id: ID!
+  code: String
+  title: String
+  whoPayShipping: String
+  conditions: [ProductReturnPolicyDetailInput]
+  tiers: [ProductReturnTierInput]
+  confirmed: Boolean
+  no_refund: Boolean
+}
+
+input ProductReturnPolicyDetailInput {
+  id: ID!
+  code: String,
+  isCustom: Boolean
+  title: String
+  description: String
+}
+
+input ProductReturnTierInput {
+  id: ID!
+  daysUpTo: Int
+  refundPercentage: Float
+  refundCustomerFees: Boolean
+}
+
+input ServiceCancellationPolicyInput {
+  id: ID!
+  merchantId: String
+  serviceCategory: String
+  title: String
+  fullRefundHours: Int
+  partialRefundHours: Int
+  partialRefundPercentage: Float
+  noRefundHours: Int
+  allowRescheduling: Boolean
+  maxReschedules: Int
+  rescheduleMinHours: Int
+}
+
+input ProfileVisibilityInput {
+  contactInformation: Boolean
+  locations: Boolean
+  teamMembers: Boolean
+  sections: Boolean
+}
+
+input VideoSettingsInput {
+  autoplay: Boolean!
+  autoplayDelay: Int!
+}
+
+# Practitioner Input Types
+
+input CreatePractitionerInput {
+  # Required fields
+  name: String!
+  slug: String!
+  email: EmailAddress!
+  country: CountryCode!
+  currency: Currency!
+
+  # Practitioner profile (required for practitioner)
+  headline: String!
+  bio: String!
+  modalities: [PractitionerModality!]!
+  specializations: [PractitionerSpecialization!]!
+
+  # Optional fields
+  pronouns: String
+  logo: MediaInput
+  thumbnail: MediaInput
+  banner: MediaInput
+
+  # Subscription plans (same deferred billing model as merchants)
+  subscription: VendorSubscriptionInput
+}
+
+input UpdatePractitionerInput {
+  id: ID!
+  name: String
+  slug: String
+  logo: MediaInput
+  thumbnail: MediaInput
+  banner: MediaInput
+  intro: String
+  website: String
+  contact: VendorContactDetailsInput
+}
+
+input PractitionerProfileInput {
+  # Identity
+  pronouns: String
+  headline: String
+
+  # Personal Story
+  bio: String
+  spiritualJourney: String
+
+  # Gifts & Modalities
+  modalities: [PractitionerModality!]
+  gifts: [String!]
+  tools: [PractitionerToolInput!]
+
+  # Specializations
+  specializations: [PractitionerSpecialization!]
+  customSpecializations: [String!]
+
+  # Experience & Credentials
+  yearsExperience: Int
+  training: [TrainingCredentialInput!]
+
+  # Reading Style
+  readingStyle: PractitionerReadingStyle
+  approach: String
+  whatToExpect: String
+  clientPrepGuidance: String
+
+  # Availability
+  availability: PractitionerAvailability
+  acceptingNewClients: Boolean
+  responseTime: String
+  timezone: String
+
+  # Audio & Media
+  audioIntro: MediaInput
+  oracleMessage: OracleMessageInput
+
+  # Pinned Content
+  pinnedReviewIds: [ID!]
+  pinnedTestimonialIds: [ID!]
+}
+
+input OracleMessageInput {
+  id: ID
+  audio: MediaInput!
+  message: String
+}
+
+input TrainingCredentialInput {
+  id: ID!
+  title: String!
+  institution: String
+  year: Int
+  description: String
+}
+
+input PractitionerToolInput {
+  id: ID
+  name: String!
+  description: String
+  image: MediaInput
+}
+
+type CreatePractitionerResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  practitioner: Vendor
+}
+
+type SendMessageResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  conversationId: String
+}
+
+# Testimonial Response Types
+type CreateTestimonialRequestResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  request: TestimonialRequest
+  submissionUrl: String
+}
+
+type SubmitTestimonialResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  testimonial: Testimonial
+}
+
+input SubmitTestimonialInput {
+  clientName: String!
+  rating: Int!
+  headline: String!
+  text: String!
+  relationship: String
+}

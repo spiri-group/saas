@@ -1,0 +1,504 @@
+type Mutation {
+    create_service(merchantId: String!, service: ServiceInput!): CreateServiceResponse
+    create_service_schedule(merchantId: ID!, name: String!) : ScheduleAvailabilityResponse
+    schedule_availability(merchantId: ID!, scheduleId: ID!, schedule: ScheduleAvailabilityInput!): ScheduleAvailabilityResponse
+    book_service(merchantId: ID!, serviceId: ID!) : BookServiceResponse
+    cancel_booking(bookingId: ID!, type: String!, customerEmail: String!): CancelBookingResponse
+    update_service_booking(input: UpdateServiceBookingInput!): UpdateServiceBookingResponse
+    request_reschedule(input: RescheduleRequestInput!): RescheduleRequestResponse
+
+    # NEW - Async service creation mutations
+    create_reading_offer(merchantId: ID!, input: CreateReadingOfferInput!): Service!
+    create_healing_offer(merchantId: ID!, input: CreateHealingOfferInput!): Service!
+    create_coaching_offer(merchantId: ID!, input: CreateCoachingOfferInput!): Service!
+
+    # Update mutations for async services
+    update_reading_offer(merchantId: ID!, input: UpdateReadingOfferInput!): Service!
+    update_healing_offer(merchantId: ID!, input: UpdateHealingOfferInput!): Service!
+    update_coaching_offer(merchantId: ID!, input: UpdateCoachingOfferInput!): Service!
+
+    # NEW - Fulfillment mutations
+    upload_service_deliverable(vendorId: ID!, input: UploadDeliverableInput!): ServiceBooking!
+    mark_service_delivered(vendorId: ID!, orderId: ID!): ServiceBooking!
+
+    # NEW - Checkout link for practitioners to book on behalf of customers
+    create_service_checkout_link(vendorId: ID!, input: CreateCheckoutLinkInput!): CreateCheckoutLinkResponse!
+}
+
+type CreateServiceResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  service: Service
+}
+
+type CancelBookingResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  charge: StripeCharge!
+}
+
+type UpdateServiceBookingResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  booking: ServiceBooking
+  refundAmount: Float
+  refundPercentage: Float
+}
+
+type RescheduleRequestResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  booking: ServiceBooking
+  rescheduleCount: Int
+  maxReschedules: Int
+}
+
+type ScheduleAvailabilityResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  data: ServicesSchedule
+}
+
+type BookServiceResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  bookService: ServiceBooking
+}
+
+input ServiceInput {
+  id: ID!
+  name: String
+  description: String
+  terms: String
+  faq: [FAQInput]
+  duration: TimeSpanInput
+  thumbnail: ThumbnailInput
+  ratePerHour: CurrencyAmountInput
+}
+
+input ScheduleAvailabilityInput {
+  id: ID!
+  country: CountryCode
+  timezone: TimeZone
+  deliveryMethods: [DeliveryMethodsInput]
+  table: [ScheduleAvailabilityTableInput]
+  dateOverrides: [ScheduleAvailabilityDateOverrideInput]
+}
+
+input ScheduleAvailabilityTableInput {
+  weekday_config: [WeekdayConfigInput]
+  start: Time,
+  end: Time,
+  duration_ms: Int
+}
+
+input WeekdayConfigInput {
+  weekday: [WeekdayInput],
+  serviceIds: [ID]
+  deliveryMethods: [DeliveryMethodsInput]
+  discount: String
+}
+
+input WeekdayInput  {
+  day: String!
+  day_acronym: String
+  enabled: Boolean
+}
+
+input DeliveryMethodsInput {
+  inPerson: DeliveryMethodsInPersonInput
+  onlineMeeting: DeliveryMethodsOnlineMeetingInput
+  phoneCall: DeliveryMethodsPhoneCallInput
+}
+
+input DeliveryMethodsInPersonInput {
+  place: GooglePlaceInput
+  buffer: TimeSpanInput
+  surcharge: CurrencyAmountInput
+}
+
+input DeliveryMethodsOnlineMeetingInput {
+  meeting_link: String,
+  meeting_passcode: String
+  buffer: TimeSpanInput
+  surcharge: CurrencyAmountInput
+}
+
+input DeliveryMethodsPhoneCallInput {
+  phoneNumber: String
+  buffer: TimeSpanInput
+  surcharge: CurrencyAmountInput
+}
+
+input AvailableUntilInput {
+  intoTheFuture: TimeSpanInput
+  range: DateTimeRangeInput
+  type: String
+}
+
+input DateTimeRangeInput {
+  from: DateTime
+  to: DateTime
+}
+
+input ScheduleAvailabilityDateOverrideInput {
+  date: Date!,
+  times: TimeSpanInput
+}
+
+input CreateCheckoutLinkInput {
+  serviceId: ID!
+  customerEmail: String!
+  questionnaireResponses: [QuestionResponseInput]
+  selectedAddOns: [ID]
+  expiresInHours: Int
+}
+
+type CreateCheckoutLinkResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  checkoutUrl: String
+  orderId: ID
+  expiresAt: DateTime
+}
+
+# NEW - Async service input types
+input CreateReadingOfferInput {
+  id: ID
+  name: String!
+  description: String!
+  terms: String
+  faq: [FAQInput]
+  thumbnail: ThumbnailInput
+  pricing: ServicePricingInput!
+  turnaroundDays: Int
+  deliveryFormats: [String]
+  addOns: [ServiceAddOnInput]
+  questionnaire: [ServiceQuestionInput]
+  targetTimezones: [String]
+  requiresConsultation: Boolean
+  scheduleId: ID
+  readingOptions: ReadingServiceOptionsInput
+  bookingType: String
+}
+
+input CreateHealingOfferInput {
+  id: ID
+  name: String!
+  description: String!
+  terms: String
+  faq: [FAQInput]
+  thumbnail: ThumbnailInput
+  pricing: ServicePricingInput!
+  bookingType: String!
+  turnaroundDays: Int
+  addOns: [ServiceAddOnInput]
+  questionnaire: [ServiceQuestionInput]
+  targetTimezones: [String]
+  requiresConsultation: Boolean
+  scheduleId: ID
+  healingOptions: HealingServiceOptionsInput!
+}
+
+input CreateCoachingOfferInput {
+  id: ID
+  name: String!
+  description: String!
+  terms: String
+  faq: [FAQInput]
+  thumbnail: ThumbnailInput
+  pricing: ServicePricingInput!
+  bookingType: String!
+  deliveryFormats: [String]
+  turnaroundDays: Int
+  addOns: [ServiceAddOnInput]
+  questionnaire: [ServiceQuestionInput]
+  targetTimezones: [String]
+  requiresConsultation: Boolean
+  scheduleId: ID
+  coachingOptions: CoachingServiceOptionsInput!
+}
+
+input ServicePricingInput {
+  type: String!
+  fixedPrice: CurrencyAmountInput
+  ratePerHour: CurrencyAmountInput
+  packageOptions: [PackageOptionInput]
+}
+
+input PackageOptionInput {
+  sessionCount: Int!
+  price: CurrencyAmountInput!
+  discountPercentage: Float
+}
+
+input ServiceAddOnInput {
+  type: String!
+  productRef: RecordRefInput
+  name: String!
+  description: String
+  price: CurrencyAmountInput
+  isOptional: Boolean!
+}
+
+input ServiceQuestionInput {
+  id: ID
+  question: String!
+  type: String!
+  options: [String]
+  required: Boolean!
+  placeholder: String
+}
+
+input ReadingServiceOptionsInput {
+  readingType: String
+  includePullCardSummary: Boolean
+  includeVoiceNote: Boolean
+  deckUsed: String
+  availableTopics: String
+  astrologyReadingTypes: [String]
+  houseSystem: String
+  requiresBirthTime: Boolean
+  focusAreas: String
+  customReadingDetails: String
+  preReadingQuestions: [PreReadingQuestionInput!]
+}
+
+input HealingServiceOptionsInput {
+  healingType: String!
+  sessionLocation: String
+  includeEnergyReport: Boolean
+  recommendedCrystals: [String]
+  includeFollowUpReading: Boolean
+}
+
+input CoachingServiceOptionsInput {
+  sessionFormat: String!
+  groupSize: Int
+  includeJournalPDF: Boolean
+  includeWorkbook: Boolean
+  includePostSessionNotes: Boolean
+}
+
+# Update input types (all fields optional except id)
+input UpdateReadingOfferInput {
+  id: ID!
+  name: String
+  description: String
+  terms: String
+  faq: [FAQInput]
+  thumbnail: ThumbnailInput
+  pricing: ServicePricingInput
+  turnaroundDays: Int
+  deliveryFormats: [String]
+  addOns: [ServiceAddOnInput]
+  questionnaire: [ServiceQuestionInput]
+  targetTimezones: [String]
+  requiresConsultation: Boolean
+  scheduleId: ID
+  readingOptions: ReadingServiceOptionsInput
+  bookingType: String
+}
+
+input UpdateHealingOfferInput {
+  id: ID!
+  name: String
+  description: String
+  terms: String
+  faq: [FAQInput]
+  thumbnail: ThumbnailInput
+  pricing: ServicePricingInput
+  bookingType: String
+  turnaroundDays: Int
+  addOns: [ServiceAddOnInput]
+  questionnaire: [ServiceQuestionInput]
+  targetTimezones: [String]
+  requiresConsultation: Boolean
+  scheduleId: ID
+  healingOptions: HealingServiceOptionsInput
+}
+
+input UpdateCoachingOfferInput {
+  id: ID!
+  name: String
+  description: String
+  terms: String
+  faq: [FAQInput]
+  thumbnail: ThumbnailInput
+  pricing: ServicePricingInput
+  bookingType: String
+  deliveryFormats: [String]
+  turnaroundDays: Int
+  addOns: [ServiceAddOnInput]
+  questionnaire: [ServiceQuestionInput]
+  targetTimezones: [String]
+  requiresConsultation: Boolean
+  scheduleId: ID
+  coachingOptions: CoachingServiceOptionsInput
+}
+
+input UploadDeliverableInput {
+  orderId: ID!
+  files: [DeliverableFileInput!]!
+  message: String
+}
+
+input DeliverableFileInput {
+  name: String!
+  type: String!
+  mimeType: String!
+  size: Int!
+  url: String!
+}
+
+input UpdateServiceBookingInput {
+  bookingId: ID!
+  customerId: ID!
+  action: String!
+  newDate: Date
+  newTime: TimeRangeInput
+  reason: String
+}
+
+input RescheduleRequestInput {
+  bookingId: ID!
+  customerId: ID!
+  newDate: Date!
+  newTime: TimeRangeInput!
+}
+
+# Practitioner Availability & Live Booking Mutations
+
+extend type Mutation {
+  # Practitioner updates availability schedule
+  updatePractitionerSchedule(practitionerId: ID!, input: PractitionerScheduleInput!): PractitionerSchedule!
+
+  # Practitioner adds date override (block a day or set custom hours)
+  setPractitionerDateOverride(practitionerId: ID!, input: DateOverrideInput!): PractitionerSchedule!
+
+  # Practitioner removes date override
+  removePractitionerDateOverride(practitionerId: ID!, date: Date!): PractitionerSchedule!
+
+  # Customer books scheduled service (creates PENDING_CONFIRMATION)
+  bookScheduledService(input: BookScheduledServiceInput!): BookScheduledServiceResponse!
+
+  # Practitioner confirms booking (captures payment)
+  confirmBooking(practitionerId: ID!, bookingId: ID!, meetingLink: String, meetingPasscode: String): ServiceBooking!
+
+  # Practitioner rejects booking (releases authorization)
+  rejectBooking(practitionerId: ID!, bookingId: ID!, reason: String!): ServiceBooking!
+
+  # Customer or practitioner cancels a scheduled booking
+  cancelScheduledBooking(bookingId: ID!, cancelledBy: String!, reason: String): CancelScheduledBookingResponse!
+}
+
+type CancelScheduledBookingResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  booking: ServiceBooking
+}
+
+# Input types for practitioner availability
+
+input PractitionerScheduleInput {
+  timezone: String!
+  country: String!
+  weekdays: [PractitionerWeekdayInput!]!
+  serviceIds: [ID!]
+  bufferMinutes: Int
+  advanceBookingDays: Int
+  minimumNoticeHours: Int
+  deliveryMethods: DeliveryMethodsConfigInput!
+}
+
+input PractitionerWeekdayInput {
+  day: Int!
+  dayName: String!
+  enabled: Boolean!
+  timeSlots: [TimeSlotConfigInput!]!
+}
+
+input TimeSlotConfigInput {
+  id: ID
+  start: String!
+  end: String!
+  location: GooglePlaceInput
+}
+
+input DateOverrideInput {
+  date: Date!
+  type: String!
+  timeSlots: [TimeSlotSimpleInput]
+  reason: String
+}
+
+input TimeSlotSimpleInput {
+  start: String!
+  end: String!
+  location: GooglePlaceInput
+}
+
+input DeliveryMethodsConfigInput {
+  online: OnlineDeliverySettingsInput!
+  atPractitionerLocation: AtPractitionerDeliverySettingsInput!
+  mobile: MobileDeliverySettingsInput!
+}
+
+input OnlineDeliverySettingsInput {
+  enabled: Boolean!
+  defaultMeetingLink: String
+}
+
+input AtPractitionerDeliverySettingsInput {
+  enabled: Boolean!
+  location: GooglePlaceInput
+  displayArea: String
+}
+
+input MobileDeliverySettingsInput {
+  enabled: Boolean!
+  serviceRadiusKm: Float
+  travelSurcharge: CurrencyAmountInput
+  baseLocation: GooglePlaceInput
+}
+
+# Input for booking scheduled service
+
+input BookScheduledServiceInput {
+  vendorId: ID!
+  serviceId: ID!
+  customerId: ID!
+  customerEmail: String!
+  date: Date!
+  startTime: String!
+  endTime: String!
+  customerTimezone: String!
+  deliveryMethod: String!
+  customerAddress: GooglePlaceInput
+  questionnaireResponses: [QuestionResponseInput]
+  selectedAddOns: [ID]
+}
+
+input QuestionResponseInput {
+  questionId: ID!
+  question: String!
+  answer: String!
+}
+
+# Response types
+
+type BookScheduledServiceResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  booking: ServiceBooking
+  clientSecret: String
+}

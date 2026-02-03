@@ -1,0 +1,24 @@
+type Mutation {
+  create_message(
+    text: String
+    forObject: RecordRefInput
+    vendorId: ID
+    deliver_to: DeliverToInput
+    reply_to: RecordRefInput
+    media: [MediaInput]
+  ): CreateMessageResponse
+}
+
+type CreateMessageResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  chat: Message
+}
+
+input DeliverToInput {
+  userId: String!
+  mode: String!
+  requiresResponse: Boolean,
+  responseCode: String
+}

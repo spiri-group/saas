@@ -1,0 +1,531 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* -------------------- THEME TOKENS -------------------- */
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-background-secondary: var(--background-secondary);
+  --color-background-secondary-foreground: var(--background-secondary-foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-panel: var(--panel);
+  --color-panel-foreground: var(--panel-foreground);
+
+  --color-dialog: var(--dialog);
+  --color-dialog-foreground: var(--dialog-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+
+  --color-error: var(--error);
+  --color-error-foreground: var(--error-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-links: var(--links);
+
+  --color-navbar: var(--navbar);
+  --color-navbar-foreground: var(--navbar-foreground);
+
+  --spacing-screen-minus-nav: var(--height-screen-minus-nav);
+  --spacing-screen-minus-nav-mobile: var(--height-screen-minus-nav-mobile);
+}
+
+@theme {
+  --color-merchant-primary: var(--merchant-primary);
+  --color-merchant-primary-foreground: var(--merchant-primary-foreground);
+
+  --color-merchant-panel: var(--merchant-panel);
+
+  --color-merchant-panel-primary: var(--merchant-panel-primary);
+  --color-merchant-panel-primary-foreground: var(--merchant-panel-primary-foreground);
+
+  --color-merchant-panel-accent: var(--merchant-panel-accent);
+  --color-merchant-panel-accent-foreground: var(--merchant-panel-accent-foreground);
+
+  --color-merchant-links: var(--merchant-links);
+  --color-merchant-links-foreground: var(--merchant-links-foreground);
+
+  --color-merchant-brand: var(--merchant-brand);
+  --color-merchant-brand-foreground: var(--merchant-brand-foreground);
+
+  --color-merchant-background: var(--merchant-background);
+  --color-merchant-background-foreground: var(--merchant-background-foreground);
+
+  /* Merchant box shadow color for theming */
+  --merchant-box-shadow-color: 59, 130, 246; /* Default blue, can be overridden */
+
+  /* Theme-aware shadow utilities with merchant color */
+  --shadow-merchant-sm: 0 2px 4px rgba(var(--merchant-box-shadow-color), 0.15);
+  --shadow-merchant-md: 0 4px 8px rgba(var(--merchant-box-shadow-color), 0.2);
+  --shadow-merchant-lg: 0 8px 16px rgba(var(--merchant-box-shadow-color), 0.25);
+  --shadow-merchant-xl: 0 12px 24px rgba(var(--merchant-box-shadow-color), 0.3);
+  --shadow-merchant-2xl: 0 16px 32px rgba(var(--merchant-box-shadow-color), 0.35);
+}
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Roboto", "Inter", "Helvetica Neue", sans-serif;
+  --font-mono: "Courier New", "Courier", "Lucida Console", "monospace";
+
+  /* Dynamic fonts loaded by MerchantFontLoader component */
+  --font-merchant: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; /* Legacy support */
+  --font-merchant-brand: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-merchant-default: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-merchant-headings: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-merchant-accent: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* -------------------- ROOT + BASE -------------------- */
+:root {
+  --background: rgb(238, 238, 238);
+  --foreground: rgb(0, 0, 0);
+  --headings: rgb(0, 0, 0);
+
+  --card: rgb(255, 255, 255);
+  --card-foreground: rgba(7, 7, 7);
+
+  --panel: rgb(255, 255, 255, 1);
+  --panel-foreground: rgba(7, 7, 7);
+
+  --dialog: rgb(255, 255, 255);
+  --dialog-foreground: rgba(7, 7, 7);
+
+  --popover: rgb(255, 255, 255);
+  --popover-foreground: rgba(7, 7, 7);
+
+  --navbar: rgba(7, 7, 7, 1);
+  --navbar-foreground: rgb(0, 0, 0);
+
+  --primary: rgba(246, 176, 65, 1);
+  --primary-foreground: rgb(0, 0, 0);
+
+  --secondary: rgba(255, 248, 230, 1);
+  --secondary-foreground: rgba(120, 85, 0);
+
+  --info: rgb(220, 237, 247);
+  --info-foreground: rgb(7, 7, 7);
+
+  --muted: rgb(244, 243, 245);
+  --muted-foreground: rgb(100, 100, 100);
+
+  --accent: rgb(181, 0, 0);
+  --accent-inactive: rgb(232, 194, 194);
+  --accent-hover: rgb(201, 29, 29);
+  --accent-foreground: rgb(255, 255, 255);
+
+  --destructive: rgb(177, 0, 0);
+  --destructive-foreground: rgb(255, 255, 255);
+
+  --success: rgb(9, 95, 67);
+  --success-foreground: rgb(255, 255, 255);
+
+  --warning: rgb(255, 204, 0);
+  --warning-foreground: rgb(7, 7, 7);
+
+  --border: rgb(226, 232, 240);
+  --input: rgb(226, 232, 240);
+  --ring: rgb(20, 43, 107);
+  --links: rgb(189, 32, 46);
+
+  --radius: 0.5rem;
+
+  --invoice-status-open: rgb(98, 194, 238);
+  --invoice-status-paid: rgba(16, 185, 129);
+
+  --case-status-active: rgb(110, 238, 98);
+  --case-status-closed: rgb(238, 98, 98);
+
+  --spacing-screen-minus-nav: calc(100vh - 90px - 16px);
+  --spacing-screen-minus-nav-mobile: calc(100vh - 90px - 16px - 75px);
+
+  --font-default: "font-sans";
+  --font-headings: "font-sans";
+  --font-brand: "font-sans";
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+}
+
+.focus-reset {
+  @apply border-none outline-none focus:outline-none focus:ring-0;
+}
+
+/* -------------------- MERCHANT SHADOW UTILITIES --------------------
+   These integrate with Tailwind's shadow/ring system by writing --tw-shadow
+   and composing the final box-shadow with ring variables.
+-------------------------------------------------------------------- */
+@layer utilities {
+  /* Base (non-hover) merchant shadows */
+  .shadow-merchant-sm {
+    --tw-shadow: var(--shadow-merchant-sm);
+    box-shadow:
+      var(--tw-ring-offset-shadow, 0 0 #0000),
+      var(--tw-ring-shadow, 0 0 #0000),
+      var(--tw-shadow);
+  }
+  .shadow-merchant-md {
+    --tw-shadow: var(--shadow-merchant-md);
+    box-shadow:
+      var(--tw-ring-offset-shadow, 0 0 #0000),
+      var(--tw-ring-shadow, 0 0 #0000),
+      var(--tw-shadow);
+  }
+  .shadow-merchant-lg {
+    --tw-shadow: var(--shadow-merchant-lg);
+    box-shadow:
+      var(--tw-ring-offset-shadow, 0 0 #0000),
+      var(--tw-ring-shadow, 0 0 #0000),
+      var(--tw-shadow);
+  }
+  .shadow-merchant-xl {
+    --tw-shadow: var(--shadow-merchant-xl);
+    box-shadow:
+      var(--tw-ring-offset-shadow, 0 0 #0000),
+      var(--tw-ring-shadow, 0 0 #0000),
+      var(--tw-shadow);
+  }
+  .shadow-merchant-2xl {
+    --tw-shadow: var(--shadow-merchant-2xl);
+    box-shadow:
+      var(--tw-ring-offset-shadow, 0 0 #0000),
+      var(--tw-ring-shadow, 0 0 #0000),
+      var(--tw-shadow);
+  }
+
+  /* Hover merchant shadows (escaped colon in CSS selector) */
+  .hover\:shadow-merchant-sm:hover {
+    --tw-shadow: var(--shadow-merchant-sm);
+    box-shadow:
+      var(--tw-ring-offset-shadow, 0 0 #0000),
+      var(--tw-ring-shadow, 0 0 #0000),
+      var(--tw-shadow);
+  }
+  .hover\:shadow-merchant-md:hover {
+    --tw-shadow: var(--shadow-merchant-md);
+    box-shadow:
+      var(--tw-ring-offset-shadow, 0 0 #0000),
+      var(--tw-ring-shadow, 0 0 #0000),
+      var(--tw-shadow);
+  }
+  .hover\:shadow-merchant-lg:hover {
+    --tw-shadow: var(--shadow-merchant-lg);
+    box-shadow:
+      var(--tw-ring-offset-shadow, 0 0 #0000),
+      var(--tw-ring-shadow, 0 0 #0000),
+      var(--tw-shadow);
+  }
+  .hover\:shadow-merchant-xl:hover {
+    --tw-shadow: var(--shadow-merchant-xl);
+    box-shadow:
+      var(--tw-ring-offset-shadow, 0 0 #0000),
+      var(--tw-ring-shadow, 0 0 #0000),
+      var(--tw-shadow);
+  }
+  .hover\:shadow-merchant-2xl:hover {
+    --tw-shadow: var(--shadow-merchant-2xl);
+    box-shadow:
+      var(--tw-ring-offset-shadow, 0 0 #0000),
+      var(--tw-ring-shadow, 0 0 #0000),
+      var(--tw-shadow);
+  }
+
+  /* Min height utilities for screen minus nav */
+  .min-h-screen-minus-nav {
+    min-height: var(--spacing-screen-minus-nav);
+  }
+  
+  @media (max-width: 768px) {
+    .min-h-screen-minus-nav {
+      min-height: var(--spacing-screen-minus-nav-mobile);
+    }
+  }
+
+  .h-screen-minus-nav {
+    height: var(--spacing-screen-minus-nav);
+  }
+  
+  @media (max-width: 768px) {
+    .h-screen-minus-nav {
+      height: var(--spacing-screen-minus-nav-mobile);
+    }
+  }
+
+  /* Font family utilities for merchant fonts */
+  .font-merchant {
+    font-family: var(--font-merchant);
+  }
+  .font-merchant-brand {
+    font-family: var(--font-merchant-brand);
+  }
+  .font-merchant-default {
+    font-family: var(--font-merchant-default);
+  }
+  .font-merchant-headings {
+    font-family: var(--font-merchant-headings);
+  }
+  .font-merchant-accent {
+    font-family: var(--font-merchant-accent);
+  }
+
+  /* Font color utilities for merchant fonts */
+  .text-merchant-brand-foreground {
+    color: rgb(var(--merchant-brand-foreground));
+  }
+  .text-merchant-default-foreground {
+    color: rgb(var(--merchant-default-foreground));
+  }
+  .text-merchant-headings-foreground {
+    color: rgb(var(--merchant-headings-foreground));
+  }
+  .text-merchant-accent-foreground {
+    color: rgb(var(--merchant-accent-foreground));
+  }
+
+  /* Accent text styling for quotes */
+  .quotes::before {
+    content: '"';
+  }
+  .quotes::after {
+    content: '"';
+  }
+
+  /* Blob animation for home page */
+  @keyframes blob {
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+  }
+  
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+  
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+  
+  .animation-delay-6000 {
+    animation-delay: 6s;
+  }
+
+  /* Sacred breathing animations - living stillness */
+  @keyframes sacred-breath {
+    0% {
+      background: linear-gradient(to bottom, #fffef7 0%, #fef6e8 40%, #f5f0fa 100%);
+    }
+    33% {
+      background: linear-gradient(to bottom, #fef6e8 0%, #ffeef5 40%, #ebe0f7 100%);
+    }
+    66% {
+      background: linear-gradient(to bottom, #fff5f5 0%, #ebe0f7 40%, #fef3dc 100%);
+    }
+    100% {
+      background: linear-gradient(to bottom, #fffef7 0%, #fef6e8 40%, #f5f0fa 100%);
+    }
+  }
+
+  .animate-sacred-breath {
+    animation: sacred-breath 20s ease-in-out infinite;
+  }
+
+  /* Radial breathing glow - expanding/contracting */
+  @keyframes sacred-pulse {
+    0% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0.3;
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.3);
+      opacity: 0.15;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0.3;
+    }
+  }
+
+  .animate-sacred-pulse {
+    animation: sacred-pulse 6s ease-in-out infinite;
+  }
+
+  /* Gentle drift animations for ethereal glows */
+  @keyframes sacred-drift-1 {
+    0% {
+      transform: translate(-50%, 0%) translateY(0px);
+      opacity: 0.25;
+    }
+    50% {
+      transform: translate(-50%, 0%) translateY(-40px);
+      opacity: 0.18;
+    }
+    100% {
+      transform: translate(-50%, 0%) translateY(0px);
+      opacity: 0.25;
+    }
+  }
+
+  @keyframes sacred-drift-2 {
+    0% {
+      transform: translate(-50%, 0%) translateY(0px) translateX(20px);
+      opacity: 0.20;
+    }
+    50% {
+      transform: translate(-50%, 0%) translateY(30px) translateX(-20px);
+      opacity: 0.28;
+    }
+    100% {
+      transform: translate(-50%, 0%) translateY(0px) translateX(20px);
+      opacity: 0.20;
+    }
+  }
+
+  @keyframes sacred-drift-3 {
+    0% {
+      transform: translateY(0px) translateX(0px);
+      opacity: 0.22;
+    }
+    50% {
+      transform: translateY(-50px) translateX(30px);
+      opacity: 0.14;
+    }
+    100% {
+      transform: translateY(0px) translateX(0px);
+      opacity: 0.22;
+    }
+  }
+
+  .animate-sacred-drift-1 {
+    animation: sacred-drift-1 18s ease-in-out infinite;
+  }
+
+  .animate-sacred-drift-2 {
+    animation: sacred-drift-2 20s ease-in-out infinite;
+    animation-delay: 3s;
+  }
+
+  .animate-sacred-drift-3 {
+    animation: sacred-drift-3 16s ease-in-out infinite;
+    animation-delay: 1.5s;
+  }
+
+  /* Sacred button gradient animation */
+  @keyframes sacred-button-gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .animate-sacred-button-gradient {
+    background: linear-gradient(270deg, #f6b041, #e8b84d, #d4b5f7, #e8b84d, #f6b041);
+    background-size: 400% 400%;
+    animation: sacred-button-gradient 8s ease-in-out infinite;
+  }
+
+  /* Sacred button glow animation */
+  @keyframes sacred-glow {
+    0% {
+      box-shadow: 
+        0 10px 40px rgba(246, 176, 65, 0.4),
+        0 0 60px rgba(212, 181, 247, 0.3),
+        0 0 20px rgba(246, 176, 65, 0.2);
+    }
+    50% {
+      box-shadow: 
+        0 15px 60px rgba(246, 176, 65, 0.6),
+        0 0 80px rgba(212, 181, 247, 0.5),
+        0 0 40px rgba(246, 176, 65, 0.4);
+    }
+    100% {
+      box-shadow: 
+        0 10px 40px rgba(246, 176, 65, 0.4),
+        0 0 60px rgba(212, 181, 247, 0.3),
+        0 0 20px rgba(246, 176, 65, 0.2);
+    }
+  }
+
+  .animate-sacred-glow {
+    animation: sacred-glow 3s ease-in-out infinite;
+  }
+
+  /* Radial gradient utility */
+  .bg-gradient-radial {
+    background-image: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+
+  /* Page fade-in animation */
+  @keyframes page-fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-page-fade-in {
+    animation: page-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Animated border gradient for dynamic mode items */
+  @keyframes border-spin {
+    0% {
+      --tw-gradient-angle: 0deg;
+    }
+    100% {
+      --tw-gradient-angle: 360deg;
+    }
+  }
+
+  @property --tw-gradient-angle {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+  }
+}

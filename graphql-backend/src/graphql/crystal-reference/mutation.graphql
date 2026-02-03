@@ -1,0 +1,85 @@
+type Mutation {
+  # Create a new crystal reference (admin only)
+  createCrystalReference(input: CreateCrystalReferenceInput!): CrystalReferenceResponse!
+
+  # Update an existing crystal reference (admin only)
+  updateCrystalReference(input: UpdateCrystalReferenceInput!): CrystalReferenceResponse!
+
+  # Delete a crystal reference (admin only)
+  deleteCrystalReference(id: ID!): DeleteCrystalReferenceResponse!
+
+  # Bulk import crystals (admin only, for seeding)
+  bulkImportCrystals(crystals: [CreateCrystalReferenceInput!]!): BulkImportResponse!
+}
+
+# Input types
+input CreateCrystalReferenceInput {
+  id: ID # Auto-generated from name if not provided
+  name: String!
+  alternateNames: [String!]
+  description: String!
+  colors: [CrystalColor!]!
+  crystalSystem: CrystalSystem
+  mohsHardness: Float
+  commonForms: [CrystalForm!]!
+  chakras: [ChakraType!]!
+  elements: [ElementType!]!
+  zodiacSigns: [ZodiacSign!]!
+  planetaryAssociation: String
+  numerology: Int
+  primaryProperties: [String!]!
+  emotionalUses: [String!]
+  spiritualUses: [String!]
+  physicalAssociations: [String!]
+  cleansingMethods: [CleansingMethod!]!
+  chargingMethods: [ChargingMethod!]!
+  avoidMethods: [String!]
+  careNotes: String
+  localities: [String!]!
+  thumbnail: String
+}
+
+input UpdateCrystalReferenceInput {
+  id: ID!
+  name: String
+  alternateNames: [String!]
+  description: String
+  colors: [CrystalColor!]
+  crystalSystem: CrystalSystem
+  mohsHardness: Float
+  commonForms: [CrystalForm!]
+  chakras: [ChakraType!]
+  elements: [ElementType!]
+  zodiacSigns: [ZodiacSign!]
+  planetaryAssociation: String
+  numerology: Int
+  primaryProperties: [String!]
+  emotionalUses: [String!]
+  spiritualUses: [String!]
+  physicalAssociations: [String!]
+  cleansingMethods: [CleansingMethod!]
+  chargingMethods: [ChargingMethod!]
+  avoidMethods: [String!]
+  careNotes: String
+  localities: [String!]
+  thumbnail: String
+}
+
+# Response types
+type CrystalReferenceResponse {
+  success: Boolean!
+  message: String
+  crystal: CrystalReference
+}
+
+type DeleteCrystalReferenceResponse {
+  success: Boolean!
+  message: String
+}
+
+type BulkImportResponse {
+  success: Boolean!
+  imported: Int!
+  failed: Int!
+  errors: [String!]
+}

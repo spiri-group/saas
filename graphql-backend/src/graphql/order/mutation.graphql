@@ -1,0 +1,67 @@
+type Mutation {
+  create_order(customerEmail: String!, lines: [OrderLineInput], merchantId: String, forObject: RecordRefInput, target:String!, digitalOnly: Boolean): CreateOrderResponse
+  update_order_address(orderRef: RecordRefInput!, address: AddressDetailsInput!, name: String!, mode: String!): CreateOrderResponse
+  update_order_addresses(orderRef: RecordRefInput!, billingAddress: AddressDetailsInput!, billingName: String!, shippingAddress: AddressDetailsInput, shippingName: String): CreateOrderResponse
+  upsert_request_refund(orderRef: RecordRefInput, lines: [OrderLineRefundInput], reasonId: String, evidencePhotos: [MediaInput], evidenceVideos: [MediaInput]): CreateOrderResponse
+  cancel_request_refund(orderRef: RecordRefInput, lines: [OrderLineRefundInput]): CreateOrderResponse
+  reject_request_refund(orderRef: RecordRefInput, lines: [OrderLineRefundInput]): CreateOrderResponse
+  approve_request_refund(orderRef: RecordRefInput): CreateOrderResponse
+  request_better_evidence(orderRef: RecordRefInput, message: String): CreateOrderResponse
+  refund_order(orderRef: RecordRefInput, lines: [OrderLineRefundInput]): CreateOrderResponse,
+  generate_sales_tax(orderRef: RecordRefInput): GenerateTaxResponse
+  create_order_checkout_link(merchantId: ID!, input: CreateOrderCheckoutLinkInput!): CreateOrderCheckoutLinkResponse!
+}
+
+type CreateOrderResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  order: Order
+}
+
+type GenerateTaxResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  tax: OrderTax
+}
+
+input OrderLineInput {
+  id: ID!
+  merchantId: String
+  forObject: RecordRefInput
+  variantId: String
+  descriptor: String
+  quantity: Float
+  price: CurrencyAmountInput
+
+  # Optional service-specific details
+  service: ServiceLineDetailsInput
+}
+
+input ServiceLineDetailsInput {
+  questionnaireResponses: [QuestionResponseInput]
+  selectedAddOns: [ID]
+}
+
+input OrderLineRefundInput {
+  id: ID!
+  refund_quantity: Float
+  refund: CurrencyAmountInput
+}
+
+input CreateOrderCheckoutLinkInput {
+  customerEmail: String!
+  lines: [OrderLineInput!]!
+  target: String!
+  expiresInHours: Int
+}
+
+type CreateOrderCheckoutLinkResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  checkoutUrl: String
+  orderId: ID
+  expiresAt: DateTime
+}

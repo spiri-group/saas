@@ -1,0 +1,343 @@
+type Query {
+    product(id: String!, vendorId: String!): Product
+    products(vendor: String!, family: String, searchText: String, currency: String): [Product]
+    prerecord(id: String!, vendorId: String!): PreRecord
+    inventoryAlerts(vendorId: String!, status: String): [InventoryAlert]
+    inventoryTransactions(vendorId: String!, variantId: String, limit: Int): [InventoryTransaction]
+    stockReport(vendorId: String!, locationId: String): StockReport
+    stockReportItems(vendorId: String!, locationId: String, search: String, offset: Int, limit: Int): StockReportItemsResponse
+    productCategories(merchantId: ID!): [ProductCategory!]!
+    # Crystal product queries
+    searchCrystalProducts(filters: CrystalProductFiltersInput, offset: Int, limit: Int): CrystalProductSearchResponse
+    matchWishlistToProducts(userId: String!): WishlistMatchResponse
+    crystalProductRecommendations(userId: String!, limit: Int): CrystalRecommendationsResponse
+}
+
+type ProductCategory {
+  id: ID!
+  label: String!
+  children: [ProductCategory!]
+}
+
+type ProductPropertyDefinition {
+  key: String!
+  valueType: String!
+  value: String
+  values: [String]
+}
+
+# Product type discriminator enum
+enum ProductType {
+  STANDARD
+  CRYSTAL
+}
+
+# Crystal form enum
+enum CrystalForm {
+  raw
+  tumbled
+  point
+  cluster
+  sphere
+  palm_stone
+  tower
+  wand
+  pyramid
+  heart
+  skull
+  cabochon
+  faceted
+  slice
+  geode
+  jewelry
+  freeform
+  cube
+  carving
+  blade
+  fan
+  other
+}
+
+# Crystal grade enum
+enum CrystalGrade {
+  A
+  AA
+  AAA
+  museum
+  specimen
+  polished
+}
+
+# Crystal color enum
+enum CrystalColor {
+  clear
+  white
+  black
+  red
+  orange
+  yellow
+  green
+  blue
+  purple
+  pink
+  brown
+  gray
+  gold
+  silver
+  multicolor
+  iridescent
+}
+
+# Crystal-specific type data
+type CrystalTypeData {
+  crystalRefId: String!
+  crystalRef: CrystalReference
+  crystalForm: CrystalForm!
+  crystalGrade: CrystalGrade
+  crystalLocality: String
+  crystalColor: CrystalColor
+}
+
+# Product type data union
+type ProductTypeData {
+  crystal: CrystalTypeData
+}
+
+type Product {
+  id: String!
+  name: String
+  slug: String
+  ref: RecordRef
+  vendor: Vendor
+  description: String
+  properties: [ProductPropertyDefinition]
+  soldFrom: MerchantLocation
+  defaultVariantId: String!
+  variants: [Variant]
+  defaultVariant: Variant
+  listingFee: StripeDetails
+  is_ooak: Boolean
+  noRefunds: Boolean
+  refundRules: RefundRules
+  isLive: Boolean
+  productType: ProductType
+  typeData: ProductTypeData
+}
+
+# Crystal product filter input
+input CrystalProductFiltersInput {
+  crystalRefId: String
+  crystalForm: CrystalForm
+  crystalGrade: CrystalGrade
+  minPrice: Float
+  maxPrice: Float
+  search: String
+}
+
+# Crystal product search response
+type CrystalProductSearchResponse {
+  products: [Product!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
+# Wishlist match types
+type WishlistMatchItem {
+  wishlistItem: CrystalWishlistItem!
+  matchingProducts: [Product!]!
+  matchCount: Int!
+}
+
+type WishlistMatchResponse {
+  matches: [WishlistMatchItem!]!
+  totalWishlistItems: Int!
+  totalMatches: Int!
+}
+
+# Crystal recommendation types
+enum RecommendationReasonType {
+  CHAKRA_BALANCE
+  ELEMENT_BALANCE
+  ZODIAC_MATCH
+  COMPLEMENTARY
+  POPULAR
+}
+
+type CrystalRecommendation {
+  crystal: CrystalReference!
+  reason: String!
+  reasonType: RecommendationReasonType!
+  matchingProducts: [Product!]!
+  productCount: Int!
+  lowestPrice: CurrencyAmount
+}
+
+type ChakraAnalysis {
+  coveredChakras: [String!]!
+  missingChakras: [String!]!
+  strongestChakra: String
+  coveragePercentage: Float!
+}
+
+type CrystalRecommendationsResponse {
+  recommendations: [CrystalRecommendation!]!
+  chakraAnalysis: ChakraAnalysis
+  collectionSize: Int!
+}
+
+type Variant {
+  id: String!
+  code: String
+  name: String
+  description: String
+  dimensions: VariantDimensions
+  weight: VariantWeight
+  requireReturnShipping: Boolean
+  thumbnail: Thumbnail
+  images: [Media]
+  properties: [ProductPropertyDefinition]
+  defaultPrice: CurrencyAmount,
+  landedCost: CurrencyAmount,
+  otherPrices: [CurrencyAmount]
+  inventory: VariantInventory
+  qty_available: Int
+}
+
+type VariantDimensions {
+  height: Int
+  width: Int
+  depth: Int
+  uom: String
+}
+
+type VariantWeight {
+  amount: Float
+  uom: String
+}
+
+type Offer {
+  id: String!
+  variantId: String!
+  defaultPrice: CurrencyAmount
+  quantity: Float
+}
+
+type PreRecord {
+  id: ID!
+  name: String!
+  type: ListingType!
+  topic: String!
+  description: String!
+  thumbnail: Media!
+  media_content: Media!
+  datetime: DateTime!
+  comments: [Comment]
+  fullPriceId: String!
+  rentPriceId: String!
+  fullPrice: CurrencyAmount!
+  rentPrice: CurrencyAmount!
+  related_listing: [Listing]
+  ref: RecordRef
+}
+
+type VariantInventory {
+  variant_id: String!
+  product_id: String!
+  vendorId: String!
+  track_inventory: Boolean!
+  qty_on_hand: Int!
+  qty_committed: Int!
+  low_stock_threshold: Int
+  is_ooak_effective: Boolean
+  location_id: String!
+  updated_at: DateTime!
+}
+
+type InventoryAlert {
+  id: String!
+  variant_id: String!
+  product_id: String!
+  vendorId: String!
+  alert_type: String!
+  threshold: Int
+  current_qty: Int!
+  status: String!
+  created_at: DateTime!
+  acknowledged: Boolean!
+  acknowledged_at: DateTime
+  acknowledged_by: String
+  snoozed_until: DateTime
+  variant: Variant
+  product: Product
+}
+
+type InventoryTransaction {
+  id: String!
+  vendorId: String!
+  product_id: String!
+  variant_id: String!
+  delta: Int!
+  qty_before: Int!
+  qty_after: Int!
+  reason: String!
+  source: String
+  reference_id: String
+  recipient: String
+  notes: String
+  created_at: DateTime!
+  created_by: String!
+  variant: Variant
+  product: Product
+}
+
+type StockReport {
+  total_products: Int!
+  total_variants: Int!
+  low_stock_items: Int!
+  out_of_stock_items: Int!
+  total_value: CurrencyAmount!
+  ooak_items: Int!
+  location_id: String!
+  generated_at: DateTime!
+  items: [StockReportItem!]!
+}
+
+type StockReportItem {
+  product_id: String!
+  product_name: String!
+  variant_id: String!
+  variant_name: String!
+  qty_on_hand: Int!
+  qty_available: Int!
+  qty_committed: Int!
+  is_ooak: Boolean!
+  low_stock_threshold: Int
+  value: CurrencyAmount!
+  status: String!
+}
+
+type StockReportItemsResponse {
+  items: [StockReportItem!]!
+  hasMore: Boolean!
+  totalCount: Int!
+}
+
+type RefundRules {
+  allowAutoReturns: Boolean
+  maxShippingCost: CurrencyAmount
+  productCost: CurrencyAmount
+  refundWithoutReturn: Boolean
+  useDefaultAddress: Boolean
+  customAddress: RefundAddress
+  requirePhoto: Boolean
+  refundTiming: String
+}
+
+
+type RefundAddress {
+  street: String
+  city: String
+  state: String
+  postcode: String
+  country: String
+}

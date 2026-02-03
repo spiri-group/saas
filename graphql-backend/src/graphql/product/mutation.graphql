@@ -1,0 +1,213 @@
+type Mutation {
+    create_product(merchantId: String!, product: ProductInput!): CreateProductResponse
+    upsert_product(merchantId: String!, product: ProductInput!): CreateProductResponse
+    update_product_live_status(merchantId: String!, productId: String!, isLive: Boolean!): UpdateProductLiveStatusResponse
+    create_prerecord(vendorId: String!, prerecord: PreRecordInput!): CreatePreRecordResponse
+    adjustInventory(vendorId: String!, adjustment: InventoryAdjustmentInput!): InventoryAdjustmentResponse
+    acknowledgeInventoryAlert(vendorId: String!, alertId: String!): InventoryAlertResponse
+    updateInventorySettings(vendorId: String!, settings: InventorySettingsInput!): InventorySettingsResponse
+}
+
+type UpdateProductLiveStatusResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  product: Product
+  requiresOnboarding: Boolean
+}
+
+type CreateProductResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  product: Product
+}
+
+type CreatePreRecordResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  preRecord: PreRecord
+}
+
+input ProductVariantPropertyInput {
+  key: String!
+  value: String!
+  enabled: Boolean
+  sortOrder: Int
+}
+
+input ProductPropertyDefinitionInput {
+  key: String!
+  valueType: String! # STRING, BOOLEAN, or NUMBER
+  value: String       # Single value for the property
+  options: [String]   # List of options for the property
+}
+
+# Crystal type data input
+input CrystalTypeDataInput {
+  crystalRefId: String!
+  crystalForm: String!
+  crystalGrade: String
+  crystalLocality: String
+  crystalColor: String
+}
+
+# Product type data input
+input ProductTypeDataInput {
+  crystal: CrystalTypeDataInput
+}
+
+input ProductInput {
+  id: String!
+  name: String
+  category: String
+  description: String
+  soldFromLocationId: String!,
+  productReturnPolicyId: String,
+  noRefunds: Boolean,
+  code: String,
+  thumbnail: ThumbnailInput
+  properties: [ProductPropertyDefinitionInput]
+  price: CurrencyAmountInput
+  pricingStrategy: String
+  variants: [VariantInput]
+  is_ooak: Boolean
+  refundRules: RefundRulesInput
+  productType: String
+  typeData: ProductTypeDataInput
+}
+
+input VariantInput {
+  id: ID!
+  isDefault: Boolean
+  name: String
+  code: String
+  description:String
+  countryOfOrigin: String
+  countryOfManufacture: String
+  harmonizedTarrifCode: harmonizedTarrifCodeInput
+  requireReturnShipping: Boolean
+  properties: [ProductVariantPropertyInput]
+  tone: String  
+  defaultPrice: CurrencyAmountInput
+  landedCost: CurrencyAmountInput
+  otherPrices: [CurrencyAmountInput]
+  images: [MediaInput]
+  qty_soh: Int
+  dimensions: DimensionsInput
+  weight: WeightInput
+  inventory: VariantInventoryInput
+}
+
+input harmonizedTarrifCodeInput {
+  hsCode: String
+  formattedHsCode: String
+  description: String
+}
+
+input DimensionsInput {
+  height: Float
+  width: Float
+  depth: Float
+  uom: String
+}
+
+input WeightInput {
+  amount: Float
+  uom: String
+}
+
+input OfferInput {
+  id: String!
+  variantIds: [ID]!
+  price: CurrencyAmountInput
+  quantity: Int
+}
+
+input RefundRulesInput {
+  allowAutoReturns: Boolean
+  maxShippingCost: CurrencyAmountInput
+  productCost: CurrencyAmountInput
+  refundWithoutReturn: Boolean
+  useDefaultAddress: Boolean
+  customAddress: RefundAddressInput
+  requirePhoto: Boolean
+  refundTiming: String
+}
+
+
+input RefundAddressInput {
+  street: String
+  city: String
+  state: String
+  postcode: String
+  country: String
+}
+
+input PreRecordInput {
+  id: String!
+  name: String!
+  type: FileFormatType!
+  topic: String!
+  description: String!
+  thumbnail: MediaInput!
+  media_content: MediaInput!
+  datetime: DateTime!
+  fullPrice: Float!
+  rentPrice: Float!
+  currency: String!
+}
+
+input VariantInventoryInput {
+  track_inventory: Boolean!
+  initial_qty: Int!
+  low_stock_threshold: Int
+  location_id: String!
+}
+
+input InventoryAdjustmentInput {
+  variant_id: String!
+  delta: Int!
+  reason: String!
+  recipient: String
+  notes: String
+}
+
+input InventorySettingsInput {
+  low_stock_threshold_default: Int!
+  notify_email: String
+  enabled: Boolean!
+  snooze_minutes: Int!
+}
+
+type InventoryAdjustmentResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  transaction: InventoryTransaction
+  alert: InventoryAlert
+}
+
+type InventoryAlertResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  alert: InventoryAlert
+}
+
+type InventorySettingsResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  settings: InventoryRule
+}
+
+type InventoryRule {
+  id: String!
+  vendor_id: String!
+  low_stock_threshold_default: Int!
+  notify_email: String
+  enabled: Boolean!
+  snooze_minutes: Int!
+}
