@@ -14,10 +14,10 @@ on:
         type: choice
         options: [ DEV, PROD ]
 
-# Needed so the cleanup step can delete artifacts created by this workflow
 permissions:
   contents: read
   actions: write
+  id-token: write
 
 env:
   NODE_VERSION: 20.17.0
@@ -83,9 +83,11 @@ jobs:
           path: .
 
       - name: Login to Azure
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy to Azure Function App
         uses: azure/functions-action@v1
