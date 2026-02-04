@@ -46,7 +46,7 @@ export default function FeeGroupTable({
 
   return (
     <Table>
-      <TableHeader>
+      <TableHeader className="sticky top-0 z-10 bg-slate-950">
         <TableRow className="border-slate-700 hover:bg-transparent">
           <TableHead className="text-slate-400 w-[200px]">Fee Name</TableHead>
           <TableHead className="text-slate-400 font-mono">Key</TableHead>
