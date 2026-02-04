@@ -372,6 +372,26 @@ type MerchantColors {
 
 type VendorSubscription {
   plans: [Plan]
+  next_billing_date: String
+  billing_interval: String
+  billing_history: [BillingRecord]
+  payment_status: String
+  card_status: String
+  payouts_blocked: Boolean
+  last_payment_date: String
+  payment_retry_count: Int
+}
+
+type BillingRecord {
+  id: ID!
+  date: String!
+  amount: Int!
+  currency: String!
+  billingStatus: String!
+  stripePaymentIntentId: String
+  error: String
+  period_start: String!
+  period_end: String!
 }
 
 type Plan {

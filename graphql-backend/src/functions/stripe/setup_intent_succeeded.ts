@@ -168,53 +168,22 @@ const handler : StripeHandler = async (event, logger, services ) => {
             logger.logMessage(`[setup_intent_succeeded] Payout schedule updated to daily for account ${connectedAccountId}`);
         }
 
-        // 3. Always create subscription when card is added (if not already exists)
+        // 3. Save payment method and set up self-managed billing fields (no Stripe subscription)
         if (merchant.subscription?.stripeSubscriptionId) {
-            logger.logMessage(`[setup_intent_succeeded] Merchant already has subscription ${merchant.subscription.stripeSubscriptionId} - skipping`);
+            logger.logMessage(`[setup_intent_succeeded] Merchant already has Stripe subscription ${merchant.subscription.stripeSubscriptionId} - skipping self-managed billing setup`);
         } else {
-            logger.logMessage(`[setup_intent_succeeded] Creating subscription for merchant ${merchantId}`);
+            logger.logMessage(`[setup_intent_succeeded] Setting up self-managed billing for merchant ${merchantId}`);
 
-            const plans = merchant.subscription?.plans || [];
+            const nextBillingDate = DateTime.now().plus({ months: 1 }).toISO();
 
-            if (plans.length > 0) {
-                // Get the price ID from either priceId field or price.id
-                const subscriptionItems = plans
-                    .map(plan => {
-                        const priceId = plan.priceId || plan.price?.id;
-                        if (!priceId) {
-                            logger.logMessage(`[setup_intent_succeeded] Warning: No price ID found for plan ${plan.name}`);
-                            return null;
-                        }
-                        return { price: priceId };
-                    })
-                    .filter(item => item !== null);
+            await cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
+                { op: "set", path: "/subscription/saved_payment_method", value: payment_method },
+                { op: "set", path: "/subscription/next_billing_date", value: nextBillingDate },
+                { op: "set", path: "/subscription/billing_interval", value: "monthly" },
+                { op: "set", path: "/subscription/billing_history", value: [] }
+            ], "STRIPE");
 
-                if (subscriptionItems.length === 0) {
-                    logger.logMessage(`[setup_intent_succeeded] No valid price IDs found - cannot create subscription`);
-                } else {
-                    const subscriptionResp = await stripe.callApi("POST", "subscriptions", {
-                        customer: merchant.stripe.customerId,
-                        items: subscriptionItems,
-                        default_payment_method: payment_method,
-                        automatic_tax: { enabled: true },
-                        metadata: {
-                            merchantId: merchantId
-                        }
-                    });
-
-                    if (subscriptionResp.status === 200) {
-                        logger.logMessage(`[setup_intent_succeeded] Subscription created: ${subscriptionResp.data.id}`);
-
-                        await cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
-                            { op: "set", path: "/subscription/stripeSubscriptionId", value: subscriptionResp.data.id }
-                        ], "STRIPE");
-                    } else {
-                        logger.logMessage(`[setup_intent_succeeded] Failed to create subscription: ${JSON.stringify(subscriptionResp.data)}`);
-                    }
-                }
-            } else {
-                logger.logMessage(`[setup_intent_succeeded] No plans found on merchant - cannot create subscription`);
-            }
+            logger.logMessage(`[setup_intent_succeeded] Self-managed billing configured: next billing ${nextBillingDate}`);
         }
 
         logger.logMessage(`[setup_intent_succeeded] Merchant payment method setup complete`);
@@ -336,41 +305,21 @@ const handler : StripeHandler = async (event, logger, services ) => {
         // we need to fetch the stripeCustomer of the merchant who we are wishing to activate the subscription for
         const merchant = await cosmos.get_record<vendor_type>("Main-Vendor", metadata.merchantId, metadata.merchantId)
         if (merchant.stripe == null) throw `Merchant ${metadata.merchantId} does not have a stripe account`
-        var merchantCustomerStripeId = merchant.stripe.customerId
 
-        logger.logMessage("Handling as saved card for merchant subscription");
+        logger.logMessage("Handling as saved card for merchant subscription (self-managed billing)");
 
-        // Patch the merchant to indicate we have a saved card
+        // Save card status and set up self-managed billing fields (no Stripe subscription)
+        const nextBillingDate = DateTime.now().plus({ months: 1 }).toISO();
+
         await cosmos.patch_record("Main-Vendor", metadata.merchantId, metadata.merchantId, [
-            { op: "set", path: "/subscription/card_status", value: merchant_card_status.saved }
-        ], "STRIPE")    
-
-        logger.logMessage(`Restoring price on ${order.lines.length} lines from price log`)
-
-        logger.logMessage(`Creating subscription for merchant ${metadata.merchantId}`)
-
-        logger.logMessage(JSON.stringify(order.lines))
-
-        // Create subscriptions only for merchant setup
-        var resp = await stripe.callApi("POST", "subscriptions", {
-            customer: merchantCustomerStripeId,
-            items: order.lines.map(line => ({
-                price: line.price_log[0].price.id
-            })),
-            default_payment_method: payment_method,
-            automatic_tax: { enabled: true },
-            metadata: {
-                ...metadata
-            }
-        })
-
-        logger.logMessage(`Subscription created successfully - ${resp.data.id}`)
-        // Patch the order to indicate we have a subscription
-        await cosmos.patch_record("Main-Orders", metadata.orderId, metadata.orderId, [
-            { op: "set", path: "/stripe/subscriptionId", value: resp.data.id }
+            { op: "set", path: "/subscription/card_status", value: merchant_card_status.saved },
+            { op: "set", path: "/subscription/saved_payment_method", value: payment_method },
+            { op: "set", path: "/subscription/next_billing_date", value: nextBillingDate },
+            { op: "set", path: "/subscription/billing_interval", value: "monthly" },
+            { op: "set", path: "/subscription/billing_history", value: [] }
         ], "STRIPE")
 
-        logger.logMessage(`Subscription created successfully`)
+        logger.logMessage(`Self-managed billing configured for merchant ${metadata.merchantId}: next billing ${nextBillingDate}`)
 
     } else {
 

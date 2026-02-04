@@ -29,6 +29,11 @@ const FEE_GROUPS: Record<string, string> = {
   "tour-booking": "Services & Bookings",
   "reading-request": "Readings",
   "case-activity": "Case Activities",
+  "subscription-spiriverse-core": "Subscription Plans",
+  "subscription-spiriassts": "Subscription Plans",
+  "subscription-tours-premium": "Subscription Plans",
+  "subscription-shopkeeper-premium": "Subscription Plans",
+  "subscription-pro": "Subscription Plans",
 };
 
 const GROUP_ORDER = [
@@ -36,6 +41,7 @@ const GROUP_ORDER = [
   "Services & Bookings",
   "Readings",
   "Case Activities",
+  "Subscription Plans",
   "Other",
 ];
 
@@ -113,7 +119,9 @@ export function computeMonthlyRevenue(
   config: FeeConfig,
   sim: SimulationInput
 ): number {
-  if (sim.volume <= 0 || sim.avgSale <= 0) return 0;
+  if (sim.volume <= 0) return 0;
+  // For fixed-only fees (e.g. subscription plans), avgSale is irrelevant
+  if (sim.avgSale <= 0 && config.percent > 0) return 0;
   const avgSaleCents = Math.round(sim.avgSale * 100);
   const perTransaction =
     Math.round(avgSaleCents * (config.percent / 100)) + (config.fixed || 0);

@@ -511,14 +511,15 @@ export const deriveFees = async (
   }, 0);
 
   // PROCESSING FEE – keep in minor units
-  // 1% of total, rounded to the nearest cent
-  const processing_fee = Math.round(total / 100); // 1% == /100
+  const processingCfg = getTargetFeeConfig('platform-processing', cfg);
+  const processing_fee = Math.round(total * (processingCfg.percent / 100)) + (processingCfg.fixed || 0);
 
   // Stripe fees function should take/return MINOR units
   const stripe_fees = calcStripeFees(total + processing_fee);
 
-  // LISTING FEE – already in minor units
-  const listing_fee = 100;
+  // LISTING FEE – in minor units
+  const listingCfg = getTargetFeeConfig('platform-listing', cfg);
+  const listing_fee = Math.round(total * (listingCfg.percent / 100)) + (listingCfg.fixed || 0);
 
   // Subtotal the platform take (still MINOR units)
   const spiriverse_takes_subtotal = sale_fee + listing_fee + processing_fee;

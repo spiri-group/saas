@@ -9,7 +9,7 @@ import { process_waitlist_on_slot_open } from "../utils/waitlist_manager";
 import { StatusType, recordref_type } from "../../0_shared/types";
 import { order_type } from "../../order/types";
 import { vendor_type } from "../../vendor/types";
-import { encodeAmountToSmallestUnit } from "../../../utils/functions";
+import { encodeAmountToSmallestUnit, getSpiriverseFeeConfig, getTargetFeeConfig } from "../../../utils/functions";
 
 export const booking_resolvers = {
     Query: {
@@ -236,11 +236,11 @@ export const booking_resolvers = {
                         const connectedCustomer = await stripeService.resolveCustomer(customerEmail);
                         paymentIntentData.customer = connectedCustomer.id;
 
-                        // Set application fee for platform
-                        const applicationFeePercent = 0.05; // 5% platform fee
-                        paymentIntentData.application_fee_amount = Math.round(
-                            encodeAmountToSmallestUnit(totalAmount, currency) * applicationFeePercent
-                        );
+                        // Set application fee for platform from config
+                        const feeConfig = await getSpiriverseFeeConfig({ cosmos: context.dataSources.cosmos });
+                        const targetFee = getTargetFeeConfig('tour-booking', feeConfig);
+                        const amountInSmallestUnit = encodeAmountToSmallestUnit(totalAmount, currency);
+                        paymentIntentData.application_fee_amount = Math.round(amountInSmallestUnit * (targetFee.percent / 100)) + (targetFee.fixed || 0);
                     }
 
                     const paymentIntent = await stripeService.callApi("POST", "payment_intents", paymentIntentData);
