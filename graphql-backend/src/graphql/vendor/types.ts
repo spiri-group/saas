@@ -293,7 +293,12 @@ export type vendorSubscription_type = {
   plans: plan_type[],
   // Deferred subscription model fields
   first_payout_received?: boolean,  // After first payout, payouts are blocked until card added
-  payouts_blocked?: boolean         // True when waiting for card to be added
+  payouts_blocked?: boolean,        // True when waiting for card to be added
+  // Self-managed billing fields
+  next_billing_date?: string,       // ISO date of next charge
+  billing_interval?: billing_interval,
+  billing_history?: billing_record_type[],
+  saved_payment_method?: string     // Stripe PaymentMethod ID
 }
 
 export type plan_type =  {
@@ -369,6 +374,28 @@ export enum merchant_subscription_payment_status {
     pending = "pending",
     success = "success",
     failed = "failed"
+}
+
+export enum billing_interval {
+    monthly = "monthly",
+    yearly = "yearly"
+}
+
+export enum billing_record_status {
+    success = "success",
+    failed = "failed"
+}
+
+export type billing_record_type = {
+    id: string,
+    date: string,
+    amount: number,
+    currency: string,
+    billingStatus: billing_record_status,
+    stripePaymentIntentId?: string,
+    error?: string,
+    period_start: string,
+    period_end: string
 }
 
 

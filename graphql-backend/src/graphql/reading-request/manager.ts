@@ -15,9 +15,7 @@ import {
 } from "./types";
 import { user_type } from "../user/types";
 import { extractSymbolsFromCard } from "../personal-space/tarot-symbols";
-
-// Platform fee percentage (20%)
-const PLATFORM_FEE_PERCENT = 0.20;
+import { getSpiriverseFeeConfig, getTargetFeeConfig } from "../../utils/functions";
 
 export class ReadingRequestManager {
   private containerName = "Main-PersonalSpace";
@@ -148,7 +146,9 @@ export class ReadingRequestManager {
 
     const id = uuid();
     const now = DateTime.now().toISO();
-    const platformFee = Math.floor(spreadConfig.price * PLATFORM_FEE_PERCENT);
+    const feeConfig = await getSpiriverseFeeConfig({ cosmos: this.cosmos });
+    const targetFee = getTargetFeeConfig('reading-request', feeConfig);
+    const platformFee = Math.floor(spreadConfig.price * (targetFee.percent / 100)) + (targetFee.fixed || 0);
     const readerPayout = spreadConfig.price - platformFee;
     // Set expiry for 30 days if no reader claims it
     const expiresAt = DateTime.now().plus({ days: 30 }).toISO();
@@ -211,7 +211,9 @@ export class ReadingRequestManager {
 
     const id = uuid();
     const now = DateTime.now().toISO();
-    const platformFee = Math.floor(spreadConfig.price * PLATFORM_FEE_PERCENT);
+    const feeConfig = await getSpiriverseFeeConfig({ cosmos: this.cosmos });
+    const targetFee = getTargetFeeConfig('reading-request', feeConfig);
+    const platformFee = Math.floor(spreadConfig.price * (targetFee.percent / 100)) + (targetFee.fixed || 0);
     const readerPayout = spreadConfig.price - platformFee;
     // Set expiry for 30 days if no reader claims it
     const expiresAt = DateTime.now().plus({ days: 30 }).toISO();

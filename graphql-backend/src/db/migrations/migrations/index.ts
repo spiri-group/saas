@@ -20,6 +20,9 @@ import { migration as migration009 } from "./009_reseed_composable_templates";
 import { migration as migration010 } from "./010_reassign_default_headers_footers";
 import { migration as migration011 } from "./011_reseed_warmer_copy";
 import { migration as migration012 } from "./012_reseed_enhanced_templates";
+import { migration as migration013 } from "./013_seed_platform_fees";
+import { migration as migration014 } from "./014_fix_platform_fee_rates";
+import { migration as migration015 } from "./015_seed_subscription_plans";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -35,4 +38,7 @@ export const migrations: Migration[] = [
     migration010,
     migration011,
     migration012,
+    migration013,
+    migration014,
+    migration015,
 ];

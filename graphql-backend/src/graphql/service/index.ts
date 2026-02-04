@@ -3,7 +3,7 @@ import { serverContext } from "../../services/azFunction";
 import { MutationResponse, recordref_type, RecordStatus } from "../0_shared/types";
 import { ListingTypes } from "../listing/types";
 import { PatchOperation } from "@azure/cosmos";
-import { isNullOrWhiteSpace, slugify } from "../../utils/functions";
+import { isNullOrWhiteSpace, slugify, getSpiriverseFeeConfig, getTargetFeeConfig } from "../../utils/functions";
 import { v4 as uuidv4 } from 'uuid'
 import { ByWeekday, RRule, rrulestr } from "rrule";
 import { user_type } from "../user/types";
@@ -2284,9 +2284,10 @@ const resolvers = {
             const stripeAccountId = vendor.stripe.accountId;
             const priceInCents = Math.round(price * 100);
 
-            // Calculate platform fee (e.g., 10%)
-            const platformFeePercent = 0.10;
-            const applicationFeeAmount = Math.round(priceInCents * platformFeePercent);
+            // Calculate platform fee from config
+            const feeConfig = await getSpiriverseFeeConfig({ cosmos: context.dataSources.cosmos });
+            const targetFee = getTargetFeeConfig('service-booking', feeConfig);
+            const applicationFeeAmount = Math.round(priceInCents * (targetFee.percent / 100)) + (targetFee.fixed || 0);
 
             const paymentIntentData = {
                 amount: priceInCents,

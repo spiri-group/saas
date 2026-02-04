@@ -8,10 +8,6 @@ interface UpdateFeeInput {
   config: FeeConfig;
 }
 
-interface DeleteFeeInput {
-  key: string;
-}
-
 const UseUpdateFees = () => {
   const queryClient = useQueryClient();
 
@@ -41,32 +37,8 @@ const UseUpdateFees = () => {
     }
   });
 
-  const deleteFee = useMutation({
-    mutationFn: async (input: DeleteFeeInput) => {
-      const response = await gql<{
-        deleteFeeConfig: boolean;
-      }>(`
-        mutation DeleteFeeConfig($key: String!) {
-          deleteFeeConfig(key: $key)
-        }
-      `, {
-        key: input.key
-      });
-      return response.deleteFeeConfig;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fees-config'] });
-      toast.success('Fee configuration deleted successfully');
-    },
-    onError: (error: any) => {
-      toast.error('Failed to delete fee configuration');
-      console.error('Delete fee error:', error);
-    }
-  });
-
   return {
-    updateFee,
-    deleteFee
+    updateFee
   };
 };
 
