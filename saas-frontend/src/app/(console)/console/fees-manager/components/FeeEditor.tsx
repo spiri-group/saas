@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { X, Trash2 } from "lucide-react";
+import { X, Calculator } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -18,13 +18,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PercentageInput from "@/components/ux/PercentageInput";
 import CurrencyInput from "@/components/ux/CurrencyInput";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FeeConfig } from "../FeesManager";
 import UseUpdateFees from "../hooks/UseUpdateFees";
+import { formatFeeKey } from "../constants/feeGroups";
 
 const feeSchema = z.object({
-  key: z.string().min(1, "Fee key is required").regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens allowed"),
-  percent: z.number().min(0, "Percentage must be 0 or greater").max(1, "Percentage must be 1 (100%) or less"),
+  percent: z.number().min(0, "Percentage must be 0 or greater").max(100, "Percentage must be 100% or less"),
   fixed: z.number().min(0, "Fixed amount must be 0 or greater"),
   currency: z.string().min(3, "Currency code is required").max(3, "Currency code must be 3 characters")
 }).refine((data) => data.percent > 0 || data.fixed > 0, {
@@ -54,33 +53,34 @@ export default function FeeEditor({
   onClose,
   editingFee
 }: FeeEditorProps) {
-  const [deleteDialog, setDeleteDialog] = useState(false);
-  const { updateFee, deleteFee } = UseUpdateFees();
-
-  const isEditing = !!editingFee;
+  const { updateFee } = UseUpdateFees();
+  const [simAmount, setSimAmount] = useState("100");
 
   const form = useForm<FeeForm>({
     resolver: zodResolver(feeSchema),
     defaultValues: {
-      key: "",
       percent: 0,
       fixed: 0,
       currency: "AUD"
     }
   });
 
+  // Watch current form values for live simulator
+  const watchPercent = form.watch("percent");
+  const watchFixed = form.watch("fixed");
+  const watchCurrency = form.watch("currency");
+
   // Reset form when editingFee changes
+  // percent is stored as raw number (5 = 5%), PercentageInput expects fraction (0-1)
   useEffect(() => {
     if (editingFee) {
       form.reset({
-        key: editingFee.key,
         percent: editingFee.config.percent,
-        fixed: editingFee.config.fixed || 0, // Fixed is already in smallest units from backend
+        fixed: editingFee.config.fixed || 0,
         currency: editingFee.config.currency
       });
     } else {
       form.reset({
-        key: "",
         percent: 0,
         fixed: 0,
         currency: "AUD"
@@ -90,13 +90,14 @@ export default function FeeEditor({
 
   const handleClose = () => {
     form.reset();
-    setDeleteDialog(false);
     onClose();
   };
 
   const onSubmit = (data: FeeForm) => {
+    if (!editingFee) return;
+
     updateFee.mutate({
-      key: data.key,
+      key: editingFee.key,
       config: {
         percent: data.percent,
         fixed: data.fixed,
@@ -109,233 +110,224 @@ export default function FeeEditor({
     });
   };
 
-  const handleDelete = () => {
-    if (editingFee) {
-      deleteFee.mutate({ key: editingFee.key }, {
-        onSuccess: () => {
-          handleClose();
-        }
-      });
-    }
+  // Fee simulator calculations using current form values
+  const simResult = useMemo(() => {
+    const saleAmount = parseFloat(simAmount);
+    if (!isFinite(saleAmount) || saleAmount <= 0) return null;
+
+    // Convert sale amount to cents (smallest unit)
+    const saleInCents = Math.round(saleAmount * 100);
+    const percentFee = Math.round(saleInCents * (watchPercent / 100));
+    const fixedFee = watchFixed || 0;
+    const totalFee = percentFee + fixedFee;
+    const merchantReceives = saleInCents - totalFee;
+    const effectiveRate = saleInCents > 0 ? (totalFee / saleInCents) * 100 : 0;
+
+    return {
+      saleInCents,
+      percentFee,
+      fixedFee,
+      totalFee,
+      merchantReceives,
+      effectiveRate
+    };
+  }, [simAmount, watchPercent, watchFixed]);
+
+  const formatCents = (cents: number) => {
+    return `$${(cents / 100).toFixed(2)}`;
   };
 
   const isValid = form.formState.isValid;
-  const isPending = updateFee.isPending || deleteFee.isPending;
+  const isPending = updateFee.isPending;
 
-  if (!open) return null;
+  if (!open || !editingFee) return null;
 
   return (
-    <>
-      <div className="w-80 border-l border-slate-800 bg-slate-950 p-6">
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-white">
-                {isEditing ? 'Edit Fee Configuration' : 'Add Fee Configuration'}
-              </h2>
-              <p className="text-sm text-slate-400">
-                {isEditing
-                  ? `Editing "${editingFee?.key}"`
-                  : 'Create a new fee configuration'
-                }
-              </p>
-            </div>
-            <button
-              onClick={handleClose}
-              className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              <X className="h-4 w-4 text-slate-400" />
-            </button>
+    <div className="w-80 border-l border-slate-800 bg-slate-950 p-6 overflow-y-auto">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-white">
+              Edit Fee
+            </h2>
+            <p className="text-sm text-slate-400">
+              {formatFeeKey(editingFee.key)}
+            </p>
+            <p className="text-xs text-slate-500 font-mono mt-1">
+              {editingFee.key}
+            </p>
           </div>
+          <button
+            onClick={handleClose}
+            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <X className="h-4 w-4 text-slate-400" />
+          </button>
+        </div>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="key"
-                render={({ field }) => (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="percent"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-300">Fee Percentage</FormLabel>
+                  <FormControl>
+                    <PercentageInput
+                      placeholder="5"
+                      value={field.value / 100}
+                      onChange={(fraction) => field.onChange(fraction * 100)}
+                      min={0}
+                      max={100}
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs text-slate-500">
+                    Percentage fee (e.g. 5 for 5%, 10 for 10%)
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="fixed"
+              render={({ field }) => {
+                const currentCurrency = form.watch("currency");
+                const currencyValue = {
+                  amount: field.value || 0,
+                  currency: currentCurrency
+                };
+
+                return (
                   <FormItem>
-                    <FormLabel className="text-slate-300">Fee Key</FormLabel>
+                    <FormLabel className="text-slate-300">Fixed Amount</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="e.g., product-purchase-100"
-                        {...field}
-                        className="font-mono"
-                        disabled={isEditing} // Don't allow key changes when editing
-                        onPaste={(e) => {
-                          // Delay to ensure paste content is processed
-                          setTimeout(() => {
-                            const target = e.target as HTMLInputElement;
-                            field.onChange({ target: { value: target.value } });
-                            // Trigger validation to update isValid state
-                            form.trigger();
-                          }, 0);
+                      <CurrencyInput
+                        placeholder="2.50"
+                        value={currencyValue}
+                        glass={false}
+                        onChange={({ amount }) => {
+                          field.onChange(amount || 0);
                         }}
                       />
                     </FormControl>
                     <FormDescription className="text-xs text-slate-500">
-                      Unique identifier for this fee type (lowercase, hyphens allowed)
+                      Fixed fee in smallest currency unit (e.g. cents)
                     </FormDescription>
-                    {isEditing && (
-                      <p className="text-xs text-amber-400 mt-1">
-                        ⚠️ Key cannot be changed after creation. To change the key, delete this fee and create a new one.
-                      </p>
-                    )}
                     <FormMessage />
                   </FormItem>
-                )}
-              />
+                );
+              }}
+            />
 
-              <FormField
-                control={form.control}
-                name="percent"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-slate-300">Fee Percentage</FormLabel>
+            <FormField
+              control={form.control}
+              name="currency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-300">Currency</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <PercentageInput
-                        placeholder="5"
-                        value={field.value}
-                        onChange={field.onChange}
-                        min={0}
-                        max={100}
-                      />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select currency" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormDescription className="text-xs text-slate-500">
-                      Optional percentage fee (e.g., 5% for 5%, 8% for 8%)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="fixed"
-                render={({ field }) => {
-                  const currentCurrency = form.watch("currency");
-                  const currencyValue = {
-                    amount: field.value || 0, // CurrencyInput expects smallest units
-                    currency: currentCurrency
-                  };
-
-                  return (
-                    <FormItem>
-                      <FormLabel className="text-slate-300">Fixed Amount</FormLabel>
-                      <FormControl>
-                        <CurrencyInput
-                          placeholder="2.50"
-                          value={currencyValue}
-                          glass={false}
-                          onChange={({ amount }) => {
-                            // CurrencyInput handles smallest units internally
-                            field.onChange(amount || 0);
-                          }}
-                        />
-                      </FormControl>
-                      <FormDescription className="text-xs text-slate-500">
-                        Optional fixed fee amount (e.g., 2.50 for $2.50)
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
-              />
-
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-slate-300">Currency</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select currency" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {CURRENCIES.map((currency) => (
-                          <SelectItem key={currency.value} value={currency.value}>
-                            {currency.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="flex space-x-3 pt-4">
-                <Button
-                  type="button"
-                  onClick={handleClose}
-                  className="flex-1 border border-slate-600 text-slate-300 bg-transparent hover:bg-slate-800"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={!isValid || isPending}
-                  className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  {isPending ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Fee'}
-                </Button>
-              </div>
-
-              {isEditing && (
-                <div className="pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setDeleteDialog(true)}
-                    disabled={isPending}
-                    className="w-full border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Fee Configuration
-                  </Button>
-                </div>
+                    <SelectContent>
+                      {CURRENCIES.map((currency) => (
+                        <SelectItem key={currency.value} value={currency.value}>
+                          {currency.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
               )}
-            </form>
-          </Form>
+            />
+
+            <div className="flex space-x-3 pt-4">
+              <Button
+                type="button"
+                onClick={handleClose}
+                className="flex-1 border border-slate-600 text-slate-300 bg-transparent hover:bg-slate-800"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!isValid || isPending}
+                className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
+              >
+                {isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </Form>
+
+        {/* Fee Simulator */}
+        <div className="border-t border-slate-800 pt-5">
+          <div className="flex items-center space-x-2 mb-3">
+            <Calculator className="h-4 w-4 text-slate-400" />
+            <h3 className="text-sm font-medium text-slate-300">Fee Simulator</h3>
+          </div>
+          <p className="text-xs text-slate-500 mb-3">
+            Enter a sale amount to preview the fee breakdown with current settings.
+          </p>
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Sale Amount ({watchCurrency})</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={simAmount}
+                  onChange={(e) => setSimAmount(e.target.value)}
+                  className="pl-7"
+                  placeholder="100.00"
+                />
+              </div>
+            </div>
+
+            {simResult && (
+              <div className="bg-slate-900 rounded-lg p-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Sale amount</span>
+                  <span className="text-white">{formatCents(simResult.saleInCents)}</span>
+                </div>
+                {simResult.percentFee > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Percent fee ({watchPercent}%)</span>
+                    <span className="text-amber-400">-{formatCents(simResult.percentFee)}</span>
+                  </div>
+                )}
+                {simResult.fixedFee > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Fixed fee</span>
+                    <span className="text-amber-400">-{formatCents(simResult.fixedFee)}</span>
+                  </div>
+                )}
+                <div className="border-t border-slate-700 pt-2 flex justify-between text-sm font-medium">
+                  <span className="text-slate-300">Platform takes</span>
+                  <span className="text-green-400">{formatCents(simResult.totalFee)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Merchant receives</span>
+                  <span className="text-white">{formatCents(simResult.merchantReceives)}</span>
+                </div>
+                <div className="flex justify-between text-xs pt-1">
+                  <span className="text-slate-500">Effective rate</span>
+                  <span className="text-slate-400">{simResult.effectiveRate.toFixed(2)}%</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete Fee Configuration</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete the fee configuration for{' '}
-              <strong>&quot;{editingFee?.key}&quot;</strong>?
-              <br />
-              <br />
-              <span className="text-red-600 font-medium">This action cannot be undone.</span>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-row gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDeleteDialog(false)}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isPending}
-            >
-              {isPending ? 'Deleting...' : 'Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   );
 }
