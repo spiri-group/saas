@@ -1,5 +1,4 @@
 import { serverContext } from "../../services/azFunction";
-import { decodeAmountFromSmallestUnit } from "../../utils/functions";
 
 const container = 'System-Settings'
 const id = 'spiriverse'
@@ -9,24 +8,9 @@ const resolvers = {
     Query: {
         feeSetting: async (_: any, __: any, context: serverContext) => {
             try {
-                const setting = await context.dataSources.cosmos.get_record(container, id, partition);
-
-                // Convert fixed amounts from smallest units to dollars for frontend
-                const convertedSetting = (setting && typeof setting === 'object' && !Array.isArray(setting)) ? { ...setting } : {};
-
-                Object.keys(setting).forEach(key => {
-                    const value = setting[key];
-                    if (key !== 'id' && !key.startsWith('_') && typeof value === 'object' && value !== null) {
-                        if ('fixed' in value && 'currency' in value && 'percent' in value) {
-                            convertedSetting[key] = {
-                                ...value,
-                                fixed: decodeAmountFromSmallestUnit(value.fixed || 0, value.currency)
-                            };
-                        }
-                    }
-                });
-
-                return convertedSetting;
+                // Return raw fee config – fixed amounts are stored in smallest units (cents)
+                // and the frontend expects cents (formatFixed divides by 100 for display)
+                return await context.dataSources.cosmos.get_record(container, id, partition);
             } catch (error) {
                 console.error(`Failed to get fee setting ${id}:`, error);
                 throw new Error(`Fee setting ${id} not found`);
