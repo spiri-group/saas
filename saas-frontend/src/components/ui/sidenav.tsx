@@ -21,6 +21,10 @@ export type NavOption = {
     className?: string;
     testId?: string;
 
+    // Optional short description shown as subtitle on expandable groups
+    // Overrides the auto-generated subtitle from child labels
+    description?: string;
+
     // path is used to store the path to this nav option
     path?: string[];
 };
@@ -140,9 +144,9 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                             )}>{navOption.label}</span>
                             {subNavOptions && (
                                 <p className="w-full text-slate-400 truncate pr-2">
-                                {subNavOptions
-                                    ?.filter((navOption) => navOption.type !== "divider" && navOption.label)
-                                    .map((navOption) => navOption.label.replace(/^New\s+/, ""))
+                                {navOption.description || subNavOptions
+                                    ?.filter((opt) => opt.type !== "divider" && opt.label)
+                                    .map((opt) => opt.label.replace(/^New\s+/, ""))
                                     .join(", ")}
                                 </p>
                             )}
@@ -151,7 +155,7 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                 </motion.div>
                 {subNavOptions && showSubNav && (
                     <motion.div
-                        className="absolute"
+                        className="absolute max-h-[calc(100vh-2rem)] overflow-y-auto rounded-xl"
                         style={{ top: 0, transform: `translateX(${sidebar_size.width + 4}px)` }}
                     >
                         <SideNav
@@ -235,7 +239,13 @@ const SideNav: React.FC<SideNavProps> = ({ navOptions, depth = 1, activePath = [
             {navOptions.map((navOption, index) => (
                 <React.Fragment key={index}>
                     {navOption.type === "divider" ? (
-                        <div className="my-2 mx-3 border-t border-slate-700" role="separator" />
+                        navOption.label ? (
+                            <div className="mt-3 mb-1 mx-3" role="separator">
+                                <span className="text-[10px] text-amber-300/50 uppercase tracking-wider font-medium">{navOption.label}</span>
+                            </div>
+                        ) : (
+                            <div className="my-2 mx-3 border-t border-slate-700" role="separator" />
+                        )
                     ) : navOption.type === "navgroup" ? (
                         <>
                             <div className="text-sm pl-4 my-1 text-amber-300/70 text-left" role="presentation">{navOption.label}</div>

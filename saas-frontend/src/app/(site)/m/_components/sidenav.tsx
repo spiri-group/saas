@@ -4,12 +4,10 @@ import React, { JSX } from "react";
 import PersonWalking from "@/icons/person-walking";
 import SideNav, { NavOption } from "@/components/ui/sidenav";
 import EditTeamMembers from "./Profile/Edit/TeamMembers";
-import EditBanner from "./Profile/Edit/Profile/EditBanner";
 import EditCatalogueBanner from "./Profile/Edit/PromiseBanner";
-import { AlignLeftIcon, BoxIcon, Building2, FileTextIcon, HistoryIcon, NewspaperIcon, PaintbrushIcon, PhoneIcon, RefreshCwIcon, RotateCcwIcon, Share2Icon, StoreIcon, TruckIcon, Users2Icon, Package, AlertTriangle, ImageIcon, PiggyBank, CreditCardIcon, VideoIcon, Sparkles, MapPin, ShoppingCart, Calendar, HeartHandshake, LayoutDashboard } from "lucide-react";
+import { AlignLeftIcon, BoxIcon, Building2, FileTextIcon, HistoryIcon, NewspaperIcon, PaintbrushIcon, PhoneIcon, RefreshCwIcon, RotateCcwIcon, Share2Icon, StoreIcon, TruckIcon, Users2Icon, Package, AlertTriangle, ImageIcon, PiggyBank, CreditCardIcon, VideoIcon, Sparkles, MapPin, ShoppingCart, Calendar, HeartHandshake, LayoutDashboard, Mail, User, Settings } from "lucide-react";
 import EditTourDetails from "../[merchant_slug]/(manage)/manage/tour/_components/Edit/TourDetails/EditTourDetails";
 import EditItinerary from "../[merchant_slug]/(manage)/manage/tour/_components/Edit/Itinerary";
-import CreateSocialPost from "../[merchant_slug]/(manage)/manage/social/components/Create";
 import CreateTour from "../[merchant_slug]/(manage)/manage/tour/_components/Create";
 import CreateProduct from "../[merchant_slug]/(site)/product/_components/Create";
 import UpdateListing from "./UpdateListing";
@@ -69,87 +67,22 @@ const useBL = (props: BLProps) => {
             testId: "nav-dashboard"
         },
         {
+            icon: <Mail className="w-5 h-5" />,
             label: "Messages",
-            href: `/m/${merchantSlug}/manage/customers/messages`
+            href: `/m/${merchantSlug}/manage/customers/messages`,
+            testId: "nav-messages"
         },
         {
-            label: "Profile",
-            navOptions: [
-                {
-                    label: "Customise",
-                    navOptions: [
-                        {
-                            icon: <AlignLeftIcon className="w-5 h-5" />,
-                            label: "Intro",
-                            dialogId: "Merchant Intro"
-                        },
-                        {
-                            icon: <PhoneIcon className="w-5 h-5" />,
-                            label: "Contact Details",
-                            dialogId: "Merchant Contact"
-                        },
-                        {
-                            icon: <Share2Icon className="w-5 h-5" />,
-                            label: "Social URLs",
-                            dialogId: "Merchant Socials"
-                        },
-                        {
-                            icon: <NewspaperIcon className="w-5 h-5" />,
-                            label: "Explore",
-                            dialogId: "Merchant Descriptions"
-                        },
-                        {
-                            icon: <Users2Icon className="w-5 h-5" />,
-                            label: "Team Members",
-                            dialogId: "Merchant Team members"
-                        }
-                    ]
-                },
-                {
-                    label: "Setup",
-                    navOptions: [
-                        {
-                            icon: <PiggyBank className="w-5 h-5" />,
-                            label: "Bank",
-                            dialogId: "Bank Accounts"
-                        },
-                        {
-                            icon: <CreditCardIcon className="w-5 h-5" />,
-                            label: "Cards",
-                            dialogId: "Payment Cards"
-                        },
-                        {
-                            icon: <FileTextIcon className="w-5 h-5" />,
-                            label: "Tax",
-                            dialogId: "Tax Registrations"
-                        },
-                        {
-                            icon: <Building2 className="w-5 h-5" />,
-                            label: "Locations",
-                            dialogId: "Merchant Locations"
-                        },
-                        {
-                            icon: <RotateCcwIcon className="w-5 h-5" />,
-                            label: "Returns / Cancels",
-                            dialogId: "Merchant Returns & Cancels"
-                        }
-                    ]
-                },
-                {
-                    icon: <PaintbrushIcon className="w-5 h-5" />,
-                    label: "Branding",
-                    replaceNav: true,
-                }
-            ]
-        },
-        {
+            icon: <ShoppingCart className="w-5 h-5" />,
             label: "Catalogue",
+            testId: "nav-catalogue",
+            description: "Products, Tours",
             navOptions: [
                 {
                     icon: <MapPin className="w-5 h-5" />,
                     label: "New Tour",
                     dialogId: "Create Tour",
-                    className: "w-[870px] h-[700px]"
+                    className: "w-[870px] max-w-[95vw] h-[700px]"
                 },
                 {
                     icon: <ShoppingCart className="w-5 h-5" />,
@@ -164,12 +97,90 @@ const useBL = (props: BLProps) => {
                     icon: <FileTextIcon className="w-5 h-5" />,
                     label: "Update Listing",
                     dialogId: "Update Listing",
-                    className: "w-[870px] h-[700px]"
+                    className: "w-[870px] max-w-[95vw] h-[700px]"
                 }
             ],
         },
         {
+            icon: <User className="w-5 h-5" />,
+            label: "Profile",
+            testId: "nav-profile",
+            description: "Customise, Setup, Branding",
+            navOptions: [
+                {
+                    type: "divider",
+                    label: "Customise"
+                },
+                {
+                    icon: <AlignLeftIcon className="w-5 h-5" />,
+                    label: "Intro",
+                    dialogId: "Merchant Intro"
+                },
+                {
+                    icon: <PhoneIcon className="w-5 h-5" />,
+                    label: "Contact Details",
+                    dialogId: "Merchant Contact"
+                },
+                {
+                    icon: <Share2Icon className="w-5 h-5" />,
+                    label: "Social URLs",
+                    dialogId: "Merchant Socials"
+                },
+                {
+                    icon: <NewspaperIcon className="w-5 h-5" />,
+                    label: "About",
+                    dialogId: "Merchant Descriptions"
+                },
+                {
+                    icon: <Users2Icon className="w-5 h-5" />,
+                    label: "Team Members",
+                    dialogId: "Merchant Team members"
+                },
+                {
+                    type: "divider",
+                    label: "Setup"
+                },
+                {
+                    icon: <PiggyBank className="w-5 h-5" />,
+                    label: "Bank",
+                    dialogId: "Bank Accounts"
+                },
+                {
+                    icon: <CreditCardIcon className="w-5 h-5" />,
+                    label: "Cards",
+                    dialogId: "Payment Cards"
+                },
+                {
+                    icon: <FileTextIcon className="w-5 h-5" />,
+                    label: "Tax",
+                    dialogId: "Tax Registrations"
+                },
+                {
+                    icon: <Building2 className="w-5 h-5" />,
+                    label: "Locations",
+                    dialogId: "Merchant Locations"
+                },
+                {
+                    icon: <RotateCcwIcon className="w-5 h-5" />,
+                    label: "Returns / Cancels",
+                    dialogId: "Merchant Returns & Cancels"
+                },
+                {
+                    type: "divider",
+                    label: ""
+                },
+                {
+                    icon: <PaintbrushIcon className="w-5 h-5" />,
+                    label: "Branding",
+                    replaceNav: true,
+                }
+            ]
+        },
+        {
+            icon: <Sparkles className="w-5 h-5" />,
             label: "Marketing",
+            testId: "nav-marketing",
+            description: "Banner, Events, Gallery",
             navOptions: [
                 {
                     icon: <Sparkles className="w-5 h-5" />,
@@ -188,7 +199,7 @@ const useBL = (props: BLProps) => {
                 },
                 {
                     icon: <StoreIcon className="w-5 h-5" />,
-                    label: "On Catalogue",
+                    label: "Listing Appearance",
                     dialogId: "Merchant Listing Appearance"
                 },
                 {
@@ -199,11 +210,18 @@ const useBL = (props: BLProps) => {
             ]
         },
         {
-            label: "Customer Orders",
+            icon: <Package className="w-5 h-5" />,
+            label: "Orders & Fulfilment",
+            testId: "nav-orders",
+            description: "Shipping, Inventory, Refunds",
             navOptions: [
                 {
+                    type: "divider",
+                    label: "Orders"
+                },
+                {
                     icon: <HistoryIcon className="w-5 h-5" />,
-                    label: "History",
+                    label: "Order History",
                     href: `/m/${merchantSlug}/manage/customers/history`
                 },
                 {
@@ -220,12 +238,11 @@ const useBL = (props: BLProps) => {
                     icon: <RefreshCwIcon className="w-5 h-5" />,
                     label: "Handle Refunds",
                     href: `/m/${merchantSlug}/manage/customers/refunds`
-                }
-            ]
-        },
-        {
-            label: "Inventory",
-            navOptions: [
+                },
+                {
+                    type: "divider",
+                    label: "Inventory"
+                },
                 {
                     icon: <Package className="w-5 h-5" />,
                     label: "Overview",
@@ -233,7 +250,7 @@ const useBL = (props: BLProps) => {
                 },
                 {
                     icon: <AlertTriangle className="w-5 h-5" />,
-                    label: "Alerts",
+                    label: "Stock Alerts",
                     href: `/m/${merchantSlug}/manage/inventory/alerts`
                 },
                 {
@@ -243,22 +260,11 @@ const useBL = (props: BLProps) => {
                 }
             ]
         },
-        // {
-        //     icon: <PeopleArrows height={25} fillColor="accent"/>,
-        //     label: "Social",
-        //     navOptions: [
-        //         {
-        //             icon: <PeopleArrows height={25} fillColor="accent"/>,
-        //             label: "Post a message",
-        //             dialog: <CreateSocialPost />,
-        //             className: "w-[870px] h-[660px]"
-        //         }
-        //     ]
-        // },
-        
         {
-            type: "navgroup",
-            label: "Manage",
+            icon: <Settings className="w-5 h-5" />,
+            label: "Platform",
+            testId: "nav-platform",
+            description: "SpiriAssist, Practitioners",
             navOptions: [
                 {
                     icon: <div className="flex items-center justify-center"><SpiriAssistLogo height={20} /></div>,
@@ -274,38 +280,18 @@ const useBL = (props: BLProps) => {
                     icon: <Users2Icon className="w-5 h-5 text-emerald-400" />,
                     label: "Featured Practitioners",
                     href: `/m/${merchantSlug}/manage/featuring`
+                },
+                {
+                    type: "divider",
+                    label: ""
+                },
+                {
+                    icon: <HeartHandshake className="w-5 h-5 text-pink-400" />,
+                    label: "Practitioner Profile",
+                    href: servicesHref
                 }
             ]
         },
-        {
-            icon: <HeartHandshake className="w-5 h-5 text-pink-400" />,
-            label: "Services",
-            href: servicesHref
-        },
-        // {
-        //     icon: <Pencil height={25} fillColor="accent" />,
-        //     label: "Edit Event / Tour",
-        //     navOptions: [
-        //         {
-        //             icon: <></>,
-        //             label: "Edit Tour Details",
-        //             dialog: <EditTourDetails merchantId={merchantId} vendorId={merchantId} />,
-        //             className: "w-[950px] h-[700px]"
-        //         },
-        //         {
-        //             icon: <></>,
-        //             label: "Edit Ticket",
-        //             dialog: <></>,
-        //             className: "w-[900px] h-[600px]"
-        //         },
-        //         {
-        //             icon: <></>,
-        //             label: "Edit Itinerary",
-        //             dialog: <EditItinerary merchantId={merchantId} />,
-        //             className: "w-[900px] h-[600px]"
-        //         }
-        //     ]
-        // }
     ]
 
     const dialogMapping: Record<string, (onClose: () => void) => JSX.Element> = !isNullOrUndefined(merchant) ?
@@ -317,7 +303,6 @@ const useBL = (props: BLProps) => {
         "Merchant Video": () => <EditMerchantVideo merchantId={merchantId} />,
         "Merchant Team members": () => <EditTeamMembers merchantId={merchantId} />,
         "Merchant Socials": () => <EditMerchantSocials merchantId={merchantId} />,
-        "Profile banner": () => <EditBanner merchantId={merchantId} />,
         "Catalogue Banner": () => <EditCatalogueBanner merchantId={merchantId} />,
         "Bank Accounts": () => <MerchantBankingComponent merchantId={merchantId} />,
         "Payment Cards": () => <MerchantCardsComponent merchantId={merchantId} />,
@@ -325,7 +310,6 @@ const useBL = (props: BLProps) => {
         "Update Listing": (onClose) => <UpdateListing merchantId={merchantId} onClose={onClose} />,
         "Create Tour": () => <CreateTour merchantId={merchantId} />,
         "Create Product": () => <CreateProduct merchantId={merchantId} merchantCurrency={merchant.currency} />,
-        "Post a message": () => <CreateSocialPost />,
         "Edit Tour Details": () => <EditTourDetails merchantId={merchantId} vendorId={merchantId} />,
         "Edit Itinerary": () => <EditItinerary merchantId={merchantId} />,
         "Merchant Returns & Cancels": () => <UpsertRefundPolicies merchantId={merchantId} />,
@@ -334,7 +318,6 @@ const useBL = (props: BLProps) => {
         "Merchant Gallery": () => <MerchantGalleryComponent merchantId={merchantId} />
     } : {};
 
-    // Usage example
     const renderDialog = (dialogKey: string, onClose: () => void): JSX.Element => {
         const DialogComponent = dialogMapping[dialogKey];
         return DialogComponent ? DialogComponent(onClose) : <></>;
