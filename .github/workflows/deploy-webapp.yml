@@ -72,10 +72,10 @@ jobs:
 
       - name: Prepare dist folder
         run: |
-          mkdir -p dist/public
+          mkdir -p dist/.next
           cp -r .next/standalone/* dist/
-          cp -r .next dist/.next
-          cp -r public/* dist/public/
+          cp -r .next/static dist/.next/static
+          cp -r public dist/public
           cp .env dist/.env
 
       - name: Zip build output
