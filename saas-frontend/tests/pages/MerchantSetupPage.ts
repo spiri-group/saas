@@ -312,13 +312,18 @@ export class MerchantSetupPage extends BasePage {
     await this.page.waitForTimeout(3000);
     await this.page.locator('[data-testid="merchant-subscription-section"]').waitFor({ timeout: 15000 });
 
-    // Submit form - no payment collected at signup
-    const submitButton = this.page.getByRole('button', { name: /^Finish$/i });
+    // Submit form - creates merchant and advances to Step 3 (optional card)
+    const submitButton = this.page.getByRole('button', { name: /^Continue$/i });
     await submitButton.waitFor({ state: 'visible', timeout: 10000 });
     await expect(submitButton).toBeEnabled({ timeout: 5000 });
     await submitButton.click();
 
-    // No payment dialog - redirect directly to merchant profile page
+    // Step 3: Optional card collection - skip it
+    const skipCardButton = this.page.getByTestId('onboarding-skip-card-btn');
+    await skipCardButton.waitFor({ state: 'visible', timeout: 30000 });
+    await skipCardButton.click();
+
+    // After skipping card, redirects to merchant profile page
     await this.page.waitForURL(new RegExp(`/m/${merchantSlug}`), { timeout: 30000 });
 
     // Register merchant for cleanup with actual vendor ID
