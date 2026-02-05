@@ -39,7 +39,7 @@ function VendorPageContent({ session, merchantId }: { session: any, merchantId: 
     if (vendorInfo.data == null || vendorBranding.data == null) return <></>;
 
     // Show Coming Soon page for unpublished vendors (unless the viewer is an admin)
-    if (vendorInfo.data.isPublished === false && !vendorInfo.data.hasRole) {
+    if (!vendorInfo.data.publishedAt && !vendorInfo.data.hasRole) {
         return (
             <ComingSoonPage
                 name={vendorInfo.data.name}

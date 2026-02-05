@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, Circle, CreditCard, Landmark, Rocket, PartyPopper } from "lucide-react";
+import { CheckCircle2, Circle, Rocket, PartyPopper } from "lucide-react";
 import useGoLiveReadiness from "@/app/(site)/m/_hooks/UseGoLiveReadiness";
 
 interface GoLiveChecklistProps {

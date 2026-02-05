@@ -311,7 +311,7 @@ const OnboardingCardForm: React.FC<{
     clientSecret: string;
     merchantId: string;
     onSuccess: () => void;
-}> = ({ clientSecret, merchantId, onSuccess }) => {
+}> = ({ clientSecret, onSuccess }) => {
     const stripe = useStripe();
     const elements = useElements();
     const [isProcessing, setIsProcessing] = useState(false);

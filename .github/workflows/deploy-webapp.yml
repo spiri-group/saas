@@ -20,7 +20,7 @@ permissions:
   id-token: write
 
 env:
-  NODE_VERSION: 20.17.0
+  NODE_VERSION: 20.19.0
   ENV_SUFFIX: 2
   ENV_NAME: ${{ github.ref_name == 'main' && 'prd' || 'dev' }}
 
