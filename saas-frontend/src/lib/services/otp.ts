@@ -1,9 +1,9 @@
 'use server';
 
 import twilio from "twilio";
-import sendgrid from "@sendgrid/mail";
 import { vault } from "./vault";
-import email_templates, { sender_details } from "@/utils/email_templates";
+import { sender_details } from "@/utils/email_templates";
+import { sendRawHtmlEmail } from "./acsEmail";
 
 const cache = new Map<string, { otp: string; expires: Date }>();
 
@@ -65,6 +65,35 @@ export const clearOTP = async (email: string) => {
     cache.delete(email);
 }
 
+function buildOtpEmailHtml(otp: string): string {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 0;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <tr><td style="background:linear-gradient(135deg,#7c3aed,#6d28d9);padding:32px 40px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">SpiriVerse</h1>
+        </td></tr>
+        <tr><td style="padding:40px;">
+          <p style="margin:0 0 8px;color:#374151;font-size:16px;">Your verification code is:</p>
+          <div style="margin:24px 0;text-align:center;background-color:#f5f3ff;border:2px solid #e9d5ff;border-radius:8px;padding:20px;">
+            <span style="font-family:'Courier New',monospace;font-size:36px;font-weight:700;letter-spacing:8px;color:#6d28d9;">${otp}</span>
+          </div>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:14px;">This code expires in <strong>3 minutes</strong>.</p>
+          <p style="margin:0;color:#6b7280;font-size:14px;">If you didn&apos;t request this code, you can safely ignore this email.</p>
+        </td></tr>
+        <tr><td style="padding:24px 40px;background-color:#fafafa;text-align:center;border-top:1px solid #f0f0f0;">
+          <p style="margin:0;color:#9ca3af;font-size:12px;">SpiriVerse &mdash; Spiritual Services Marketplace</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
 export const sendOTP = async (to: string, otp: string, strategy: 'email' | 'phone') => {
     // Skip sending OTP to test users in non-production
     const isTest = (strategy === 'email' && isTestEmail(to)) ||
@@ -74,27 +103,12 @@ export const sendOTP = async (to: string, otp: string, strategy: 'email' | 'phon
         return true;
     }
 
-    const keyvault = new vault();
-
     if (strategy === 'email') {
-        const key_name = "sendgrid-api-key"
-        const keyvault_key = await keyvault.getSecret(key_name);
-        if (keyvault_key == null) {
-            throw new Error(`${key_name} not found in keyvault`);
-        }
-        sendgrid.setApiKey(keyvault_key);
-
-        const templateId = email_templates.get('VERIFICATION_CODE') as string;
-        const resp = await sendgrid.send({   
-            from: sender_details.from, to,
-            dynamicTemplateData: {
-                otp, subject: to
-            },
-            templateId
-        })
-
-        console.debug(resp);
+        const subject = "Your SpiriVerse Verification Code";
+        const html = buildOtpEmailHtml(otp);
+        await sendRawHtmlEmail(to, subject, html);
     } else if (strategy === 'phone') {
+        const keyvault = new vault();
         const accountSid = await keyvault.getSecret("twilio-account-sid");
         const authToken = await keyvault.getSecret("twilio-auth-token");
 

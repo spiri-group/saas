@@ -70,12 +70,9 @@ const LabelsDialog: React.FC<Props> = ({ onOpenChange, ...dialogProps }) => {
                       <PDFSendButton
                         variant="secondary"
                         pdfUrl={pdfUrl(box.label.label_download.pdf)}
-                        template_id="d-template-id"
-                        template_params={{ shipment_code: selectedShipment.code }}
+                        subject={`Shipping Label - ${selectedShipment.code}`}
                         defaultFileName={`box-${box.code}.pdf`}
-                        from="shipping@yourco.com"
                         cc={[]}
-                        sendgrid_auth="SENDGRID_API_KEY"
                         contacts={[]}
                         onSuccess={(c) => console.log("Sent to:", c)}
                       />
