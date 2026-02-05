@@ -4,14 +4,14 @@ import { EmailClient, EmailMessage, KnownEmailSendStatus } from "@azure/communic
 import { DefaultAzureCredential } from "@azure/identity";
 import azure_environment from "./azure_environment";
 
-const ACS_CONFIG: Record<string, { endpoint: string; senderDomain: string }> = {
+const SENDER_ADDRESS = "noreply@spiriverse.com";
+
+const ACS_CONFIG: Record<string, { endpoint: string }> = {
     dev: {
         endpoint: "https://acs-spiriverse-server-dev-002.australia.communication.azure.com",
-        senderDomain: "2d6f6e5a-e5cb-4020-85ed-96b14fdeba0d.azurecomm.net"
     },
     prd: {
         endpoint: "https://acs-spiriverse-server-prd-002.australia.communication.azure.com",
-        senderDomain: "d00865ac-d925-4c14-b38f-cc20f57391e6.azurecomm.net"
     }
 };
 
@@ -53,11 +53,10 @@ export async function sendRawHtmlEmail(to: string, subject: string, html: string
 }
 
 export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
-    const { senderDomain } = getConfig();
     const client = getClient();
 
     const message: EmailMessage = {
-        senderAddress: `DoNotReply@${senderDomain}`,
+        senderAddress: SENDER_ADDRESS,
         content: { subject: options.subject, html: options.html },
         recipients: {
             to: options.to.map(address => ({ address }))

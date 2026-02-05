@@ -4,15 +4,15 @@ import { LogManager, shouldSkipEmail } from "../utils/functions";
 import { vault } from "./vault";
 import { renderEmailTemplate } from "../graphql/email/utils";
 
-// ACS endpoints and sender domains by environment
+const SENDER_ADDRESS = "noreply@spiriverse.com";
+
+// ACS endpoints by environment
 const ACS_CONFIG = {
     dev: {
         endpoint: "https://acs-spiriverse-server-dev-002.australia.communication.azure.com",
-        senderDomain: "2d6f6e5a-e5cb-4020-85ed-96b14fdeba0d.azurecomm.net"
     },
     prod: {
         endpoint: "https://acs-spiriverse-server-prd-002.australia.communication.azure.com",
-        senderDomain: "d00865ac-d925-4c14-b38f-cc20f57391e6.azurecomm.net"
     }
 };
 
@@ -20,20 +20,17 @@ export class AzureEmailDataSource {
     private client: EmailClient | null = null;
     private logger: LogManager;
     private vault: vault;
-    private senderDomain: string;
     private dataSources: any = null;
 
     constructor(log: LogManager, keyVault: vault) {
         this.logger = log;
         this.vault = keyVault;
-        this.senderDomain = ACS_CONFIG.dev.senderDomain;
     }
 
     async init(host: string) {
         // Determine environment from host (same pattern as other services)
         const isProd = host.includes("prd") || host.includes("prod");
         const config = isProd ? ACS_CONFIG.prod : ACS_CONFIG.dev;
-        this.senderDomain = config.senderDomain;
 
         // Use managed identity for authentication (no connection string needed)
         const credential = new DefaultAzureCredential();
@@ -48,12 +45,8 @@ export class AzureEmailDataSource {
         this.dataSources = dataSources;
     }
 
-    /**
-     * Get the default sender address for ACS
-     * Uses DoNotReply@ with the Azure Managed Domain
-     */
     private getSenderAddress(): string {
-        return `DoNotReply@${this.senderDomain}`;
+        return SENDER_ADDRESS;
     }
 
     /**
