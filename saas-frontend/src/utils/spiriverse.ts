@@ -4005,6 +4005,8 @@ export type vendor_type = {
     name: string,
     slug: string,
     docType?: VendorDocType,
+    publishedAt?: string,
+    isPublished?: boolean,
     practitioner?: practitioner_profile_type,
     onStart?: string,
     mode?: string,

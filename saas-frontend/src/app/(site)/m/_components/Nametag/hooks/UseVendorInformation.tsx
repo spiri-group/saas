@@ -14,6 +14,7 @@ const queryFn = async (merchantId: string) => {
                     website,
                     intro,
                     address,
+                    isPublished,
                     hasRole(role: "ADMIN")
                     contact {
                         public {

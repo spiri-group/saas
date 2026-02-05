@@ -328,6 +328,19 @@ type Vendor {
 
   # Reading/Practitioner stats
   readingRating: ReadingRating
+
+  # Publication / Go-Live
+  publishedAt: DateTime
+  isPublished: Boolean!
+  goLiveReadiness: GoLiveReadiness!
+}
+
+type GoLiveReadiness {
+  isReady: Boolean!
+  hasPaymentCard: Boolean!
+  hasFirstPayment: Boolean!
+  hasStripeOnboarding: Boolean!
+  missingRequirements: [String!]!
 }
 
 type ReadingRating {

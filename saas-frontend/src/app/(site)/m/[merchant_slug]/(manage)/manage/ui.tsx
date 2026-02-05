@@ -6,6 +6,7 @@ import WelcomeHeader from "./_components/WelcomeHeader";
 import StatsCards from "./_components/StatsCards";
 import NeedsAttention, { AttentionItem } from "./_components/NeedsAttention";
 import RecentOrders from "./_components/RecentOrders";
+import GoLiveChecklist from "./_components/GoLiveChecklist";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -237,6 +238,9 @@ const UI: React.FC<Props> = ({ merchantId, merchantSlug, merchantName, me }) => 
         <UIContainer me={me}>
             <div className="h-screen-minus-nav p-4 md:p-6 overflow-auto">
                 <WelcomeHeader merchantName={merchantName} />
+
+                {/* Go Live Checklist - shown until vendor is published */}
+                <GoLiveChecklist merchantId={merchantId} />
 
                 {/* My Listings Section */}
                 <MyListingsSection />

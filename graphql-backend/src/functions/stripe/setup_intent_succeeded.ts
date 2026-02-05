@@ -10,6 +10,8 @@ import { calcStripeFees, deriveFees, deriveTax } from "../../graphql/0_shared";
 import { PatchOperation } from "@azure/cosmos";
 import { currency_amount_type } from "../../graphql/0_shared/types";
 import { sender_details } from "../../client/email_templates";
+import { v4 as uuidv4 } from "uuid";
+import { billing_record_status } from "../../graphql/vendor/types";
 
 const handler : StripeHandler = async (event, logger, services ) => {
 
@@ -174,17 +176,92 @@ const handler : StripeHandler = async (event, logger, services ) => {
         } else {
             logger.logMessage(`[setup_intent_succeeded] Setting up self-managed billing for merchant ${merchantId}`);
 
-            const nextBillingDate = DateTime.now().plus({ months: 1 }).toISO();
-
             await cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
                 { op: "set", path: "/subscription/saved_payment_method", value: payment_method },
-                { op: "set", path: "/subscription/next_billing_date", value: nextBillingDate },
                 { op: "set", path: "/subscription/billing_interval", value: "monthly" },
-                { op: "set", path: "/subscription/billing_history", value: [] }
             ], "STRIPE");
 
-            logger.logMessage(`[setup_intent_succeeded] Self-managed billing configured: next billing ${nextBillingDate}`);
+            // 4. Charge first month immediately
+            const hasExistingPayment = (merchant.subscription?.billing_history?.length ?? 0) > 0;
+            if (!hasExistingPayment && merchant.subscription?.plans && merchant.subscription.plans.length > 0) {
+                logger.logMessage(`[setup_intent_succeeded] Charging first month subscription for merchant ${merchantId}`);
+
+                const totalAmount = merchant.subscription.plans.reduce((sum, plan) => sum + plan.price.amount, 0);
+                const currency = merchant.subscription.plans[0].price.currency;
+                const periodStart = DateTime.now().toISODate();
+                const periodEnd = DateTime.now().plus({ months: 1 }).toISODate();
+                const nextBillingDate = periodEnd;
+
+                const paymentResult = await stripe.callApi("POST", "payment_intents", {
+                    amount: totalAmount,
+                    currency: currency,
+                    customer: merchant.stripe.customerId,
+                    payment_method: payment_method,
+                    off_session: true,
+                    confirm: true,
+                    metadata: {
+                        merchantId,
+                        billing_period_start: periodStart,
+                        billing_period_end: periodEnd,
+                        billing_type: "first_month"
+                    }
+                });
+
+                if (paymentResult.status === 200 && paymentResult.data?.status === "succeeded") {
+                    logger.logMessage(`[setup_intent_succeeded] First month payment succeeded: ${paymentResult.data.id}`);
+
+                    const billingRecord = {
+                        id: uuidv4(),
+                        date: DateTime.now().toISO(),
+                        amount: totalAmount,
+                        currency: currency,
+                        billingStatus: billing_record_status.success,
+                        stripePaymentIntentId: paymentResult.data.id,
+                        period_start: periodStart,
+                        period_end: periodEnd
+                    };
+
+                    await cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
+                        { op: "set", path: "/subscription/next_billing_date", value: nextBillingDate },
+                        { op: "set", path: "/subscription/payment_status", value: "success" },
+                        { op: "set", path: "/subscription/payment_retry_count", value: 0 },
+                        { op: "set", path: "/subscription/last_payment_date", value: DateTime.now().toISO() },
+                        { op: "set", path: "/subscription/billing_history", value: [billingRecord] }
+                    ], "STRIPE");
+                } else {
+                    logger.logMessage(`[setup_intent_succeeded] First month payment failed: ${JSON.stringify(paymentResult.data?.last_payment_error?.message || paymentResult.data)}`);
+
+                    const billingRecord = {
+                        id: uuidv4(),
+                        date: DateTime.now().toISO(),
+                        amount: totalAmount,
+                        currency: currency,
+                        billingStatus: billing_record_status.failed,
+                        error: paymentResult.data?.last_payment_error?.message || "Payment failed",
+                        period_start: periodStart,
+                        period_end: periodEnd
+                    };
+
+                    await cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
+                        { op: "set", path: "/subscription/next_billing_date", value: nextBillingDate },
+                        { op: "set", path: "/subscription/payment_status", value: "failed" },
+                        { op: "set", path: "/subscription/billing_history", value: [billingRecord] }
+                    ], "STRIPE");
+                }
+            } else {
+                // No plans or already has a payment - just set the next billing date
+                const nextBillingDate = DateTime.now().plus({ months: 1 }).toISO();
+                await cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
+                    { op: "set", path: "/subscription/next_billing_date", value: nextBillingDate },
+                    { op: "set", path: "/subscription/billing_history", value: merchant.subscription?.billing_history || [] }
+                ], "STRIPE");
+            }
+
+            logger.logMessage(`[setup_intent_succeeded] Self-managed billing configured`);
         }
+
+        // 5. Check if vendor meets all go-live requirements and auto-publish
+        await checkAndPublishVendor(merchantId, cosmos, stripe, logger);
 
         logger.logMessage(`[setup_intent_succeeded] Merchant payment method setup complete`);
         return; // Exit early
@@ -574,5 +651,62 @@ const handler : StripeHandler = async (event, logger, services ) => {
         } 
     }  
 }
+
+/**
+ * Checks if a vendor has met all go-live requirements and publishes them if so.
+ * Requirements: payment card saved, first month paid, Stripe Connect onboarding complete.
+ */
+async function checkAndPublishVendor(
+    merchantId: string,
+    cosmos: import("../../utils/database").CosmosDataSource,
+    stripe: import("../../services/stripe").StripeDataSource,
+    logger: import("../../utils/functions").LogManager
+): Promise<void> {
+    // Re-fetch the latest vendor state
+    const vendor = await cosmos.get_record<vendor_type>("Main-Vendor", merchantId, merchantId);
+    if (!vendor) return;
+
+    // Already published
+    if (vendor.publishedAt) {
+        logger.logMessage(`[checkAndPublishVendor] Vendor ${merchantId} already published`);
+        return;
+    }
+
+    // Check requirement 1: Payment card saved
+    const hasPaymentCard = vendor.subscription?.card_status === merchant_card_status.saved;
+    if (!hasPaymentCard) {
+        logger.logMessage(`[checkAndPublishVendor] Vendor ${merchantId} missing payment card`);
+        return;
+    }
+
+    // Check requirement 2: First month paid
+    const hasFirstPayment = (vendor.subscription?.billing_history?.length ?? 0) > 0
+        && vendor.subscription!.billing_history!.some(r => r.billingStatus === billing_record_status.success);
+    if (!hasFirstPayment) {
+        logger.logMessage(`[checkAndPublishVendor] Vendor ${merchantId} missing first payment`);
+        return;
+    }
+
+    // Check requirement 3: Stripe Connect onboarding complete
+    let hasStripeOnboarding = false;
+    if (vendor.stripe?.accountId) {
+        const accountResp = await stripe.callApi("GET", `accounts/${vendor.stripe.accountId}`);
+        hasStripeOnboarding = accountResp.data?.charges_enabled === true;
+    }
+    if (!hasStripeOnboarding) {
+        logger.logMessage(`[checkAndPublishVendor] Vendor ${merchantId} missing Stripe onboarding`);
+        return;
+    }
+
+    // All requirements met - publish the vendor
+    const now = DateTime.now().toISO();
+    await cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
+        { op: "set", path: "/publishedAt", value: now }
+    ], "SYSTEM_AUTO_PUBLISH");
+
+    logger.logMessage(`[checkAndPublishVendor] Vendor ${merchantId} published at ${now}`);
+}
+
+export { checkAndPublishVendor };
 
 export default handler;

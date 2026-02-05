@@ -15,26 +15,31 @@ const resolvers = {
     Query: {
         vendors: async (_: any, args: { search?: string }, context: serverContext) => {
             if (!args.search) {
-                return await context.dataSources.cosmos.get_all("Main-Vendor");
+                // Only return published vendors in browse/search
+                return await context.dataSources.cosmos.run_query("Main-Vendor", {
+                    query: "SELECT * FROM c WHERE IS_DEFINED(c.publishedAt)",
+                    parameters: []
+                }, true);
             }
-        
+
             const search = args.search.toLowerCase();
-        
+
             return await context.dataSources.cosmos.run_query("Main-Vendor", {
                 query: `
                     SELECT DISTINCT VALUE c
                     FROM c
                     JOIN d IN c.descriptions
                     JOIN l IN c.locations
-                    WHERE 
+                    WHERE IS_DEFINED(c.publishedAt) AND (
                         CONTAINS(LOWER(c.name), @search) OR
                         CONTAINS(LOWER(d.title), @search) OR
                         CONTAINS(LOWER(d.body), @search) OR
                         CONTAINS(LOWER(l.address.formattedAddress), @search) OR
                         EXISTS (
-                            SELECT VALUE s FROM s IN l.services 
+                            SELECT VALUE s FROM s IN l.services
                             WHERE CONTAINS(LOWER(s), @search)
                         )
+                    )
                 `,
                 parameters: [
                     { name: "@search", value: search }
@@ -195,8 +200,8 @@ const resolvers = {
             const limit = args.limit || 20;
             const offset = args.offset || 0;
 
-            // Build dynamic query
-            let whereConditions = ["c.docType = @docType"];
+            // Build dynamic query - only show published practitioners
+            let whereConditions = ["c.docType = @docType", "IS_DEFINED(c.publishedAt)"];
             let parameters: any[] = [
                 { name: "@docType", value: VendorDocType.PRACTITIONER }
             ];
@@ -279,6 +284,7 @@ const resolvers = {
                 query: `
                     SELECT * FROM c
                     WHERE c.docType = @docType
+                    AND IS_DEFINED(c.publishedAt)
                     AND ARRAY_CONTAINS(c.practitioner.modalities, @modality)
                     AND c.practitioner.acceptingNewClients = true
                     ORDER BY c.readingRating.average DESC
@@ -558,9 +564,9 @@ const resolvers = {
                 return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
             }
 
-            // Fetch a broad pool of candidates
+            // Fetch a broad pool of published candidates
             const candidateQuery = {
-                query: `SELECT * FROM c WHERE (c.docType = 'PRACTITIONER' OR c.docType = 'MERCHANT') ORDER BY c.followerCount DESC OFFSET 0 LIMIT @fetchLimit`,
+                query: `SELECT * FROM c WHERE IS_DEFINED(c.publishedAt) AND (c.docType = 'PRACTITIONER' OR c.docType = 'MERCHANT') ORDER BY c.followerCount DESC OFFSET 0 LIMIT @fetchLimit`,
                 parameters: [
                     { name: "@fetchLimit", value: limit * 5 }
                 ]
@@ -3157,6 +3163,47 @@ const resolvers = {
                 context.logger?.error(`Error fetching reading rating for practitioner ${parent.id}:`, error);
                 return null;
             }
+        },
+        isPublished: (parent: vendor_type) => {
+            return parent.publishedAt != null;
+        },
+        goLiveReadiness: async (parent: vendor_type, _: any, context: serverContext) => {
+            const hasPaymentCard = parent.subscription?.card_status === merchant_card_status.saved;
+            const hasFirstPayment = (parent.subscription?.billing_history?.length ?? 0) > 0;
+
+            // Check Stripe Connect onboarding by querying the account
+            let hasStripeOnboarding = false;
+            if (parent.stripe?.accountId) {
+                try {
+                    const accountResp = await context.dataSources.stripe.callApi("GET", `accounts/${parent.stripe.accountId}`);
+                    hasStripeOnboarding = accountResp.data?.charges_enabled === true;
+                } catch {
+                    hasStripeOnboarding = false;
+                }
+            }
+
+            const isReady = hasPaymentCard && hasFirstPayment && hasStripeOnboarding;
+
+            // Auto-publish if all requirements met and not yet published
+            if (isReady && !parent.publishedAt) {
+                const now = DateTime.now().toISO();
+                await context.dataSources.cosmos.patch_record("Main-Vendor", parent.id, parent.id, [
+                    { op: "set", path: "/publishedAt", value: now }
+                ], context.userId || "SYSTEM_AUTO_PUBLISH");
+            }
+
+            const missingRequirements: string[] = [];
+            if (!hasPaymentCard) missingRequirements.push("Add a payment card");
+            if (!hasFirstPayment) missingRequirements.push("Pay first month subscription");
+            if (!hasStripeOnboarding) missingRequirements.push("Complete Stripe Connect onboarding");
+
+            return {
+                isReady,
+                hasPaymentCard,
+                hasFirstPayment,
+                hasStripeOnboarding,
+                missingRequirements
+            };
         }
     },
     VendorUser: {
