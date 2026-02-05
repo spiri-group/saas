@@ -30,7 +30,7 @@ const StatsCards: React.FC<StatsCardsProps> = ({
                     data-testid="orders-stats-card"
                 >
                     <div className="flex items-center gap-2 mb-3">
-                        <ShoppingBag className="w-5 h-5 text-blue-400" />
+                        <ShoppingBag className="w-5 h-5 text-orange-400" />
                         <span className="font-medium text-white">Orders</span>
                     </div>
                     {isLoading ? (
@@ -59,7 +59,7 @@ const StatsCards: React.FC<StatsCardsProps> = ({
                     data-testid="inventory-stats-card"
                 >
                     <div className="flex items-center gap-2 mb-3">
-                        <Package className="w-5 h-5 text-amber-400" />
+                        <Package className="w-5 h-5 text-orange-400" />
                         <span className="font-medium text-white">Inventory</span>
                     </div>
                     {isLoading ? (
@@ -71,7 +71,7 @@ const StatsCards: React.FC<StatsCardsProps> = ({
                         <>
                             <div className="flex items-baseline gap-2">
                                 {lowStockCount > 0 && (
-                                    <AlertTriangle className="w-5 h-5 text-amber-400" />
+                                    <AlertTriangle className="w-5 h-5 text-orange-400" />
                                 )}
                                 <span className="text-3xl font-bold text-white">{lowStockCount}</span>
                                 <span className="text-sm text-slate-400">low stock</span>

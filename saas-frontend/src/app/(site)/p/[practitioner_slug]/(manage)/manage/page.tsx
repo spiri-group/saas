@@ -20,15 +20,24 @@ async function PractitionerManagePage({ params }: { params: Promise<{ practition
         }
 
         // Check if user has access to this practitioner
-        const hasPractitionerAccess = session.user.vendors?.some(
+        const practitioner = session.user.vendors?.find(
             (vendor) => vendor.id === practitionerId
         );
 
-        if (!hasPractitionerAccess) {
+        if (!practitioner) {
             redirect('/');
         }
 
-        return <PractitionerDashboard session={session} practitionerId={practitionerId} slug={slug} />;
+        const practitionerName = practitioner.name || 'Practitioner';
+
+        return (
+            <PractitionerDashboard
+                session={session}
+                practitionerId={practitionerId}
+                slug={slug}
+                practitionerName={practitionerName}
+            />
+        );
     } catch {
         notFound();
     }

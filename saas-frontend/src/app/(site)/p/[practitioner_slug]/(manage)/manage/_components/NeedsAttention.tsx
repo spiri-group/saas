@@ -1,16 +1,9 @@
 'use client';
 
 import React from "react";
-import { AlertCircle, Package, RotateCcw, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, Calendar, Sparkles, HeartHandshake, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-
-export interface AttentionItem {
-    id: string;
-    type: 'orders_to_ship' | 'refunds_pending' | 'low_stock';
-    count: number;
-    message: string;
-    href: string;
-}
+import { AttentionItem } from "../_hooks/usePractitionerDashboardData";
 
 interface NeedsAttentionProps {
     items: AttentionItem[];
@@ -20,12 +13,12 @@ interface NeedsAttentionProps {
 const NeedsAttention: React.FC<NeedsAttentionProps> = ({ items, isLoading }) => {
     const getIcon = (type: AttentionItem['type']) => {
         switch (type) {
-            case 'orders_to_ship':
-                return <Package className="w-4 h-4 text-orange-400" />;
-            case 'refunds_pending':
-                return <RotateCcw className="w-4 h-4 text-orange-400" />;
-            case 'low_stock':
-                return <AlertTriangle className="w-4 h-4 text-red-400" />;
+            case 'pending_bookings':
+                return <Calendar className="w-4 h-4 text-purple-400" />;
+            case 'new_orders':
+                return <Sparkles className="w-4 h-4 text-amber-400" />;
+            case 'partnership_requests':
+                return <HeartHandshake className="w-4 h-4 text-pink-400" />;
             default:
                 return <AlertCircle className="w-4 h-4 text-slate-400" />;
         }
@@ -40,7 +33,7 @@ const NeedsAttention: React.FC<NeedsAttentionProps> = ({ items, isLoading }) => 
                 data-testid="needs-attention"
             >
                 <div className="flex items-center gap-2 mb-3">
-                    <AlertCircle className="w-5 h-5 text-orange-400" />
+                    <AlertCircle className="w-5 h-5 text-purple-400" />
                     <span className="font-medium text-white">Needs Attention</span>
                 </div>
                 <div className="space-y-2">
@@ -75,7 +68,7 @@ const NeedsAttention: React.FC<NeedsAttentionProps> = ({ items, isLoading }) => 
             data-testid="needs-attention"
         >
             <div className="flex items-center gap-2 mb-3">
-                <AlertCircle className="w-5 h-5 text-orange-400" />
+                <AlertCircle className="w-5 h-5 text-purple-400" />
                 <span className="font-medium text-white">Needs Attention</span>
             </div>
             <ul className="space-y-2">

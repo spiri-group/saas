@@ -9,8 +9,7 @@ import RecentOrders from "./_components/RecentOrders";
 import GoLiveChecklist from "./_components/GoLiveChecklist";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, ShoppingCart, MapPin, Calendar, Plus, Clock } from "lucide-react";
+import { ShoppingBag, ShoppingCart, MapPin, Plus } from "lucide-react";
 
 // Hooks
 import { UseInventoryOverview } from "./inventory/_hooks/UseInventoryOverview";
@@ -26,12 +25,8 @@ const CreateListingButton: React.FC<{
     icon: React.ReactNode;
     dialogId: string;
     dialogClassName?: string;
-    disabled?: boolean;
-    comingSoon?: boolean;
-}> = ({ label, description, icon, dialogId, dialogClassName, disabled, comingSoon }) => {
+}> = ({ label, description, icon, dialogId, dialogClassName }) => {
     const handleClick = () => {
-        if (disabled) return;
-
         const event = new CustomEvent("open-nav-external", {
             detail: {
                 path: [label],
@@ -47,30 +42,18 @@ const CreateListingButton: React.FC<{
 
     return (
         <Card
-            className={`bg-slate-800/50 border-slate-700 transition-all ${
-                disabled
-                    ? 'opacity-60 cursor-not-allowed'
-                    : 'hover:border-amber-500/50 cursor-pointer group'
-            }`}
+            className="bg-slate-800/50 border-slate-700 transition-all hover:border-orange-500/50 cursor-pointer group"
             onClick={handleClick}
             data-testid={`create-listing-${label.toLowerCase().replace(' ', '-')}-card`}
         >
             <CardHeader className="pb-2">
                 <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${disabled ? 'bg-slate-600/20 text-slate-500' : 'bg-amber-500/20 text-amber-400'}`}>
+                    <div className="p-2 rounded-lg bg-orange-500/20 text-orange-400">
                         {icon}
                     </div>
                     <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                            <CardTitle className={`text-base ${disabled ? 'text-slate-500' : 'text-white'}`}>{label}</CardTitle>
-                            {comingSoon && (
-                                <Badge variant="secondary" className="bg-slate-700 text-slate-400 text-xs">
-                                    <Clock className="w-3 h-3 mr-1" />
-                                    Coming Soon
-                                </Badge>
-                            )}
-                        </div>
-                        <CardDescription className={`text-xs ${disabled ? 'text-slate-600' : 'text-slate-400'}`}>{description}</CardDescription>
+                        <CardTitle className="text-base text-white">{label}</CardTitle>
+                        <CardDescription className="text-xs text-slate-400">{description}</CardDescription>
                     </div>
                 </div>
             </CardHeader>
@@ -78,12 +61,7 @@ const CreateListingButton: React.FC<{
                 <Button
                     variant="outline"
                     size="sm"
-                    className={`w-full ${
-                        disabled
-                            ? 'bg-transparent border-slate-600/30 text-slate-500 cursor-not-allowed'
-                            : 'bg-transparent border-amber-500/30 text-amber-400 hover:bg-amber-500/20 hover:text-amber-300'
-                    }`}
-                    disabled={disabled}
+                    className="w-full bg-transparent border-orange-500/30 text-orange-400 hover:bg-orange-500/20 hover:text-orange-300"
                     data-testid={`create-listing-${label.toLowerCase().replace(' ', '-')}-btn`}
                 >
                     <Plus className="w-4 h-4 mr-2" />
@@ -99,10 +77,10 @@ const MyListingsSection: React.FC = () => {
     return (
         <div className="mb-6">
             <div className="flex items-center gap-2 mb-4">
-                <ShoppingBag className="w-5 h-5 text-amber-400" />
+                <ShoppingBag className="w-5 h-5 text-orange-400" />
                 <h2 className="text-lg font-semibold text-white">My Listings</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <CreateListingButton
                     label="Product"
                     description="Physical or digital products for sale"
@@ -115,14 +93,6 @@ const MyListingsSection: React.FC = () => {
                     icon={<MapPin className="w-5 h-5" />}
                     dialogId="Create Tour"
                     dialogClassName="w-[870px] h-[700px]"
-                />
-                <CreateListingButton
-                    label="Event"
-                    description="Workshops, classes, and gatherings"
-                    icon={<Calendar className="w-5 h-5" />}
-                    dialogId="Create Event"
-                    disabled={true}
-                    comingSoon={true}
                 />
             </div>
         </div>
@@ -234,6 +204,9 @@ const UI: React.FC<Props> = ({ merchantId, merchantSlug, merchantName, me }) => 
         href: item.href.replace(merchantId, merchantSlug)
     }));
 
+    const totalProducts = data.inventoryOverview.data?.total_products || 0;
+    const isNewMerchant = totalProducts === 0;
+
     return (
         <UIContainer me={me}>
             <div className="h-screen-minus-nav p-4 md:p-6 overflow-auto">
@@ -242,8 +215,8 @@ const UI: React.FC<Props> = ({ merchantId, merchantSlug, merchantName, me }) => 
                 {/* Go Live Checklist - shown until vendor is published */}
                 <GoLiveChecklist merchantId={merchantId} />
 
-                {/* My Listings Section */}
-                <MyListingsSection />
+                {/* My Listings - top for new merchants */}
+                {isNewMerchant && <MyListingsSection />}
 
                 {/* Dashboard Stats Row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -272,6 +245,9 @@ const UI: React.FC<Props> = ({ merchantId, merchantSlug, merchantName, me }) => 
                     merchantSlug={merchantSlug}
                     isLoading={data.orders.isLoading}
                 />
+
+                {/* My Listings - below orders for established merchants */}
+                {!isNewMerchant && <MyListingsSection />}
             </div>
         </UIContainer>
     );

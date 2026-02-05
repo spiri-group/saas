@@ -81,11 +81,11 @@ const GoLiveChecklist: React.FC<GoLiveChecklistProps> = ({ merchantId }) => {
     ].filter(Boolean).length;
 
     return (
-        <Card className="bg-slate-800/50 border-amber-500/30 mb-6" data-testid="go-live-checklist">
+        <Card className="bg-slate-800/50 border-orange-500/30 mb-6" data-testid="go-live-checklist">
             <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Rocket className="w-5 h-5 text-amber-400" />
+                        <Rocket className="w-5 h-5 text-orange-400" />
                         <CardTitle className="text-base text-white">Go Live Checklist</CardTitle>
                     </div>
                     <span className="text-xs text-slate-400">{completedCount}/3 complete</span>
