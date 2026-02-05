@@ -72,11 +72,8 @@ jobs:
 
       - name: Prepare dist folder
         run: |
-          mkdir -p dist/.next
-          cp -r .next/standalone/* dist/
+          cp -r .next/standalone dist
           cp -r .next/static dist/.next/static
-          cp .next/BUILD_ID dist/.next/
-          cp .next/*.json dist/.next/ 2>/dev/null || true
           cp -r public dist/public
           cp .env dist/.env
 
