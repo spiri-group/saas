@@ -1,25 +1,17 @@
-import { v4 as uuidv4 } from 'uuid'
 import { serverContext } from "../../services/azFunction"
-import { platform_alert_type, AlertStatus, AlertSeverity, AlertType } from "./types"
-import { DateTime } from "luxon"
-import { PatchOperation } from "@azure/cosmos"
+import { platform_alert_type, AlertStatus, AlertSeverity } from "./types"
+import { PlatformAlertManager } from "./manager"
 import { DataAction } from '../../services/signalR'
 import { user_type } from '../user/types'
 import { vendor_type } from '../vendor/types'
 
-const CONTAINER = "Main-PlatformAlert"
 const SIGNALR_GROUP = "console-alerts"
 
 const resolvers = {
     Query: {
         platformAlert: async (_: any, args: { id: string }, context: serverContext) => {
             try {
-                const alert = await context.dataSources.cosmos.get_record<platform_alert_type>(
-                    CONTAINER,
-                    args.id,
-                    args.id
-                )
-                return alert
+                return await PlatformAlertManager.getById(context.dataSources.tableStorage, args.id)
             } catch {
                 return null
             }
@@ -35,116 +27,85 @@ const resolvers = {
             limit?: number
             offset?: number
         }, context: serverContext) => {
-            const limit = args.limit || 50
-            const offset = args.offset || 0
+            const result = await PlatformAlertManager.query(context.dataSources.tableStorage, {
+                alertStatuses: args.alertStatuses,
+                severities: args.severities,
+                alertTypes: args.alertTypes,
+                searchTerm: args.searchTerm,
+                dateFrom: args.dateFrom,
+                dateTo: args.dateTo,
+                limit: args.limit,
+                offset: args.offset
+            })
 
-            let whereConditions: string[] = []
-            let parameters: { name: string, value: any }[] = []
+            // Batch-load related entities to avoid N+1 queries
+            const customerIds = [...new Set(result.alerts.map(a => a.customerId).filter(Boolean))] as string[]
+            const merchantIds = [...new Set(result.alerts.map(a => a.merchantId).filter(Boolean))] as string[]
+            const assigneeIds = [...new Set(result.alerts.map(a => a.assigneeId).filter(Boolean))] as string[]
 
-            // Filter by alert status
-            if (args.alertStatuses && args.alertStatuses.length > 0) {
-                whereConditions.push("ARRAY_CONTAINS(@alertStatuses, c.alertStatus)")
-                parameters.push({ name: "@alertStatuses", value: args.alertStatuses })
-            }
+            // Fetch all related entities in parallel
+            const [customers, merchants, assignees] = await Promise.all([
+                customerIds.length > 0
+                    ? context.dataSources.cosmos.run_query<user_type>(
+                        "Main-User",
+                        { query: `SELECT * FROM c WHERE ARRAY_CONTAINS(@ids, c.id)`, parameters: [{ name: "@ids", value: customerIds }] },
+                        true
+                    )
+                    : [],
+                merchantIds.length > 0
+                    ? context.dataSources.cosmos.run_query<vendor_type>(
+                        "Main-Vendor",
+                        { query: `SELECT * FROM c WHERE ARRAY_CONTAINS(@ids, c.id)`, parameters: [{ name: "@ids", value: merchantIds }] },
+                        true
+                    )
+                    : [],
+                assigneeIds.length > 0
+                    ? context.dataSources.cosmos.run_query<user_type>(
+                        "Main-User",
+                        { query: `SELECT * FROM c WHERE ARRAY_CONTAINS(@ids, c.id)`, parameters: [{ name: "@ids", value: assigneeIds }] },
+                        true
+                    )
+                    : []
+            ])
 
-            // Filter by severity
-            if (args.severities && args.severities.length > 0) {
-                whereConditions.push("ARRAY_CONTAINS(@severities, c.severity)")
-                parameters.push({ name: "@severities", value: args.severities })
-            }
+            // Create lookup maps
+            const customerMap = new Map(customers.map(c => [c.id, c] as [string, user_type]))
+            const merchantMap = new Map(merchants.map(m => [m.id, m] as [string, vendor_type]))
+            const assigneeMap = new Map(assignees.map(a => [a.id, a] as [string, user_type]))
 
-            // Filter by alert type
-            if (args.alertTypes && args.alertTypes.length > 0) {
-                whereConditions.push("ARRAY_CONTAINS(@alertTypes, c.alertType)")
-                parameters.push({ name: "@alertTypes", value: args.alertTypes })
-            }
-
-            // Search by code, title, or message
-            if (args.searchTerm) {
-                whereConditions.push("(CONTAINS(LOWER(c.code), LOWER(@searchTerm)) OR CONTAINS(LOWER(c.title), LOWER(@searchTerm)) OR CONTAINS(LOWER(c.message), LOWER(@searchTerm)))")
-                parameters.push({ name: "@searchTerm", value: args.searchTerm })
-            }
-
-            // Date range
-            if (args.dateFrom) {
-                whereConditions.push("c.createdDate >= @dateFrom")
-                parameters.push({ name: "@dateFrom", value: args.dateFrom })
-            }
-            if (args.dateTo) {
-                whereConditions.push("c.createdDate <= @dateTo")
-                parameters.push({ name: "@dateTo", value: args.dateTo })
-            }
-
-            const whereClause = whereConditions.length > 0
-                ? `WHERE ${whereConditions.join(" AND ")}`
-                : ""
-
-            // Get paginated results
-            const querySpec = {
-                query: `SELECT * FROM c ${whereClause} ORDER BY c.createdDate DESC OFFSET @offset LIMIT @limit`,
-                parameters: [
-                    ...parameters,
-                    { name: "@offset", value: offset },
-                    { name: "@limit", value: limit }
-                ]
-            }
-
-            const alerts = await context.dataSources.cosmos.run_query<platform_alert_type>(CONTAINER, querySpec, true)
-
-            // Get total count
-            const countQuery = {
-                query: `SELECT VALUE COUNT(1) FROM c ${whereClause}`,
-                parameters
-            }
-            const countResult = await context.dataSources.cosmos.run_query<number>(CONTAINER, countQuery, true)
-            const totalCount = countResult[0] || 0
+            // Attach related entities to alerts
+            const enrichedAlerts = result.alerts.map(alert => ({
+                ...alert,
+                _customer: alert.customerId ? customerMap.get(alert.customerId) : null,
+                _merchant: alert.merchantId ? merchantMap.get(alert.merchantId) : null,
+                _assignee: alert.assigneeId ? assigneeMap.get(alert.assigneeId) : null
+            }))
 
             return {
-                alerts,
-                totalCount,
-                hasMore: offset + alerts.length < totalCount
+                alerts: enrichedAlerts,
+                totalCount: result.totalCount,
+                hasMore: result.hasMore
             }
         },
 
         platformAlertStats: async (_: any, _args: any, context: serverContext) => {
-            // Get counts by status
-            const statusQuery = {
-                query: `SELECT c.alertStatus, COUNT(1) as count FROM c GROUP BY c.alertStatus`,
-                parameters: []
-            }
-            const statusResults = await context.dataSources.cosmos.run_query<{ alertStatus: string, count: number }>(CONTAINER, statusQuery, true)
-
-            // Get counts by severity
-            const severityQuery = {
-                query: `SELECT c.severity, COUNT(1) as count FROM c GROUP BY c.severity`,
-                parameters: []
-            }
-            const severityResults = await context.dataSources.cosmos.run_query<{ severity: string, count: number }>(CONTAINER, severityQuery, true)
-
-            // Calculate total
-            const total = statusResults.reduce((acc, r) => acc + r.count, 0)
-
-            // Map status counts
-            const byStatus = {
-                new: statusResults.find(r => r.alertStatus === AlertStatus.NEW)?.count || 0,
-                investigating: statusResults.find(r => r.alertStatus === AlertStatus.INVESTIGATING)?.count || 0,
-                awaitingResponse: statusResults.find(r => r.alertStatus === AlertStatus.AWAITING_RESPONSE)?.count || 0,
-                resolved: statusResults.find(r => r.alertStatus === AlertStatus.RESOLVED)?.count || 0,
-                dismissed: statusResults.find(r => r.alertStatus === AlertStatus.DISMISSED)?.count || 0
-            }
-
-            // Map severity counts
-            const bySeverity = {
-                low: severityResults.find(r => r.severity === AlertSeverity.LOW)?.count || 0,
-                medium: severityResults.find(r => r.severity === AlertSeverity.MEDIUM)?.count || 0,
-                high: severityResults.find(r => r.severity === AlertSeverity.HIGH)?.count || 0,
-                critical: severityResults.find(r => r.severity === AlertSeverity.CRITICAL)?.count || 0
-            }
+            const stats = await PlatformAlertManager.getStats(context.dataSources.tableStorage)
 
             return {
-                total,
-                byStatus,
-                bySeverity
+                total: stats.total,
+                byStatus: {
+                    new: stats.byStatus[AlertStatus.NEW] || 0,
+                    investigating: stats.byStatus[AlertStatus.INVESTIGATING] || 0,
+                    awaitingResponse: stats.byStatus[AlertStatus.AWAITING_RESPONSE] || 0,
+                    resolved: stats.byStatus[AlertStatus.RESOLVED] || 0,
+                    dismissed: stats.byStatus[AlertStatus.DISMISSED] || 0
+                },
+                bySeverity: {
+                    low: stats.bySeverity[AlertSeverity.LOW] || 0,
+                    medium: stats.bySeverity[AlertSeverity.MEDIUM] || 0,
+                    high: stats.bySeverity[AlertSeverity.HIGH] || 0,
+                    critical: stats.bySeverity[AlertSeverity.CRITICAL] || 0
+                }
             }
         }
     },
@@ -175,48 +136,12 @@ const resolvers = {
                 }
             }
         }, context: serverContext) => {
-            const alertId = uuidv4()
-            const now = DateTime.now().toISO()
-
-            // Generate human-readable code
-            const code = await context.dataSources.cosmos.generate_unique_code(
-                "ALT",
-                async () => {
-                    const existingCodes = await context.dataSources.cosmos.run_query<string>(CONTAINER, {
-                        query: `SELECT VALUE c.code FROM c`,
-                        parameters: []
-                    }, true)
-                    return existingCodes
-                }
-            )
-
-            const alert: platform_alert_type = {
-                id: alertId,
-                code,
-                alertType: args.input.alertType as AlertType,
-                severity: args.input.severity as AlertSeverity,
-                alertStatus: AlertStatus.NEW,
-                title: args.input.title,
-                message: args.input.message,
-                customerId: args.input.customerId,
-                customerEmail: args.input.customerEmail,
-                merchantId: args.input.merchantId,
-                context: args.input.context || {},
-                source: args.input.source,
-                createdDate: now,
-                ref: {
-                    id: alertId,
-                    partition: alertId,
-                    container: CONTAINER
-                }
-            }
-
-            await context.dataSources.cosmos.add_record(CONTAINER, alert, alertId, context.userId || "SYSTEM")
+            const alert = await PlatformAlertManager.create(context.dataSources.tableStorage, args.input)
 
             // Send real-time notification to console
             context.signalR.addDataMessage(
                 "platformAlert",
-                { id: alertId, alertType: alert.alertType, severity: alert.severity },
+                { id: alert.id, alertType: alert.alertType, severity: alert.severity },
                 { action: DataAction.UPSERT, group: SIGNALR_GROUP }
             )
 
@@ -231,8 +156,8 @@ const resolvers = {
             return {
                 code: "200",
                 success: true,
-                message: `Alert ${code} created successfully`,
-                alert: await context.dataSources.cosmos.get_record<platform_alert_type>(CONTAINER, alertId, alertId)
+                message: `Alert ${alert.code} created successfully`,
+                alert
             }
         },
 
@@ -241,26 +166,21 @@ const resolvers = {
             alertStatus: string
             resolutionNotes?: string
         }, context: serverContext) => {
-            const now = DateTime.now().toISO()
+            const alert = await PlatformAlertManager.updateStatus(
+                context.dataSources.tableStorage,
+                args.id,
+                args.alertStatus,
+                args.resolutionNotes
+            )
 
-            const patchOps: PatchOperation[] = [
-                { op: "set", path: "/alertStatus", value: args.alertStatus },
-                { op: "set", path: "/updatedDate", value: now }
-            ]
-
-            if (args.resolutionNotes) {
-                patchOps.push({ op: "set", path: "/resolutionNotes", value: args.resolutionNotes })
+            if (!alert) {
+                return {
+                    code: "404",
+                    success: false,
+                    message: "Alert not found",
+                    alert: null
+                }
             }
-
-            if (args.alertStatus === AlertStatus.RESOLVED) {
-                patchOps.push({ op: "set", path: "/resolvedAt", value: now })
-            }
-
-            if (args.alertStatus === AlertStatus.DISMISSED) {
-                patchOps.push({ op: "set", path: "/dismissedAt", value: now })
-            }
-
-            await context.dataSources.cosmos.patch_record(CONTAINER, args.id, args.id, patchOps, context.userId || "SYSTEM")
 
             // Send real-time update
             context.signalR.addDataMessage(
@@ -273,7 +193,7 @@ const resolvers = {
                 code: "200",
                 success: true,
                 message: `Alert status updated to ${args.alertStatus}`,
-                alert: await context.dataSources.cosmos.get_record<platform_alert_type>(CONTAINER, args.id, args.id)
+                alert
             }
         },
 
@@ -281,19 +201,20 @@ const resolvers = {
             id: string
             assigneeId?: string
         }, context: serverContext) => {
-            const now = DateTime.now().toISO()
+            const alert = await PlatformAlertManager.assign(
+                context.dataSources.tableStorage,
+                args.id,
+                args.assigneeId
+            )
 
-            const patchOps: PatchOperation[] = [
-                { op: "set", path: "/updatedDate", value: now }
-            ]
-
-            if (args.assigneeId) {
-                patchOps.push({ op: "set", path: "/assigneeId", value: args.assigneeId })
-            } else {
-                patchOps.push({ op: "remove", path: "/assigneeId" })
+            if (!alert) {
+                return {
+                    code: "404",
+                    success: false,
+                    message: "Alert not found",
+                    alert: null
+                }
             }
-
-            await context.dataSources.cosmos.patch_record(CONTAINER, args.id, args.id, patchOps, context.userId || "SYSTEM")
 
             // Send real-time update
             context.signalR.addDataMessage(
@@ -304,7 +225,6 @@ const resolvers = {
 
             // Notify the assignee
             if (args.assigneeId) {
-                const alert = await context.dataSources.cosmos.get_record<platform_alert_type>(CONTAINER, args.id, args.id)
                 context.signalR.addNotificationMessage(
                     `You have been assigned to alert ${alert.code}`,
                     { userId: args.assigneeId, status: "info" }
@@ -315,7 +235,7 @@ const resolvers = {
                 code: "200",
                 success: true,
                 message: args.assigneeId ? "Alert assigned successfully" : "Alert unassigned successfully",
-                alert: await context.dataSources.cosmos.get_record<platform_alert_type>(CONTAINER, args.id, args.id)
+                alert
             }
         },
 
@@ -323,19 +243,20 @@ const resolvers = {
             id: string
             resolutionNotes?: string
         }, context: serverContext) => {
-            const now = DateTime.now().toISO()
+            const alert = await PlatformAlertManager.dismiss(
+                context.dataSources.tableStorage,
+                args.id,
+                args.resolutionNotes
+            )
 
-            const patchOps: PatchOperation[] = [
-                { op: "set", path: "/alertStatus", value: AlertStatus.DISMISSED },
-                { op: "set", path: "/dismissedAt", value: now },
-                { op: "set", path: "/updatedDate", value: now }
-            ]
-
-            if (args.resolutionNotes) {
-                patchOps.push({ op: "set", path: "/resolutionNotes", value: args.resolutionNotes })
+            if (!alert) {
+                return {
+                    code: "404",
+                    success: false,
+                    message: "Alert not found",
+                    alert: null
+                }
             }
-
-            await context.dataSources.cosmos.patch_record(CONTAINER, args.id, args.id, patchOps, context.userId || "SYSTEM")
 
             // Send real-time update
             context.signalR.addDataMessage(
@@ -348,7 +269,7 @@ const resolvers = {
                 code: "200",
                 success: true,
                 message: "Alert dismissed successfully",
-                alert: await context.dataSources.cosmos.get_record<platform_alert_type>(CONTAINER, args.id, args.id)
+                alert
             }
         }
     },
@@ -358,11 +279,13 @@ const resolvers = {
             return {
                 id: parent.id,
                 partition: parent.id,
-                container: CONTAINER
+                container: "PlatformAlerts"
             }
         },
 
-        customer: async (parent: platform_alert_type, _: any, context: serverContext) => {
+        // Use pre-fetched data from batch load, fallback to individual query for single alert fetches
+        customer: async (parent: platform_alert_type & { _customer?: user_type }, _: any, context: serverContext) => {
+            if (parent._customer !== undefined) return parent._customer
             if (!parent.customerId) return null
             try {
                 return await context.dataSources.cosmos.get_record<user_type>("Main-User", parent.customerId, parent.customerId)
@@ -371,7 +294,8 @@ const resolvers = {
             }
         },
 
-        merchant: async (parent: platform_alert_type, _: any, context: serverContext) => {
+        merchant: async (parent: platform_alert_type & { _merchant?: vendor_type }, _: any, context: serverContext) => {
+            if (parent._merchant !== undefined) return parent._merchant
             if (!parent.merchantId) return null
             try {
                 return await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", parent.merchantId, parent.merchantId)
@@ -380,7 +304,8 @@ const resolvers = {
             }
         },
 
-        assignee: async (parent: platform_alert_type, _: any, context: serverContext) => {
+        assignee: async (parent: platform_alert_type & { _assignee?: user_type }, _: any, context: serverContext) => {
+            if (parent._assignee !== undefined) return parent._assignee
             if (!parent.assigneeId) return null
             try {
                 return await context.dataSources.cosmos.get_record<user_type>("Main-User", parent.assigneeId, parent.assigneeId)

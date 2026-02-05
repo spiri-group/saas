@@ -107,7 +107,8 @@ export async function graphql(request: HttpRequest, context: InvocationContext):
       storage: new StorageDataSource(host, logger),
       email: new AzureEmailDataSource(logger, keyVault),
       exchangeRate: new ExchangeRateDataSource(logger, keyVault),
-      shipEngine: new ShipEngineDataSource(logger, keyVault)
+      shipEngine: new ShipEngineDataSource(logger, keyVault),
+      tableStorage: new TableStorageDataSource(logger, keyVault)
     }
 
     await Promise.all([
@@ -116,6 +117,7 @@ export async function graphql(request: HttpRequest, context: InvocationContext):
       dataSources.email.init(host),
       dataSources.exchangeRate.init(),
       dataSources.shipEngine.init(),
+      dataSources.tableStorage.init(),
     ])
 
     // Set dataSources reference for email service (needed for Cosmos template lookups)
@@ -165,13 +167,10 @@ export async function graphql(request: HttpRequest, context: InvocationContext):
       // now we need to check if its a guid -- if so we know its the session token otherwise handle as a jwt
       if (encoded.token.length == 36) {
         // now from table storage we need to find the session token and check has it expired yet
-        const storageService = new TableStorageDataSource(logger, keyVault);
-        await storageService.init('auth');
-
         // now we attempt to get the session row
-        const session = await storageService.getRow<{ expires: string, userId: string }>('auth', 'session', encoded.token);
+        const session = await dataSources.tableStorage.getEntity<{ expires: string, userId: string }>('auth', 'session', encoded.token);
         const sessionExpiresAt = DateTime.fromISO(session?.expires || "1970-01-01T00:00:00Z");
-        const userForSession = await storageService.getRow<{ email: string }>('auth', 'user', session?.userId || '');
+        const userForSession = await dataSources.tableStorage.getEntity<{ email: string }>('auth', 'user', session?.userId || '');
 
         // has the session expired
         if (sessionExpiresAt < DateTime.utc()) {
