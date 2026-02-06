@@ -162,6 +162,7 @@ const useBL = (props: BLProps) => {
             icon: <User className="w-5 h-5" />,
             testId: "nav-profile",
             description: "Bio, Media, Reviews",
+            columns: 2,
             navOptions: [
                 {
                     icon: <User className="w-5 h-5" />,

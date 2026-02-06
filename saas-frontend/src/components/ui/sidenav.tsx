@@ -1,4 +1,4 @@
-import React, { JSX, useEffect, useState } from "react";
+import React, { JSX, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -42,6 +42,17 @@ type SideNavItemProps = {
 
 const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath, commandLocation }) => {
     const [showSubNav, setShowSubNav] = useState(false);
+    const [flyoutMaxHeight, setFlyoutMaxHeight] = useState<number | undefined>(undefined);
+    const flyoutRef = useRef<HTMLDivElement>(null);
+
+    // Measure available vertical space when flyout opens
+    useEffect(() => {
+        if (showSubNav && flyoutRef.current) {
+            const rect = flyoutRef.current.getBoundingClientRect();
+            const available = window.innerHeight - rect.top - 16;
+            setFlyoutMaxHeight(Math.max(200, available));
+        }
+    }, [showSubNav]);
 
     let action_type = "expand";
     if (navOption.dialogId) {
@@ -158,6 +169,7 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                 </motion.div>
                 {subNavOptions && showSubNav && (
                     <motion.div
+                        ref={flyoutRef}
                         className="absolute"
                         style={{ top: 0, transform: `translateX(${sidebar_size.width + 4}px)` }}
                     >
@@ -167,6 +179,7 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                             activePath={activePath}
                             commandLocation={commandLocation}
                             columns={navOption.columns}
+                            maxHeight={flyoutMaxHeight}
                         />
                     </motion.div>
                 )}
@@ -183,6 +196,7 @@ type SideNavProps = {
     className?: string;
     commandLocation: "internal" | "external";
     columns?: number;
+    maxHeight?: number;
 };
 
 const append_paths_to_nav = (navOptions: NavOption[], path: string[]) => {
@@ -224,7 +238,7 @@ const splitIntoColumnGroups = (navOptions: NavOption[], numColumns: number): Nav
     return columns;
 };
 
-const SideNav: React.FC<SideNavProps> = ({ navOptions, depth = 1, activePath = [], className, commandLocation, columns, ...rest }) => {
+const SideNav: React.FC<SideNavProps> = ({ navOptions, depth = 1, activePath = [], className, commandLocation, columns, maxHeight, ...rest }) => {
     // check if the navOptions have paths
     // if they do not have paths, we need to add them
     if (navOptions.some((navOption) => navOption.path == null)) {
@@ -304,9 +318,10 @@ const SideNav: React.FC<SideNavProps> = ({ navOptions, depth = 1, activePath = [
                 className={cn(
                     "fixed py-1 drop-shadow-lg rounded-xl flex z-40 left-0",
                     effectiveColumns > 1 ? "flex-row" : "flex-col",
-                    depth === 1 ? "" : "bg-slate-950 border border-white/10 max-h-[calc(100vh-2rem)] overflow-y-auto",
+                    depth === 1 ? "" : "bg-slate-950 border border-white/10 overflow-y-auto",
                     className
                 )}
+                style={depth > 1 && maxHeight ? { maxHeight: `${maxHeight}px` } : undefined}
                 initial={{ width: 0, opacity: 0 }}
                 animate={{ width: animateWidth, opacity: 1 }}
                 transition={{ duration: 0.2 }}
