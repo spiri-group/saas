@@ -1,7 +1,7 @@
 'use client'
 
 import React, { JSX } from "react";
-import PersonWalking from "@/icons/person-walking";
+
 import SideNav, { NavOption } from "@/components/ui/sidenav";
 import EditTeamMembers from "./Profile/Edit/TeamMembers";
 import EditCatalogueBanner from "./Profile/Edit/PromiseBanner";
@@ -101,7 +101,7 @@ const useBL = (props: BLProps) => {
                     label: "Manage"
                 },
                 {
-                    icon: <PersonWalking height={20} fillVariant="accent" />,
+                    icon: <Calendar className="w-5 h-5" />,
                     label: "Events & Tours",
                     href: `/m/${merchantSlug}/manage/events-and-tours`
                 },
@@ -144,7 +144,7 @@ const useBL = (props: BLProps) => {
                     dialogId: "Merchant Team members"
                 },
                 {
-                    icon: <Users2Icon className="w-5 h-5 text-emerald-400" />,
+                    icon: <Users2Icon className="w-5 h-5" />,
                     label: "Featured Practitioners",
                     href: `/m/${merchantSlug}/manage/featuring`
                 },
