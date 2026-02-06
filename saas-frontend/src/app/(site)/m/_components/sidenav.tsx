@@ -5,7 +5,7 @@ import PersonWalking from "@/icons/person-walking";
 import SideNav, { NavOption } from "@/components/ui/sidenav";
 import EditTeamMembers from "./Profile/Edit/TeamMembers";
 import EditCatalogueBanner from "./Profile/Edit/PromiseBanner";
-import { AlignLeftIcon, BoxIcon, Building2, FileTextIcon, HistoryIcon, NewspaperIcon, PaintbrushIcon, PhoneIcon, RefreshCwIcon, RotateCcwIcon, Share2Icon, StoreIcon, TruckIcon, Users2Icon, Package, AlertTriangle, ImageIcon, PiggyBank, CreditCardIcon, VideoIcon, Sparkles, MapPin, ShoppingCart, Calendar, HeartHandshake, LayoutDashboard, Mail, User, Settings } from "lucide-react";
+import { AlignLeftIcon, BoxIcon, Building2, FileTextIcon, HistoryIcon, NewspaperIcon, PaintbrushIcon, PhoneIcon, RefreshCwIcon, RotateCcwIcon, Share2Icon, StoreIcon, TruckIcon, Users2Icon, Package, AlertTriangle, ImageIcon, PiggyBank, CreditCardIcon, VideoIcon, Sparkles, MapPin, ShoppingCart, Calendar, LayoutDashboard, Mail, User } from "lucide-react";
 import EditTourDetails from "../[merchant_slug]/(manage)/manage/tour/_components/Edit/TourDetails/EditTourDetails";
 import EditItinerary from "../[merchant_slug]/(manage)/manage/tour/_components/Edit/Itinerary";
 import CreateTour from "../[merchant_slug]/(manage)/manage/tour/_components/Create";
@@ -24,7 +24,7 @@ import EditMerchantSocials from "./Profile/Edit/Social";
 import SpiriAssistLogo from "@/icons/spiri-assist-logo";
 import { Session } from "next-auth";
 import { isNullOrUndefined } from "@/lib/functions";
-import { VendorDocType } from "@/utils/spiriverse";
+
 import MerchantTaxRegistrations from "./TaxRegistration";
 import UpsertRefundPolicies from "./Profile/Edit/RefundPolicies";
 import EditListingAppearance from "./Profile/Edit/ListingAppearance";
@@ -49,10 +49,6 @@ const useBL = (props: BLProps) => {
 
     const merchant = props.session.user.vendors.find(v => v.id === merchantId);
 
-    // Find if user has a practitioner profile
-    const practitionerVendor = props.session.user.vendors.find(v => v.docType === VendorDocType.PRACTITIONER);
-    const servicesHref = practitionerVendor ? `/p/${practitionerVendor.slug}` : '/p/setup';
-
     const options : NavOption[] =  [
         {
             icon: <StoreIcon className="w-5 h-5" />,
@@ -76,13 +72,12 @@ const useBL = (props: BLProps) => {
             icon: <ShoppingCart className="w-5 h-5" />,
             label: "Catalogue",
             testId: "nav-catalogue",
-            description: "Products, Tours",
+            description: "Products, Tours, Events",
+            columns: 2,
             navOptions: [
                 {
-                    icon: <MapPin className="w-5 h-5" />,
-                    label: "New Tour",
-                    dialogId: "Create Tour",
-                    className: "w-[870px] max-w-[95vw] h-[700px]"
+                    type: "divider",
+                    label: "Create"
                 },
                 {
                     icon: <ShoppingCart className="w-5 h-5" />,
@@ -90,15 +85,26 @@ const useBL = (props: BLProps) => {
                     dialogId: "Create Product"
                 },
                 {
-                    type: "divider",
-                    label: ""
+                    icon: <MapPin className="w-5 h-5" />,
+                    label: "New Tour",
+                    dialogId: "Create Tour",
+                    className: "w-[870px] max-w-[95vw] h-[700px]"
                 },
                 {
                     icon: <FileTextIcon className="w-5 h-5" />,
                     label: "Update Listing",
                     dialogId: "Update Listing",
                     className: "w-[870px] max-w-[95vw] h-[700px]"
-                }
+                },
+                {
+                    type: "divider",
+                    label: "Manage"
+                },
+                {
+                    icon: <PersonWalking height={20} fillVariant="accent" />,
+                    label: "Events & Tours",
+                    href: `/m/${merchantSlug}/manage/events-and-tours`
+                },
             ],
         },
         {
@@ -136,6 +142,11 @@ const useBL = (props: BLProps) => {
                     icon: <Users2Icon className="w-5 h-5" />,
                     label: "Team Members",
                     dialogId: "Merchant Team members"
+                },
+                {
+                    icon: <Users2Icon className="w-5 h-5 text-emerald-400" />,
+                    label: "Featured Practitioners",
+                    href: `/m/${merchantSlug}/manage/featuring`
                 },
                 {
                     type: "divider",
@@ -215,6 +226,7 @@ const useBL = (props: BLProps) => {
             label: "Orders & Fulfilment",
             testId: "nav-orders",
             description: "Shipping, Inventory, Refunds",
+            columns: 2,
             navOptions: [
                 {
                     type: "divider",
@@ -262,36 +274,10 @@ const useBL = (props: BLProps) => {
             ]
         },
         {
-            icon: <Settings className="w-5 h-5" />,
-            label: "Platform",
-            testId: "nav-platform",
-            description: "SpiriAssist, Practitioners",
-            navOptions: [
-                {
-                    icon: <div className="flex items-center justify-center"><SpiriAssistLogo height={20} /></div>,
-                    label: "SpiriAssist",
-                    href: `/m/${merchantSlug}/manage/spiri-assist`
-                },
-                {
-                    icon: <PersonWalking height={20} fillVariant="accent" />,
-                    label: "Event / Tours",
-                    href: `/m/${merchantSlug}/manage/events-and-tours`
-                },
-                {
-                    icon: <Users2Icon className="w-5 h-5 text-emerald-400" />,
-                    label: "Featured Practitioners",
-                    href: `/m/${merchantSlug}/manage/featuring`
-                },
-                {
-                    type: "divider",
-                    label: ""
-                },
-                {
-                    icon: <HeartHandshake className="w-5 h-5 text-pink-400" />,
-                    label: "Practitioner Profile",
-                    href: servicesHref
-                }
-            ]
+            icon: <div className="flex items-center justify-center"><SpiriAssistLogo height={20} /></div>,
+            label: "SpiriAssist",
+            testId: "nav-spiri-assist",
+            href: `/m/${merchantSlug}/manage/spiri-assist`
         },
     ]
 
