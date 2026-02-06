@@ -1,182 +1,280 @@
 'use client';
 
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Briefcase, ChevronDown, PencilLine, User, CrownIcon, Sparkles } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Package, CalendarDays, MessageSquare, CreditCard, Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { isNullOrUndefined } from "@/lib/functions";
-import SpiriAssistLogo from "@/icons/spiri-assist-logo";
+import { useSession, signOut } from "next-auth/react";
+import { useQueryClient } from "@tanstack/react-query";
 import BouncingDots from "@/icons/BouncingDots";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { VendorDocType } from "@/utils/spiriverse";
 
-const UI : React.FC<{ user: {email: string, id: string }}> =
-    ({ user: { email, id } }) => {
+function getInitials(email: string): string {
+    const local = email.split('@')[0] ?? '';
+    if (local.includes('.')) {
+        const parts = local.split('.');
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return local.slice(0, 2).toUpperCase();
+}
+
+const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, id } }) => {
     const router = useRouter();
     const { data: session, status } = useSession();
+    const queryClient = useQueryClient();
     const [showProfileDialog, setShowProfileDialog] = useState(false);
+
+    const initials = getInitials(email);
+
+    const handleSignOut = async () => {
+        try {
+            await signOut({ callbackUrl: '/' });
+            queryClient.invalidateQueries({
+                queryKey: ['user-me-contact', 'user-me-nav', 'setup-me'],
+            });
+        } catch (error) {
+            console.error("Error during sign-out:", error);
+        }
+    };
+
+    const merchants = session?.user?.vendors?.filter(v => v.docType === VendorDocType.MERCHANT || !v.docType) ?? [];
+    const practitioners = session?.user?.vendors?.filter(v => v.docType === VendorDocType.PRACTITIONER) ?? [];
 
     return (
         <>
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    variant="ghost"
-                    className="flex flex-row space-x-2 text-white"
+            <DropdownMenu>
+                <DropdownMenuTrigger
+                    data-testid="user-menu-trigger"
+                    className="flex items-center justify-center w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-sm font-semibold hover:bg-amber-500/30 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400/40"
                     aria-label="User account menu"
-                    data-nav="user-menu"
                 >
-                    <span className="text-xs md:text-sm">{email}</span>
-                    <ChevronDown aria-hidden="true" />
-                </Button>
-            </DropdownMenuTrigger>
-            {status === "loading" && <DropdownMenuContent className="w-56 flex items-center justify-center">
-                <BouncingDots />
-            </DropdownMenuContent>}
-            {session?.user &&
-                <DropdownMenuContent className="w-56">
-                    <DropdownMenuItem
-                        onClick={() => { router.push(`/c/${id}`)}}
-                        aria-label="button-customer-profile">
-                        <User className="w-4 h-4 mr-2" />
-                        <span>My profile</span>
-                    </DropdownMenuItem>
-                    {
-                        !isNullOrUndefined(session.user.cases) && session.user.cases!.length > 0 && (
+                    {initials}
+                </DropdownMenuTrigger>
+                {status === "loading" && (
+                    <DropdownMenuContent className="w-72 bg-slate-950/95 backdrop-blur-xl border border-white/10">
+                        <div className="flex items-center justify-center p-4">
+                            <BouncingDots />
+                        </div>
+                    </DropdownMenuContent>
+                )}
+                {session?.user && (
+                    <DropdownMenuContent
+                        align="end"
+                        data-testid="user-menu-dropdown"
+                        className="w-72 bg-slate-950/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl p-0"
+                    >
+                        {/* Header card */}
+                        <div data-testid="user-menu-header" className="flex items-center gap-3 px-4 py-3">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-sm font-semibold shrink-0">
+                                {initials}
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-sm text-white/90 truncate">{email}</p>
+                                <p className="text-xs text-slate-400">Customer Account</p>
+                            </div>
+                        </div>
+
+                        <DropdownMenuSeparator className="bg-white/10" />
+
+                        {/* Customer quick links */}
+                        <div className="py-1">
+                            <DropdownMenuItem
+                                data-testid="user-menu-orders"
+                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
+                                onClick={() => router.push(`/c/${id}/orders`)}
+                            >
+                                <Package className="w-4 h-4 mr-3 text-amber-400" />
+                                Orders
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                data-testid="user-menu-bookings"
+                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
+                                onClick={() => router.push(`/c/${id}/bookings`)}
+                            >
+                                <CalendarDays className="w-4 h-4 mr-3 text-amber-400" />
+                                Bookings
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                data-testid="user-menu-messages"
+                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
+                                onClick={() => router.push(`/c/${id}/messages`)}
+                            >
+                                <MessageSquare className="w-4 h-4 mr-3 text-amber-400" />
+                                Messages
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                data-testid="user-menu-payments"
+                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
+                                onClick={() => router.push(`/c/${id}/payments`)}
+                            >
+                                <CreditCard className="w-4 h-4 mr-3 text-amber-400" />
+                                Payments
+                            </DropdownMenuItem>
+                        </div>
+
+                        {/* Merchants section */}
+                        {merchants.length > 0 && (
                             <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel className="flex flex-row space-x-1">
-                                    <SpiriAssistLogo height={16} />
-                                    <span>SpiriAssist</span>
-                                </DropdownMenuLabel>
-                                <DropdownMenuGroup>
-                                    {session.user.cases!.map((c) => (
-                                        <DropdownMenuItem
-                                            key={c.id}
-                                            className="flex flex-row items-center space-x-2"
-                                            onClick={() => { router.push(`/track/case/${c.id}`)}}
-                                            aria-label={`button-case-${c.code}`}
-                                        >
-                                            <span className="flexnone">{c.code}</span>
-                                            <span className="truncate">{c.location.formattedAddress}</span>
-                                        </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-white/10" />
+                                <div className="py-1">
+                                    {merchants.map((vendor) => (
+                                        <div key={vendor.id}>
+                                            <p className="px-4 pt-2 pb-1 text-[10px] text-amber-300/50 uppercase tracking-wider font-medium">
+                                                {vendor.name}
+                                            </p>
+                                            <DropdownMenuItem
+                                                data-testid={`user-menu-merchant-${vendor.slug}`}
+                                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
+                                                onClick={() => router.push(`/m/${vendor.slug}`)}
+                                            >
+                                                <Store className="w-4 h-4 mr-3 text-amber-400" />
+                                                Shop Page
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                data-testid={`user-menu-merchant-dashboard-${vendor.slug}`}
+                                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
+                                                onClick={() => router.push(`/m/${vendor.slug}/manage`)}
+                                            >
+                                                <LayoutDashboard className="w-4 h-4 mr-3 text-amber-400" />
+                                                Dashboard
+                                            </DropdownMenuItem>
+                                        </div>
                                     ))}
-                                </DropdownMenuGroup>
+                                </div>
                             </>
-                        )
-                    }
-                    <DropdownMenuSeparator />
-                    {/* Merchants Section */}
-                    {session.user.vendors?.filter(v => v.docType === VendorDocType.MERCHANT || !v.docType).map((vendor) => (
-                        <div key={vendor.id}>
-                            <DropdownMenuLabel>{vendor.name}</DropdownMenuLabel>
-                            <DropdownMenuGroup>
-                                <DropdownMenuItem
-                                    aria-label={`nav-merchant-profile-${vendor.name}`}
-                                    onClick={() => {
-                                        router.push(`/m/${vendor.slug}`);
-                                    }}
-                                >
-                                    <Briefcase className="w-4 h-4 mr-2" />
-                                    <span>Merchant Page</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    aria-label={`nav-spiriverse-plan-${vendor.name}`}
-                                    onClick={() => {
-                                        router.push(`/m/${vendor.slug}/subscription`);
-                                    }}
-                                >
-                                    <CrownIcon className="w-4 h-4 mr-2" />
-                                    <span>Spiriverse Plan</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuGroup>
+                        )}
+
+                        {/* Practitioners section */}
+                        {practitioners.length > 0 && (
+                            <>
+                                <DropdownMenuSeparator className="bg-white/10" />
+                                <div className="py-1">
+                                    {practitioners.map((practitioner) => (
+                                        <div key={practitioner.id}>
+                                            <p className="px-4 pt-2 pb-1 text-[10px] text-amber-300/50 uppercase tracking-wider font-medium">
+                                                {practitioner.name}
+                                            </p>
+                                            <DropdownMenuItem
+                                                data-testid={`user-menu-practitioner-${practitioner.slug}`}
+                                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
+                                                onClick={() => router.push(`/p/${practitioner.slug}`)}
+                                            >
+                                                <Sparkles className="w-4 h-4 mr-3 text-amber-400" />
+                                                Profile Page
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                data-testid={`user-menu-practitioner-dashboard-${practitioner.slug}`}
+                                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
+                                                onClick={() => router.push(`/p/${practitioner.slug}/manage`)}
+                                            >
+                                                <LayoutDashboard className="w-4 h-4 mr-3 text-amber-400" />
+                                                Dashboard
+                                            </DropdownMenuItem>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {/* Become CTAs */}
+                        {(merchants.length === 0 || practitioners.length === 0) && (
+                            <>
+                                <DropdownMenuSeparator className="bg-white/10" />
+                                <div className="py-1">
+                                    {merchants.length === 0 && (
+                                        <DropdownMenuItem
+                                            data-testid="user-menu-become-merchant"
+                                            className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
+                                            onClick={() => {
+                                                if (session.user && session.user.requiresInput) {
+                                                    setShowProfileDialog(true);
+                                                } else {
+                                                    router.push('/m/setup');
+                                                }
+                                            }}
+                                        >
+                                            <Plus className="w-4 h-4 mr-3 text-amber-400" />
+                                            Open a Shop
+                                        </DropdownMenuItem>
+                                    )}
+                                    {practitioners.length === 0 && (
+                                        <DropdownMenuItem
+                                            data-testid="user-menu-become-practitioner"
+                                            className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
+                                            onClick={() => {
+                                                if (session.user && session.user.requiresInput) {
+                                                    setShowProfileDialog(true);
+                                                } else {
+                                                    router.push('/p/setup');
+                                                }
+                                            }}
+                                        >
+                                            <Plus className="w-4 h-4 mr-3 text-amber-400" />
+                                            Start Practising
+                                        </DropdownMenuItem>
+                                    )}
+                                </div>
+                            </>
+                        )}
+
+                        <DropdownMenuSeparator className="bg-white/10" />
+
+                        {/* Account Settings & Sign Out */}
+                        <div className="py-1">
+                            <DropdownMenuItem
+                                data-testid="user-menu-settings"
+                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
+                                onClick={() => router.push(`/c/${id}/settings`)}
+                            >
+                                <Settings className="w-4 h-4 mr-3 text-amber-400" />
+                                Account Settings
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                data-testid="user-menu-sign-out"
+                                className="px-4 py-2 text-white/90 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-300 cursor-pointer"
+                                onClick={handleSignOut}
+                            >
+                                <LogOut className="w-4 h-4 mr-3 text-amber-400" />
+                                Sign Out
+                            </DropdownMenuItem>
                         </div>
-                    ))}
-                    {/* Start Merchant Creation if no merchants */}
-                    {(!session.user.vendors || session.user.vendors.filter(v => v.docType === VendorDocType.MERCHANT || !v.docType).length === 0) && (
-                        <DropdownMenuItem
-                            aria-label="button-become-merchant"
-                            onClick={() => {
-                                if (session.user && session.user.requiresInput) {
-                                    setShowProfileDialog(true);
+                    </DropdownMenuContent>
+                )}
+            </DropdownMenu>
+
+            {showProfileDialog && (
+                <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
+                    <DialogContent className="sm:max-w-md rounded-2xl p-8 shadow-xl">
+                        <DialogHeader>
+                            <div className="flex items-center gap-3">
+                                <PencilLine className="w-6 h-6 text-yellow-500" />
+                                <DialogTitle className="text-xl font-bold">Complete your profile</DialogTitle>
+                            </div>
+                            <DialogDescription className="text-base text-gray-600 mt-2 leading-relaxed">
+                                You must complete your profile before continuing. Please update your details to proceed.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="flex flex-row gap-2 justify-end mt-6">
+                            <Button variant="outline" onClick={() => setShowProfileDialog(false)}>
+                                Close
+                            </Button>
+                            <Button type="button" variant="default" onClick={() => {
+                                if (typeof window !== "undefined" && window.location.pathname === `/u/${id}/setup`) {
+                                    window.location.reload();
                                 } else {
-                                    router.push(`/m/setup`);
+                                    router.push(`/u/${id}/setup`);
                                 }
-                            }}
-                        >
-                            <Briefcase className="w-4 h-4 mr-2" />
-                            <span>Become a Merchant</span>
-                        </DropdownMenuItem>
-                    )}
-                    {/* Practitioners Section */}
-                    {session.user.vendors?.filter(v => v.docType === VendorDocType.PRACTITIONER).map((practitioner) => (
-                        <div key={practitioner.id}>
-                            <DropdownMenuLabel>{practitioner.name}</DropdownMenuLabel>
-                            <DropdownMenuGroup>
-                                <DropdownMenuItem
-                                    aria-label={`nav-practitioner-dashboard-${practitioner.name}`}
-                                    onClick={() => {
-                                        router.push(`/p/${practitioner.slug}/manage`);
-                                    }}
-                                >
-                                    <Sparkles className="w-4 h-4 mr-2" />
-                                    <span>Practitioner Dashboard</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                        </div>
-                    ))}
-                    {/* Become a Practitioner if no practitioners */}
-                    {(!session.user.vendors || session.user.vendors.filter(v => v.docType === VendorDocType.PRACTITIONER).length === 0) && (
-                        <DropdownMenuItem
-                            aria-label="button-become-practitioner"
-                            onClick={() => {
-                                if (session.user && session.user.requiresInput) {
-                                    setShowProfileDialog(true);
-                                } else {
-                                    router.push(`/p/setup`);
-                                }
-                            }}
-                        >
-                            <Sparkles className="w-4 h-4 mr-2" />
-                            <span>Become a Practitioner</span>
-                        </DropdownMenuItem>
-                    )}
-                </DropdownMenuContent>
-            }
-        </DropdownMenu>
-        {showProfileDialog && (
-            <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-                <DialogContent className="sm:max-w-md rounded-2xl p-8 shadow-xl">
-                <DialogHeader>
-                    <div className="flex items-center gap-3">
-                        <PencilLine className="w-6 h-6 text-yellow-500" />
-                        <DialogTitle className="text-xl font-bold">Complete your profile</DialogTitle>
-                    </div>
-                    <DialogDescription className="text-base text-gray-600 mt-2 leading-relaxed">
-                        You must complete your profile before continuing. Please update your details to proceed.
-                    </DialogDescription>
-                </DialogHeader>
-                <DialogFooter className="flex flex-row gap-2 justify-end mt-6">
-                    <Button variant="outline" onClick={() => setShowProfileDialog(false)}>
-                        Close
-                    </Button>
-                    <Button type="button" variant="default" onClick={() => {
-                        if (typeof window !== "undefined" && window.location.pathname === `/u/${id}/setup`) {
-                            window.location.reload();
-                        } else {
-                            router.push(`/u/${id}/setup`);
-                        }
-                    }}>
-                        Go to profile setup
-                    </Button>
-                </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        )}
+                            }}>
+                                Go to profile setup
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
         </>
-    )
-}
+    );
+};
 
 export default UI;

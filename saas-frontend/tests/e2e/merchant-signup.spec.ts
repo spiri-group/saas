@@ -748,10 +748,13 @@ test.describe('Merchant Signup - Complete Flow', () => {
       await page.waitForTimeout(1000);
     }
 
-    // STEP 3: Log out
+    // STEP 3: Log out (open user dropdown first, then click sign out)
     console.log('[Test] Step 3: Logging out...');
-    const signOutButton = page.locator('button:has-text("Sign Out")');
-    await expect(signOutButton).toBeVisible({ timeout: 10000 });
+    const userMenuTrigger = page.getByTestId('user-menu-trigger');
+    await expect(userMenuTrigger).toBeVisible({ timeout: 10000 });
+    await userMenuTrigger.click();
+    const signOutButton = page.getByTestId('user-menu-sign-out');
+    await expect(signOutButton).toBeVisible({ timeout: 5000 });
     await signOutButton.click();
     await page.waitForURL('/', { timeout: 15000 });
     await expect(page.locator('input[name="email"]')).toBeVisible({ timeout: 10000 });
