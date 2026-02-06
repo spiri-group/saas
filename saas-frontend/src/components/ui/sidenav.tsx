@@ -155,7 +155,7 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                 </motion.div>
                 {subNavOptions && showSubNav && (
                     <motion.div
-                        className="absolute max-h-[calc(100vh-2rem)] overflow-y-auto rounded-xl"
+                        className="absolute"
                         style={{ top: 0, transform: `translateX(${sidebar_size.width + 4}px)` }}
                     >
                         <SideNav
@@ -228,7 +228,7 @@ const SideNav: React.FC<SideNavProps> = ({ navOptions, depth = 1, activePath = [
                 aria-label={rest["aria-label"]}
                 className={cn(
                     "fixed py-1 drop-shadow-lg rounded-xl flex flex-col z-40 left-0",
-                    depth === 1 ? "" : "bg-slate-950 border border-white/10",
+                    depth === 1 ? "" : "bg-slate-950 border border-white/10 max-h-[calc(100vh-2rem)] overflow-y-auto",
                     className
                 )}
                 initial={{ width: 0, opacity: 0 }}
