@@ -47,7 +47,7 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
             <DropdownMenu>
                 <DropdownMenuTrigger
                     data-testid="user-menu-trigger"
-                    className="flex items-center justify-center w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-sm font-semibold hover:bg-amber-500/30 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                    className="flex items-center justify-center w-9 h-9 mr-2 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-sm font-semibold hover:bg-amber-500/30 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400/40"
                     aria-label="User account menu"
                 >
                     {initials}
