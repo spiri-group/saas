@@ -393,6 +393,10 @@ type VendorSubscription {
   payouts_blocked: Boolean
   last_payment_date: String
   payment_retry_count: Int
+  discountPercent: Int
+  waived: Boolean
+  waivedUntil: String
+  overrideNotes: String
 }
 
 type BillingRecord {

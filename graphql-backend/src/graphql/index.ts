@@ -31,6 +31,7 @@ import {resolvers as CrystalReferenceResolvers} from "./crystal-reference"
 import {resolvers as PractitionerInsightsResolvers} from "./practitioner-insights"
 import {resolvers as FeaturingResolvers} from "./featuring"
 import {resolvers as PlatformAlertResolvers} from "./platform-alert"
+import {resolvers as AccountsResolvers} from "./accounts"
 
 import {mergeDeep, getAllFilesWithExtension} from "../utils/functions"
 
@@ -69,7 +70,8 @@ const resolvers = mergeDeep(
   CrystalReferenceResolvers,
   PractitionerInsightsResolvers,
   FeaturingResolvers,
-  PlatformAlertResolvers
+  PlatformAlertResolvers,
+  AccountsResolvers
 )
 
 let typeDefs: string[] = ScalarTypeDefs

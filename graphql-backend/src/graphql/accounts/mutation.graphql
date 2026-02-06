@@ -1,0 +1,23 @@
+type Mutation {
+    updateVendorSubscriptionOverride(
+        vendorId: String!
+        input: SubscriptionOverrideInput!
+    ): UpdateSubscriptionOverrideResponse!
+
+    unblockVendorPayouts(vendorId: String!): UpdateSubscriptionOverrideResponse!
+    forcePublishVendor(vendorId: String!): UpdateSubscriptionOverrideResponse!
+    resetVendorBillingRetry(vendorId: String!): UpdateSubscriptionOverrideResponse!
+}
+
+input SubscriptionOverrideInput {
+    discountPercent: Int
+    waived: Boolean
+    waivedUntil: String
+    overrideNotes: String
+}
+
+type UpdateSubscriptionOverrideResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+}

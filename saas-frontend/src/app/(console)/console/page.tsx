@@ -8,15 +8,17 @@ import {
   List,
   DollarSign,
   Mail,
-  AlertTriangle
+  AlertTriangle,
+  Users
 } from "lucide-react";
 import Link from "next/link";
 import ChoiceManager from "./choice-manager/ChoiceManager";
 import FeesManager from "./fees-manager/FeesManager";
 import EmailTemplatesManager from "./email-templates/EmailTemplatesManager";
 import AlertsManager from "./alerts-manager/AlertsManager";
+import AccountsManager from "./accounts-manager/AccountsManager";
 
-type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager';
+type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager' | 'accounts-manager';
 
 export default function ConsolePage() {
   const { data: session, status } = useSession();
@@ -65,7 +67,8 @@ export default function ConsolePage() {
                     {currentView === 'choice-manager' ? 'Choice Manager' :
                      currentView === 'fees-manager' ? 'Fees Manager' :
                      currentView === 'email-templates' ? 'Email Templates' :
-                     'Alerts Manager'}
+                     currentView === 'alerts-manager' ? 'Alerts Manager' :
+                     'Accounts Manager'}
                   </p>
                 </div>
               </div>
@@ -153,6 +156,17 @@ export default function ConsolePage() {
               <AlertTriangle className="h-4 w-4" />
               <span>Alerts</span>
             </button>
+            <button
+              onClick={() => setCurrentView('accounts-manager')}
+              className={`flex items-center space-x-2 px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
+                currentView === 'accounts-manager'
+                  ? 'border-console-primary text-console-primary'
+                  : 'border-transparent text-console-muted hover:text-console hover:border-console-muted'
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              <span>Accounts</span>
+            </button>
           </div>
         </div>
       </nav>
@@ -163,6 +177,7 @@ export default function ConsolePage() {
         {currentView === 'fees-manager' && <FeesManager />}
         {currentView === 'email-templates' && <EmailTemplatesManager />}
         {currentView === 'alerts-manager' && <AlertsManager />}
+        {currentView === 'accounts-manager' && <AccountsManager />}
       </main>
     </div>
   );

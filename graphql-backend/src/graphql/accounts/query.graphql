@@ -1,0 +1,113 @@
+type Query {
+    consoleVendorAccounts(
+        search: String
+        docTypes: [VendorDocType]
+        lifecycleStages: [String]
+        limit: Int
+        offset: Int
+    ): ConsoleVendorAccountsResponse!
+
+    consoleCustomerAccounts(
+        search: String
+        limit: Int
+        offset: Int
+    ): ConsoleCustomerAccountsResponse!
+
+    consoleAccountStats: ConsoleAccountStats!
+
+    consoleVendorDetail(id: String!): ConsoleVendorDetail
+}
+
+type ConsoleVendorAccountsResponse {
+    vendors: [ConsoleVendorAccount!]!
+    totalCount: Int!
+    hasMore: Boolean!
+}
+
+type ConsoleVendorAccount {
+    id: String!
+    name: String
+    slug: String
+    docType: VendorDocType
+    lifecycleStage: String!
+    publishedAt: String
+    createdDate: String
+    subscription: VendorSubscription
+    stripe: StripeAccount
+}
+
+type ConsoleCustomerAccountsResponse {
+    customers: [ConsoleCustomerAccount!]!
+    totalCount: Int!
+    hasMore: Boolean!
+}
+
+type ConsoleCustomerAccount {
+    id: String!
+    firstname: String
+    lastname: String
+    email: String
+    spiritualInterests: [String]
+    vendorCount: Int!
+    orderCount: Int!
+    createdDate: String
+}
+
+type ConsoleAccountStats {
+    vendors: VendorAccountStats!
+    customers: CustomerAccountStats!
+    funnel: [LifecycleFunnelEntry!]!
+    revenue: RevenueMetrics!
+    recentActivity: RecentActivityStats!
+}
+
+type LifecycleFunnelEntry {
+    stage: String!
+    count: Int!
+}
+
+type RevenueMetrics {
+    mrr: Int!
+    totalCollected: Int!
+    currency: String!
+}
+
+type RecentActivityStats {
+    vendorsToday: Int!
+    vendorsThisWeek: Int!
+    vendorsThisMonth: Int!
+    customersToday: Int!
+    customersThisWeek: Int!
+    customersThisMonth: Int!
+}
+
+type VendorAccountStats {
+    total: Int!
+    merchants: Int!
+    practitioners: Int!
+    published: Int!
+    billingActive: Int!
+    billingFailed: Int!
+    billingBlocked: Int!
+    waived: Int!
+}
+
+type CustomerAccountStats {
+    total: Int!
+    withOrders: Int!
+}
+
+type ConsoleVendorDetail {
+    id: String!
+    name: String
+    slug: String
+    docType: VendorDocType
+    lifecycleStage: String!
+    publishedAt: String
+    createdDate: String
+    subscription: VendorSubscription
+    stripe: StripeAccount
+    contact: VendorContactDetails
+    country: CountryCode
+    currency: Currency
+}
