@@ -106,6 +106,7 @@ const useBL = (props: BLProps) => {
             label: "Profile",
             testId: "nav-profile",
             description: "Customise, Setup, Branding",
+            columns: 2,
             navOptions: [
                 {
                     type: "divider",
