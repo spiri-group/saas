@@ -10,11 +10,9 @@ import {
 import { LifecycleStageBadge, DocTypeBadge, BillingOverrideBadge } from './components/AccountBadges';
 import VendorDetailPanel from './components/VendorDetailPanel';
 import CustomerDetailPanel from './components/CustomerDetailPanel';
-import OnboardingFunnel from './components/OnboardingFunnel';
 import PaginationBar from './components/PaginationBar';
 import useConsoleVendorAccounts from './hooks/UseConsoleVendorAccounts';
 import useConsoleCustomerAccounts from './hooks/UseConsoleCustomerAccounts';
-import useConsoleAccountStats from './hooks/UseConsoleAccountStats';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,17 +22,7 @@ import {
     RefreshCw,
     Loader2,
     Store,
-    UserCheck,
-    CreditCard,
-    AlertTriangle,
-    Ban,
-    ShoppingBag,
     Download,
-    TrendingUp,
-    DollarSign,
-    Clock,
-    Calendar,
-    Gift
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -71,9 +59,6 @@ export default function AccountsManager() {
         offset: customerPage * PAGE_SIZE,
     });
 
-    const statsQuery = useConsoleAccountStats();
-    const stats = statsQuery.data;
-
     const vendors = vendorsQuery.data?.vendors || [];
     const customers = customersQuery.data?.customers || [];
     const vendorTotalCount = vendorsQuery.data?.totalCount || 0;
@@ -82,7 +67,6 @@ export default function AccountsManager() {
     const handleRefresh = () => {
         vendorsQuery.refetch();
         customersQuery.refetch();
-        statsQuery.refetch();
     };
 
     const handleTabChange = (tab: AccountTab) => {
@@ -144,7 +128,7 @@ export default function AccountsManager() {
         <div className="h-full flex flex-col" data-testid="accounts-manager">
             {/* Header */}
             <div className="p-6 border-b border-slate-800">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                         <div className="h-10 w-10 bg-indigo-500/10 rounded-lg flex items-center justify-center">
                             <Users className="h-5 w-5 text-indigo-400" />
@@ -182,139 +166,6 @@ export default function AccountsManager() {
                         </Button>
                     </div>
                 </div>
-
-                {/* Onboarding Funnel (vendors tab only) */}
-                {activeTab === 'vendors' && stats?.funnel && (
-                    <div className="mb-6">
-                        <h3 className="text-sm font-medium text-slate-300 mb-2">Onboarding Funnel</h3>
-                        <OnboardingFunnel entries={stats.funnel} />
-                    </div>
-                )}
-
-                {/* Metrics Cards */}
-                {activeTab === 'vendors' ? (
-                    <div className="space-y-4">
-                        {/* Activity Row */}
-                        <div className="grid grid-cols-3 gap-3">
-                            <StatCard
-                                label="Vendors Today"
-                                value={stats?.recentActivity.vendorsToday || 0}
-                                icon={<Clock className="h-4 w-4" />}
-                                className="bg-sky-500/10 text-sky-400 border-sky-500/20"
-                            />
-                            <StatCard
-                                label="This Week"
-                                value={stats?.recentActivity.vendorsThisWeek || 0}
-                                icon={<Calendar className="h-4 w-4" />}
-                                className="bg-sky-500/10 text-sky-400 border-sky-500/20"
-                            />
-                            <StatCard
-                                label="This Month"
-                                value={stats?.recentActivity.vendorsThisMonth || 0}
-                                icon={<Calendar className="h-4 w-4" />}
-                                className="bg-sky-500/10 text-sky-400 border-sky-500/20"
-                            />
-                        </div>
-                        {/* Revenue + Health Row */}
-                        <div className="grid grid-cols-6 gap-3">
-                            <StatCard
-                                label="MRR"
-                                value={stats?.revenue.mrr || 0}
-                                format="currency"
-                                icon={<TrendingUp className="h-4 w-4" />}
-                                className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                            />
-                            <StatCard
-                                label="Total Collected"
-                                value={stats?.revenue.totalCollected || 0}
-                                format="currency"
-                                icon={<DollarSign className="h-4 w-4" />}
-                                className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                            />
-                            <StatCard
-                                label="Billing Active"
-                                value={stats?.vendors.billingActive || 0}
-                                icon={<CreditCard className="h-4 w-4" />}
-                                className="bg-blue-500/10 text-blue-400 border-blue-500/20"
-                            />
-                            <StatCard
-                                label="Failed"
-                                value={stats?.vendors.billingFailed || 0}
-                                icon={<AlertTriangle className="h-4 w-4" />}
-                                className="bg-orange-500/10 text-orange-400 border-orange-500/20"
-                            />
-                            <StatCard
-                                label="Blocked"
-                                value={stats?.vendors.billingBlocked || 0}
-                                icon={<Ban className="h-4 w-4" />}
-                                className="bg-red-500/10 text-red-400 border-red-500/20"
-                            />
-                            <StatCard
-                                label="Waived"
-                                value={stats?.vendors.waived || 0}
-                                icon={<Gift className="h-4 w-4" />}
-                                className="bg-amber-500/10 text-amber-400 border-amber-500/20"
-                            />
-                        </div>
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {/* Customer Activity Row */}
-                        <div className="grid grid-cols-3 gap-3">
-                            <StatCard
-                                label="Customers Today"
-                                value={stats?.recentActivity.customersToday || 0}
-                                icon={<Clock className="h-4 w-4" />}
-                                className="bg-sky-500/10 text-sky-400 border-sky-500/20"
-                            />
-                            <StatCard
-                                label="This Week"
-                                value={stats?.recentActivity.customersThisWeek || 0}
-                                icon={<Calendar className="h-4 w-4" />}
-                                className="bg-sky-500/10 text-sky-400 border-sky-500/20"
-                            />
-                            <StatCard
-                                label="This Month"
-                                value={stats?.recentActivity.customersThisMonth || 0}
-                                icon={<Calendar className="h-4 w-4" />}
-                                className="bg-sky-500/10 text-sky-400 border-sky-500/20"
-                            />
-                        </div>
-                        {/* Customer Stats Row */}
-                        <div className="grid grid-cols-5 gap-4" data-testid="customer-stats">
-                            <StatCard
-                                label="Total Customers"
-                                value={stats?.customers.total || 0}
-                                icon={<Users className="h-4 w-4" />}
-                                className="bg-blue-500/10 text-blue-400 border-blue-500/20"
-                            />
-                            <StatCard
-                                label="With Orders"
-                                value={stats?.customers.withOrders || 0}
-                                icon={<ShoppingBag className="h-4 w-4" />}
-                                className="bg-green-500/10 text-green-400 border-green-500/20"
-                            />
-                            <StatCard
-                                label="Merchants"
-                                value={stats?.vendors.merchants || 0}
-                                icon={<Store className="h-4 w-4" />}
-                                className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
-                            />
-                            <StatCard
-                                label="Practitioners"
-                                value={stats?.vendors.practitioners || 0}
-                                icon={<UserCheck className="h-4 w-4" />}
-                                className="bg-purple-500/10 text-purple-400 border-purple-500/20"
-                            />
-                            <StatCard
-                                label="Waived"
-                                value={stats?.vendors.waived || 0}
-                                icon={<CreditCard className="h-4 w-4" />}
-                                className="bg-amber-500/10 text-amber-400 border-amber-500/20"
-                            />
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Tab Toggle + Filters */}
@@ -497,30 +348,6 @@ export default function AccountsManager() {
                     )}
                 </div>
             </div>
-        </div>
-    );
-}
-
-interface StatCardProps {
-    label: string;
-    value: number;
-    icon: React.ReactNode;
-    className?: string;
-    format?: 'number' | 'currency';
-}
-
-function StatCard({ label, value, icon, className, format = 'number' }: StatCardProps) {
-    const displayValue = format === 'currency'
-        ? `$${(value / 100).toFixed(2)}`
-        : value;
-
-    return (
-        <div className={`p-4 rounded-lg border ${className}`}>
-            <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold">{displayValue}</span>
-                {icon}
-            </div>
-            <span className="text-sm opacity-70">{label}</span>
         </div>
     );
 }

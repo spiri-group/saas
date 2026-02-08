@@ -74,50 +74,6 @@ export interface ConsoleCustomerAccountsResponse {
     hasMore: boolean;
 }
 
-export interface VendorAccountStats {
-    total: number;
-    merchants: number;
-    practitioners: number;
-    published: number;
-    billingActive: number;
-    billingFailed: number;
-    billingBlocked: number;
-    waived: number;
-}
-
-export interface CustomerAccountStats {
-    total: number;
-    withOrders: number;
-}
-
-export interface LifecycleFunnelEntry {
-    stage: VendorLifecycleStage;
-    count: number;
-}
-
-export interface RevenueMetrics {
-    mrr: number;
-    totalCollected: number;
-    currency: string;
-}
-
-export interface RecentActivityStats {
-    vendorsToday: number;
-    vendorsThisWeek: number;
-    vendorsThisMonth: number;
-    customersToday: number;
-    customersThisWeek: number;
-    customersThisMonth: number;
-}
-
-export interface ConsoleAccountStats {
-    vendors: VendorAccountStats;
-    customers: CustomerAccountStats;
-    funnel: LifecycleFunnelEntry[];
-    revenue: RevenueMetrics;
-    recentActivity: RecentActivityStats;
-}
-
 export interface MutationResponse {
     code: string;
     success: boolean;
