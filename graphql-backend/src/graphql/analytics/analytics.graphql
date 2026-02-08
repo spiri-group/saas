@@ -1,0 +1,63 @@
+type Query {
+    """Get analytics dashboard data for a date range"""
+    consoleAnalytics(startDate: String!, endDate: String!): ConsoleAnalyticsDashboard!
+
+    """Get realtime analytics (active visitors in last 5 minutes)"""
+    consoleAnalyticsRealtime: ConsoleAnalyticsRealtime!
+}
+
+type ConsoleAnalyticsDashboard {
+    summary: AnalyticsSummary!
+    dailyCounts: [AnalyticsDailyCount!]!
+    topPages: [AnalyticsPageStat!]!
+    topReferrers: [AnalyticsReferrerStat!]!
+    browsers: [AnalyticsBreakdownStat!]!
+    operatingSystems: [AnalyticsBreakdownStat!]!
+    devices: [AnalyticsBreakdownStat!]!
+    countries: [AnalyticsBreakdownStat!]!
+}
+
+type ConsoleAnalyticsRealtime {
+    activeVisitors: Int!
+    currentPages: [RealtimePageStat!]!
+}
+
+type AnalyticsSummary {
+    totalPageviews: Int!
+    uniqueVisitors: Int!
+    avgSessionDuration: Float!
+    bounceRate: Float!
+    avgScrollDepth: Float!
+    avgTimeOnPage: Float!
+}
+
+type AnalyticsDailyCount {
+    date: String!
+    pageviews: Int!
+    uniqueVisitors: Int!
+}
+
+type AnalyticsPageStat {
+    url: String!
+    views: Int!
+    uniqueVisitors: Int!
+    avgTimeOnPage: Float!
+    avgScrollDepth: Float!
+}
+
+type AnalyticsReferrerStat {
+    referrer: String!
+    views: Int!
+    uniqueVisitors: Int!
+}
+
+type AnalyticsBreakdownStat {
+    name: String!
+    count: Int!
+    percentage: Float!
+}
+
+type RealtimePageStat {
+    url: String!
+    visitors: Int!
+}
