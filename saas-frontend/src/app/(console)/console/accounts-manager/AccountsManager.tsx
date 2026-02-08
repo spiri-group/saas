@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
     ConsoleVendorAccount,
     ConsoleCustomerAccount,
@@ -29,7 +29,12 @@ import { formatDistanceToNow } from 'date-fns';
 type AccountTab = 'vendors' | 'customers';
 const PAGE_SIZE = 50;
 
-export default function AccountsManager() {
+interface AccountsManagerProps {
+    initialLifecycleFilter?: string | null;
+    onFilterConsumed?: () => void;
+}
+
+export default function AccountsManager({ initialLifecycleFilter, onFilterConsumed }: AccountsManagerProps) {
     const [activeTab, setActiveTab] = useState<AccountTab>('vendors');
     const [selectedVendor, setSelectedVendor] = useState<ConsoleVendorAccount | null>(null);
     const [selectedCustomer, setSelectedCustomer] = useState<ConsoleCustomerAccount | null>(null);
@@ -45,6 +50,16 @@ export default function AccountsManager() {
     // Pagination
     const [vendorPage, setVendorPage] = useState(0);
     const [customerPage, setCustomerPage] = useState(0);
+
+    // Apply initial lifecycle filter from cross-tab navigation
+    useEffect(() => {
+        if (initialLifecycleFilter) {
+            setLifecycleFilter(initialLifecycleFilter as VendorLifecycleStage);
+            setActiveTab('vendors');
+            setVendorPage(0);
+            onFilterConsumed?.();
+        }
+    }, [initialLifecycleFilter, onFilterConsumed]);
 
     // Queries
     const vendorsQuery = useConsoleVendorAccounts({

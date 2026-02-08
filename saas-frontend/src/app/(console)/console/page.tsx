@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import {
   Shield,
@@ -9,7 +9,8 @@ import {
   DollarSign,
   Mail,
   AlertTriangle,
-  Users
+  Users,
+  GitBranch
 } from "lucide-react";
 import Link from "next/link";
 import ChoiceManager from "./choice-manager/ChoiceManager";
@@ -17,12 +18,19 @@ import FeesManager from "./fees-manager/FeesManager";
 import EmailTemplatesManager from "./email-templates/EmailTemplatesManager";
 import AlertsManager from "./alerts-manager/AlertsManager";
 import AccountsManager from "./accounts-manager/AccountsManager";
+import AccountJourneys from "./account-journeys/AccountJourneys";
 
-type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager' | 'accounts-manager';
+type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager' | 'accounts-manager' | 'account-journeys';
 
 export default function ConsolePage() {
   const { data: session, status } = useSession();
   const [currentView, setCurrentView] = useState<ConsoleView>('choice-manager');
+  const [accountsFilterIntent, setAccountsFilterIntent] = useState<string | null>(null);
+
+  const handleNavigateToAccounts = useCallback((lifecycleStage: string) => {
+    setAccountsFilterIntent(lifecycleStage);
+    setCurrentView('accounts-manager');
+  }, []);
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/console/login" });
@@ -68,6 +76,7 @@ export default function ConsolePage() {
                      currentView === 'fees-manager' ? 'Fees Manager' :
                      currentView === 'email-templates' ? 'Email Templates' :
                      currentView === 'alerts-manager' ? 'Alerts Manager' :
+                     currentView === 'account-journeys' ? 'Account Journeys' :
                      'Accounts Manager'}
                   </p>
                 </div>
@@ -167,6 +176,17 @@ export default function ConsolePage() {
               <Users className="h-4 w-4" />
               <span>Accounts</span>
             </button>
+            <button
+              onClick={() => setCurrentView('account-journeys')}
+              className={`flex items-center space-x-2 px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
+                currentView === 'account-journeys'
+                  ? 'border-console-primary text-console-primary'
+                  : 'border-transparent text-console-muted hover:text-console hover:border-console-muted'
+              }`}
+            >
+              <GitBranch className="h-4 w-4" />
+              <span>Account Journeys</span>
+            </button>
           </div>
         </div>
       </nav>
@@ -177,7 +197,15 @@ export default function ConsolePage() {
         {currentView === 'fees-manager' && <FeesManager />}
         {currentView === 'email-templates' && <EmailTemplatesManager />}
         {currentView === 'alerts-manager' && <AlertsManager />}
-        {currentView === 'accounts-manager' && <AccountsManager />}
+        {currentView === 'accounts-manager' && (
+          <AccountsManager
+            initialLifecycleFilter={accountsFilterIntent}
+            onFilterConsumed={() => setAccountsFilterIntent(null)}
+          />
+        )}
+        {currentView === 'account-journeys' && (
+          <AccountJourneys onNavigateToAccounts={handleNavigateToAccounts} />
+        )}
       </main>
     </div>
   );

@@ -4,6 +4,8 @@ import { user_type } from "../user/types"
 import { PatchOperation } from "@azure/cosmos"
 import { VendorLifecycleStage, computeLifecycleStage } from "./types"
 import { DateTime } from "luxon"
+import { journeysResolvers } from "./journeys"
+import { mergeDeep } from "../../utils/functions"
 
 const VENDOR_CONTAINER = "Main-Vendor"
 const USER_CONTAINER = "Main-User"
@@ -504,4 +506,6 @@ const resolvers = {
     }
 }
 
-export { resolvers }
+const mergedResolvers = mergeDeep({}, resolvers, journeysResolvers)
+
+export { mergedResolvers as resolvers }

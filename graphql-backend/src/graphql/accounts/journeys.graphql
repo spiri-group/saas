@@ -1,0 +1,49 @@
+type Query {
+    consoleAccountJourneys: ConsoleAccountJourneys!
+}
+
+type ConsoleAccountJourneys {
+    vendorFunnel: VendorFunnelAnalysis!
+    vendorMilestones: [MilestoneStats!]!
+    customerMilestones: [MilestoneStats!]!
+    totalCustomers: Int!
+}
+
+type VendorFunnelAnalysis {
+    stages: [FunnelStageDetail!]!
+    problemStates: [FunnelStageDetail!]!
+    conversions: [FunnelConversion!]!
+    totalVendors: Int!
+    totalMerchants: Int!
+    totalPractitioners: Int!
+}
+
+type FunnelStageDetail {
+    stage: String!
+    count: Int!
+    merchantCount: Int!
+    practitionerCount: Int!
+    percentOfTotal: Float!
+    medianDaysToReach: Float
+    averageDaysToReach: Float
+}
+
+type FunnelConversion {
+    fromStage: String!
+    toStage: String!
+    conversionRate: Float!
+    fromCount: Int!
+    toCount: Int!
+}
+
+type MilestoneStats {
+    milestoneKey: String!
+    label: String!
+    description: String!
+    achievedCount: Int!
+    totalEligible: Int!
+    achievedPercent: Float!
+    medianDays: Float
+    averageDays: Float
+    recentCount: Int
+}
