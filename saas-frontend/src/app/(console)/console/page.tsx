@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import {
   Shield,
@@ -27,12 +27,6 @@ type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'aler
 export default function ConsolePage() {
   const { data: session, status } = useSession();
   const [currentView, setCurrentView] = useState<ConsoleView>('choice-manager');
-  const [accountsFilterIntent, setAccountsFilterIntent] = useState<string | null>(null);
-
-  const handleNavigateToAccounts = useCallback((lifecycleStage: string) => {
-    setAccountsFilterIntent(lifecycleStage);
-    setCurrentView('accounts-manager');
-  }, []);
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/console/login" });
@@ -211,15 +205,8 @@ export default function ConsolePage() {
         {currentView === 'fees-manager' && <FeesManager />}
         {currentView === 'email-templates' && <EmailTemplatesManager />}
         {currentView === 'alerts-manager' && <AlertsManager />}
-        {currentView === 'accounts-manager' && (
-          <AccountsManager
-            initialLifecycleFilter={accountsFilterIntent}
-            onFilterConsumed={() => setAccountsFilterIntent(null)}
-          />
-        )}
-        {currentView === 'account-journeys' && (
-          <AccountJourneys onNavigateToAccounts={handleNavigateToAccounts} />
-        )}
+        {currentView === 'accounts-manager' && <AccountsManager />}
+        {currentView === 'account-journeys' && <AccountJourneys />}
         {currentView === 'analytics' && <Analytics />}
       </main>
     </div>

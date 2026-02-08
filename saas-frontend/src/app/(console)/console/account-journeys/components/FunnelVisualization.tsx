@@ -4,6 +4,7 @@ import { TrendingUp, TrendingDown, Minus, AlertTriangle, GitBranch } from 'lucid
 interface FunnelVisualizationProps {
     funnel: VendorFunnelAnalysis;
     onStageClick?: (stage: string) => void;
+    selectedStage?: string | null;
 }
 
 function getConversionColor(rate: number): string {
@@ -24,7 +25,7 @@ function getConversionIcon(rate: number) {
     return <TrendingDown className="h-3 w-3" />;
 }
 
-export default function FunnelVisualization({ funnel, onStageClick }: FunnelVisualizationProps) {
+export default function FunnelVisualization({ funnel, onStageClick, selectedStage }: FunnelVisualizationProps) {
     const maxCount = funnel.stages.length > 0 ? funnel.stages[0].count : 1;
 
     // Empty state
@@ -65,6 +66,7 @@ export default function FunnelVisualization({ funnel, onStageClick }: FunnelVisu
                     const label = STAGE_LABELS[stage.stage] || stage.stage;
                     const conversion = funnel.conversions[index - 1];
                     const isClickable = !!onStageClick;
+                    const isSelected = selectedStage === stage.stage;
 
                     return (
                         <div key={stage.stage} data-testid={`funnel-stage-${stage.stage.toLowerCase()}`}>
@@ -85,7 +87,7 @@ export default function FunnelVisualization({ funnel, onStageClick }: FunnelVisu
 
                             {/* Stage Bar */}
                             <div
-                                className={`flex items-center space-x-4 ${isClickable ? 'cursor-pointer rounded-lg hover:bg-slate-800/30 py-1 px-2 -mx-2 transition-colors' : ''}`}
+                                className={`flex items-center space-x-4 ${isClickable ? 'cursor-pointer rounded-lg py-1 px-2 -mx-2 transition-colors' : ''} ${isSelected ? 'bg-slate-800/60 ring-1 ring-slate-600' : isClickable ? 'hover:bg-slate-800/30' : ''}`}
                                 onClick={isClickable ? () => onStageClick!(stage.stage) : undefined}
                                 data-testid={`funnel-stage-click-${stage.stage.toLowerCase()}`}
                             >
@@ -149,11 +151,12 @@ export default function FunnelVisualization({ funnel, onStageClick }: FunnelVisu
                             const colors = STAGE_COLORS[stage.stage] || STAGE_COLORS.CREATED;
                             const label = STAGE_LABELS[stage.stage] || stage.stage;
                             const isClickable = !!onStageClick;
+                            const isSelected = selectedStage === stage.stage;
 
                             return (
                                 <div
                                     key={stage.stage}
-                                    className={`flex items-center space-x-4 ${isClickable ? 'cursor-pointer rounded-lg hover:bg-slate-800/30 py-1 px-2 -mx-2 transition-colors' : ''}`}
+                                    className={`flex items-center space-x-4 ${isClickable ? 'cursor-pointer rounded-lg py-1 px-2 -mx-2 transition-colors' : ''} ${isSelected ? 'bg-slate-800/60 ring-1 ring-slate-600' : isClickable ? 'hover:bg-slate-800/30' : ''}`}
                                     onClick={isClickable ? () => onStageClick!(stage.stage) : undefined}
                                     data-testid={`problem-stage-${stage.stage.toLowerCase()}`}
                                 >

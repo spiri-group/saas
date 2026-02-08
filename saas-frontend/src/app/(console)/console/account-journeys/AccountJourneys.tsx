@@ -7,17 +7,20 @@ import { formatDistanceToNow } from 'date-fns';
 import useAccountJourneys from './hooks/UseAccountJourneys';
 import FunnelVisualization from './components/FunnelVisualization';
 import MilestoneCard from './components/MilestoneCard';
+import StageAccountsList from './components/StageAccountsList';
 import { JourneySubTab, STAGE_LABELS } from './types';
 
-interface AccountJourneysProps {
-    onNavigateToAccounts?: (stage: string) => void;
-}
-
-export default function AccountJourneys({ onNavigateToAccounts }: AccountJourneysProps) {
+export default function AccountJourneys() {
     const [activeTab, setActiveTab] = useState<JourneySubTab>('activation-funnel');
+    const [selectedStage, setSelectedStage] = useState<string | null>(null);
     const journeysQuery = useAccountJourneys();
 
     const data = journeysQuery.data;
+
+    const handleStageClick = useCallback((stage: string) => {
+        // Toggle: click same stage again to close
+        setSelectedStage(prev => prev === stage ? null : stage);
+    }, []);
 
     const handleExportCsv = useCallback(() => {
         if (!data) return;
@@ -158,7 +161,7 @@ export default function AccountJourneys({ onNavigateToAccounts }: AccountJourney
             <div className="p-4 border-b border-slate-800">
                 <div className="flex bg-slate-800 rounded-lg p-1">
                     <button
-                        onClick={() => setActiveTab('activation-funnel')}
+                        onClick={() => { setActiveTab('activation-funnel'); setSelectedStage(null); }}
                         data-testid="activation-funnel-tab"
                         className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                             activeTab === 'activation-funnel'
@@ -169,7 +172,7 @@ export default function AccountJourneys({ onNavigateToAccounts }: AccountJourney
                         Activation Funnel
                     </button>
                     <button
-                        onClick={() => setActiveTab('vendor-milestones')}
+                        onClick={() => { setActiveTab('vendor-milestones'); setSelectedStage(null); }}
                         data-testid="vendor-milestones-tab"
                         className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                             activeTab === 'vendor-milestones'
@@ -180,7 +183,7 @@ export default function AccountJourneys({ onNavigateToAccounts }: AccountJourney
                         Vendor Milestones
                     </button>
                     <button
-                        onClick={() => setActiveTab('customer-milestones')}
+                        onClick={() => { setActiveTab('customer-milestones'); setSelectedStage(null); }}
                         data-testid="customer-milestones-tab"
                         className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                             activeTab === 'customer-milestones'
@@ -220,10 +223,19 @@ export default function AccountJourneys({ onNavigateToAccounts }: AccountJourney
                 ) : data ? (
                     <>
                         {activeTab === 'activation-funnel' && (
-                            <FunnelVisualization
-                                funnel={data.vendorFunnel}
-                                onStageClick={onNavigateToAccounts}
-                            />
+                            <div className="space-y-4">
+                                <FunnelVisualization
+                                    funnel={data.vendorFunnel}
+                                    onStageClick={handleStageClick}
+                                    selectedStage={selectedStage}
+                                />
+                                {selectedStage && (
+                                    <StageAccountsList
+                                        stage={selectedStage}
+                                        onClose={() => setSelectedStage(null)}
+                                    />
+                                )}
+                            </div>
                         )}
 
                         {activeTab === 'vendor-milestones' && (
