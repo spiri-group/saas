@@ -42,19 +42,12 @@ export default function FunnelVisualization({ funnel, onStageClick, selectedStag
     return (
         <div className="space-y-6" data-testid="funnel-visualization">
             {/* Summary Stats */}
-            <div className="grid grid-cols-3 gap-4">
-                <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50" data-testid="total-vendors-stat">
-                    <p className="text-sm text-slate-400">Total Vendors</p>
-                    <p className="text-2xl font-semibold text-white">{funnel.totalVendors}</p>
-                </div>
-                <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50" data-testid="total-merchants-stat">
-                    <p className="text-sm text-slate-400">Merchants</p>
-                    <p className="text-2xl font-semibold text-indigo-400">{funnel.totalMerchants}</p>
-                </div>
-                <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50" data-testid="total-practitioners-stat">
-                    <p className="text-sm text-slate-400">Practitioners</p>
-                    <p className="text-2xl font-semibold text-purple-400">{funnel.totalPractitioners}</p>
-                </div>
+            <div className="flex items-center space-x-3 text-sm" data-testid="summary-stats-row">
+                <span className="text-slate-400">Total: <span className="font-medium text-white">{funnel.totalVendors}</span></span>
+                <span className="text-slate-600">&middot;</span>
+                <span className="text-slate-400">Merchants: <span className="font-medium text-indigo-400">{funnel.totalMerchants}</span></span>
+                <span className="text-slate-600">&middot;</span>
+                <span className="text-slate-400">Practitioners: <span className="font-medium text-purple-400">{funnel.totalPractitioners}</span></span>
             </div>
 
             {/* Funnel Chart */}

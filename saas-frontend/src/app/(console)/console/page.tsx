@@ -114,101 +114,45 @@ export default function ConsolePage() {
         </div>
       </header>
 
-      {/* Navigation Tabs */}
-      <nav className="console-surface border-b border-console">
-        <div className="w-full px-6">
-          <div className="flex space-x-8">
+      {/* Body: Sidebar + Content */}
+      <div className="flex-1 flex min-h-0">
+        {/* Sidebar Navigation */}
+        <nav className="console-surface border-r border-console w-48 flex-shrink-0 flex flex-col py-2">
+          {([
+            { key: 'choice-manager' as ConsoleView, icon: List, label: 'Choice Manager' },
+            { key: 'fees-manager' as ConsoleView, icon: DollarSign, label: 'Fees Manager' },
+            { key: 'email-templates' as ConsoleView, icon: Mail, label: 'Email Templates' },
+            { key: 'alerts-manager' as ConsoleView, icon: AlertTriangle, label: 'Alerts' },
+            { key: 'accounts-manager' as ConsoleView, icon: Users, label: 'Accounts' },
+            { key: 'account-journeys' as ConsoleView, icon: GitBranch, label: 'Account Journeys' },
+            { key: 'analytics' as ConsoleView, icon: BarChart3, label: 'Website Traffic' },
+          ]).map(({ key, icon: Icon, label }) => (
             <button
-              onClick={() => setCurrentView('choice-manager')}
-              className={`flex items-center space-x-2 px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
-                currentView === 'choice-manager'
-                  ? 'border-console-primary text-console-primary'
-                  : 'border-transparent text-console-muted hover:text-console hover:border-console-muted'
+              key={key}
+              onClick={() => setCurrentView(key)}
+              className={`flex items-center space-x-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                currentView === key
+                  ? 'text-console-primary bg-console-primary/10 border-r-2 border-console-primary'
+                  : 'text-console-muted hover:text-console hover:bg-console-surface-hover'
               }`}
             >
-              <List className="h-4 w-4" />
-              <span>Choice Manager</span>
+              <Icon className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">{label}</span>
             </button>
-            <button
-              onClick={() => setCurrentView('fees-manager')}
-              className={`flex items-center space-x-2 px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
-                currentView === 'fees-manager'
-                  ? 'border-console-primary text-console-primary'
-                  : 'border-transparent text-console-muted hover:text-console hover:border-console-muted'
-              }`}
-            >
-              <DollarSign className="h-4 w-4" />
-              <span>Fees Manager</span>
-            </button>
-            <button
-              onClick={() => setCurrentView('email-templates')}
-              className={`flex items-center space-x-2 px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
-                currentView === 'email-templates'
-                  ? 'border-console-primary text-console-primary'
-                  : 'border-transparent text-console-muted hover:text-console hover:border-console-muted'
-              }`}
-            >
-              <Mail className="h-4 w-4" />
-              <span>Email Templates</span>
-            </button>
-            <button
-              onClick={() => setCurrentView('alerts-manager')}
-              className={`flex items-center space-x-2 px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
-                currentView === 'alerts-manager'
-                  ? 'border-console-primary text-console-primary'
-                  : 'border-transparent text-console-muted hover:text-console hover:border-console-muted'
-              }`}
-            >
-              <AlertTriangle className="h-4 w-4" />
-              <span>Alerts</span>
-            </button>
-            <button
-              onClick={() => setCurrentView('accounts-manager')}
-              className={`flex items-center space-x-2 px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
-                currentView === 'accounts-manager'
-                  ? 'border-console-primary text-console-primary'
-                  : 'border-transparent text-console-muted hover:text-console hover:border-console-muted'
-              }`}
-            >
-              <Users className="h-4 w-4" />
-              <span>Accounts</span>
-            </button>
-            <button
-              onClick={() => setCurrentView('account-journeys')}
-              className={`flex items-center space-x-2 px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
-                currentView === 'account-journeys'
-                  ? 'border-console-primary text-console-primary'
-                  : 'border-transparent text-console-muted hover:text-console hover:border-console-muted'
-              }`}
-            >
-              <GitBranch className="h-4 w-4" />
-              <span>Account Journeys</span>
-            </button>
-            <button
-              onClick={() => setCurrentView('analytics')}
-              className={`flex items-center space-x-2 px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
-                currentView === 'analytics'
-                  ? 'border-console-primary text-console-primary'
-                  : 'border-transparent text-console-muted hover:text-console hover:border-console-muted'
-              }`}
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span>Website Traffic</span>
-            </button>
-          </div>
-        </div>
-      </nav>
+          ))}
+        </nav>
 
-      {/* Main Content */}
-      <main className="flex-grow min-h-0">
-        {currentView === 'choice-manager' && <ChoiceManager />}
-        {currentView === 'fees-manager' && <FeesManager />}
-        {currentView === 'email-templates' && <EmailTemplatesManager />}
-        {currentView === 'alerts-manager' && <AlertsManager />}
-        {currentView === 'accounts-manager' && <AccountsManager />}
-        {currentView === 'account-journeys' && <AccountJourneys />}
-        {currentView === 'analytics' && <Analytics />}
-      </main>
+        {/* Main Content */}
+        <main className="flex-1 min-h-0 min-w-0">
+          {currentView === 'choice-manager' && <ChoiceManager />}
+          {currentView === 'fees-manager' && <FeesManager />}
+          {currentView === 'email-templates' && <EmailTemplatesManager />}
+          {currentView === 'alerts-manager' && <AlertsManager />}
+          {currentView === 'accounts-manager' && <AccountsManager />}
+          {currentView === 'account-journeys' && <AccountJourneys />}
+          {currentView === 'analytics' && <Analytics />}
+        </main>
+      </div>
     </div>
   );
 }

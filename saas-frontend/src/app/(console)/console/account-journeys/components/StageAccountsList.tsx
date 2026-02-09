@@ -1,4 +1,4 @@
-import { X, Loader2, ExternalLink, Store, User } from 'lucide-react';
+import { Loader2, ExternalLink, Store, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import useConsoleVendorAccounts from '../../accounts-manager/hooks/UseConsoleVendorAccounts';
 import { VendorLifecycleStage } from '../../accounts-manager/types';
@@ -20,11 +20,11 @@ export default function StageAccountsList({ stage, onClose }: StageAccountsListP
 
     return (
         <div
-            className="bg-slate-800/50 rounded-lg border border-slate-700/50 overflow-hidden animate-in slide-in-from-top-2 duration-200"
+            className="bg-slate-800/50 rounded-lg border border-slate-700/50 overflow-hidden flex flex-col h-full"
             data-testid="stage-accounts-list"
         >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50">
+            <div className="flex items-center px-4 py-3 border-b border-slate-700/50">
                 <div className="flex items-center space-x-3">
                     <div className={`w-2 h-2 rounded-full ${colors.bg}`} />
                     <span className={`text-sm font-medium ${colors.text}`}>{label}</span>
@@ -34,13 +34,6 @@ export default function StageAccountsList({ stage, onClose }: StageAccountsListP
                         </span>
                     )}
                 </div>
-                <button
-                    onClick={onClose}
-                    className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-700 transition-colors"
-                    data-testid="close-stage-accounts"
-                >
-                    <X className="h-4 w-4" />
-                </button>
             </div>
 
             {/* Content */}
@@ -54,7 +47,7 @@ export default function StageAccountsList({ stage, onClose }: StageAccountsListP
                     No accounts at this stage
                 </div>
             ) : (
-                <div className="max-h-80 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm">
                         <thead className="sticky top-0 bg-slate-800">
                             <tr className="border-b border-slate-700/50">

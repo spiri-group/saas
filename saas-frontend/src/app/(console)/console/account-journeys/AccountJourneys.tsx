@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { GitBranch, RefreshCw, Loader2, Download } from 'lucide-react';
+import { GitBranch, RefreshCw, Loader2, Download, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import useAccountJourneys from './hooks/UseAccountJourneys';
@@ -223,16 +223,35 @@ export default function AccountJourneys() {
                 ) : data ? (
                     <>
                         {activeTab === 'activation-funnel' && (
-                            <div className="space-y-4">
-                                <FunnelVisualization
-                                    funnel={data.vendorFunnel}
-                                    onStageClick={handleStageClick}
-                                    selectedStage={selectedStage}
-                                />
-                                {selectedStage && (
-                                    <StageAccountsList
-                                        stage={selectedStage}
-                                        onClose={() => setSelectedStage(null)}
+                            <div className="flex flex-col h-full">
+                                {selectedStage ? (
+                                    <>
+                                        <div className="flex items-center space-x-3 mb-4">
+                                            <button
+                                                onClick={() => setSelectedStage(null)}
+                                                className="flex items-center space-x-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+                                                data-testid="back-to-funnel-btn"
+                                            >
+                                                <ArrowLeft className="h-4 w-4" />
+                                                <span>Back to Funnel</span>
+                                            </button>
+                                            <span className="text-slate-600">|</span>
+                                            <span className="text-sm font-medium text-white">
+                                                {STAGE_LABELS[selectedStage] || selectedStage}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 min-h-0">
+                                            <StageAccountsList
+                                                stage={selectedStage}
+                                                onClose={() => setSelectedStage(null)}
+                                            />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <FunnelVisualization
+                                        funnel={data.vendorFunnel}
+                                        onStageClick={handleStageClick}
+                                        selectedStage={selectedStage}
                                     />
                                 )}
                             </div>
