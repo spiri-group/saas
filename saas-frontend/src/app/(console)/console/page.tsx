@@ -117,28 +117,41 @@ export default function ConsolePage() {
       {/* Body: Sidebar + Content */}
       <div className="flex-1 flex min-h-0">
         {/* Sidebar Navigation */}
-        <nav className="console-surface border-r border-console w-48 flex-shrink-0 flex flex-col py-2">
+        <nav className="console-surface border-r border-console w-48 flex-shrink-0 flex flex-col py-2 overflow-y-auto">
           {([
-            { key: 'choice-manager' as ConsoleView, icon: List, label: 'Choice Manager' },
-            { key: 'fees-manager' as ConsoleView, icon: DollarSign, label: 'Fees Manager' },
-            { key: 'email-templates' as ConsoleView, icon: Mail, label: 'Email Templates' },
-            { key: 'alerts-manager' as ConsoleView, icon: AlertTriangle, label: 'Alerts' },
-            { key: 'accounts-manager' as ConsoleView, icon: Users, label: 'Accounts' },
-            { key: 'account-journeys' as ConsoleView, icon: GitBranch, label: 'Account Journeys' },
-            { key: 'analytics' as ConsoleView, icon: BarChart3, label: 'Website Traffic' },
-          ]).map(({ key, icon: Icon, label }) => (
-            <button
-              key={key}
-              onClick={() => setCurrentView(key)}
-              className={`flex items-center space-x-3 px-4 py-2.5 text-sm font-medium transition-colors ${
-                currentView === key
-                  ? 'text-console-primary bg-console-primary/10 border-r-2 border-console-primary'
-                  : 'text-console-muted hover:text-console hover:bg-console-surface-hover'
-              }`}
-            >
-              <Icon className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate">{label}</span>
-            </button>
+            { group: 'Content', items: [
+              { key: 'choice-manager' as ConsoleView, icon: List, label: 'Choice Manager' },
+              { key: 'email-templates' as ConsoleView, icon: Mail, label: 'Email Templates' },
+            ]},
+            { group: 'Finance', items: [
+              { key: 'fees-manager' as ConsoleView, icon: DollarSign, label: 'Fees Manager' },
+            ]},
+            { group: 'Accounts', items: [
+              { key: 'accounts-manager' as ConsoleView, icon: Users, label: 'Accounts' },
+              { key: 'account-journeys' as ConsoleView, icon: GitBranch, label: 'Journeys' },
+            ]},
+            { group: 'System', items: [
+              { key: 'alerts-manager' as ConsoleView, icon: AlertTriangle, label: 'Alerts' },
+              { key: 'analytics' as ConsoleView, icon: BarChart3, label: 'Website Traffic' },
+            ]},
+          ]).map(({ group, items }) => (
+            <div key={group} className="mb-1">
+              <p className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-console-muted/60">{group}</p>
+              {items.map(({ key, icon: Icon, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setCurrentView(key)}
+                  className={`w-full flex items-center space-x-3 px-4 py-2 text-sm font-medium transition-colors ${
+                    currentView === key
+                      ? 'text-console-primary bg-console-primary/10 border-r-2 border-console-primary'
+                      : 'text-console-muted hover:text-console hover:bg-console-surface-hover'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{label}</span>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
 
