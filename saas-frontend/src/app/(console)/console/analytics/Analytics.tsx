@@ -48,34 +48,30 @@ export default function Analytics() {
     return (
         <div className="h-full overflow-y-auto" data-testid="analytics-dashboard">
             <div className="w-full px-6 py-6 space-y-6">
-                {/* Header */}
+                {/* Header: Date picker | Tabs | Realtime */}
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        <DateRangePicker
-                            startDate={startDate}
-                            endDate={endDate}
-                            onRangeChange={handleRangeChange}
-                        />
+                    <DateRangePicker
+                        startDate={startDate}
+                        endDate={endDate}
+                        onRangeChange={handleRangeChange}
+                    />
+                    <div className="flex bg-slate-800 rounded-lg p-1 space-x-1" data-testid="analytics-sub-tabs">
+                        {SUB_TABS.map(tab => (
+                            <button
+                                key={tab.key}
+                                onClick={() => setSubTab(tab.key)}
+                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                                    subTab === tab.key
+                                        ? "bg-slate-700 text-white"
+                                        : "text-console-muted hover:text-console"
+                                }`}
+                                data-testid={`sub-tab-${tab.key}`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
                     <RealtimeIndicator data={realtime.data} isLoading={realtime.isLoading} />
-                </div>
-
-                {/* Sub-tabs */}
-                <div className="flex bg-slate-800 rounded-lg p-1 space-x-1 w-fit" data-testid="analytics-sub-tabs">
-                    {SUB_TABS.map(tab => (
-                        <button
-                            key={tab.key}
-                            onClick={() => setSubTab(tab.key)}
-                            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                                subTab === tab.key
-                                    ? "bg-slate-700 text-white"
-                                    : "text-console-muted hover:text-console"
-                            }`}
-                            data-testid={`sub-tab-${tab.key}`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
                 </div>
 
                 {/* Loading state */}
