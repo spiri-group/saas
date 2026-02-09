@@ -424,7 +424,7 @@ export default function LegalDocumentsManager() {
                           <span>by {doc.updatedBy}</span>
                         </div>
                         {docTypeInfo && (
-                          <p className="text-[10px] text-console-muted/60 mt-1 truncate">
+                          <p className="text-xs text-console-muted mt-1.5">
                             {docTypeInfo.marketNotes}
                           </p>
                         )}
@@ -844,12 +844,13 @@ export default function LegalDocumentsManager() {
 
         {/* Document info bar */}
         {docTypeInfo && (
-          <div className="flex items-center space-x-4 px-6 py-2 border-b border-console bg-console-surface/30">
-            <Info className="h-3.5 w-3.5 text-console-muted/50 flex-shrink-0" />
-            <span className="text-[10px] text-console-muted/60">
+          <div className="flex items-center space-x-3 px-6 py-2.5 border-b border-console bg-console-surface/30">
+            <Info className="h-4 w-4 text-console-primary/60 flex-shrink-0" />
+            <span className="text-xs text-console-muted">
               {docTypeInfo.purpose}
             </span>
-            <span className="text-[10px] text-console-muted/50">
+            <span className="text-[1px] text-console-muted/30">|</span>
+            <span className="text-xs text-console-secondary">
               {docTypeInfo.marketNotes}
             </span>
           </div>
