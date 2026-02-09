@@ -25,12 +25,19 @@ export type FeesData = {
   [key: string]: FeeConfig | string; // string for the id field
 };
 
+const MARKETS = [
+  { code: 'AU', label: 'AU', currency: 'AUD' },
+  { code: 'UK', label: 'UK', currency: 'GBP' },
+  { code: 'US', label: 'US', currency: 'USD' },
+] as const;
+
 export default function FeesManager() {
+  const [market, setMarket] = useState<string>('AU');
   const [showEditor, setShowEditor] = useState(false);
   const [editingFee, setEditingFee] = useState<{ key: string; config: FeeConfig } | null>(null);
   const [simInputs, setSimInputs] = useState<Record<string, SimulationInput>>({});
 
-  const { data: feesData, isLoading, error } = UseFees();
+  const { data: feesData, isLoading, error } = UseFees(market);
 
   const handleEditFee = (key: string, config: FeeConfig) => {
     setEditingFee({ key, config });
@@ -119,6 +126,28 @@ export default function FeesManager() {
               </div>
             </div>
 
+            <div className="flex items-center space-x-1 bg-slate-900 rounded-lg p-1" data-testid="market-selector">
+              {MARKETS.map((m) => (
+                <button
+                  key={m.code}
+                  data-testid={`market-tab-${m.code}`}
+                  onClick={() => {
+                    setMarket(m.code);
+                    setShowEditor(false);
+                    setEditingFee(null);
+                  }}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    market === m.code
+                      ? 'bg-slate-700 text-white'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  {m.label}
+                  <span className="ml-1 text-xs text-slate-500">{m.currency}</span>
+                </button>
+              ))}
+            </div>
+
             {feeConfigs.length > 0 && (
               <div className="flex items-center space-x-2">
                 <CopyButton
@@ -169,6 +198,7 @@ export default function FeesManager() {
           open={showEditor}
           onClose={handleCloseEditor}
           editingFee={editingFee}
+          market={market}
         />
       )}
     </div>
