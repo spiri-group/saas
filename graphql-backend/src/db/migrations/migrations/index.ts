@@ -26,6 +26,7 @@ import { migration as migration015 } from "./015_seed_subscription_plans";
 import { migration as migration016 } from "./016_vendor_publication_fields";
 import { migration as migration017 } from "./017_seed_multi_market_fees";
 import { migration as migration018 } from "./018_remove_case_fees_from_markets";
+import { migration as migration019 } from "./019_seed_legal_documents";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -47,4 +48,5 @@ export const migrations: Migration[] = [
     migration016,
     migration017,
     migration018,
+    migration019,
 ];

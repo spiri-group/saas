@@ -11,7 +11,8 @@ import {
   AlertTriangle,
   Users,
   GitBranch,
-  BarChart3
+  BarChart3,
+  Scale,
 } from "lucide-react";
 import Link from "next/link";
 import ChoiceManager from "./choice-manager/ChoiceManager";
@@ -21,8 +22,9 @@ import AlertsManager from "./alerts-manager/AlertsManager";
 import AccountsManager from "./accounts-manager/AccountsManager";
 import AccountJourneys from "./account-journeys/AccountJourneys";
 import Analytics from "./analytics/Analytics";
+import LegalDocumentsManager from "./legal-documents/LegalDocumentsManager";
 
-type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager' | 'accounts-manager' | 'account-journeys' | 'analytics';
+type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager' | 'accounts-manager' | 'account-journeys' | 'analytics' | 'legal-documents';
 
 export default function ConsolePage() {
   const { data: session, status } = useSession();
@@ -71,6 +73,7 @@ export default function ConsolePage() {
                     {currentView === 'choice-manager' ? 'Choice Manager' :
                      currentView === 'fees-manager' ? 'Fees Manager' :
                      currentView === 'email-templates' ? 'Email Templates' :
+                     currentView === 'legal-documents' ? 'Legal Documents' :
                      currentView === 'alerts-manager' ? 'Alerts Manager' :
                      currentView === 'account-journeys' ? 'Account Journeys' :
                      currentView === 'analytics' ? 'Site Analytics' :
@@ -122,6 +125,7 @@ export default function ConsolePage() {
             { group: 'Content', items: [
               { key: 'choice-manager' as ConsoleView, icon: List, label: 'Choice Manager' },
               { key: 'email-templates' as ConsoleView, icon: Mail, label: 'Email Templates' },
+              { key: 'legal-documents' as ConsoleView, icon: Scale, label: 'Legal Documents' },
             ]},
             { group: 'Finance', items: [
               { key: 'fees-manager' as ConsoleView, icon: DollarSign, label: 'Fees Manager' },
@@ -160,6 +164,7 @@ export default function ConsolePage() {
           {currentView === 'choice-manager' && <ChoiceManager />}
           {currentView === 'fees-manager' && <FeesManager />}
           {currentView === 'email-templates' && <EmailTemplatesManager />}
+          {currentView === 'legal-documents' && <LegalDocumentsManager />}
           {currentView === 'alerts-manager' && <AlertsManager />}
           {currentView === 'accounts-manager' && <AccountsManager />}
           {currentView === 'account-journeys' && <AccountJourneys />}

@@ -1,0 +1,16 @@
+input LegalDocumentInput {
+  id: ID!
+  documentType: String!
+  title: String!
+  content: String!
+  market: String!
+  isPublished: Boolean
+  effectiveDate: String
+  changeSummary: String
+}
+
+type Mutation {
+  upsertLegalDocument(input: LegalDocumentInput!): LegalDocument!
+  deleteLegalDocument(id: ID!): Boolean!
+  restoreLegalDocumentVersion(documentId: ID!, versionId: ID!): LegalDocument!
+}
