@@ -51,71 +51,41 @@ export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   "intellectual-property-policy": "Intellectual Property & DMCA Policy",
 };
 
-export const MARKET_LABELS: Record<string, string> = {
-  global: "Global",
-  AU: "Australia",
-  UK: "United Kingdom",
-  US: "United States",
-};
-
-export const MARKET_INFO: Record<string, { flag: string; description: string; regulations: string }> = {
-  global: {
-    flag: "🌐",
-    description: "Applies to all markets as a baseline",
-    regulations: "General international compliance",
-  },
-  AU: {
-    flag: "🇦🇺",
-    description: "Australian Consumer Law (ACL) & Privacy Act 1988",
-    regulations: "ACCC, OAIC, Australian Privacy Principles (APPs)",
-  },
-  UK: {
-    flag: "🇬🇧",
-    description: "UK GDPR, Consumer Rights Act 2015",
-    regulations: "ICO, CMA, UK data protection requirements",
-  },
-  US: {
-    flag: "🇺🇸",
-    description: "State-level privacy laws (CCPA/CPRA, etc.)",
-    regulations: "FTC, state AGs, CCPA/CPRA, CAN-SPAM",
-  },
-};
-
-export const DOCUMENT_TYPE_INFO: Record<string, { purpose: string; requiredFor: string }> = {
+export const DOCUMENT_TYPE_INFO: Record<string, { purpose: string; marketNotes: string }> = {
   "terms-of-service": {
     purpose: "Governs user access and use of the platform",
-    requiredFor: "All markets - required for platform operation",
+    marketNotes: "Applies uniformly across AU, UK, and US",
   },
   "privacy-policy": {
     purpose: "Discloses data collection, usage, and sharing practices",
-    requiredFor: "All markets - legally required in AU (APPs), UK (GDPR), US (CCPA)",
+    marketNotes: "UK GDPR (s.6, 9, 12, 23) | AU APPs (s.13, 22) | US CCPA/state laws (s.14)",
   },
   "cookie-policy": {
     purpose: "Explains cookie usage and tracking technologies",
-    requiredFor: "UK (PECR/ePrivacy), recommended for AU and US",
+    marketNotes: "UK PECR requires explicit consent | AU/US less strict but covered",
   },
   "merchant-terms": {
     purpose: "Agreement between the platform and merchants/vendors",
-    requiredFor: "All markets - governs merchant onboarding and obligations",
+    marketNotes: "Applies uniformly across AU, UK, and US",
   },
   "refund-policy": {
     purpose: "Outlines refund and return procedures",
-    requiredFor: "AU (mandatory under ACL), UK (Consumer Rights Act), US (varies by state)",
+    marketNotes: "AU ACL mandatory guarantees (s.12) | UK Consumer Rights Act 14-day cooling off | US varies by state",
   },
   "acceptable-use-policy": {
     purpose: "Defines prohibited activities and content standards",
-    requiredFor: "All markets - platform integrity and compliance",
+    marketNotes: "Applies uniformly across AU, UK, and US",
   },
   "spiritual-services-disclaimer": {
     purpose: "Disclaimers specific to spiritual/wellness services",
-    requiredFor: "All markets - liability protection for spiritual services",
+    marketNotes: "Applies uniformly across AU, UK, and US",
   },
   "payment-terms": {
     purpose: "Payment processing, fees, and billing terms",
-    requiredFor: "All markets - Stripe compliance and fee transparency",
+    marketNotes: "AU (AUD/GST, s.11) | UK (GBP/VAT, s.11) | US (USD/sales tax, s.11)",
   },
   "intellectual-property-policy": {
     purpose: "DMCA/copyright takedown procedures and IP protection",
-    requiredFor: "US (DMCA safe harbor), UK/AU (copyright law compliance)",
+    marketNotes: "US DMCA (s.8) | UK CDPA 1988 (s.9) | AU Copyright Act 1968 (s.10)",
   },
 };

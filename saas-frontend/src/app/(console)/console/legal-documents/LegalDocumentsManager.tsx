@@ -9,7 +9,6 @@ import {
   Trash2,
   Check,
   X,
-  Globe,
   Clock,
   Save,
   ChevronLeft,
@@ -41,8 +40,6 @@ import {
   LegalDocumentInput,
   LegalDocumentVersion,
   DOCUMENT_TYPE_LABELS,
-  MARKET_LABELS,
-  MARKET_INFO,
   DOCUMENT_TYPE_INFO,
 } from "./types";
 
@@ -53,14 +50,10 @@ export default function LegalDocumentsManager() {
   const [selectedDocument, setSelectedDocument] =
     useState<LegalDocument | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterMarket, setFilterMarket] = useState<string | undefined>(
-    undefined
-  );
 
   // Editor state
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
-  const [editMarket, setEditMarket] = useState("global");
   const [editDocumentType, setEditDocumentType] = useState("terms-of-service");
   const [editIsPublished, setEditIsPublished] = useState(true);
   const [editEffectiveDate, setEditEffectiveDate] = useState("");
@@ -83,7 +76,7 @@ export default function LegalDocumentsManager() {
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const pendingAction = useRef<(() => void) | null>(null);
 
-  const { data: documents, isLoading, error } = UseLegalDocuments(filterMarket);
+  const { data: documents, isLoading, error } = UseLegalDocuments();
   const upsertMutation = UseUpsertLegalDocument();
   const deleteMutation = UseDeleteLegalDocument();
   const restoreMutation = UseRestoreLegalDocumentVersion();
@@ -160,7 +153,6 @@ export default function LegalDocumentsManager() {
     setSelectedDocument(doc);
     setEditTitle(doc.title);
     setEditContent(doc.content);
-    setEditMarket(doc.market);
     setEditDocumentType(doc.documentType);
     setEditIsPublished(doc.isPublished);
     setEditEffectiveDate(doc.effectiveDate?.split("T")[0] || "");
@@ -214,7 +206,7 @@ export default function LegalDocumentsManager() {
       documentType: editDocumentType,
       title: editTitle,
       content: editContent,
-      market: editMarket,
+      market: selectedDocument.market,
       isPublished: editIsPublished,
       effectiveDate: editEffectiveDate
         ? new Date(editEffectiveDate).toISOString()
@@ -237,14 +229,13 @@ export default function LegalDocumentsManager() {
     id: string;
     documentType: string;
     title: string;
-    market: string;
   }) => {
     const input: LegalDocumentInput = {
       id: formData.id,
       documentType: formData.documentType,
       title: formData.title,
       content: `# ${formData.title}\n\n**Effective Date:** [EFFECTIVE_DATE]\n\nContent goes here...`,
-      market: formData.market,
+      market: "global",
       isPublished: false,
       changeSummary: "Initial document",
     };
@@ -350,8 +341,8 @@ export default function LegalDocumentsManager() {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center space-x-3 px-6 py-3 border-b border-console">
+        {/* Search */}
+        <div className="flex items-center px-6 py-3 border-b border-console">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-console-muted" />
             <Input
@@ -361,28 +352,6 @@ export default function LegalDocumentsManager() {
               className="pl-9 bg-console-surface border-console text-console text-sm"
               data-testid="search-input"
             />
-          </div>
-          <div className="flex items-center space-x-1">
-            {[
-              { value: undefined, label: "All" },
-              { value: "global", label: "Global" },
-              { value: "AU", label: "AU" },
-              { value: "UK", label: "UK" },
-              { value: "US", label: "US" },
-            ].map((opt) => (
-              <button
-                key={opt.label}
-                onClick={() => setFilterMarket(opt.value)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  filterMarket === opt.value
-                    ? "bg-console-primary text-white"
-                    : "text-console-muted hover:text-console hover:bg-console-surface-hover"
-                }`}
-                data-testid={`filter-${opt.label.toLowerCase()}`}
-              >
-                {opt.label}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -416,7 +385,6 @@ export default function LegalDocumentsManager() {
 
           <div className="grid gap-3">
             {filteredDocuments?.map((doc) => {
-              const marketInfo = MARKET_INFO[doc.market];
               const docTypeInfo = DOCUMENT_TYPE_INFO[doc.documentType];
               return (
                 <Card
@@ -446,13 +414,6 @@ export default function LegalDocumentsManager() {
                           </Badge>
                         </div>
                         <div className="flex items-center space-x-3 text-xs text-console-muted">
-                          <span className="flex items-center space-x-1">
-                            <Globe className="h-3 w-3" />
-                            <span>
-                              {marketInfo?.flag}{" "}
-                              {MARKET_LABELS[doc.market] || doc.market}
-                            </span>
-                          </span>
                           <span>v{doc.version}</span>
                           <span className="flex items-center space-x-1">
                             <Clock className="h-3 w-3" />
@@ -464,7 +425,7 @@ export default function LegalDocumentsManager() {
                         </div>
                         {docTypeInfo && (
                           <p className="text-[10px] text-console-muted/60 mt-1 truncate">
-                            {docTypeInfo.requiredFor}
+                            {docTypeInfo.marketNotes}
                           </p>
                         )}
                         {doc.changeSummary && (
@@ -655,7 +616,6 @@ export default function LegalDocumentsManager() {
 
   // Version preview mode
   if (viewMode === "version-preview" && selectedDocument && selectedVersion) {
-    const marketInfo = MARKET_INFO[selectedVersion.market];
     return (
       <div
         className="h-full flex flex-col overflow-hidden"
@@ -681,8 +641,7 @@ export default function LegalDocumentsManager() {
                 {selectedVersion.title}
               </h2>
               <p className="text-xs text-console-muted">
-                Version {selectedVersion.version} (read-only) &mdash;{" "}
-                {marketInfo?.flag} {MARKET_LABELS[selectedVersion.market]}
+                Version {selectedVersion.version} (read-only)
               </p>
             </div>
           </div>
@@ -773,7 +732,6 @@ export default function LegalDocumentsManager() {
   // Edit mode
   if (viewMode === "edit" && selectedDocument) {
     const docTypeInfo = DOCUMENT_TYPE_INFO[editDocumentType];
-    const marketInfo = MARKET_INFO[editMarket];
 
     return (
       <div
@@ -851,23 +809,6 @@ export default function LegalDocumentsManager() {
             />
           </div>
           <div className="flex items-center space-x-2">
-            <label className="text-xs text-console-muted">Market:</label>
-            <select
-              value={editMarket}
-              onChange={(e) => {
-                setEditMarket(e.target.value);
-                setHasUnsavedChanges(true);
-              }}
-              className="h-8 px-2 bg-console-surface border border-console rounded-md text-console text-sm"
-              data-testid="edit-market-select"
-            >
-              <option value="global">Global</option>
-              <option value="AU">Australia</option>
-              <option value="UK">United Kingdom</option>
-              <option value="US">United States</option>
-            </select>
-          </div>
-          <div className="flex items-center space-x-2">
             <label className="text-xs text-console-muted">Effective:</label>
             <Input
               type="date"
@@ -902,19 +843,15 @@ export default function LegalDocumentsManager() {
         </div>
 
         {/* Document info bar */}
-        {(docTypeInfo || marketInfo) && (
+        {docTypeInfo && (
           <div className="flex items-center space-x-4 px-6 py-2 border-b border-console bg-console-surface/30">
             <Info className="h-3.5 w-3.5 text-console-muted/50 flex-shrink-0" />
-            {docTypeInfo && (
-              <span className="text-[10px] text-console-muted/60">
-                {docTypeInfo.purpose} &mdash; {docTypeInfo.requiredFor}
-              </span>
-            )}
-            {marketInfo && (
-              <span className="text-[10px] text-console-muted/60">
-                {marketInfo.flag} {marketInfo.description} ({marketInfo.regulations})
-              </span>
-            )}
+            <span className="text-[10px] text-console-muted/60">
+              {docTypeInfo.purpose}
+            </span>
+            <span className="text-[10px] text-console-muted/50">
+              {docTypeInfo.marketNotes}
+            </span>
           </div>
         )}
 
@@ -996,9 +933,7 @@ export default function LegalDocumentsManager() {
                 <span>Version History</span>
               </DialogTitle>
               <DialogDescription className="text-console-muted">
-                {selectedDocument.title} &mdash;{" "}
-                {MARKET_INFO[selectedDocument.market]?.flag}{" "}
-                {MARKET_LABELS[selectedDocument.market]}
+                {selectedDocument.title}
               </DialogDescription>
             </DialogHeader>
 
@@ -1032,10 +967,6 @@ export default function LegalDocumentsManager() {
                 </p>
                 <div className="flex items-center space-x-3 mt-1">
                   <span className="text-[10px] text-console-muted">
-                    {MARKET_INFO[selectedDocument.market]?.flag}{" "}
-                    {MARKET_LABELS[selectedDocument.market]}
-                  </span>
-                  <span className="text-[10px] text-console-muted">
                     by {selectedDocument.updatedBy}
                   </span>
                 </div>
@@ -1066,7 +997,6 @@ export default function LegalDocumentsManager() {
               )}
 
               {versions?.map((version) => {
-                const vMarketInfo = MARKET_INFO[version.market];
                 return (
                   <div
                     key={version.id}
@@ -1081,10 +1011,6 @@ export default function LegalDocumentsManager() {
                         >
                           v{version.version}
                         </Badge>
-                        <span className="text-[10px] text-console-muted">
-                          {vMarketInfo?.flag}{" "}
-                          {MARKET_LABELS[version.market]}
-                        </span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <button
@@ -1218,24 +1144,16 @@ function CreateDocumentDialog({
     id: string;
     documentType: string;
     title: string;
-    market: string;
   }) => void;
   isPending: boolean;
   existingIds: string[];
 }) {
   const [title, setTitle] = useState("");
   const [documentType, setDocumentType] = useState("terms-of-service");
-  const [market, setMarket] = useState("global");
 
-  const id = useMemo(() => {
-    const base = documentType;
-    return market === "global" ? base : `${base}-${market}`;
-  }, [documentType, market]);
-
+  const id = documentType;
   const isDuplicate = existingIds.includes(id);
-
   const docTypeInfo = DOCUMENT_TYPE_INFO[documentType];
-  const marketInfo = MARKET_INFO[market];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1244,11 +1162,9 @@ function CreateDocumentDialog({
       id,
       documentType,
       title: title || DOCUMENT_TYPE_LABELS[documentType] || documentType,
-      market,
     });
     setTitle("");
     setDocumentType("terms-of-service");
-    setMarket("global");
   };
 
   return (
@@ -1281,7 +1197,7 @@ function CreateDocumentDialog({
             </select>
             {docTypeInfo && (
               <p className="text-[10px] text-console-muted/60">
-                {docTypeInfo.purpose}. {docTypeInfo.requiredFor}
+                {docTypeInfo.purpose}
               </p>
             )}
           </div>
@@ -1296,28 +1212,6 @@ function CreateDocumentDialog({
               className="bg-console-surface border-console text-console text-sm"
               data-testid="create-title-input"
             />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-console-muted">
-              Market
-            </label>
-            <select
-              value={market}
-              onChange={(e) => setMarket(e.target.value)}
-              className="w-full h-9 px-3 bg-console-surface border border-console rounded-md text-console text-sm"
-              data-testid="create-market-select"
-            >
-              <option value="global">Global (All Markets)</option>
-              <option value="AU">Australia Only</option>
-              <option value="UK">United Kingdom Only</option>
-              <option value="US">United States Only</option>
-            </select>
-            {marketInfo && (
-              <p className="text-[10px] text-console-muted/60">
-                {marketInfo.flag} {marketInfo.description} &mdash;{" "}
-                {marketInfo.regulations}
-              </p>
-            )}
           </div>
           <div className="text-xs text-console-muted">
             Document ID:{" "}
