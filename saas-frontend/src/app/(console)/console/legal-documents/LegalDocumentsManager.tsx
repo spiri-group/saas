@@ -1056,6 +1056,16 @@ export default function LegalDocumentsManager() {
                 );
               })}
             </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowVersionHistory(false)}
+                className="border-console text-console"
+                data-testid="close-version-history-btn"
+              >
+                Close
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
