@@ -4,14 +4,44 @@ import useConsoleVendorAccounts from '../../accounts-manager/hooks/UseConsoleVen
 import { VendorLifecycleStage } from '../../accounts-manager/types';
 import { STAGE_LABELS, STAGE_COLORS } from '../types';
 
+// Ordered by progression — index determines "reached" threshold
+const STAGE_ORDER = [
+    'CREATED',
+    'STRIPE_ONBOARDING',
+    'FIRST_PAYOUT',
+    'CARD_ADDED',
+    'PUBLISHED',
+    'BILLING_ACTIVE',
+];
+
+// Problem states sit at the same level as BILLING_ACTIVE
+const PROBLEM_STATES = ['BILLING_FAILED', 'BILLING_BLOCKED'];
+
+/**
+ * For cumulative funnel stages, return all stages at or above the clicked stage.
+ * For problem states (BILLING_FAILED, BILLING_BLOCKED), return exact match only.
+ */
+function getCumulativeStages(stage: string): string[] {
+    if (PROBLEM_STATES.includes(stage)) {
+        return [stage];
+    }
+    const clickedIndex = STAGE_ORDER.indexOf(stage);
+    if (clickedIndex === -1) return [stage];
+    // All stages from clickedIndex upward + problem states (they're at BILLING_ACTIVE level)
+    const stages = STAGE_ORDER.filter((_, i) => i >= clickedIndex);
+    return [...stages, ...PROBLEM_STATES];
+}
+
 interface StageAccountsListProps {
     stage: string;
     onClose: () => void;
 }
 
 export default function StageAccountsList({ stage }: StageAccountsListProps) {
+    const cumulativeStages = getCumulativeStages(stage);
+
     const { data, isLoading } = useConsoleVendorAccounts({
-        lifecycleStages: [stage as VendorLifecycleStage],
+        lifecycleStages: cumulativeStages as VendorLifecycleStage[],
         limit: 50,
     });
 
