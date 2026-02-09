@@ -9,7 +9,7 @@ interface StageAccountsListProps {
     onClose: () => void;
 }
 
-export default function StageAccountsList({ stage, onClose }: StageAccountsListProps) {
+export default function StageAccountsList({ stage }: StageAccountsListProps) {
     const { data, isLoading } = useConsoleVendorAccounts({
         lifecycleStages: [stage as VendorLifecycleStage],
         limit: 50,
