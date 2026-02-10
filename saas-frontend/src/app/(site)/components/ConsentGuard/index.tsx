@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { ShieldCheck, CheckCircle2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,22 @@ const ConsentGuard = () => {
       setActiveIndex(activeIndex + 1);
     }
   };
+
+  const handleContentClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const anchor = target.closest('a');
+    if (!anchor) return;
+
+    const href = anchor.getAttribute('href');
+    if (!href?.startsWith('/legal/')) return;
+
+    e.preventDefault();
+    const slug = href.replace('/legal/', '');
+    const stepIndex = outstanding.findIndex(doc => doc.documentType === slug);
+    if (stepIndex !== -1) {
+      setActiveIndex(stepIndex);
+    }
+  }, [outstanding]);
 
   const handleAccept = async () => {
     const inputs = outstanding.map(doc => ({
@@ -166,6 +182,7 @@ const ConsentGuard = () => {
               <div
                 data-testid={`consent-content-${activeDoc.documentType}`}
                 className="border rounded-lg p-4 overflow-y-auto text-sm text-gray-700 bg-gray-50 prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-indigo-600 prose-strong:text-gray-900 prose-li:text-gray-700 flex-1 min-h-0"
+                onClick={handleContentClick}
                 dangerouslySetInnerHTML={{ __html: markdownToHtml(resolvePlaceholders(activeDoc.content, globalPlaceholders || {}, activeDoc.placeholders)) }}
               />
             </div>
