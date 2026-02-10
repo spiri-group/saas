@@ -68,9 +68,10 @@ export default function LegalDocumentsManager() {
   const [editEffectiveDate, setEditEffectiveDate] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [editPlaceholders, setEditPlaceholders] = useState<Record<string, string>>({});
-  const [showPlaceholders, setShowPlaceholders] = useState(false);
+  const [showPlaceholderDialog, setShowPlaceholderDialog] = useState(false);
 
   // Dialog state
+  const [showGlobalPlaceholders, setShowGlobalPlaceholders] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
@@ -189,7 +190,7 @@ export default function LegalDocumentsManager() {
     setSelectedVersion(null);
     setHasUnsavedChanges(false);
     setShowVersionHistory(false);
-    setShowPlaceholders(false);
+    setShowPlaceholderDialog(false);
   };
 
   const guardUnsavedChanges = (action: () => void) => {
@@ -340,6 +341,14 @@ export default function LegalDocumentsManager() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowGlobalPlaceholders(true)}
+              className="p-2 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-lg console-interactive"
+              title="Global placeholders"
+              data-testid="global-placeholders-btn"
+            >
+              <Settings2 className="h-4 w-4" />
+            </button>
             <button
               onClick={() => setShowShortcutsDialog(true)}
               className="p-2 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-lg console-interactive"
@@ -578,6 +587,33 @@ export default function LegalDocumentsManager() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Global Placeholders Dialog */}
+        <Dialog
+          open={showGlobalPlaceholders}
+          onOpenChange={setShowGlobalPlaceholders}
+        >
+          <DialogContent className="sm:max-w-xl console-surface border-console">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-console">
+                <Settings2 className="h-5 w-5 text-console-primary" />
+                <span>Global Placeholders</span>
+              </DialogTitle>
+              <DialogDescription className="text-console-muted">
+                These placeholders are available in all legal documents. Use <code className="px-1 py-0.5 bg-console-surface rounded text-[11px]">[KEY]</code> in document content.
+              </DialogDescription>
+            </DialogHeader>
+            <PlaceholderEditor
+              placeholders={editGlobalPlaceholders}
+              onChange={setEditGlobalPlaceholders}
+              onSave={() => upsertPlaceholdersMutation.mutate(editGlobalPlaceholders)}
+              isSaving={upsertPlaceholdersMutation.isPending}
+              label="Global Placeholders"
+              description="Available in all documents. Use [KEY] in content."
+              testIdPrefix="global-placeholders"
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -750,13 +786,9 @@ export default function LegalDocumentsManager() {
             </Tabs>
             <div className="flex items-center space-x-2">
               <button
-                onClick={() => setShowPlaceholders(!showPlaceholders)}
-                className={`p-2 rounded-lg transition-colors ${
-                  showPlaceholders
-                    ? "text-console-primary bg-console-primary/10"
-                    : "text-console-muted hover:text-console hover:bg-console-surface-hover"
-                }`}
-                title="Placeholder settings"
+                onClick={() => setShowPlaceholderDialog(true)}
+                className="p-2 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-lg transition-colors"
+                title="Document placeholders"
                 data-testid="placeholder-settings-btn"
               >
                 <Settings2 className="h-4 w-4" />
@@ -852,21 +884,21 @@ export default function LegalDocumentsManager() {
               </div>
             )}
 
-            {/* Placeholder settings panel */}
-            {showPlaceholders && (
-              <div
-                className="px-6 py-4 border-b border-console bg-console-surface/20 space-y-4"
-                data-testid="placeholder-panel"
-              >
-                <PlaceholderEditor
-                  placeholders={editGlobalPlaceholders}
-                  onChange={setEditGlobalPlaceholders}
-                  onSave={() => upsertPlaceholdersMutation.mutate(editGlobalPlaceholders)}
-                  isSaving={upsertPlaceholdersMutation.isPending}
-                  label="Global Placeholders"
-                  description="Available in all documents. Use {{KEY}} in content."
-                  testIdPrefix="global-placeholders"
-                />
+            {/* Document Placeholders Dialog */}
+            <Dialog
+              open={showPlaceholderDialog}
+              onOpenChange={setShowPlaceholderDialog}
+            >
+              <DialogContent className="sm:max-w-xl console-surface border-console">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center space-x-2 text-console">
+                    <Settings2 className="h-5 w-5 text-console-primary" />
+                    <span>Document Placeholders</span>
+                  </DialogTitle>
+                  <DialogDescription className="text-console-muted">
+                    Placeholders specific to this document. Overrides globals with the same key. Use <code className="px-1 py-0.5 bg-console-surface rounded text-[11px]">[KEY]</code> in content.
+                  </DialogDescription>
+                </DialogHeader>
                 <PlaceholderEditor
                   placeholders={editPlaceholders}
                   onChange={(p) => {
@@ -877,8 +909,8 @@ export default function LegalDocumentsManager() {
                   description="Specific to this document. Overrides globals with the same key."
                   testIdPrefix="doc-placeholders"
                 />
-              </div>
-            )}
+              </DialogContent>
+            </Dialog>
 
             {/* Markdown editor */}
             <div className="flex-1 min-h-0 p-6">

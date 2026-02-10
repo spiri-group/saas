@@ -84,11 +84,14 @@ export default function LegalDocumentPage() {
     );
   }
 
-  const formattedDate = new Date(document.effectiveDate || document.updatedAt).toLocaleDateString('en-US', {
+  const dateFormatOptions: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  });
+  };
+
+  const formattedEffectiveDate = new Date(document.effectiveDate || document.updatedAt).toLocaleDateString('en-US', dateFormatOptions);
+  const formattedUpdatedDate = new Date(document.updatedAt).toLocaleDateString('en-US', dateFormatOptions);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
@@ -104,9 +107,10 @@ export default function LegalDocumentPage() {
       <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="legal-doc-title">
         {document.title}
       </h1>
-      <p className="text-sm text-gray-500 mb-8" data-testid="legal-doc-date">
-        Effective: {formattedDate} &middot; Version {document.version}
-      </p>
+      <div className="flex items-center justify-between text-sm text-gray-500 mb-8" data-testid="legal-doc-date">
+        <span>Effective: {formattedEffectiveDate}</span>
+        <span>Last Updated: {formattedUpdatedDate} &middot; Version {document.version}</span>
+      </div>
 
       <div
         className="prose prose-gray max-w-none"

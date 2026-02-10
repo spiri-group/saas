@@ -10,6 +10,7 @@ import { resolvePlaceholders } from '@/utils/resolvePlaceholders';
 import UseLegalPlaceholders from '@/hooks/UseLegalPlaceholders';
 import useCheckOutstandingConsents from './hooks/UseCheckOutstandingConsents';
 import useRecordConsents from './hooks/UseRecordConsents';
+import SpiriLogo from '@/icons/spiri-logo';
 
 const ConsentGuard = () => {
   const { data: session, status } = useSession();
@@ -154,6 +155,8 @@ const ConsentGuard = () => {
             >
               {completedCount} of {outstanding.length} reviewed
             </p>
+
+            <SpiriLogo height={28} className="mt-4 opacity-40" />
           </div>
 
           {/* Right panel — single document view */}

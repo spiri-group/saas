@@ -139,7 +139,7 @@ export default function PlaceholderEditor({
                 >
                   <td className="px-3 py-1.5">
                     <code className="text-console-primary text-[11px]">
-                      {`{{${key}}}`}
+                      {`[${key}]`}
                     </code>
                   </td>
                   <td className="px-3 py-1.5">
@@ -168,7 +168,7 @@ export default function PlaceholderEditor({
                 >
                   <td className="px-3 py-1.5">
                     <div className="flex items-center space-x-1">
-                      <span className="text-console-muted text-[11px]">{"{{"}</span>
+                      <span className="text-console-muted text-[11px]">{"["}</span>
                       <Input
                         value={newKey}
                         onChange={(e) => {
@@ -181,7 +181,7 @@ export default function PlaceholderEditor({
                         autoFocus
                         data-testid={`${testIdPrefix}-new-key`}
                       />
-                      <span className="text-console-muted text-[11px]">{"}}"}</span>
+                      <span className="text-console-muted text-[11px]">{"]"}</span>
                     </div>
                     {keyError && (
                       <p className="text-red-400 text-[10px] mt-0.5">{keyError}</p>
