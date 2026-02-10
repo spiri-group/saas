@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -42,11 +43,14 @@ import {
   DOCUMENT_TYPE_LABELS,
   DOCUMENT_TYPE_INFO,
 } from "./types";
+import { markdownToHtml } from "@/utils/markdownToHtml";
 
-type ViewMode = "list" | "edit" | "preview" | "version-preview";
+type ViewMode = "list" | "edit" | "version-preview";
+type EditorTab = "preview" | "edit";
 
 export default function LegalDocumentsManager() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [editorTab, setEditorTab] = useState<EditorTab>("edit");
   const [selectedDocument, setSelectedDocument] =
     useState<LegalDocument | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -128,8 +132,6 @@ export default function LegalDocumentsManager() {
           if (viewMode === "version-preview") {
             setViewMode("edit");
             setSelectedVersion(null);
-          } else if (viewMode === "preview") {
-            handleBackToList();
           } else if (viewMode === "edit") {
             guardUnsavedChanges(handleBackToList);
           }
@@ -149,7 +151,7 @@ export default function LegalDocumentsManager() {
     [viewMode, hasUnsavedChanges]
   );
 
-  const handleEditDocument = (doc: LegalDocument) => {
+  const handleEditDocument = (doc: LegalDocument, forceTab?: EditorTab) => {
     setSelectedDocument(doc);
     setEditTitle(doc.title);
     setEditContent(doc.content);
@@ -158,12 +160,8 @@ export default function LegalDocumentsManager() {
     setEditEffectiveDate(doc.effectiveDate?.split("T")[0] || "");
     setHasUnsavedChanges(false);
     setSelectedVersion(null);
+    setEditorTab(forceTab ?? (doc.isPublished ? "preview" : "edit"));
     setViewMode("edit");
-  };
-
-  const handlePreviewDocument = (doc: LegalDocument) => {
-    setSelectedDocument(doc);
-    setViewMode("preview");
   };
 
   const handleBackToList = () => {
@@ -424,9 +422,14 @@ export default function LegalDocumentsManager() {
                           <span>by {doc.updatedBy}</span>
                         </div>
                         {docTypeInfo && (
-                          <p className="text-xs text-console-muted mt-1.5">
-                            {docTypeInfo.marketNotes}
-                          </p>
+                          <div className="flex items-center space-x-2 mt-1.5">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-console-primary/10 text-console-primary">
+                              {docTypeInfo.usedIn}
+                            </span>
+                            <span className="text-xs text-console-muted">
+                              {docTypeInfo.marketNotes}
+                            </span>
+                          </div>
                         )}
                         {doc.changeSummary && (
                           <p className="text-[10px] text-console-muted/50 mt-0.5 truncate italic">
@@ -438,7 +441,7 @@ export default function LegalDocumentsManager() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handlePreviewDocument(doc);
+                            handleEditDocument(doc, "preview");
                           }}
                           className="p-1.5 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-md transition-colors"
                           title="Preview"
@@ -449,7 +452,7 @@ export default function LegalDocumentsManager() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleEditDocument(doc);
+                            handleEditDocument(doc, "edit");
                           }}
                           className="p-1.5 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-md transition-colors"
                           title="Edit"
@@ -554,62 +557,6 @@ export default function LegalDocumentsManager() {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
-    );
-  }
-
-  // Preview mode
-  if (viewMode === "preview" && selectedDocument) {
-    return (
-      <div
-        className="h-full flex flex-col overflow-hidden"
-        onKeyDown={handleKeyDown}
-        tabIndex={0}
-        data-testid="document-preview"
-      >
-        <div className="flex items-center justify-between px-6 py-3 border-b border-console">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleBackToList}
-              className="p-1.5 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-md transition-colors"
-              data-testid="back-to-list-btn"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h2 className="text-sm font-semibold text-console">
-                {selectedDocument.title}
-              </h2>
-              <p className="text-xs text-console-muted">
-                Preview - v{selectedDocument.version}
-              </p>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            onClick={() => handleEditDocument(selectedDocument)}
-            className="bg-console-primary hover:bg-console-primary/90"
-            data-testid="edit-from-preview-btn"
-          >
-            <Pencil className="h-4 w-4 mr-1" />
-            Edit
-          </Button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-4xl mx-auto">
-            <div
-              className="prose prose-invert prose-sm max-w-none
-                prose-headings:text-console prose-p:text-console-secondary
-                prose-a:text-console-primary prose-strong:text-console
-                prose-li:text-console-secondary prose-th:text-console
-                prose-td:text-console-secondary prose-table:border-console
-                prose-hr:border-console"
-              dangerouslySetInnerHTML={{
-                __html: markdownToHtml(selectedDocument.content),
-              }}
-            />
-          </div>
-        </div>
       </div>
     );
   }
@@ -755,7 +702,7 @@ export default function LegalDocumentsManager() {
                 {editTitle || "Untitled"}
               </h2>
               <p className="text-xs text-console-muted">
-                Editing - v{selectedDocument.version}
+                v{selectedDocument.version}
                 {hasUnsavedChanges && (
                   <span className="text-amber-400 ml-2">
                     (unsaved changes)
@@ -764,111 +711,147 @@ export default function LegalDocumentsManager() {
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setShowVersionHistory(true)}
-              className="p-2 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-lg transition-colors"
-              title="Version history (H)"
-              data-testid="version-history-btn"
+          <div className="flex items-center space-x-3">
+            <Tabs
+              value={editorTab}
+              onValueChange={(v) => setEditorTab(v as EditorTab)}
             >
-              <History className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => handlePreviewDocument(selectedDocument)}
-              className="p-2 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-lg transition-colors"
-              title="Preview"
-              data-testid="preview-from-editor-btn"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-            <Button
-              size="sm"
-              onClick={handleSaveClick}
-              disabled={upsertMutation.isPending || !hasUnsavedChanges}
-              className="bg-console-primary hover:bg-console-primary/90"
-              data-testid="save-btn"
-            >
-              <Save className="h-4 w-4 mr-1" />
-              {upsertMutation.isPending ? "Saving..." : "Save"}
-            </Button>
+              <TabsList data-testid="editor-tabs">
+                <TabsTrigger value="preview" data-testid="preview-tab">
+                  <Eye className="h-3.5 w-3.5 mr-1.5" />
+                  Preview
+                </TabsTrigger>
+                <TabsTrigger value="edit" data-testid="edit-tab">
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                  Edit
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowVersionHistory(true)}
+                className="p-2 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-lg transition-colors"
+                title="Version history (H)"
+                data-testid="version-history-btn"
+              >
+                <History className="h-4 w-4" />
+              </button>
+              <Button
+                size="sm"
+                onClick={handleSaveClick}
+                disabled={upsertMutation.isPending || !hasUnsavedChanges}
+                className="bg-console-primary hover:bg-console-primary/90"
+                data-testid="save-btn"
+              >
+                <Save className="h-4 w-4 mr-1" />
+                {upsertMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Metadata bar */}
-        <div className="flex items-center space-x-4 px-6 py-3 border-b border-console bg-console-surface/50">
-          <div className="flex items-center space-x-2">
-            <label className="text-xs text-console-muted">Title:</label>
-            <Input
-              value={editTitle}
-              onChange={(e) => {
-                setEditTitle(e.target.value);
-                setHasUnsavedChanges(true);
-              }}
-              className="h-8 w-64 bg-console-surface border-console text-console text-sm"
-              data-testid="edit-title-input"
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <label className="text-xs text-console-muted">Effective:</label>
-            <Input
-              type="date"
-              value={editEffectiveDate}
-              onChange={(e) => {
-                setEditEffectiveDate(e.target.value);
-                setHasUnsavedChanges(true);
-              }}
-              className="h-8 w-40 bg-console-surface border-console text-console text-sm"
-              data-testid="edit-effective-date-input"
-            />
-          </div>
-          <button
-            onClick={() => {
-              setEditIsPublished(!editIsPublished);
-              setHasUnsavedChanges(true);
-            }}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              editIsPublished
-                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-            }`}
-            data-testid="toggle-published-btn"
-          >
-            {editIsPublished ? (
-              <Check className="h-3 w-3" />
-            ) : (
-              <X className="h-3 w-3" />
+        {editorTab === "edit" ? (
+          <>
+            {/* Metadata bar */}
+            <div className="flex items-center space-x-4 px-6 py-3 border-b border-console bg-console-surface/50">
+              <div className="flex items-center space-x-2">
+                <label className="text-xs text-console-muted">Title:</label>
+                <Input
+                  value={editTitle}
+                  onChange={(e) => {
+                    setEditTitle(e.target.value);
+                    setHasUnsavedChanges(true);
+                  }}
+                  className="h-8 w-64 bg-console-surface border-console text-console text-sm"
+                  data-testid="edit-title-input"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <label className="text-xs text-console-muted">
+                  Effective:
+                </label>
+                <Input
+                  type="date"
+                  value={editEffectiveDate}
+                  onChange={(e) => {
+                    setEditEffectiveDate(e.target.value);
+                    setHasUnsavedChanges(true);
+                  }}
+                  className="h-8 w-40 bg-console-surface border-console text-console text-sm"
+                  data-testid="edit-effective-date-input"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  setEditIsPublished(!editIsPublished);
+                  setHasUnsavedChanges(true);
+                }}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  editIsPublished
+                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                    : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                }`}
+                data-testid="toggle-published-btn"
+              >
+                {editIsPublished ? (
+                  <Check className="h-3 w-3" />
+                ) : (
+                  <X className="h-3 w-3" />
+                )}
+                <span>{editIsPublished ? "Published" : "Draft"}</span>
+              </button>
+            </div>
+
+            {/* Document info bar */}
+            {docTypeInfo && (
+              <div className="flex items-center space-x-3 px-6 py-2.5 border-b border-console bg-console-surface/30">
+                <Info className="h-4 w-4 text-console-primary/60 flex-shrink-0" />
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-console-primary/10 text-console-primary">
+                  {docTypeInfo.usedIn}
+                </span>
+                <span className="text-xs text-console-muted">
+                  {docTypeInfo.purpose}
+                </span>
+                <span className="text-[1px] text-console-muted/30">|</span>
+                <span className="text-xs text-console-secondary">
+                  {docTypeInfo.marketNotes}
+                </span>
+              </div>
             )}
-            <span>{editIsPublished ? "Published" : "Draft"}</span>
-          </button>
-        </div>
 
-        {/* Document info bar */}
-        {docTypeInfo && (
-          <div className="flex items-center space-x-3 px-6 py-2.5 border-b border-console bg-console-surface/30">
-            <Info className="h-4 w-4 text-console-primary/60 flex-shrink-0" />
-            <span className="text-xs text-console-muted">
-              {docTypeInfo.purpose}
-            </span>
-            <span className="text-[1px] text-console-muted/30">|</span>
-            <span className="text-xs text-console-secondary">
-              {docTypeInfo.marketNotes}
-            </span>
+            {/* Markdown editor */}
+            <div className="flex-1 min-h-0 p-6">
+              <Textarea
+                value={editContent}
+                onChange={(e) => {
+                  setEditContent(e.target.value);
+                  setHasUnsavedChanges(true);
+                }}
+                className="h-full w-full bg-console-surface border-console text-console text-sm font-mono resize-none"
+                placeholder="Write your legal document content in Markdown..."
+                data-testid="edit-content-textarea"
+              />
+            </div>
+          </>
+        ) : (
+          /* Preview tab - full width rendered content */
+          <div
+            className="flex-1 overflow-y-auto p-6"
+            data-testid="editor-preview-content"
+          >
+            <div
+              className="prose prose-invert prose-sm max-w-none
+                prose-headings:text-console prose-p:text-console-secondary
+                prose-a:text-console-primary prose-strong:text-console
+                prose-li:text-console-secondary prose-th:text-console
+                prose-td:text-console-secondary prose-table:border-console
+                prose-hr:border-console"
+              dangerouslySetInnerHTML={{
+                __html: markdownToHtml(editContent),
+              }}
+            />
           </div>
         )}
-
-        {/* Markdown editor */}
-        <div className="flex-1 min-h-0 p-6">
-          <Textarea
-            value={editContent}
-            onChange={(e) => {
-              setEditContent(e.target.value);
-              setHasUnsavedChanges(true);
-            }}
-            className="h-full w-full bg-console-surface border-console text-console text-sm font-mono resize-none"
-            placeholder="Write your legal document content in Markdown..."
-            data-testid="edit-content-textarea"
-          />
-        </div>
 
         {/* Change Summary Dialog */}
         <Dialog
@@ -1259,88 +1242,3 @@ function CreateDocumentDialog({
   );
 }
 
-// Simple markdown to HTML converter for preview
-// Handles headings, bold, italic, links, lists, tables, horizontal rules, code blocks
-function markdownToHtml(md: string): string {
-  let html = md
-    // Escape HTML first
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    // Code blocks (fenced)
-    .replace(
-      /```(\w*)\n([\s\S]*?)```/g,
-      '<pre><code class="language-$1">$2</code></pre>'
-    )
-    // Inline code
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    // Headings
-    .replace(/^#### (.+)$/gm, "<h4>$1</h4>")
-    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
-    .replace(/^## (.+)$/gm, "<h2>$1</h2>")
-    .replace(/^# (.+)$/gm, "<h1>$1</h1>")
-    // Bold and italic
-    .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    // Links
-    .replace(
-      /\[([^\]]+)\]\(([^)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
-    )
-    // Horizontal rules
-    .replace(/^---$/gm, "<hr>")
-    // Unordered lists
-    .replace(/^- (.+)$/gm, "<li>$1</li>")
-    // Paragraphs (lines not starting with tags)
-    .replace(
-      /^(?!<[hluoprtd]|<li|<hr|<pre|<code)(.+)$/gm,
-      "<p>$1</p>"
-    );
-
-  // Wrap consecutive <li> in <ul>
-  html = html.replace(
-    /(<li>[\s\S]*?<\/li>)(?:\s*(<li>[\s\S]*?<\/li>))*/g,
-    (match) => `<ul>${match}</ul>`
-  );
-
-  // Simple table support
-  html = html.replace(
-    /(<p>\|[\s\S]*?\|<\/p>\s*)+/g,
-    (block) => {
-      const rows = block
-        .replace(/<\/?p>/g, "")
-        .trim()
-        .split("\n")
-        .filter((r) => r.trim());
-
-      if (rows.length < 2) return block;
-
-      // Check if second row is a separator
-      const isSeparator = /^\|[\s-:|]+\|$/.test(rows[1].trim());
-      if (!isSeparator) return block;
-
-      const headerCells = rows[0]
-        .split("|")
-        .filter((c) => c.trim())
-        .map((c) => `<th>${c.trim()}</th>`)
-        .join("");
-
-      const bodyRows = rows
-        .slice(2)
-        .map((row) => {
-          const cells = row
-            .split("|")
-            .filter((c) => c.trim())
-            .map((c) => `<td>${c.trim()}</td>`)
-            .join("");
-          return `<tr>${cells}</tr>`;
-        })
-        .join("");
-
-      return `<table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table>`;
-    }
-  );
-
-  return html;
-}
