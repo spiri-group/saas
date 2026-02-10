@@ -4,6 +4,8 @@ import { LegalDocument, LegalDocumentInput, LegalDocumentVersion } from "./types
 const container = 'System-Settings';
 const partition = 'legal-document';
 const versionPartition = 'legal-document-version';
+const configPartition = 'legal-config';
+const PLACEHOLDERS_DOC_ID = 'legal-placeholders';
 
 function hasContentChanged(existing: LegalDocument, input: LegalDocumentInput): boolean {
   return (
@@ -11,7 +13,8 @@ function hasContentChanged(existing: LegalDocument, input: LegalDocumentInput): 
     existing.content !== input.content ||
     existing.market !== input.market ||
     existing.isPublished !== (input.isPublished !== undefined ? input.isPublished : true) ||
-    existing.effectiveDate !== (input.effectiveDate || existing.effectiveDate)
+    existing.effectiveDate !== (input.effectiveDate || existing.effectiveDate) ||
+    JSON.stringify(existing.placeholders || {}) !== JSON.stringify(input.placeholders || {})
   );
 }
 
@@ -84,6 +87,19 @@ const resolvers = {
       }
     },
 
+    legalPlaceholders: async (_: any, __: any, context: serverContext) => {
+      try {
+        const doc = await context.dataSources.cosmos.get_record<{ id: string; placeholders: Record<string, string> }>(
+          container,
+          PLACEHOLDERS_DOC_ID,
+          configPartition
+        );
+        return doc || null;
+      } catch {
+        return null;
+      }
+    },
+
     legalDocumentVersion: async (_: any, args: { id: string }, context: serverContext) => {
       try {
         const version = await context.dataSources.cosmos.get_record<LegalDocumentVersion>(
@@ -138,6 +154,7 @@ const resolvers = {
             createdAt: existingDocument.createdAt,
             supersededAt: now,
             supersededBy: context.userId || 'system',
+            placeholders: existingDocument.placeholders,
           };
 
           await context.dataSources.cosmos.upsert_record(
@@ -161,7 +178,8 @@ const resolvers = {
           changeSummary: input.changeSummary || (existingDocument ? undefined : "Initial document"),
           createdAt: existingDocument?.createdAt || now,
           updatedAt: now,
-          updatedBy: context.userId || 'system'
+          updatedBy: context.userId || 'system',
+          placeholders: input.placeholders ?? existingDocument?.placeholders,
         };
 
         await context.dataSources.cosmos.upsert_record(
@@ -189,6 +207,31 @@ const resolvers = {
       } catch (error) {
         console.error(`Failed to delete legal document ${args.id}:`, error);
         throw new Error('Failed to delete legal document');
+      }
+    },
+
+    upsertLegalPlaceholders: async (_: any, args: { placeholders: Record<string, string> }, context: serverContext) => {
+      try {
+        const now = new Date().toISOString();
+        const doc = {
+          id: PLACEHOLDERS_DOC_ID,
+          docType: 'legal-config',
+          placeholders: args.placeholders,
+          updatedAt: now,
+          updatedBy: context.userId || 'system',
+        };
+
+        await context.dataSources.cosmos.upsert_record(
+          container,
+          PLACEHOLDERS_DOC_ID,
+          doc,
+          configPartition
+        );
+
+        return doc;
+      } catch (error) {
+        console.error('Failed to upsert legal placeholders:', error);
+        throw new Error('Failed to save legal placeholders');
       }
     },
 
@@ -234,6 +277,7 @@ const resolvers = {
           createdAt: currentDocument.createdAt,
           supersededAt: now,
           supersededBy: context.userId || 'system',
+          placeholders: currentDocument.placeholders,
         };
 
         await context.dataSources.cosmos.upsert_record(
@@ -257,7 +301,8 @@ const resolvers = {
           changeSummary,
           createdAt: currentDocument.createdAt,
           updatedAt: now,
-          updatedBy: context.userId || 'system'
+          updatedBy: context.userId || 'system',
+          placeholders: versionToRestore.placeholders,
         };
 
         await context.dataSources.cosmos.upsert_record(

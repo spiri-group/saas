@@ -6,6 +6,8 @@ import { ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { markdownToHtml } from '@/utils/markdownToHtml';
+import { resolvePlaceholders } from '@/utils/resolvePlaceholders';
+import UseLegalPlaceholders from '@/hooks/UseLegalPlaceholders';
 import useCheckOutstandingConsents from './hooks/UseCheckOutstandingConsents';
 import useRecordConsents from './hooks/UseRecordConsents';
 
@@ -14,6 +16,7 @@ const ConsentGuard = () => {
   const isLoggedIn = status === 'authenticated' && !!session?.user;
 
   const { data: outstanding, isLoading } = useCheckOutstandingConsents('site', isLoggedIn);
+  const { data: globalPlaceholders } = UseLegalPlaceholders();
   const recordConsents = useRecordConsents();
 
   const [checkedDocs, setCheckedDocs] = useState<Set<string>>(new Set());
@@ -87,7 +90,7 @@ const ConsentGuard = () => {
                   <div
                     data-testid={`consent-content-${doc.documentType}`}
                     className="border rounded-lg p-4 max-h-48 overflow-y-auto text-sm text-gray-700 bg-gray-50 prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-indigo-600 prose-strong:text-gray-900 prose-li:text-gray-700"
-                    dangerouslySetInnerHTML={{ __html: markdownToHtml(doc.content) }}
+                    dangerouslySetInnerHTML={{ __html: markdownToHtml(resolvePlaceholders(doc.content, globalPlaceholders || {}, doc.placeholders)) }}
                   />
                   <div className="flex items-center space-x-2">
                     <Checkbox

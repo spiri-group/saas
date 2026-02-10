@@ -7,10 +7,12 @@ input LegalDocumentInput {
   isPublished: Boolean
   effectiveDate: String
   changeSummary: String
+  placeholders: JSON
 }
 
 type Mutation {
   upsertLegalDocument(input: LegalDocumentInput!): LegalDocument!
   deleteLegalDocument(id: ID!): Boolean!
   restoreLegalDocumentVersion(documentId: ID!, versionId: ID!): LegalDocument!
+  upsertLegalPlaceholders(placeholders: JSON!): LegalPlaceholders!
 }

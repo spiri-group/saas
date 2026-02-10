@@ -12,6 +12,7 @@ export interface LegalDocument {
   createdAt: string;
   updatedAt: string;
   updatedBy: string; // Staff member who last edited
+  placeholders?: Record<string, string>;
 }
 
 export interface LegalDocumentVersion {
@@ -28,6 +29,7 @@ export interface LegalDocumentVersion {
   createdAt: string; // When this version was originally created
   supersededAt: string; // When this version was replaced
   supersededBy: string; // Who replaced it
+  placeholders?: Record<string, string>;
 }
 
 export interface LegalDocumentInput {
@@ -39,6 +41,7 @@ export interface LegalDocumentInput {
   isPublished?: boolean;
   effectiveDate?: string;
   changeSummary?: string;
+  placeholders?: Record<string, string>;
 }
 
 export const LEGAL_DOCUMENT_TYPES = [

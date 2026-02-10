@@ -5,6 +5,7 @@ type OutstandingConsent {
   content: String!
   version: Int!
   effectiveDate: String!
+  placeholders: JSON
 }
 
 type UserConsent {

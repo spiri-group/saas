@@ -16,6 +16,7 @@ import {
   History,
   RotateCcw,
   Info,
+  Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,6 +45,10 @@ import {
   DOCUMENT_TYPE_INFO,
 } from "./types";
 import { markdownToHtml } from "@/utils/markdownToHtml";
+import { resolvePlaceholders } from "@/utils/resolvePlaceholders";
+import UseLegalPlaceholders from "@/hooks/UseLegalPlaceholders";
+import UseUpsertLegalPlaceholders from "./hooks/UseUpsertLegalPlaceholders";
+import PlaceholderEditor from "./PlaceholderEditor";
 
 type ViewMode = "list" | "edit" | "version-preview";
 type EditorTab = "preview" | "edit";
@@ -62,6 +67,8 @@ export default function LegalDocumentsManager() {
   const [editIsPublished, setEditIsPublished] = useState(true);
   const [editEffectiveDate, setEditEffectiveDate] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [editPlaceholders, setEditPlaceholders] = useState<Record<string, string>>({});
+  const [showPlaceholders, setShowPlaceholders] = useState(false);
 
   // Dialog state
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -79,6 +86,17 @@ export default function LegalDocumentsManager() {
     useState<LegalDocumentVersion | null>(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const pendingAction = useRef<(() => void) | null>(null);
+
+  const { data: globalPlaceholders } = UseLegalPlaceholders();
+  const upsertPlaceholdersMutation = UseUpsertLegalPlaceholders();
+  const [editGlobalPlaceholders, setEditGlobalPlaceholders] = useState<Record<string, string>>({});
+  const [globalPlaceholdersInitialized, setGlobalPlaceholdersInitialized] = useState(false);
+
+  // Sync global placeholders from server into local edit state
+  if (globalPlaceholders && !globalPlaceholdersInitialized) {
+    setEditGlobalPlaceholders(globalPlaceholders);
+    setGlobalPlaceholdersInitialized(true);
+  }
 
   const { data: documents, isLoading, error } = UseLegalDocuments();
   const upsertMutation = UseUpsertLegalDocument();
@@ -158,6 +176,7 @@ export default function LegalDocumentsManager() {
     setEditDocumentType(doc.documentType);
     setEditIsPublished(doc.isPublished);
     setEditEffectiveDate(doc.effectiveDate?.split("T")[0] || "");
+    setEditPlaceholders(doc.placeholders || {});
     setHasUnsavedChanges(false);
     setSelectedVersion(null);
     setEditorTab(forceTab ?? (doc.isPublished ? "preview" : "edit"));
@@ -170,6 +189,7 @@ export default function LegalDocumentsManager() {
     setSelectedVersion(null);
     setHasUnsavedChanges(false);
     setShowVersionHistory(false);
+    setShowPlaceholders(false);
   };
 
   const guardUnsavedChanges = (action: () => void) => {
@@ -210,6 +230,7 @@ export default function LegalDocumentsManager() {
         ? new Date(editEffectiveDate).toISOString()
         : undefined,
       changeSummary: changeSummary.trim(),
+      placeholders: editPlaceholders,
     };
 
     try {
@@ -634,7 +655,7 @@ export default function LegalDocumentsManager() {
                 prose-td:text-console-secondary prose-table:border-console
                 prose-hr:border-console"
               dangerouslySetInnerHTML={{
-                __html: markdownToHtml(selectedVersion.content),
+                __html: markdownToHtml(resolvePlaceholders(selectedVersion.content, globalPlaceholders || {}, selectedVersion.placeholders)),
               }}
             />
           </div>
@@ -729,6 +750,18 @@ export default function LegalDocumentsManager() {
             </Tabs>
             <div className="flex items-center space-x-2">
               <button
+                onClick={() => setShowPlaceholders(!showPlaceholders)}
+                className={`p-2 rounded-lg transition-colors ${
+                  showPlaceholders
+                    ? "text-console-primary bg-console-primary/10"
+                    : "text-console-muted hover:text-console hover:bg-console-surface-hover"
+                }`}
+                title="Placeholder settings"
+                data-testid="placeholder-settings-btn"
+              >
+                <Settings2 className="h-4 w-4" />
+              </button>
+              <button
                 onClick={() => setShowVersionHistory(true)}
                 className="p-2 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-lg transition-colors"
                 title="Version history (H)"
@@ -819,6 +852,34 @@ export default function LegalDocumentsManager() {
               </div>
             )}
 
+            {/* Placeholder settings panel */}
+            {showPlaceholders && (
+              <div
+                className="px-6 py-4 border-b border-console bg-console-surface/20 space-y-4"
+                data-testid="placeholder-panel"
+              >
+                <PlaceholderEditor
+                  placeholders={editGlobalPlaceholders}
+                  onChange={setEditGlobalPlaceholders}
+                  onSave={() => upsertPlaceholdersMutation.mutate(editGlobalPlaceholders)}
+                  isSaving={upsertPlaceholdersMutation.isPending}
+                  label="Global Placeholders"
+                  description="Available in all documents. Use {{KEY}} in content."
+                  testIdPrefix="global-placeholders"
+                />
+                <PlaceholderEditor
+                  placeholders={editPlaceholders}
+                  onChange={(p) => {
+                    setEditPlaceholders(p);
+                    setHasUnsavedChanges(true);
+                  }}
+                  label="Document Placeholders"
+                  description="Specific to this document. Overrides globals with the same key."
+                  testIdPrefix="doc-placeholders"
+                />
+              </div>
+            )}
+
             {/* Markdown editor */}
             <div className="flex-1 min-h-0 p-6">
               <Textarea
@@ -847,7 +908,7 @@ export default function LegalDocumentsManager() {
                 prose-td:text-console-secondary prose-table:border-console
                 prose-hr:border-console"
               dangerouslySetInnerHTML={{
-                __html: markdownToHtml(editContent),
+                __html: markdownToHtml(resolvePlaceholders(editContent, globalPlaceholders || {}, editPlaceholders)),
               }}
             />
           </div>

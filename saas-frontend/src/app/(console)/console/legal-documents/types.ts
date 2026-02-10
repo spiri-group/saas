@@ -11,6 +11,7 @@ export interface LegalDocument {
   createdAt: string;
   updatedAt: string;
   updatedBy: string;
+  placeholders?: Record<string, string>;
 }
 
 export interface LegalDocumentVersion {
@@ -26,6 +27,7 @@ export interface LegalDocumentVersion {
   createdAt: string;
   supersededAt: string;
   supersededBy: string;
+  placeholders?: Record<string, string>;
 }
 
 export interface LegalDocumentInput {
@@ -37,6 +39,7 @@ export interface LegalDocumentInput {
   isPublished?: boolean;
   effectiveDate?: string;
   changeSummary?: string;
+  placeholders?: Record<string, string>;
 }
 
 export const DOCUMENT_TYPE_LABELS: Record<string, string> = {

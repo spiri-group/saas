@@ -23,6 +23,7 @@ const UseLegalDocuments = (market?: string, documentType?: string) => {
             createdAt
             updatedAt
             updatedBy
+            placeholders
           }
         }
       `, { market, documentType });

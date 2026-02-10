@@ -23,6 +23,7 @@ const UseLegalDocumentVersions = (documentId?: string) => {
             createdAt
             supersededAt
             supersededBy
+            placeholders
           }
         }
       `, { documentId });

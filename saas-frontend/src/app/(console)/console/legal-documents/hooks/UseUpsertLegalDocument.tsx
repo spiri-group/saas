@@ -24,6 +24,7 @@ const UseUpsertLegalDocument = () => {
             createdAt
             updatedAt
             updatedBy
+            placeholders
           }
         }
       `, { input });

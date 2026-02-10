@@ -5,11 +5,15 @@ import { useQuery } from '@tanstack/react-query';
 import { gql } from '@/lib/services/gql';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { markdownToHtml } from '@/utils/markdownToHtml';
+import { resolvePlaceholders } from '@/utils/resolvePlaceholders';
+import UseLegalPlaceholders from '@/hooks/UseLegalPlaceholders';
 
 type LegalDocumentResponse = {
   documentType: string;
   title: string;
   content: string;
+  placeholders?: Record<string, string>;
   version: number;
   effectiveDate: string;
   updatedAt: string;
@@ -27,6 +31,7 @@ const useLegalDocument = (documentType: string) => {
             documentType
             title
             content
+            placeholders
             version
             effectiveDate
             updatedAt
@@ -46,6 +51,7 @@ export default function LegalDocumentPage() {
   const documentType = params.documentType as string;
 
   const { data: document, isLoading, error } = useLegalDocument(documentType);
+  const { data: globalPlaceholders } = UseLegalPlaceholders();
 
   if (isLoading) {
     return (
@@ -103,11 +109,12 @@ export default function LegalDocumentPage() {
       </p>
 
       <div
-        className="prose prose-gray max-w-none whitespace-pre-wrap"
+        className="prose prose-gray max-w-none"
         data-testid="legal-doc-content"
-      >
-        {document.content}
-      </div>
+        dangerouslySetInnerHTML={{
+          __html: markdownToHtml(resolvePlaceholders(document.content, globalPlaceholders || {}, document.placeholders)),
+        }}
+      />
     </div>
   );
 }

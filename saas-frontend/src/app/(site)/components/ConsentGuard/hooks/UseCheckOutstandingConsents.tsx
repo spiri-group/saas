@@ -8,6 +8,7 @@ export type OutstandingConsent = {
   content: string;
   version: number;
   effectiveDate: string;
+  placeholders?: Record<string, string>;
 };
 
 const useCheckOutstandingConsents = (scope: string, enabled: boolean) => {
@@ -25,6 +26,7 @@ const useCheckOutstandingConsents = (scope: string, enabled: boolean) => {
             content
             version
             effectiveDate
+            placeholders
           }
         }
       `, { scope });

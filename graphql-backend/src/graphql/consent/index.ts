@@ -59,6 +59,7 @@ const resolvers = {
             content: doc.content,
             version: doc.version,
             effectiveDate: doc.effectiveDate,
+            placeholders: doc.placeholders,
           });
         }
       }

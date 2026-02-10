@@ -24,6 +24,7 @@ const UseRestoreLegalDocumentVersion = () => {
             createdAt
             updatedAt
             updatedBy
+            placeholders
           }
         }
       `, { documentId, versionId });
