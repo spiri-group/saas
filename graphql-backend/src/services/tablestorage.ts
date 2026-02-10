@@ -43,6 +43,10 @@ export class TableStorageDataSource {
         return entities;
     }
 
+    async upsertEntity<T extends { partitionKey: string; rowKey: string; }>(entity: T) {
+        await this.serviceClient.upsertEntity(entity, "Replace");
+    }
+
     async deleteEntity(partitionKey: string, rowKey: string) {
         // Only log deletions (important for audit trail)
         this.logger.logMessage(`Deleting entity ${rowKey} from partition ${partitionKey}`);

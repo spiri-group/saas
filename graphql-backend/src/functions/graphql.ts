@@ -107,7 +107,8 @@ export async function graphql(request: HttpRequest, context: InvocationContext):
       storage: new StorageDataSource(host, logger),
       email: new AzureEmailDataSource(logger, keyVault),
       exchangeRate: new ExchangeRateDataSource(logger, keyVault),
-      shipEngine: new ShipEngineDataSource(logger, keyVault)
+      shipEngine: new ShipEngineDataSource(logger, keyVault),
+      tableStorage: new TableStorageDataSource(logger, keyVault)
     }
 
     await Promise.all([
@@ -116,6 +117,7 @@ export async function graphql(request: HttpRequest, context: InvocationContext):
       dataSources.email.init(host),
       dataSources.exchangeRate.init(),
       dataSources.shipEngine.init(),
+      dataSources.tableStorage.init('UserConsents'),
     ])
 
     // Set dataSources reference for email service (needed for Cosmos template lookups)

@@ -6,6 +6,7 @@ import { ShipEngineDataSource } from "./shipengine"
 import { signalRManager } from "./signalR"
 import { StorageDataSource } from "./storage"
 import { StripeDataSource } from "./stripe"
+import { TableStorageDataSource } from "./tablestorage"
 import { vault } from "./vault"
 
 export type serverContext = {
@@ -18,7 +19,8 @@ export type serverContext = {
         stripe: StripeDataSource,
         storage: StorageDataSource,
         exchangeRate: ExchangeRateDataSource,
-        shipEngine: ShipEngineDataSource
+        shipEngine: ShipEngineDataSource,
+        tableStorage: TableStorageDataSource
     },
     signalR: signalRManager,
     logger: LogManager
