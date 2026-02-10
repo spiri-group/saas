@@ -7,6 +7,7 @@ const DOCUMENT_TITLE_TO_SLUG: Record<string, string> = {
   "Merchant Terms of Service": "merchant-terms",
   "Refund & Returns Policy": "refund-policy",
   "Acceptable Use Policy": "acceptable-use-policy",
+  "Community Guidelines": "acceptable-use-policy",
   "Spiritual Services Disclaimer": "spiritual-services-disclaimer",
   "Payment & Fee Terms": "payment-terms",
   "Intellectual Property & DMCA Policy": "intellectual-property-policy",
