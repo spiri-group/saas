@@ -1,20 +1,5 @@
-import UIContainer from "@/components/uicontainer";
-import UI from "./ui"
-import { auth } from "@/lib/auth";
+import { redirect } from 'next/navigation';
 
-async function PractitionerSetupPage() {
-    const session = await auth();
-
-    if (session == null || !session.user) {
-        return <></>
-    }
-
-    return (
-        <UIContainer
-            me={session.user}>
-            <UI/>
-        </UIContainer>
-    )
+export default function PractitionerSetupPage() {
+    redirect('/setup');
 }
-
-export default PractitionerSetupPage;

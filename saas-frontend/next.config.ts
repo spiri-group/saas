@@ -14,6 +14,16 @@ const nextConfig: NextConfig = {
         destination: '/blog/:path*',
         permanent: true,
       },
+      {
+        source: '/m/setup',
+        destination: '/setup',
+        permanent: true,
+      },
+      {
+        source: '/p/setup',
+        destination: '/setup',
+        permanent: true,
+      },
     ];
   },
   images: {
