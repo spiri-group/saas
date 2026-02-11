@@ -453,13 +453,11 @@ const resolvers = {
             // - Users: pk='user' rk=userId, pk='userByEmail' rk=email
             // - Sessions: pk='session' rk=sessionToken, pk='sessionByUserId' rk=userId
             try {
-                const { TableStorageDataSource } = await import('../../services/tablestorage');
-                const storageService = new TableStorageDataSource(context.logger, context.dataSources.vault);
-                await storageService.init('auth');
+                const tableStorage = context.dataSources.tableStorage;
 
                 // Delete user entries from auth table
                 try {
-                    await storageService.deleteEntity('user', args.userId);
+                    await tableStorage.deleteEntity('auth', 'user', args.userId);
                     context.logger.logMessage(`[PURGE] Deleted user auth entry (pk=user)`);
                 } catch (error) {
                     // Expected if user was created via different auth flow
@@ -467,7 +465,7 @@ const resolvers = {
 
                 // Delete userByEmail index entry
                 try {
-                    await storageService.deleteEntity('userByEmail', user.email);
+                    await tableStorage.deleteEntity('auth', 'userByEmail', user.email);
                     context.logger.logMessage(`[PURGE] Deleted userByEmail auth entry`);
                 } catch (error) {
                     // Expected if user was created via different auth flow
@@ -476,21 +474,21 @@ const resolvers = {
                 // Find sessions via sessionByUserId index and delete them
                 try {
                     // First get session tokens from the sessionByUserId index
-                    const sessionIndex = await storageService.queryEntities<{ rowKey: string; sessionToken?: string }>(`PartitionKey eq 'sessionByUserId' and RowKey eq '${args.userId}'`);
+                    const sessionIndex = await tableStorage.queryEntities<{ rowKey: string; sessionToken?: string }>('auth', `PartitionKey eq 'sessionByUserId' and RowKey eq '${args.userId}'`);
                     context.logger.logMessage(`[PURGE] Found ${sessionIndex.length} session index entries`);
 
                     for (const indexEntry of sessionIndex) {
                         const sessionToken = indexEntry.sessionToken || indexEntry.rowKey;
                         // Delete the main session entry
                         try {
-                            await storageService.deleteEntity('session', sessionToken);
+                            await tableStorage.deleteEntity('auth', 'session', sessionToken);
                             context.logger.logMessage(`[PURGE] Deleted session ${sessionToken}`);
                         } catch (e) {
                             // Session may already be expired/deleted
                         }
                         // Delete the sessionByUserId index entry
                         try {
-                            await storageService.deleteEntity('sessionByUserId', args.userId);
+                            await tableStorage.deleteEntity('auth', 'sessionByUserId', args.userId);
                         } catch (e) {
                             // Index entry may already be deleted
                         }

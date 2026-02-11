@@ -106,7 +106,8 @@ const usePlatformAlerts = (options: UsePlatformAlertsOptions = {}) => {
             });
             return response.platformAlerts;
         },
-        refetchInterval: 30000, // Refetch every 30 seconds
+        refetchInterval: 60000, // Refetch every 60 seconds (SignalR provides real-time updates)
+        staleTime: 30000, // Consider data fresh for 30 seconds
     });
 };
 
