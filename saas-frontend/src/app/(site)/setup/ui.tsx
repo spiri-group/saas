@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Form } from '@/components/ui/form';
 import { toast } from 'sonner';
@@ -38,7 +37,7 @@ type Branch = 'practitioner' | 'merchant' | null;
 
 // ── Theme & full-screen helpers ─────────────────────────────────────
 
-function themeForStep(step: Step, branch: Branch): OnboardingTheme {
+function themeForStep(step: Step): OnboardingTheme {
     if (step === 'plan') return 'neutral';
     if (step === 'merchant-profile' || step === 'also-practitioner') return 'amber';
     if (step === 'practitioner-profile' || step === 'practitioner-optional') return 'purple';
@@ -85,7 +84,6 @@ function isCardStep(step: Step): boolean {
 // ── Main Component ──────────────────────────────────────────────────
 
 export default function SetupUI() {
-    const router = useRouter();
     const { data: session, status } = useSession();
     const isAuthenticated = !!session?.user;
     const isLoading = status === 'loading';
@@ -253,7 +251,7 @@ export default function SetupUI() {
 
     // ── Theme & layout state ────────────────────────────────────────
 
-    const theme = themeForStep(step, branch);
+    const theme = themeForStep(step);
     const fullScreen = isFullScreenStep(step);
     const labels = stepLabels(step, branch);
     const currentStepNum = stepNumber(step, branch);
