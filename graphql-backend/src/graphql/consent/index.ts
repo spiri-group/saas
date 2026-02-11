@@ -3,6 +3,7 @@ import { LegalDocument } from "../legal/types";
 import { UserConsent, RecordConsentInput } from "./types";
 
 const container = 'System-Settings';
+const CONSENT_TABLE = 'UserConsents';
 
 const SCOPE_DOCUMENT_TYPES: Record<string, string[]> = {
   site: ['terms-of-service', 'privacy-policy'],
@@ -41,6 +42,7 @@ const resolvers = {
       let userConsents: UserConsent[] = [];
       try {
         userConsents = await context.dataSources.tableStorage.queryEntities<UserConsent>(
+          CONSENT_TABLE,
           `PartitionKey eq '${context.userId}'`
         );
       } catch {
@@ -74,6 +76,7 @@ const resolvers = {
 
       try {
         const consents = await context.dataSources.tableStorage.queryEntities<UserConsent>(
+          CONSENT_TABLE,
           `PartitionKey eq '${context.userId}'`
         );
 
@@ -110,7 +113,7 @@ const resolvers = {
           documentTitle: input.documentTitle,
         };
 
-        await context.dataSources.tableStorage.upsertEntity(entity);
+        await context.dataSources.tableStorage.upsertEntity(CONSENT_TABLE, entity);
       }
 
       return true;
