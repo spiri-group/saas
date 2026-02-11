@@ -730,6 +730,14 @@ const resolvers = {
             delete vendorInput.email
 
             vendorInput["subscription"] = {
+                // Tier-based subscription
+                subscriptionTier: subscription?.tier || 'manifest',
+                billingInterval: subscription?.billingInterval || 'monthly',
+                billingStatus: 'pendingFirstBilling',
+                cumulativePayouts: 0,
+                subscriptionCostThreshold: 3200, // Manifest monthly default in cents, overridden by selectVendorSubscriptionTier
+                failedPaymentAttempts: 0,
+                // Legacy fields kept for compatibility
                 payment_retry_count: 0,
                 last_payment_date: null,
                 card_status: merchant_card_status.not_saved,
@@ -923,13 +931,19 @@ const resolvers = {
                     rating4: 0,
                     rating5: 0
                 },
-                // Subscription: same deferred billing model as merchants
+                // Subscription: always Awaken tier for practitioners
                 subscription: {
+                    subscriptionTier: 'awaken' as const,
+                    billingInterval: subscription?.billingInterval || 'monthly',
+                    billingStatus: 'pendingFirstBilling' as const,
+                    cumulativePayouts: 0,
+                    subscriptionCostThreshold: 1600, // Awaken monthly in cents
+                    failedPaymentAttempts: 0,
+                    // Legacy fields
                     payment_retry_count: 0,
                     last_payment_date: null,
                     card_status: merchant_card_status.not_saved,
                     payment_status: merchant_subscription_payment_status.not_attempted,
-                    // Deferred subscription model: first payout triggers card requirement
                     first_payout_received: false,
                     payouts_blocked: false,
                     plans: subscription?.plans || []
@@ -3169,7 +3183,6 @@ const resolvers = {
         },
         goLiveReadiness: async (parent: vendor_type, _: any, context: serverContext) => {
             const hasPaymentCard = parent.subscription?.card_status === merchant_card_status.saved;
-            const hasFirstPayment = (parent.subscription?.billing_history?.length ?? 0) > 0;
 
             // Check Stripe Connect onboarding by querying the account
             let hasStripeOnboarding = false;
@@ -3182,7 +3195,9 @@ const resolvers = {
                 }
             }
 
-            const isReady = hasPaymentCard && hasFirstPayment && hasStripeOnboarding;
+            // Subscription payment is NOT required for go-live.
+            // Billing triggers automatically once cumulative payouts reach the threshold.
+            const isReady = hasPaymentCard && hasStripeOnboarding;
 
             // Auto-publish if all requirements met and not yet published
             if (isReady && !parent.publishedAt) {
@@ -3194,13 +3209,11 @@ const resolvers = {
 
             const missingRequirements: string[] = [];
             if (!hasPaymentCard) missingRequirements.push("Add a payment card");
-            if (!hasFirstPayment) missingRequirements.push("Pay first month subscription");
             if (!hasStripeOnboarding) missingRequirements.push("Complete Stripe Connect onboarding");
 
             return {
                 isReady,
                 hasPaymentCard,
-                hasFirstPayment,
                 hasStripeOnboarding,
                 missingRequirements
             };

@@ -4093,33 +4093,50 @@ export type social_platform_type = {
     id: string
 }
 
+export type subscription_tier = 'awaken' | 'manifest' | 'transcend'
+export type billing_status = 'pendingFirstBilling' | 'active' | 'suspended' | 'cancelled'
+
 export type vendorSubscription_type = {
+  // Tier-based subscription fields
+  subscriptionTier: subscription_tier,
+  billingInterval: billing_interval,
+  billingStatus: billing_status,
+  cumulativePayouts: number,
+  subscriptionCostThreshold: number,
+  firstBillingTriggeredAt?: string,
+  lastBilledAt?: string,
+  subscriptionExpiresAt?: string,
+  stripePaymentMethodId?: string,
+  failedPaymentAttempts: number,
+  nextRetryAt?: string,
+  lastPaymentAttemptAt?: string,
+  pendingDowngradeTo?: subscription_tier | null,
+  downgradeEffectiveAt?: string | null,
+  // Kept from legacy
+  card_status: merchant_card_status,
+  payment_status: merchant_subscription_payment_status,
+  billing_history?: billing_record_type[],
+  first_payout_received?: boolean,
+  payouts_blocked?: boolean,
+  // Subscription override fields (set by admin console)
+  discountPercent?: number,
+  waived?: boolean,
+  waivedUntil?: string,
+  overrideNotes?: string,
+  // Legacy fields (kept for backward compatibility during migration)
+  plans?: plan_type[],
   orderId?: string,
   stripeSubscriptionId?: string,
-  payment_retry_count: number,
-  payment_status: merchant_subscription_payment_status,
-  card_status: merchant_card_status,
-  last_payment_date: Date,
-  plans: plan_type[],
-  // Deferred subscription model fields
-  first_payout_received?: boolean,  // After first payout, payouts are blocked until card added
-  payouts_blocked?: boolean,        // True when waiting for card to be added
-  // Self-managed billing fields
-  next_billing_date?: string,       // ISO date of next charge
-  billing_interval?: billing_interval,
-  billing_history?: billing_record_type[],
-  saved_payment_method?: string,    // Stripe PaymentMethod ID
-  // Subscription override fields (set by admin console)
-  discountPercent?: number,          // 0-100, percentage discount on billing
-  waived?: boolean,                  // true = skip billing entirely
-  waivedUntil?: string,             // ISO date, null = indefinite waiver
-  overrideNotes?: string            // admin notes explaining override
+  payment_retry_count?: number,
+  last_payment_date?: Date,
+  next_billing_date?: string,
+  saved_payment_method?: string,
 }
 
 export type plan_type =  {
   productId: string
   variantId: string
-  priceId?: string  // Stripe Price ID for subscription creation
+  priceId?: string
   price: currency_amount_type
   name: string
 }

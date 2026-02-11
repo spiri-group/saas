@@ -1,0 +1,49 @@
+type Mutation {
+  selectVendorSubscriptionTier(vendorId: ID!, tier: String!, billingInterval: String!): SelectTierResponse!
+  upgradeVendorSubscription(vendorId: ID!, targetTier: String!, targetInterval: String): UpgradeSubscriptionResponse!
+  requestVendorDowngrade(vendorId: ID!, targetTier: String!): DowngradeSubscriptionResponse!
+  cancelVendorDowngrade(vendorId: ID!): CancelDowngradeResponse!
+  retryVendorPayment(vendorId: ID!): RetryPaymentResponse!
+  createVendorSubscriptionSetupIntent(vendorId: ID!): CreateSubscriptionSetupIntentResponse!
+}
+
+type SelectTierResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+}
+
+type UpgradeSubscriptionResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  prorationCharged: Int
+  newTier: String
+}
+
+type DowngradeSubscriptionResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  effectiveAt: String
+}
+
+type CancelDowngradeResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+}
+
+type RetryPaymentResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  paymentSucceeded: Boolean
+}
+
+type CreateSubscriptionSetupIntentResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  clientSecret: String
+}

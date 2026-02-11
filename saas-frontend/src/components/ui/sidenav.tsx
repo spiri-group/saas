@@ -30,6 +30,15 @@ export type NavOption = {
 
     // path is used to store the path to this nav option
     path?: string[];
+
+    // Optional badge text (e.g. "3/15" for product count)
+    badge?: string;
+
+    // Whether this nav option is disabled (locked behind a tier)
+    disabled?: boolean;
+
+    // Tooltip shown on hover when disabled
+    disabledReason?: string;
 };
 
 type SideNavItemProps = {
@@ -65,6 +74,7 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
 
     const handleClick = () => {
         if (navOption.path == null) return;
+        if (navOption.disabled) return;
 
         // if they are clicking the same nav item it should simply close the subnav and clear active state
         if (activePath.length == navOption.path.length && activePath.every((item, index) => navOption.path != null && item == navOption.path[index])) {
@@ -150,12 +160,17 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                                 handleClick();
                             }
                         }}>
-                        {navOption.icon && <div className="mr-4 w-6 flex items-center justify-center text-amber-400 group-hover:text-amber-300 transition-colors" aria-hidden="true">{navOption.icon}</div>}
+                        {navOption.icon && <div className={cn("mr-4 w-6 flex items-center justify-center transition-colors", navOption.disabled ? "text-slate-600" : "text-amber-400 group-hover:text-amber-300")} aria-hidden="true">{navOption.icon}</div>}
                         <div className="flex flex-col items-start flex-grow min-w-0 space-y-1">
                             <span className={cn(
-                                "transition-colors text-left",
-                                isActive ? "text-amber-400" : "text-white/90 group-hover:text-white"
-                            )}>{navOption.label}</span>
+                                "transition-colors text-left flex items-center gap-2",
+                                navOption.disabled ? "text-slate-500" : isActive ? "text-amber-400" : "text-white/90 group-hover:text-white"
+                            )}>
+                                {navOption.label}
+                                {navOption.badge && (
+                                    <span className="text-[10px] font-medium rounded-full bg-purple-500/20 text-purple-300 px-1.5 py-0.5">{navOption.badge}</span>
+                                )}
+                            </span>
                             {subNavOptions && (
                                 <p className="w-full text-slate-400 truncate pr-2">
                                 {navOption.description || subNavOptions

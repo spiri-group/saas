@@ -1,0 +1,76 @@
+type Query {
+  vendorSubscription(vendorId: ID!): VendorSubscriptionDetail
+  subscriptionTiers(profileType: String): [SubscriptionTierDefinition!]!
+  subscriptionProration(vendorId: ID!, targetTier: String!, targetInterval: String): SubscriptionProration
+}
+
+type VendorSubscriptionDetail {
+  subscriptionTier: String!
+  billingInterval: String!
+  billingStatus: String!
+  cumulativePayouts: Int!
+  subscriptionCostThreshold: Int!
+  firstBillingTriggeredAt: String
+  lastBilledAt: String
+  subscriptionExpiresAt: String
+  failedPaymentAttempts: Int!
+  nextRetryAt: String
+  lastPaymentAttemptAt: String
+  pendingDowngradeTo: String
+  downgradeEffectiveAt: String
+  cardStatus: String!
+  paymentStatus: String!
+  billingHistory: [BillingRecord!]
+  firstPayoutReceived: Boolean
+  payoutsBlocked: Boolean
+  stripePaymentMethodId: String
+  tierFeatures: TierFeatures!
+  discountPercent: Float
+  waived: Boolean
+  waivedUntil: String
+  overrideNotes: String
+}
+
+type TierFeatures {
+  canCreateMerchantProfile: Boolean!
+  maxProducts: Int
+  canHostPractitioners: Boolean!
+  hasInventoryAutomation: Boolean!
+  hasShippingAutomation: Boolean!
+}
+
+type BillingRecord {
+  id: ID!
+  date: String!
+  amount: Int!
+  currency: String!
+  billingStatus: String!
+  stripePaymentIntentId: String
+  error: String
+  period_start: String!
+  period_end: String!
+}
+
+type SubscriptionTierDefinition {
+  tier: String!
+  name: String!
+  description: String!
+  profileType: String!
+  features: TierFeatures!
+  monthlyPrice: Int!
+  annualPrice: Int!
+  currency: String!
+}
+
+type SubscriptionProration {
+  currentTier: String!
+  targetTier: String!
+  currentInterval: String!
+  targetInterval: String!
+  daysRemaining: Int!
+  totalDaysInPeriod: Int!
+  currentPeriodCredit: Int!
+  newPeriodCost: Int!
+  prorationAmount: Int!
+  currency: String!
+}
