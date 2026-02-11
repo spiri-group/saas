@@ -22,10 +22,13 @@ export function markdownToHtml(md: string): string {
     .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    // Links
+    // Links (internal /legal/ links stay in-page, external open in new tab)
     .replace(
       /\[([^\]]+)\]\(([^)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+      (_match, text, href) =>
+        href.startsWith('/legal/')
+          ? `<a href="${href}">${text}</a>`
+          : `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`
     )
     // Horizontal rules
     .replace(/^---$/gm, "<hr>")
