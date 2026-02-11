@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { ShieldCheck, CheckCircle2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,7 @@ const ConsentGuard = () => {
     }
   };
 
-  const handleContentClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     const anchor = target.closest('a');
     if (!anchor) return;
@@ -65,7 +65,7 @@ const ConsentGuard = () => {
     if (stepIndex !== -1) {
       setActiveIndex(stepIndex);
     }
-  }, [outstanding]);
+  };
 
   const handleAccept = async () => {
     const inputs = outstanding.map(doc => ({
