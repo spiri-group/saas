@@ -76,7 +76,11 @@ const ConsentGuard = () => {
       documentTitle: doc.title,
     }));
 
-    await recordConsents.mutateAsync(inputs);
+    try {
+      await recordConsents.mutateAsync(inputs);
+    } catch (e) {
+      console.error('Failed to record consents:', e);
+    }
     setDismissed(true);
   };
 
