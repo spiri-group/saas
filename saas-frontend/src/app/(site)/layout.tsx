@@ -1,6 +1,7 @@
 import classNames from 'classnames';
 import './globals.css';
 
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import SpiriLogo from '@/icons/spiri-logo';
@@ -16,6 +17,9 @@ import ConditionalNav from './components/ConditionalNav';
 import ConditionalMainWrapper from './components/ConditionalMainWrapper';
 import SacredAnimatedBackground from './components/Home/SacredAnimatedBackground';
 import ResolveStripeSuccess from './components/ResolveStripeSuccess';
+import ConsentGuard from './components/ConsentGuard';
+import CookieBanner from './components/CookieBanner';
+import AnalyticsTracker from './components/AnalyticsTracker';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -63,6 +67,11 @@ export default async function SiteLayout({
         <div id="modal-div" className="absolute t-0 l-0 text-slate-800"/>
         <Notifications />
         <ResolveStripeSuccess />
+        <ConsentGuard />
+        <CookieBanner />
+        <Suspense fallback={null}>
+          <AnalyticsTracker />
+        </Suspense>
       </Providers>
     </div>
   )

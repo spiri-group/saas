@@ -598,7 +598,7 @@ test.describe('Merchant Profile Setup', () => {
     // Dismiss welcome dialog
     await dismissWelcomeDialog(page);
 
-    // STEP 1: Open Cards dialog and verify existing subscription card
+    // STEP 1: Open Cards dialog - new merchants skip card during onboarding, so no card exists yet
     await openSetupMenu(page);
 
     const cardsButton = page.locator('button[aria-label="Cards"]');
@@ -614,16 +614,13 @@ test.describe('Merchant Profile Setup', () => {
     // Verify dialog header - wait for content to load
     await expect(dialog.locator('text=Manage Payment Cards')).toBeVisible({ timeout: 15000 });
 
-    // New merchant should already have the subscription card (Visa •••• 4242 from merchant setup)
-    await expect(dialog.locator('text=Visa •••• 4242')).toBeVisible({ timeout: 5000 });
-    console.log('[Test] ✅ Existing subscription card (Visa •••• 4242) displayed');
-
-    // With only one card, "Set Default" button should NOT be visible
+    // New merchant has no card (card is optional during onboarding and was skipped)
+    // "Set Default" button should NOT be visible with no cards
     await expect(dialog.locator('button:has-text("Set Default")')).not.toBeVisible({ timeout: 2000 });
-    console.log('[Test] ✅ Set Default button not shown (only one card)');
+    console.log('[Test] ✅ No existing cards (card was skipped during onboarding)');
 
-    // STEP 2: Add a new Mastercard
-    const addCardButton = dialog.locator('button:has-text("Add Card")');
+    // STEP 2: Add a Visa card
+    let addCardButton = dialog.locator('button:has-text("Add Card")');
     await expect(addCardButton).toBeVisible({ timeout: 5000 });
     console.log('[Test] Clicking Add Card button...');
     await addCardButton.click();
@@ -633,31 +630,31 @@ test.describe('Merchant Profile Setup', () => {
     console.log('[Test] Add Card form visible');
 
     // Wait for Stripe Elements to load (the iframe)
-    const stripeFrame = dialog.frameLocator('iframe[name^="__privateStripeFrame"]').first();
+    let stripeFrame = dialog.frameLocator('iframe[name^="__privateStripeFrame"]').first();
     await page.waitForTimeout(3000); // Give Stripe Elements time to fully initialize
 
-    // Fill Mastercard test card (different from subscription Visa)
-    const cardNumberInput = stripeFrame.locator('[name="cardnumber"]');
+    // Fill Visa test card
+    let cardNumberInput = stripeFrame.locator('[name="cardnumber"]');
     await expect(cardNumberInput).toBeVisible({ timeout: 15000 });
-    await cardNumberInput.fill('5555555555554444');
-    console.log('[Test] Entered Mastercard card number');
+    await cardNumberInput.fill('4242424242424242');
+    console.log('[Test] Entered Visa card number');
 
-    const expiryInput = stripeFrame.locator('[name="exp-date"]');
+    let expiryInput = stripeFrame.locator('[name="exp-date"]');
     await expiryInput.fill('1230');
     console.log('[Test] Entered expiry date');
 
-    const cvcInput = stripeFrame.locator('[name="cvc"]');
+    let cvcInput = stripeFrame.locator('[name="cvc"]');
     await cvcInput.fill('123');
     console.log('[Test] Entered CVC');
 
-    const postalInput = stripeFrame.locator('[name="postal"]');
+    let postalInput = stripeFrame.locator('[name="postal"]');
     if (await postalInput.isVisible({ timeout: 2000 }).catch(() => false)) {
       await postalInput.fill('12345');
       console.log('[Test] Entered postal code');
     }
 
-    // Submit the new card
-    const submitButton = dialog.locator('button:has-text("Add Card")').last();
+    // Submit the first card
+    let submitButton = dialog.locator('button:has-text("Add Card")').last();
     await expect(submitButton).toBeEnabled({ timeout: 5000 });
     console.log('[Test] Clicking submit button...');
     await submitButton.click();
@@ -666,23 +663,69 @@ test.describe('Merchant Profile Setup', () => {
     await expect(dialog.locator('text=Manage Payment Cards')).toBeVisible({ timeout: 30000 });
     console.log('[Test] Returned to card list');
 
-    // STEP 3: Verify both cards are now visible
+    // Verify the Visa card is visible
+    await expect(dialog.locator('text=Visa •••• 4242')).toBeVisible({ timeout: 10000 });
+    console.log('[Test] ✅ Visa card added successfully');
+
+    // With only one card, "Set Default" button should NOT be visible
+    await expect(dialog.locator('button:has-text("Set Default")')).not.toBeVisible({ timeout: 2000 });
+    console.log('[Test] ✅ Set Default button not shown (only one card)');
+
+    // STEP 3: Add a second card (Mastercard)
+    addCardButton = dialog.locator('button:has-text("Add Card")');
+    await expect(addCardButton).toBeVisible({ timeout: 5000 });
+    console.log('[Test] Clicking Add Card button for second card...');
+    await addCardButton.click();
+
+    await expect(dialog.locator('text=Add Payment Card')).toBeVisible({ timeout: 10000 });
+    console.log('[Test] Add Card form visible for second card');
+
+    stripeFrame = dialog.frameLocator('iframe[name^="__privateStripeFrame"]').first();
+    await page.waitForTimeout(3000);
+
+    cardNumberInput = stripeFrame.locator('[name="cardnumber"]');
+    await expect(cardNumberInput).toBeVisible({ timeout: 15000 });
+    await cardNumberInput.fill('5555555555554444');
+    console.log('[Test] Entered Mastercard card number');
+
+    expiryInput = stripeFrame.locator('[name="exp-date"]');
+    await expiryInput.fill('1230');
+    console.log('[Test] Entered expiry date');
+
+    cvcInput = stripeFrame.locator('[name="cvc"]');
+    await cvcInput.fill('123');
+    console.log('[Test] Entered CVC');
+
+    postalInput = stripeFrame.locator('[name="postal"]');
+    if (await postalInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await postalInput.fill('12345');
+      console.log('[Test] Entered postal code');
+    }
+
+    submitButton = dialog.locator('button:has-text("Add Card")').last();
+    await expect(submitButton).toBeEnabled({ timeout: 5000 });
+    console.log('[Test] Clicking submit button for second card...');
+    await submitButton.click();
+
+    await expect(dialog.locator('text=Manage Payment Cards')).toBeVisible({ timeout: 30000 });
+    console.log('[Test] Returned to card list');
+
+    // STEP 4: Verify both cards are now visible
     await expect(dialog.locator('text=Mastercard •••• 4444')).toBeVisible({ timeout: 10000 });
-    console.log('[Test] ✅ New Mastercard is now visible');
+    console.log('[Test] ✅ Mastercard is now visible');
 
     await expect(dialog.locator('text=Visa •••• 4242')).toBeVisible({ timeout: 5000 });
-    console.log('[Test] ✅ Original Visa still visible');
+    console.log('[Test] ✅ Visa still visible');
 
-    // STEP 4: Set the new Mastercard as default
+    // STEP 5: Set the Mastercard as default
     // With 2 cards, "Set Default" buttons should now be visible
     const setDefaultButtons = dialog.locator('button:has-text("Set Default")');
     await expect(setDefaultButtons.first()).toBeVisible({ timeout: 5000 });
     console.log('[Test] ✅ Set Default buttons now visible (multiple cards)');
 
-    // The Mastercard appears first in the list (most recently added)
-    // Click the first "Set Default" button which corresponds to the Mastercard
+    // Click the first "Set Default" button
     await setDefaultButtons.first().click();
-    console.log('[Test] Clicked Set Default for Mastercard');
+    console.log('[Test] Clicked Set Default');
 
     // Wait for the operation to complete (button should show loading state then return)
     await page.waitForTimeout(2000);
@@ -693,7 +736,7 @@ test.describe('Merchant Profile Setup', () => {
     await cancelButton.click();
     await expect(dialog).not.toBeVisible({ timeout: 10000 });
 
-    console.log('[Test] ✅ Cards test passed: added new card and set as default');
+    console.log('[Test] ✅ Cards test passed: added two cards and set default');
   });
 
   test('should open Tax dialog and verify Stripe Connect component', async ({ page }, testInfo) => {

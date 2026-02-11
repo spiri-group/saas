@@ -21,12 +21,9 @@ type Props = ButtonProps & {
   component?: React.ReactElement<DocumentProps>;
   data_loader?: (...args: []) => Promise<any>;
   pdfUrl?: string;
-  template_id: string;
-  template_params: Record<string, any>;
+  subject: string;
   contacts: Contact[];
   cc: string[];
-  from: string;
-  sendgrid_auth: string;
   defaultFileName?: string;
   onSuccess?: (contact: { id: any; name: string; email: string }) => void;
 };
@@ -34,13 +31,10 @@ type Props = ButtonProps & {
 const PDFSendButton: React.FC<Props> = ({
   component,
   data_loader,
-  template_id,
-  template_params,
+  subject,
   pdfUrl,
   contacts,
   cc: defaultCC,
-  from,
-  sendgrid_auth,
   defaultFileName = "document.pdf",
   onSuccess,
   buttonLabel = "Send",
@@ -96,18 +90,14 @@ const PDFSendButton: React.FC<Props> = ({
     const base64String = await blobToBase64(pdfBlob);
 
     await SendEmail({
-      from,
-      sendgrid_auth,
       to: toRecipients.map(r => r.email),
+      subject,
       cc: [...defaultCC, ...ccRecipients.map(r => r.email)],
-      templateId: template_id,
-      dynamic_template_data: template_params,
       attachments: [
         {
           content: base64String,
           filename: defaultFileName,
-          type: "application/pdf",
-          disposition: "attachment",
+          contentType: "application/pdf",
         }
       ]
     });

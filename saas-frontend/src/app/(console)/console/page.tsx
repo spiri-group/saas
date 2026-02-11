@@ -8,15 +8,23 @@ import {
   List,
   DollarSign,
   Mail,
-  AlertTriangle
+  AlertTriangle,
+  Users,
+  GitBranch,
+  BarChart3,
+  Scale,
 } from "lucide-react";
 import Link from "next/link";
 import ChoiceManager from "./choice-manager/ChoiceManager";
 import FeesManager from "./fees-manager/FeesManager";
 import EmailTemplatesManager from "./email-templates/EmailTemplatesManager";
 import AlertsManager from "./alerts-manager/AlertsManager";
+import AccountsManager from "./accounts-manager/AccountsManager";
+import AccountJourneys from "./account-journeys/AccountJourneys";
+import Analytics from "./analytics/Analytics";
+import LegalDocumentsManager from "./legal-documents/LegalDocumentsManager";
 
-type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager';
+type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager' | 'accounts-manager' | 'account-journeys' | 'analytics' | 'legal-documents';
 
 export default function ConsolePage() {
   const { data: session, status } = useSession();
@@ -65,7 +73,11 @@ export default function ConsolePage() {
                     {currentView === 'choice-manager' ? 'Choice Manager' :
                      currentView === 'fees-manager' ? 'Fees Manager' :
                      currentView === 'email-templates' ? 'Email Templates' :
-                     'Alerts Manager'}
+                     currentView === 'legal-documents' ? 'Legal Documents' :
+                     currentView === 'alerts-manager' ? 'Alerts Manager' :
+                     currentView === 'account-journeys' ? 'Account Journeys' :
+                     currentView === 'analytics' ? 'Site Analytics' :
+                     'Accounts Manager'}
                   </p>
                 </div>
               </div>
@@ -105,65 +117,60 @@ export default function ConsolePage() {
         </div>
       </header>
 
-      {/* Navigation Tabs */}
-      <nav className="console-surface border-b border-console">
-        <div className="w-full px-6">
-          <div className="flex space-x-8">
-            <button
-              onClick={() => setCurrentView('choice-manager')}
-              className={`flex items-center space-x-2 px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
-                currentView === 'choice-manager'
-                  ? 'border-console-primary text-console-primary'
-                  : 'border-transparent text-console-muted hover:text-console hover:border-console-muted'
-              }`}
-            >
-              <List className="h-4 w-4" />
-              <span>Choice Manager</span>
-            </button>
-            <button
-              onClick={() => setCurrentView('fees-manager')}
-              className={`flex items-center space-x-2 px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
-                currentView === 'fees-manager'
-                  ? 'border-console-primary text-console-primary'
-                  : 'border-transparent text-console-muted hover:text-console hover:border-console-muted'
-              }`}
-            >
-              <DollarSign className="h-4 w-4" />
-              <span>Fees Manager</span>
-            </button>
-            <button
-              onClick={() => setCurrentView('email-templates')}
-              className={`flex items-center space-x-2 px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
-                currentView === 'email-templates'
-                  ? 'border-console-primary text-console-primary'
-                  : 'border-transparent text-console-muted hover:text-console hover:border-console-muted'
-              }`}
-            >
-              <Mail className="h-4 w-4" />
-              <span>Email Templates</span>
-            </button>
-            <button
-              onClick={() => setCurrentView('alerts-manager')}
-              className={`flex items-center space-x-2 px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
-                currentView === 'alerts-manager'
-                  ? 'border-console-primary text-console-primary'
-                  : 'border-transparent text-console-muted hover:text-console hover:border-console-muted'
-              }`}
-            >
-              <AlertTriangle className="h-4 w-4" />
-              <span>Alerts</span>
-            </button>
-          </div>
-        </div>
-      </nav>
+      {/* Body: Sidebar + Content */}
+      <div className="flex-1 flex min-h-0">
+        {/* Sidebar Navigation */}
+        <nav className="console-surface border-r border-console w-48 flex-shrink-0 flex flex-col py-2 overflow-y-auto">
+          {([
+            { group: 'Content', items: [
+              { key: 'choice-manager' as ConsoleView, icon: List, label: 'Choice Manager' },
+              { key: 'email-templates' as ConsoleView, icon: Mail, label: 'Email Templates' },
+              { key: 'legal-documents' as ConsoleView, icon: Scale, label: 'Legal Documents' },
+            ]},
+            { group: 'Finance', items: [
+              { key: 'fees-manager' as ConsoleView, icon: DollarSign, label: 'Fees Manager' },
+            ]},
+            { group: 'Accounts', items: [
+              { key: 'accounts-manager' as ConsoleView, icon: Users, label: 'Accounts' },
+              { key: 'account-journeys' as ConsoleView, icon: GitBranch, label: 'Journeys' },
+            ]},
+            { group: 'System', items: [
+              { key: 'alerts-manager' as ConsoleView, icon: AlertTriangle, label: 'Alerts' },
+              { key: 'analytics' as ConsoleView, icon: BarChart3, label: 'Website Traffic' },
+            ]},
+          ]).map(({ group, items }) => (
+            <div key={group} className="mb-1">
+              <p className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-console-muted/60">{group}</p>
+              {items.map(({ key, icon: Icon, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setCurrentView(key)}
+                  className={`w-full flex items-center space-x-3 px-4 py-2 text-sm font-medium transition-colors ${
+                    currentView === key
+                      ? 'text-console-primary bg-console-primary/10 border-r-2 border-console-primary'
+                      : 'text-console-muted hover:text-console hover:bg-console-surface-hover'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{label}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
 
-      {/* Main Content */}
-      <main className="flex-grow min-h-0">
-        {currentView === 'choice-manager' && <ChoiceManager />}
-        {currentView === 'fees-manager' && <FeesManager />}
-        {currentView === 'email-templates' && <EmailTemplatesManager />}
-        {currentView === 'alerts-manager' && <AlertsManager />}
-      </main>
+        {/* Main Content */}
+        <main className="flex-1 min-h-0 min-w-0">
+          {currentView === 'choice-manager' && <ChoiceManager />}
+          {currentView === 'fees-manager' && <FeesManager />}
+          {currentView === 'email-templates' && <EmailTemplatesManager />}
+          {currentView === 'legal-documents' && <LegalDocumentsManager />}
+          {currentView === 'alerts-manager' && <AlertsManager />}
+          {currentView === 'accounts-manager' && <AccountsManager />}
+          {currentView === 'account-journeys' && <AccountJourneys />}
+          {currentView === 'analytics' && <Analytics />}
+        </main>
+      </div>
     </div>
   );
 }

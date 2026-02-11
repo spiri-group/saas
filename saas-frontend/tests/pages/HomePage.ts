@@ -11,7 +11,8 @@ export class HomePage extends BasePage {
     completeProfileLink: 'a:has-text("Complete Your Profile")',
     welcomeMessage: 'text=Welcome back',
     beginJourneyMessage: 'text=Begin your journey',
-    signOutButton: 'button:has-text("Sign Out")',
+    userMenuTrigger: '[data-testid="user-menu-trigger"]',
+    signOutButton: '[data-testid="user-menu-sign-out"]',
   };
 
   constructor(page: Page) {
@@ -69,9 +70,10 @@ export class HomePage extends BasePage {
   }
 
   /**
-   * Sign out
+   * Sign out by opening the user dropdown and clicking sign out
    */
   async signOut(): Promise<void> {
-    await this.page.click(this.selectors.signOutButton);
+    await this.page.locator(this.selectors.userMenuTrigger).click();
+    await this.page.locator(this.selectors.signOutButton).click();
   }
 }

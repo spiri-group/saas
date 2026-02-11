@@ -1,0 +1,23 @@
+type OutstandingConsent {
+  documentType: String!
+  documentId: String!
+  title: String!
+  content: String!
+  version: Int!
+  effectiveDate: String!
+  placeholders: JSON
+}
+
+type UserConsent {
+  documentType: String!
+  documentId: String!
+  version: Int!
+  consentedAt: String!
+  consentContext: String!
+  documentTitle: String!
+}
+
+type Query {
+  checkOutstandingConsents(scope: String!): [OutstandingConsent!]!
+  userConsents: [UserConsent!]!
+}

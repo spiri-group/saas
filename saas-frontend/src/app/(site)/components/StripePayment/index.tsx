@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils";
 import useFormStatus, { FormState } from "@/components/utils/UseFormStatus";
 import { gql } from "@/lib/services/gql";
 import React from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import useCheckOutstandingConsents from "../ConsentGuard/hooks/UseCheckOutstandingConsents";
+import useRecordConsents from "../ConsentGuard/hooks/UseRecordConsents";
 import { Rocket, Snail, Truck, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import AddressInput, { GooglePlaceSchema } from "@/components/ux/AddressInput";
@@ -804,6 +807,22 @@ const MasterCheckout = ({
   finish: () => void;
   isProcessing?: boolean;
 }) => {
+  // Checkout consent
+  const [checkoutConsentChecked, setCheckoutConsentChecked] = useState<Set<string>>(new Set());
+  const recordConsents = useRecordConsents();
+
+  const handleCheckoutConsentToggle = (documentType: string) => {
+    setCheckoutConsentChecked(prev => {
+      const next = new Set(prev);
+      if (next.has(documentType)) {
+        next.delete(documentType);
+      } else {
+        next.add(documentType);
+      }
+      return next;
+    });
+  };
+
   // Determine initial expanded section based on order type
   const getInitialSection = () => {
     return "billing";
@@ -819,6 +838,36 @@ const MasterCheckout = ({
   const isUserLoading = status === "loading";
   const user = session?.user;
   const { data: userAddresses, isLoading: isAddressesLoading } = UseUserAddresses(user?.id || "");
+
+  // Checkout consent - check for outstanding refund-policy and payment-terms
+  const { data: checkoutConsents } = useCheckOutstandingConsents('checkout', !!user);
+
+  // Service-specific consent - spiritual-services-disclaimer (only when ordering services)
+  const hasServiceItems = props.items?.some(item => item.itemType === 'SERVICE') ?? false;
+  const { data: serviceConsents } = useCheckOutstandingConsents('service-checkout', !!user && hasServiceItems);
+
+  // Combine all outstanding checkout consents
+  const allOutstandingConsents = [
+    ...(checkoutConsents || []),
+    ...(serviceConsents || []),
+  ];
+  const hasOutstandingCheckoutConsents = allOutstandingConsents.length > 0;
+  const allCheckoutConsentsAccepted = !hasOutstandingCheckoutConsents ||
+    allOutstandingConsents.every(c => checkoutConsentChecked.has(c.documentType));
+
+  const handleFinishWithConsent = async () => {
+    if (hasOutstandingCheckoutConsents) {
+      const inputs = allOutstandingConsents.map(doc => ({
+        documentType: doc.documentType,
+        documentId: doc.documentId,
+        version: doc.version,
+        consentContext: 'checkout',
+        documentTitle: doc.title,
+      }));
+      await recordConsents.mutateAsync(inputs);
+    }
+    finish();
+  };
 
   const [isManualShipping, setIsManualShipping] = useState(false);
   const [isManualBilling, setIsManualBilling] = useState(false);
@@ -1086,9 +1135,39 @@ const MasterCheckout = ({
           </div>
         </Card>
 
+        {/* Checkout Consent */}
+        {hasOutstandingCheckoutConsents && (
+          <div className="space-y-2 pt-2" data-testid="checkout-consent-section">
+            {allOutstandingConsents.map(doc => (
+              <div key={doc.documentType} className="flex items-start space-x-2">
+                <Checkbox
+                  id={`checkout-consent-${doc.documentType}`}
+                  data-testid={`checkout-consent-${doc.documentType}`}
+                  checked={checkoutConsentChecked.has(doc.documentType)}
+                  onCheckedChange={() => handleCheckoutConsentToggle(doc.documentType)}
+                />
+                <label
+                  htmlFor={`checkout-consent-${doc.documentType}`}
+                  className="text-xs text-gray-600 cursor-pointer select-none leading-tight"
+                >
+                  I agree to the{' '}
+                  <a
+                    href={`/legal/${doc.documentType}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline hover:text-blue-800"
+                  >
+                    {doc.title}
+                  </a>
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="pt-4 flex justify-between">
-          {onCancel && 
+          {onCancel &&
             <Button variant="link" onClick={onCancel}>
               Continue Shopping
             </Button>
@@ -1099,10 +1178,11 @@ const MasterCheckout = ({
             </Button>
           }
           <Button
-            disabled={!allComplete || isProcessing}
-            onClick={finish}
+            data-testid="finish-pay-btn"
+            disabled={!allComplete || isProcessing || !allCheckoutConsentsAccepted}
+            onClick={handleFinishWithConsent}
           >
-            {isProcessing ? 'Processing...' : 'Finish & Pay'}
+            {isProcessing || recordConsents.isPending ? 'Processing...' : 'Finish & Pay'}
           </Button>
         </div>
     </div>

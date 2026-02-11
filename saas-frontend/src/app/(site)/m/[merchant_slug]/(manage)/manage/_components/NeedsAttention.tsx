@@ -21,9 +21,9 @@ const NeedsAttention: React.FC<NeedsAttentionProps> = ({ items, isLoading }) => 
     const getIcon = (type: AttentionItem['type']) => {
         switch (type) {
             case 'orders_to_ship':
-                return <Package className="w-4 h-4 text-blue-400" />;
+                return <Package className="w-4 h-4 text-orange-400" />;
             case 'refunds_pending':
-                return <RotateCcw className="w-4 h-4 text-amber-400" />;
+                return <RotateCcw className="w-4 h-4 text-orange-400" />;
             case 'low_stock':
                 return <AlertTriangle className="w-4 h-4 text-red-400" />;
             default:
@@ -40,7 +40,7 @@ const NeedsAttention: React.FC<NeedsAttentionProps> = ({ items, isLoading }) => 
                 data-testid="needs-attention"
             >
                 <div className="flex items-center gap-2 mb-3">
-                    <AlertCircle className="w-5 h-5 text-amber-400" />
+                    <AlertCircle className="w-5 h-5 text-orange-400" />
                     <span className="font-medium text-white">Needs Attention</span>
                 </div>
                 <div className="space-y-2">
@@ -75,7 +75,7 @@ const NeedsAttention: React.FC<NeedsAttentionProps> = ({ items, isLoading }) => 
             data-testid="needs-attention"
         >
             <div className="flex items-center gap-2 mb-3">
-                <AlertCircle className="w-5 h-5 text-amber-400" />
+                <AlertCircle className="w-5 h-5 text-orange-400" />
                 <span className="font-medium text-white">Needs Attention</span>
             </div>
             <ul className="space-y-2">

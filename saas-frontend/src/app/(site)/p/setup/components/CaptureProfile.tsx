@@ -19,6 +19,10 @@ import { useSession } from 'next-auth/react';
 import { MODALITIES, SPECIALIZATIONS } from '../../_constants/practitionerOptions';
 import PractitionerSubscription from './PractitionerSubscription';
 import { CurrencyAmountSchema } from '@/components/ux/CurrencyInput';
+import { Checkbox } from '@/components/ui/checkbox';
+import useCheckOutstandingConsents from '../../../components/ConsentGuard/hooks/UseCheckOutstandingConsents';
+import useRecordConsents from '../../../components/ConsentGuard/hooks/UseRecordConsents';
+import Link from 'next/link';
 
 // List of countries with their codes and names
 const COUNTRIES = [
@@ -86,6 +90,94 @@ const SubscriptionWithCurrency = ({ control, currency }: { control: any, currenc
     );
 };
 
+const PractitionerOnboardingConsent: React.FC<{ onAccepted: () => void }> = ({ onAccepted }) => {
+    const { data: session } = useSession();
+    const isLoggedIn = !!session?.user;
+    const { data: outstanding, isLoading } = useCheckOutstandingConsents('merchant-onboarding', isLoggedIn);
+    const recordConsents = useRecordConsents();
+    const [checkedDocs, setCheckedDocs] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        if (!isLoading && (!outstanding || outstanding.length === 0)) {
+            onAccepted();
+        }
+    }, [isLoading, outstanding, onAccepted]);
+
+    if (isLoading || !outstanding || outstanding.length === 0) return null;
+
+    const allChecked = outstanding.every(doc => checkedDocs.has(doc.documentType));
+
+    const handleToggle = (documentType: string) => {
+        setCheckedDocs(prev => {
+            const next = new Set(prev);
+            if (next.has(documentType)) {
+                next.delete(documentType);
+            } else {
+                next.add(documentType);
+            }
+            return next;
+        });
+    };
+
+    const handleAccept = async () => {
+        const inputs = outstanding.map(doc => ({
+            documentType: doc.documentType,
+            documentId: doc.documentId,
+            version: doc.version,
+            consentContext: 'site-modal',
+            documentTitle: doc.title,
+        }));
+        await recordConsents.mutateAsync(inputs);
+        onAccepted();
+    };
+
+    return (
+        <div className="flex flex-col space-y-6 p-8" data-testid="practitioner-onboarding-consent">
+            <div>
+                <h1 className="font-light text-2xl text-slate-800 mb-2">Before You Begin</h1>
+                <p className="text-sm text-slate-600">
+                    Please review and accept the following to set up your practitioner profile.
+                </p>
+            </div>
+            <div className="space-y-4">
+                {outstanding.map(doc => (
+                    <div key={doc.documentType} className="space-y-2">
+                        <div className="flex items-start space-x-2">
+                            <Checkbox
+                                id={`onboarding-consent-${doc.documentType}`}
+                                data-testid={`onboarding-consent-${doc.documentType}`}
+                                checked={checkedDocs.has(doc.documentType)}
+                                onCheckedChange={() => handleToggle(doc.documentType)}
+                            />
+                            <label
+                                htmlFor={`onboarding-consent-${doc.documentType}`}
+                                className="text-sm text-slate-700 cursor-pointer select-none leading-tight"
+                            >
+                                I have read and agree to the{' '}
+                                <Link
+                                    href={`/legal/${doc.documentType}`}
+                                    target="_blank"
+                                    className="text-purple-600 underline hover:text-purple-800"
+                                >
+                                    {doc.title}
+                                </Link>
+                            </label>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <Button
+                data-testid="onboarding-consent-accept-btn"
+                className="w-full bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
+                disabled={!allChecked || recordConsents.isPending}
+                onClick={handleAccept}
+            >
+                {recordConsents.isPending ? 'Saving...' : 'Accept & Continue'}
+            </Button>
+        </div>
+    );
+};
+
 interface CaptureProfileProps {
     className?: string;
     practitionerId: string;
@@ -101,6 +193,7 @@ export default function CaptureProfile({
 }: CaptureProfileProps) {
     const router = useRouter();
     const { update: updateSession } = useSession();
+    const [consentAccepted, setConsentAccepted] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
 
     // Log practitionerId for debugging - will be used when server supports pre-assigned IDs
@@ -290,6 +383,14 @@ export default function CaptureProfile({
             : [...current, value];
         form.setValue(field, updated, { shouldValidate: true });
     };
+
+    if (!consentAccepted) {
+        return (
+            <div className={cn('overflow-y-auto', className)}>
+                <PractitionerOnboardingConsent onAccepted={() => setConsentAccepted(true)} />
+            </div>
+        );
+    }
 
     return (
         <div className={cn('p-8 overflow-y-auto', className)}>

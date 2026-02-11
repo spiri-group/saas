@@ -17,7 +17,7 @@ interface RecentOrdersProps {
 const getStatusBadge = (paidStatus: string | undefined) => {
     switch (paidStatus) {
         case 'PAID':
-            return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">Pending</Badge>;
+            return <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">Pending</Badge>;
         case 'SHIPPED':
             return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">Shipped</Badge>;
         case 'DELIVERED':
@@ -59,7 +59,7 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({ orders, merchantSlug, isLoa
             >
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                        <ShoppingBag className="w-5 h-5 text-blue-400" />
+                        <ShoppingBag className="w-5 h-5 text-orange-400" />
                         <span className="font-medium text-white">Recent Orders</span>
                     </div>
                 </div>
@@ -85,7 +85,7 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({ orders, merchantSlug, isLoa
                 data-testid="recent-orders"
             >
                 <div className="flex items-center gap-2 mb-3">
-                    <ShoppingBag className="w-5 h-5 text-blue-400" />
+                    <ShoppingBag className="w-5 h-5 text-orange-400" />
                     <span className="font-medium text-white">Recent Orders</span>
                 </div>
                 <p className="text-slate-400 text-sm">
@@ -102,12 +102,12 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({ orders, merchantSlug, isLoa
         >
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5 text-blue-400" />
+                    <ShoppingBag className="w-5 h-5 text-orange-400" />
                     <span className="font-medium text-white">Recent Orders</span>
                 </div>
                 <Link
                     href={`/m/${merchantSlug}/manage/customers/history`}
-                    className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                    className="text-sm text-orange-400 hover:text-orange-300 flex items-center gap-1"
                 >
                     View all
                     <ArrowRight className="w-3 h-3" />

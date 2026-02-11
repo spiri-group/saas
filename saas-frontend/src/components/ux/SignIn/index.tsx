@@ -10,6 +10,7 @@ import { signIn, useSession } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RefreshCw, X } from "lucide-react";
+import Link from "next/link";
 
 export const SignIn = () => {
   const queryClient = useQueryClient();
@@ -236,24 +237,36 @@ export const SignIn = () => {
   }
 
   return (
-    <form
-      className={cn("flex flex-row space-x-2", divClassName)}
-      onSubmit={handleSendOTP}
-    >
-      <Input
-        name="email"
-        placeholder="Email"
-        autoComplete="email"
-        glass={false}
-        onChange={(ev) => setEmail(ev.target.value)}
-      />
-      <Button
-        type="submit"
-        className="flex-none w-40"
-        disabled={!isValidEmail(email)}
+    <div className={cn("flex flex-col items-center", divClassName)}>
+      <form
+        className="flex flex-row space-x-2 w-full"
+        onSubmit={handleSendOTP}
       >
-        Login / Signup
-      </Button>
-    </form>
+        <Input
+          name="email"
+          placeholder="Email"
+          autoComplete="email"
+          glass={false}
+          onChange={(ev) => setEmail(ev.target.value)}
+        />
+        <Button
+          type="submit"
+          className="flex-none w-40"
+          disabled={!isValidEmail(email)}
+        >
+          Login / Signup
+        </Button>
+      </form>
+      <p className="text-xs text-white/50 mt-2 text-center" data-testid="signin-legal-text">
+        By continuing, you agree to our{' '}
+        <Link href="/legal/terms-of-service" className="underline hover:text-white/70">
+          Terms of Service
+        </Link>{' '}
+        and{' '}
+        <Link href="/legal/privacy-policy" className="underline hover:text-white/70">
+          Privacy Policy
+        </Link>
+      </p>
+    </div>
   );
 };

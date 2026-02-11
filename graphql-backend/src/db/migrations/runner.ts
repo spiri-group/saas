@@ -365,6 +365,21 @@ export class MigrationRunner {
                 return resources;
             },
 
+            async patchItem(
+                containerName: string,
+                id: string,
+                partitionKey: string | string[],
+                operations: { op: string; path: string; value?: any }[]
+            ): Promise<void> {
+                if (self.options.dryRun) {
+                    self.log(`  [DRY RUN] Would patch item ${id} in ${containerName}`);
+                    return;
+                }
+
+                const container = database.container(containerName);
+                await container.item(id, partitionKey).patch(operations as any);
+            },
+
             getEnvironment(): string {
                 return self.options.environment;
             },

@@ -71,22 +71,28 @@ const useBL = (props: BLProps) => {
 
     const options: NavOption[] = [
         {
-            label: "Go to Profile",
+            label: "View Profile",
             icon: <ExternalLink className="w-5 h-5" />,
             href: `/p/${practitionerSlug}`,
+            testId: "nav-view-profile"
         },
         {
             label: "Dashboard",
             icon: <LayoutDashboard className="w-5 h-5" />,
             href: `/p/${practitionerSlug}/manage`,
+            testId: "nav-dashboard"
         },
         {
             label: "Messages",
             icon: <Mail className="w-5 h-5" />,
             href: `/p/${practitionerSlug}/manage/messages`,
+            testId: "nav-messages"
         },
         {
-            label: "My Services",
+            label: "Services",
+            icon: <BookOpen className="w-5 h-5" />,
+            testId: "nav-services",
+            description: "Readings, Healings, Coaching",
             navOptions: [
                 {
                     icon: <Sparkles className="w-5 h-5" />,
@@ -98,13 +104,13 @@ const useBL = (props: BLProps) => {
                     icon: <Heart className="w-5 h-5" />,
                     label: "New Healing",
                     dialogId: "Create Healing",
-                    className: "w-[870px] h-[700px]"
+                    className: "w-[870px] max-w-[95vw] h-[700px]"
                 },
                 {
                     icon: <MessageCircle className="w-5 h-5" />,
                     label: "New Coaching",
                     dialogId: "Create Coaching",
-                    className: "w-[870px] h-[700px]"
+                    className: "w-[870px] max-w-[95vw] h-[700px]"
                 },
                 {
                     type: "divider",
@@ -116,46 +122,47 @@ const useBL = (props: BLProps) => {
                     href: `/p/${practitionerSlug}/manage/services`
                 },
                 {
-                    type: "divider",
-                    label: ""
+                    icon: <Sparkles className="w-5 h-5 text-purple-400" />,
+                    label: "Reading Requests",
+                    href: `/p/${practitionerSlug}/manage/readings`
                 },
                 {
                     icon: <ClipboardList className="w-5 h-5" />,
-                    label: "Service Orders",
+                    label: "Client Orders",
                     href: `/p/${practitionerSlug}/manage/services/orders`
                 }
             ],
         },
         {
-            label: "Reading Requests",
-            icon: <Sparkles className="w-5 h-5 text-purple-400" />,
-            href: `/p/${practitionerSlug}/manage/readings`,
-        },
-        {
-            label: "Bookings",
-            icon: <Calendar className="w-5 h-5" />,
-            href: `/p/${practitionerSlug}/manage/bookings`,
-        },
-        {
-            label: "Availability",
-            icon: <Clock className="w-5 h-5" />,
-            href: `/p/${practitionerSlug}/manage/availability`,
-        },
-        {
-            label: "Events",
-            icon: <CalendarDays className="w-5 h-5 text-purple-400" />,
-            dialogId: "Manage Events",
-            className: "w-[1000px] max-w-[95vw] h-[850px]"
-        },
-        {
-            label: "Testimonials",
-            icon: <Quote className="w-5 h-5 text-amber-400" />,
-            href: `/p/${practitionerSlug}/manage/testimonials`,
+            label: "Schedule",
+            icon: <CalendarDays className="w-5 h-5" />,
+            testId: "nav-schedule",
+            description: "Bookings, Availability, Events",
+            navOptions: [
+                {
+                    icon: <Calendar className="w-5 h-5" />,
+                    label: "Bookings",
+                    href: `/p/${practitionerSlug}/manage/bookings`
+                },
+                {
+                    icon: <Clock className="w-5 h-5" />,
+                    label: "Availability",
+                    href: `/p/${practitionerSlug}/manage/availability`
+                },
+                {
+                    icon: <CalendarDays className="w-5 h-5 text-purple-400" />,
+                    label: "Events",
+                    dialogId: "Manage Events",
+                    className: "w-[1000px] max-w-[95vw] h-[850px]"
+                }
+            ],
         },
         {
             label: "Profile",
             icon: <User className="w-5 h-5" />,
-            testId: "profile-submenu",
+            testId: "nav-profile",
+            description: "Bio, Media, Reviews",
+            columns: 2,
             navOptions: [
                 {
                     icon: <User className="w-5 h-5" />,
@@ -163,83 +170,88 @@ const useBL = (props: BLProps) => {
                     href: `/p/${practitionerSlug}/manage/profile`
                 },
                 {
+                    icon: <Quote className="w-5 h-5 text-amber-400" />,
+                    label: "Testimonials",
+                    href: `/p/${practitionerSlug}/manage/testimonials`
+                },
+                {
                     type: "divider",
-                    label: ""
+                    label: "About You"
                 },
                 {
                     icon: <FileText className="w-5 h-5" />,
                     label: "Bio & Headline",
                     dialogId: "Edit Bio",
-                    className: "w-[600px]"
+                    className: "w-[600px] max-w-[95vw]"
                 },
                 {
                     icon: <Tags className="w-5 h-5" />,
                     label: "Modalities",
                     dialogId: "Edit Modalities",
-                    className: "w-[600px]"
+                    className: "w-[600px] max-w-[95vw]"
                 },
                 {
                     icon: <Wand2 className="w-5 h-5" />,
                     label: "Tools Collection",
                     dialogId: "Edit Tools",
-                    className: "w-[700px]"
+                    className: "w-[700px] max-w-[95vw]"
                 },
                 {
                     icon: <GraduationCap className="w-5 h-5" />,
                     label: "Training & Credentials",
                     dialogId: "Edit Training",
-                    className: "w-[700px]"
+                    className: "w-[700px] max-w-[95vw]"
                 },
                 {
                     icon: <Compass className="w-5 h-5" />,
                     label: "Spiritual Journey",
                     dialogId: "Edit Journey",
-                    className: "w-[600px]"
+                    className: "w-[600px] max-w-[95vw]"
                 },
                 {
                     type: "divider",
-                    label: ""
+                    label: "Media"
                 },
                 {
                     icon: <Video className="w-5 h-5" />,
                     label: "Video Update",
                     dialogId: "Edit Video",
-                    className: "w-[900px] max-w-[90vw]"
+                    className: "w-[900px] max-w-[95vw]"
                 },
                 {
                     icon: <Link className="w-5 h-5" />,
                     label: "Social Links",
                     dialogId: "Edit Socials",
-                    className: "w-[700px]"
+                    className: "w-[700px] max-w-[95vw]"
                 },
                 {
                     icon: <Mic className="w-5 h-5" />,
                     label: "Audio Introduction",
                     dialogId: "Edit Audio Intro",
-                    className: "w-[600px]"
+                    className: "w-[600px] max-w-[95vw]"
                 },
                 {
                     type: "divider",
-                    label: ""
+                    label: "Engagement"
                 },
                 {
                     icon: <Sun className="w-5 h-5 text-amber-400" />,
                     label: "Daily Oracle",
                     dialogId: "Edit Oracle Message",
-                    className: "w-[600px]"
+                    className: "w-[600px] max-w-[95vw]"
                 },
                 {
                     icon: <Pin className="w-5 h-5" />,
                     label: "Pinned Reviews",
                     dialogId: "Edit Pinned Reviews",
-                    className: "w-[700px]"
+                    className: "w-[700px] max-w-[95vw]"
                 },
             ],
         },
         {
-            label: "My Shop Fronts",
+            label: "Shop Fronts",
             icon: <Store className="w-5 h-5 text-amber-500" />,
-            testId: "my-shop-fronts-nav",
+            testId: "nav-shop-fronts",
             navOptions: [
                 {
                     icon: <Plus className="w-5 h-5" />,

@@ -42,26 +42,36 @@ const CURRENCIES = [
   { value: "JPY", label: "JPY - Japanese Yen" },
 ];
 
+const MARKET_CURRENCY: Record<string, string> = {
+  AU: "AUD",
+  UK: "GBP",
+  US: "USD",
+};
+
 interface FeeEditorProps {
   open: boolean;
   onClose: () => void;
   editingFee?: { key: string; config: FeeConfig } | null;
+  market: string;
 }
 
 export default function FeeEditor({
   open,
   onClose,
-  editingFee
+  editingFee,
+  market
 }: FeeEditorProps) {
   const { updateFee } = UseUpdateFees();
   const [simAmount, setSimAmount] = useState("100");
+
+  const defaultCurrency = MARKET_CURRENCY[market] || "AUD";
 
   const form = useForm<FeeForm>({
     resolver: zodResolver(feeSchema),
     defaultValues: {
       percent: 0,
       fixed: 0,
-      currency: "AUD"
+      currency: defaultCurrency
     }
   });
 
@@ -70,7 +80,7 @@ export default function FeeEditor({
   const watchFixed = form.watch("fixed");
   const watchCurrency = form.watch("currency");
 
-  // Reset form when editingFee changes
+  // Reset form when editingFee or market changes
   // percent is stored as raw number (5 = 5%), PercentageInput expects fraction (0-1)
   useEffect(() => {
     if (editingFee) {
@@ -83,10 +93,10 @@ export default function FeeEditor({
       form.reset({
         percent: 0,
         fixed: 0,
-        currency: "AUD"
+        currency: defaultCurrency
       });
     }
-  }, [editingFee, form]);
+  }, [editingFee, form, defaultCurrency]);
 
   const handleClose = () => {
     form.reset();
@@ -97,6 +107,7 @@ export default function FeeEditor({
     if (!editingFee) return;
 
     updateFee.mutate({
+      market,
       key: editingFee.key,
       config: {
         percent: data.percent,

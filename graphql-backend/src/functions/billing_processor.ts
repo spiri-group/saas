@@ -172,20 +172,65 @@ async function processVendorBilling(
         return;
     }
 
-    // Sum plan amounts (use fee config prices when available, fallback to vendor-stored prices)
-    const totalAmount = subscription.plans.reduce((sum, plan) => sum + getPlanAmount(plan, feeConfig), 0);
-    const currency = subscription.plans[0].price.currency;
-
-    if (totalAmount <= 0) {
-        context.log(`Vendor ${vendor.id} has zero total - skipping`);
-        return;
-    }
-
     const periodStart = subscription.next_billing_date || DateTime.now().toISODate();
     const interval = subscription.billing_interval || "monthly";
     const periodEnd = DateTime.fromISO(periodStart)
         .plus(interval === "yearly" ? { years: 1 } : { months: 1 })
         .toISODate();
+
+    // Check waiver override
+    if (subscription.waived) {
+        const waiverExpired = subscription.waivedUntil && DateTime.fromISO(subscription.waivedUntil) < DateTime.now();
+
+        if (waiverExpired) {
+            // Waiver has expired - clear waiver fields and proceed to billing
+            context.log(`Waiver expired for vendor ${vendor.id} - clearing and proceeding to billing`);
+            await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
+                { op: "remove", path: "/subscription/waived" },
+                { op: "remove", path: "/subscription/waivedUntil" },
+            ], "BILLING_PROCESSOR");
+        } else {
+            // Waiver still active - advance billing date without charging
+            const nextBillingDate = DateTime.fromISO(periodStart)
+                .plus(interval === "yearly" ? { years: 1 } : { months: 1 })
+                .toISODate();
+
+            context.log(`Vendor ${vendor.id} is waived - advancing billing date to ${nextBillingDate} without charging`);
+
+            await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
+                { op: "set", path: "/subscription/next_billing_date", value: nextBillingDate },
+                { op: "set", path: "/subscription/payment_status", value: "success" },
+                { op: "set", path: "/subscription/payment_retry_count", value: 0 },
+                { op: "set", path: "/subscription/last_payment_date", value: DateTime.now().toISO() },
+            ], "BILLING_PROCESSOR");
+            return;
+        }
+    }
+
+    // Sum plan amounts (use fee config prices when available, fallback to vendor-stored prices)
+    const rawAmount = subscription.plans.reduce((sum, plan) => sum + getPlanAmount(plan, feeConfig), 0);
+    const currency = subscription.plans[0].price.currency;
+
+    // Apply discount override
+    const discountMultiplier = 1 - (subscription.discountPercent || 0) / 100;
+    const totalAmount = Math.round(rawAmount * discountMultiplier);
+
+    if (totalAmount <= 0) {
+        // Discount results in zero charge - treat same as waived
+        const nextBillingDate = DateTime.fromISO(periodStart)
+            .plus(interval === "yearly" ? { years: 1 } : { months: 1 })
+            .toISODate();
+
+        context.log(`Vendor ${vendor.id} has zero total after discount - advancing billing date to ${nextBillingDate}`);
+
+        await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
+            { op: "set", path: "/subscription/next_billing_date", value: nextBillingDate },
+            { op: "set", path: "/subscription/payment_status", value: "success" },
+            { op: "set", path: "/subscription/payment_retry_count", value: 0 },
+            { op: "set", path: "/subscription/last_payment_date", value: DateTime.now().toISO() },
+        ], "BILLING_PROCESSOR");
+        return;
+    }
 
     const idempotencyKey = `billing_${vendor.id}_${periodStart}`;
 

@@ -1,0 +1,44 @@
+type LegalDocument {
+  id: ID!
+  documentType: String!
+  title: String!
+  content: String!
+  market: String!
+  version: Int!
+  isPublished: Boolean!
+  effectiveDate: String
+  changeSummary: String
+  createdAt: String!
+  updatedAt: String!
+  updatedBy: String!
+  placeholders: JSON
+}
+
+type LegalDocumentVersion {
+  id: ID!
+  documentId: String!
+  version: Int!
+  title: String!
+  content: String!
+  market: String!
+  isPublished: Boolean!
+  effectiveDate: String
+  changeSummary: String!
+  createdAt: String!
+  supersededAt: String!
+  supersededBy: String!
+  placeholders: JSON
+}
+
+type LegalPlaceholders {
+  id: ID!
+  placeholders: JSON!
+}
+
+type Query {
+  legalDocuments(market: String, documentType: String): [LegalDocument!]!
+  legalDocument(id: ID!): LegalDocument
+  legalDocumentVersions(documentId: ID!): [LegalDocumentVersion!]!
+  legalDocumentVersion(id: ID!): LegalDocumentVersion
+  legalPlaceholders: LegalPlaceholders
+}

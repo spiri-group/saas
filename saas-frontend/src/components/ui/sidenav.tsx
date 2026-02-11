@@ -1,4 +1,4 @@
-import React, { JSX, useEffect, useState } from "react";
+import React, { JSX, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -21,6 +21,13 @@ export type NavOption = {
     className?: string;
     testId?: string;
 
+    // Optional short description shown as subtitle on expandable groups
+    // Overrides the auto-generated subtitle from child labels
+    description?: string;
+
+    // Number of columns for the flyout submenu (default 1)
+    columns?: number;
+
     // path is used to store the path to this nav option
     path?: string[];
 };
@@ -35,6 +42,17 @@ type SideNavItemProps = {
 
 const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath, commandLocation }) => {
     const [showSubNav, setShowSubNav] = useState(false);
+    const [flyoutMaxHeight, setFlyoutMaxHeight] = useState<number | undefined>(undefined);
+    const flyoutRef = useRef<HTMLDivElement>(null);
+
+    // Measure available vertical space when flyout opens
+    useEffect(() => {
+        if (showSubNav && flyoutRef.current) {
+            const rect = flyoutRef.current.getBoundingClientRect();
+            const available = window.innerHeight - rect.top - 16;
+            setFlyoutMaxHeight(Math.max(200, available));
+        }
+    }, [showSubNav]);
 
     let action_type = "expand";
     if (navOption.dialogId) {
@@ -140,9 +158,9 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                             )}>{navOption.label}</span>
                             {subNavOptions && (
                                 <p className="w-full text-slate-400 truncate pr-2">
-                                {subNavOptions
-                                    ?.filter((navOption) => navOption.type !== "divider" && navOption.label)
-                                    .map((navOption) => navOption.label.replace(/^New\s+/, ""))
+                                {navOption.description || subNavOptions
+                                    ?.filter((opt) => opt.type !== "divider" && opt.label)
+                                    .map((opt) => opt.label.replace(/^New\s+/, ""))
                                     .join(", ")}
                                 </p>
                             )}
@@ -151,6 +169,7 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                 </motion.div>
                 {subNavOptions && showSubNav && (
                     <motion.div
+                        ref={flyoutRef}
                         className="absolute"
                         style={{ top: 0, transform: `translateX(${sidebar_size.width + 4}px)` }}
                     >
@@ -159,6 +178,8 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                             depth={depth + 1}
                             activePath={activePath}
                             commandLocation={commandLocation}
+                            columns={navOption.columns}
+                            maxHeight={flyoutMaxHeight}
                         />
                     </motion.div>
                 )}
@@ -174,6 +195,8 @@ type SideNavProps = {
     activePath?: string[];
     className?: string;
     commandLocation: "internal" | "external";
+    columns?: number;
+    maxHeight?: number;
 };
 
 const append_paths_to_nav = (navOptions: NavOption[], path: string[]) => {
@@ -187,14 +210,84 @@ const append_paths_to_nav = (navOptions: NavOption[], path: string[]) => {
     });
 };
 
-const SideNav: React.FC<SideNavProps> = ({ navOptions, depth = 1, activePath = [], className, commandLocation, ...rest }) => {
+// Splits nav options into groups at labeled dividers for multi-column layout
+const splitIntoColumnGroups = (navOptions: NavOption[], numColumns: number): NavOption[][] => {
+    const groups: NavOption[][] = [];
+    let currentGroup: NavOption[] = [];
+
+    for (const opt of navOptions) {
+        if (opt.type === "divider" && opt.label && currentGroup.length > 0) {
+            groups.push(currentGroup);
+            currentGroup = [opt];
+        } else {
+            currentGroup.push(opt);
+        }
+    }
+    if (currentGroup.length > 0) {
+        groups.push(currentGroup);
+    }
+
+    // Distribute groups across columns sequentially
+    const columns: NavOption[][] = Array.from({ length: numColumns }, () => []);
+    const mid = Math.floor(groups.length / numColumns);
+    groups.forEach((group, idx) => {
+        const colIdx = idx < mid ? 0 : Math.min(numColumns - 1, 1);
+        columns[colIdx].push(...group);
+    });
+
+    return columns;
+};
+
+const SideNav: React.FC<SideNavProps> = ({ navOptions, depth = 1, activePath = [], className, commandLocation, columns, maxHeight, ...rest }) => {
     // check if the navOptions have paths
     // if they do not have paths, we need to add them
     if (navOptions.some((navOption) => navOption.path == null)) {
         // this applies recursively so we assume it will only be called once at the top level
         navOptions = append_paths_to_nav(navOptions, []);
     }
-    
+
+    const effectiveColumns = columns && columns > 1 && depth > 1 ? columns : 1;
+    const animateWidth = sidebar_size.width * effectiveColumns;
+    const columnGroups = effectiveColumns > 1
+        ? splitIntoColumnGroups(navOptions, effectiveColumns)
+        : [navOptions];
+
+    const renderItems = (items: NavOption[]) => (
+        items.map((navOption, index) => (
+            <React.Fragment key={index}>
+                {navOption.type === "divider" ? (
+                    navOption.label ? (
+                        <div className="mt-3 mb-1 mx-3" role="separator">
+                            <span className="text-[10px] text-amber-300/50 uppercase tracking-wider font-medium">{navOption.label}</span>
+                        </div>
+                    ) : (
+                        <div className="my-2 mx-3 border-t border-slate-700" role="separator" />
+                    )
+                ) : navOption.type === "navgroup" ? (
+                    <>
+                        <div className="text-sm pl-4 my-1 text-amber-300/70 text-left" role="presentation">{navOption.label}</div>
+                        {navOption.navOptions != null && navOption.navOptions.map((item, itemIndex) => (
+                            <SideNavItem
+                                key={itemIndex}
+                                navOption={item}
+                                depth={depth}
+                                activePath={activePath}
+                                commandLocation={commandLocation}
+                            />
+                        ))}
+                    </>
+                ) : (
+                    <SideNavItem
+                        navOption={navOption}
+                        depth={depth}
+                        activePath={activePath}
+                        commandLocation={commandLocation}
+                    />
+                )}
+            </React.Fragment>
+        ))
+    );
+
     return (
         <>
             {/* Background layer for main sidebar only */}
@@ -223,42 +316,26 @@ const SideNav: React.FC<SideNavProps> = ({ navOptions, depth = 1, activePath = [
             <motion.ul
                 aria-label={rest["aria-label"]}
                 className={cn(
-                    "fixed py-1 drop-shadow-lg rounded-xl flex flex-col z-40 left-0",
-                    depth === 1 ? "" : "bg-slate-950 border border-white/10",
+                    "fixed py-1 drop-shadow-lg rounded-xl flex z-40 left-0",
+                    effectiveColumns > 1 ? "flex-row" : "flex-col",
+                    depth === 1 ? "" : "bg-slate-950 border border-white/10 overflow-y-auto",
                     className
                 )}
+                style={depth > 1 && maxHeight ? { maxHeight: `${maxHeight}px` } : undefined}
                 initial={{ width: 0, opacity: 0 }}
-                animate={{ width: sidebar_size.width, opacity: 1 }}
+                animate={{ width: animateWidth, opacity: 1 }}
                 transition={{ duration: 0.2 }}
                 role="menu"
             >
-            {navOptions.map((navOption, index) => (
-                <React.Fragment key={index}>
-                    {navOption.type === "divider" ? (
-                        <div className="my-2 mx-3 border-t border-slate-700" role="separator" />
-                    ) : navOption.type === "navgroup" ? (
-                        <>
-                            <div className="text-sm pl-4 my-1 text-amber-300/70 text-left" role="presentation">{navOption.label}</div>
-                            {navOption.navOptions != null && navOption.navOptions.map((item, itemIndex) => (
-                                <SideNavItem
-                                    key={itemIndex}
-                                    navOption={item}
-                                    depth={depth}
-                                    activePath={activePath}
-                                    commandLocation={commandLocation}
-                                />
-                            ))}
-                        </>
-                    ) : (
-                        <SideNavItem
-                            navOption={navOption}
-                            depth={depth}
-                            activePath={activePath}
-                            commandLocation={commandLocation}
-                        />
-                    )}
-                </React.Fragment>
-            ))}
+            {effectiveColumns > 1 ? (
+                columnGroups.map((colItems, colIdx) => (
+                    <div key={colIdx} className="flex flex-col" style={{ width: sidebar_size.width }}>
+                        {renderItems(colItems)}
+                    </div>
+                ))
+            ) : (
+                renderItems(navOptions)
+            )}
             </motion.ul>
         </>
     );

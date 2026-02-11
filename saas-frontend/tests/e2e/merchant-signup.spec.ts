@@ -278,9 +278,8 @@ test.describe('Merchant Signup - Complete Flow', () => {
     // Verify the base plan is loaded and showing
     await expect(page.locator('[data-testid="base-plan-price"]')).toBeVisible({ timeout: 10000 });
 
-    // Submit form - button text changed from "Finish and enter billing" to just "Finish"
-    // since payment is no longer collected at signup
-    const submitButton = page.getByRole('button', { name: /^Finish$/i });
+    // Submit form - creates the merchant and advances to Step 3 (optional card)
+    const submitButton = page.getByRole('button', { name: /^Continue$/i });
 
     // Wait a bit for the debug logs to show form state
     await page.waitForTimeout(3000);
@@ -290,8 +289,12 @@ test.describe('Merchant Signup - Complete Flow', () => {
 
     await submitButton.click();
 
-    // No payment dialog - redirect directly to merchant profile page
-    // Payment setup happens later when merchant starts receiving payouts
+    // Step 3: Optional card collection - skip it
+    const skipCardButton = page.getByTestId('onboarding-skip-card-btn');
+    await expect(skipCardButton).toBeVisible({ timeout: 30000 });
+    await skipCardButton.click();
+
+    // After skipping card, redirects to merchant profile page
     await page.waitForURL(/\/m\/test-merchant-\d+/, { timeout: 30000 });
 
     // Extract merchant slug from URL for cleanup
@@ -703,12 +706,17 @@ test.describe('Merchant Signup - Complete Flow', () => {
     await page.waitForTimeout(3000);
     await expect(page.locator('[data-testid="merchant-subscription-section"]')).toBeVisible({ timeout: 15000 });
 
-    // Submit form - no payment collected at signup
-    const submitButton = page.getByRole('button', { name: /^Finish$/i });
+    // Submit form - creates merchant and advances to Step 3 (optional card)
+    const submitButton = page.getByRole('button', { name: /^Continue$/i });
     await expect(submitButton).toBeEnabled({ timeout: 10000 });
     await submitButton.click();
 
-    // No payment dialog - redirect directly to merchant profile page
+    // Step 3: Optional card collection - skip it
+    const skipCardButton = page.getByTestId('onboarding-skip-card-btn');
+    await expect(skipCardButton).toBeVisible({ timeout: 30000 });
+    await skipCardButton.click();
+
+    // After skipping card, redirects to merchant profile page
     await page.waitForURL(new RegExp(`/m/${merchantData.slug}`), { timeout: 30000 });
 
     // Register merchant for cleanup with actual vendor ID
@@ -740,10 +748,13 @@ test.describe('Merchant Signup - Complete Flow', () => {
       await page.waitForTimeout(1000);
     }
 
-    // STEP 3: Log out
+    // STEP 3: Log out (open user dropdown first, then click sign out)
     console.log('[Test] Step 3: Logging out...');
-    const signOutButton = page.locator('button:has-text("Sign Out")');
-    await expect(signOutButton).toBeVisible({ timeout: 10000 });
+    const userMenuTrigger = page.getByTestId('user-menu-trigger');
+    await expect(userMenuTrigger).toBeVisible({ timeout: 10000 });
+    await userMenuTrigger.click();
+    const signOutButton = page.getByTestId('user-menu-sign-out');
+    await expect(signOutButton).toBeVisible({ timeout: 5000 });
     await signOutButton.click();
     await page.waitForURL('/', { timeout: 15000 });
     await expect(page.locator('input[name="email"]')).toBeVisible({ timeout: 10000 });

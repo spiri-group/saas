@@ -1,0 +1,11 @@
+input RecordConsentInput {
+  documentType: String!
+  documentId: String!
+  version: Int!
+  consentContext: String!
+  documentTitle: String!
+}
+
+type Mutation {
+  recordConsents(inputs: [RecordConsentInput!]!): Boolean!
+}

@@ -1,32 +1,43 @@
 import { serverContext } from "../../services/azFunction";
 
 const container = 'System-Settings'
-const id = 'spiriverse'
 const partition = 'fees-config'
+
+const VALID_MARKETS = ['AU', 'UK', 'US'] as const;
+
+function getDocId(market: string): string {
+    if (!VALID_MARKETS.includes(market as any)) {
+        throw new Error(`Invalid market "${market}". Must be one of: ${VALID_MARKETS.join(', ')}`);
+    }
+    return `spiriverse-${market}`;
+}
 
 const resolvers = {
     Query: {
-        feeSetting: async (_: any, __: any, context: serverContext) => {
+        feeSetting: async (_: any, args: { market?: string }, context: serverContext) => {
+            // If no market specified, fall back to legacy document for backward compat
+            const docId = args.market ? getDocId(args.market) : 'spiriverse';
             try {
                 // Return raw fee config – fixed amounts are stored in smallest units (cents)
                 // and the frontend expects cents (formatFixed divides by 100 for display)
-                return await context.dataSources.cosmos.get_record(container, id, partition);
+                return await context.dataSources.cosmos.get_record(container, docId, partition);
             } catch (error) {
-                console.error(`Failed to get fee setting ${id}:`, error);
-                throw new Error(`Fee setting ${id} not found`);
+                console.error(`Failed to get fee setting ${docId}:`, error);
+                throw new Error(`Fee setting ${docId} not found`);
             }
         }
     },
 
     Mutation: {
-        updateFeeConfig: async (_: any, args: { key: string, percent: number, fixed: number, currency: string }, context: serverContext) => {
+        updateFeeConfig: async (_: any, args: { market: string, key: string, percent: number, fixed: number, currency: string }, context: serverContext) => {
+            const docId = getDocId(args.market);
             try {
                 // Fixed amount is already in smallest units from frontend
 
                 // Use patch_record to update just the specific fee configuration
                 await context.dataSources.cosmos.patch_record(
                     container,
-                    id,
+                    docId,
                     partition,
                     [
                         {
@@ -48,12 +59,13 @@ const resolvers = {
             }
         },
 
-        deleteFeeConfig: async (_: any, args: { key: string }, context: serverContext) => {
+        deleteFeeConfig: async (_: any, args: { market: string, key: string }, context: serverContext) => {
+            const docId = getDocId(args.market);
             try {
                 // Use patch_record to remove the specific fee configuration
                 await context.dataSources.cosmos.patch_record(
                     container,
-                    id,
+                    docId,
                     partition,
                     [
                         {

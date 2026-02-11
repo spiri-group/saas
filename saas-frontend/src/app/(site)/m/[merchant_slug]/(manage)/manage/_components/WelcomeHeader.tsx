@@ -16,14 +16,11 @@ const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ merchantName }) => {
     };
 
     return (
-        <div className="mb-6">
+        <div className="mb-6" data-testid="welcome-header">
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                <Store className="w-6 h-6 text-amber-400" />
+                <Store className="w-6 h-6 text-orange-400" />
                 {getGreeting()}, {merchantName}
             </h1>
-            <p className="text-slate-400 mt-1">
-                Manage your store
-            </p>
         </div>
     );
 };

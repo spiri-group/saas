@@ -59,6 +59,11 @@ export interface MigrationContext {
     runQuery<T = any>(containerName: string, query: string, parameters?: { name: string; value: any }[]): Promise<T[]>;
 
     /**
+     * Patch a single item (partial update for data migrations)
+     */
+    patchItem(containerName: string, id: string, partitionKey: string | string[], operations: { op: string; path: string; value?: any }[]): Promise<void>;
+
+    /**
      * Get current environment name
      */
     getEnvironment(): string;

@@ -4,6 +4,7 @@ import { FeeConfig } from "../FeesManager";
 import { toast } from "sonner";
 
 interface UpdateFeeInput {
+  market: string;
   key: string;
   config: FeeConfig;
 }
@@ -16,10 +17,11 @@ const UseUpdateFees = () => {
       const response = await gql<{
         updateFeeConfig: boolean;
       }>(`
-        mutation UpdateFeeConfig($key: String!, $percent: Float!, $fixed: Float!, $currency: String!) {
-          updateFeeConfig(key: $key, percent: $percent, fixed: $fixed, currency: $currency)
+        mutation UpdateFeeConfig($market: String!, $key: String!, $percent: Float!, $fixed: Float!, $currency: String!) {
+          updateFeeConfig(market: $market, key: $key, percent: $percent, fixed: $fixed, currency: $currency)
         }
       `, {
+        market: input.market,
         key: input.key,
         percent: input.config.percent,
         fixed: input.config.fixed,
@@ -27,8 +29,8 @@ const UseUpdateFees = () => {
       });
       return response.updateFeeConfig;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fees-config'] });
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['fees-config', variables.market] });
       toast.success('Fee configuration updated successfully');
     },
     onError: (error: any) => {

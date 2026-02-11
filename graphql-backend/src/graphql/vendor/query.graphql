@@ -328,6 +328,19 @@ type Vendor {
 
   # Reading/Practitioner stats
   readingRating: ReadingRating
+
+  # Publication / Go-Live
+  publishedAt: DateTime
+  isPublished: Boolean!
+  goLiveReadiness: GoLiveReadiness!
+}
+
+type GoLiveReadiness {
+  isReady: Boolean!
+  hasPaymentCard: Boolean!
+  hasFirstPayment: Boolean!
+  hasStripeOnboarding: Boolean!
+  missingRequirements: [String!]!
 }
 
 type ReadingRating {
@@ -380,6 +393,10 @@ type VendorSubscription {
   payouts_blocked: Boolean
   last_payment_date: String
   payment_retry_count: Int
+  discountPercent: Int
+  waived: Boolean
+  waivedUntil: String
+  overrideNotes: String
 }
 
 type BillingRecord {

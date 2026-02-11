@@ -196,6 +196,7 @@ export type vendor_type = {
     name: string,
     slug: string,
     docType?: VendorDocType,
+    publishedAt?: string,
     practitioner?: practitioner_profile_type,
     onStart?: string,
     mode?: string,
@@ -298,7 +299,12 @@ export type vendorSubscription_type = {
   next_billing_date?: string,       // ISO date of next charge
   billing_interval?: billing_interval,
   billing_history?: billing_record_type[],
-  saved_payment_method?: string     // Stripe PaymentMethod ID
+  saved_payment_method?: string,    // Stripe PaymentMethod ID
+  // Subscription override fields (set by admin console)
+  discountPercent?: number,          // 0-100, percentage discount on billing
+  waived?: boolean,                  // true = skip billing entirely
+  waivedUntil?: string,             // ISO date, null = indefinite waiver
+  overrideNotes?: string            // admin notes explaining override
 }
 
 export type plan_type =  {

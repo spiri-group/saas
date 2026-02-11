@@ -20,7 +20,7 @@ import {
  * - Profile > Customise > Intro
  * - Profile > Customise > Contact Details
  * - Profile > Customise > Social URLs
- * - Profile > Customise > Explore (Descriptions)
+ * - Profile > Customise > About (Descriptions)
  * - Profile > Customise > Team Members
  * - Profile > Branding (replaces nav)
  * - Marketing > Catalogue Banner
@@ -157,7 +157,7 @@ test.describe('Merchant Profile Customization - Sidebar Navigation', () => {
     await expect(page.locator('button[aria-label="Intro"]')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('button[aria-label="Contact Details"]')).toBeVisible();
     await expect(page.locator('button[aria-label="Social URLs"]')).toBeVisible();
-    await expect(page.locator('button[aria-label="Explore"]')).toBeVisible();
+    await expect(page.locator('button[aria-label="About"]')).toBeVisible();
     await expect(page.locator('button[aria-label="Team Members"]')).toBeVisible();
 
     // Verify active state highlights Customise (amber color is on the span inside)
@@ -514,10 +514,10 @@ test.describe('Merchant Profile Customization - Sidebar Navigation', () => {
     // Dismiss welcome dialog if it appears
     await dismissWelcomeDialog(page);
 
-    // Open Explore/Descriptions dialog via Profile > Customise
+    // Open About/Descriptions dialog via Profile > Customise
     await openCustomiseMenu(page);
 
-    const exploreButton = page.locator('button[aria-label="Explore"]');
+    const exploreButton = page.locator('button[aria-label="About"]');
     await expect(exploreButton).toBeVisible({ timeout: 5000 });
     await exploreButton.click();
     await page.waitForTimeout(1000);
@@ -562,7 +562,7 @@ test.describe('Merchant Profile Customization - Sidebar Navigation', () => {
 
     // Reopen dialog to verify data persisted
     await openCustomiseMenu(page);
-    await page.locator('button[aria-label="Explore"]').click();
+    await page.locator('button[aria-label="About"]').click();
     await page.waitForTimeout(1000);
 
     const dialogAfterRefresh = page.locator('[role="dialog"]:visible').last();

@@ -17,7 +17,7 @@ import MerchantSubscription from './MerchantSubscription';
 import { MediaSchema } from '@/shared/schemas/media';
 import { CurrencyAmountSchema } from '@/components/ux/CurrencyInput';
 import { cn } from '@/lib/utils';
-import { CircleHelpIcon } from 'lucide-react';
+import { CircleHelpIcon, CreditCardIcon, LoaderIcon } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { merchantIdFromSlug } from '../../_hooks/UseMerchantIdFromSlug';
 import { isNullOrWhitespace } from '@/lib/functions';
@@ -25,6 +25,15 @@ import debounce from 'debounce';
 import countryToCurrency from "country-to-currency";
 import { toast } from 'sonner';
 import ComboBox from '@/components/ux/ComboBox';
+import { loadStripe, Stripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { useCreateCardSetupIntent } from '../../_components/Cards/hooks/UseCardSetupIntent';
+import StripeLogo from '@/icons/stripe-logo';
+import { Checkbox } from '@/components/ui/checkbox';
+import useCheckOutstandingConsents from '../../../components/ConsentGuard/hooks/UseCheckOutstandingConsents';
+import useRecordConsents from '../../../components/ConsentGuard/hooks/UseRecordConsents';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 
 type BLProps = {
     merchantId: string;
@@ -198,7 +207,7 @@ const useBL = (props: BLProps) => {
             set: setIsGeneratingSlug,
             active: isGeneratingSlug
         },
-        save: async (values: z.infer<typeof schema>) => {
+        save: async (values: z.infer<typeof schema>): Promise<string> => {
             try {
                 const { religion, country, state, slug, ...rest } = values;
 
@@ -244,9 +253,7 @@ const useBL = (props: BLProps) => {
                 }
                 )
 
-                // No payment collected at signup - redirect directly to merchant profile
-                // Payment setup happens later when merchant starts receiving payouts
-                window.location.href = `/m/${vendor.slug}`;
+                return vendor.slug;
             } catch (error) {
                 console.error('Error creating vendor:', error);
                 throw error;
@@ -294,12 +301,299 @@ const MerchantTypesPicker: React.FC<{
     );
 };
 
+// Stripe instance for onboarding card form (light theme)
+let onboardingStripePromise: Promise<Stripe | null> | null = null;
+const getOnboardingStripe = () => {
+    if (!onboardingStripePromise) {
+        const key = process.env.NEXT_PUBLIC_stripe_token ?? '';
+        onboardingStripePromise = loadStripe(key);
+    }
+    return onboardingStripePromise;
+};
+
+// Inner card form that runs inside Elements provider
+const OnboardingCardForm: React.FC<{
+    clientSecret: string;
+    merchantId: string;
+    onSuccess: () => void;
+}> = ({ clientSecret, onSuccess }) => {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!stripe || !elements) return;
+
+        setIsProcessing(true);
+        setError(null);
+
+        const cardElement = elements.getElement(CardElement);
+        if (!cardElement) {
+            setError('Card element not found');
+            setIsProcessing(false);
+            return;
+        }
+
+        const { error: setupError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
+            payment_method: { card: cardElement },
+        });
+
+        if (setupError) {
+            setError(setupError.message || 'Failed to add card');
+            setIsProcessing(false);
+            return;
+        }
+
+        if (setupIntent?.status === 'succeeded') {
+            toast.success('Card added successfully');
+            onSuccess();
+        } else {
+            setError('Card setup did not complete successfully');
+        }
+
+        setIsProcessing(false);
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="p-4 border border-slate-200 rounded-lg bg-white">
+                <CardElement
+                    options={{
+                        style: {
+                            base: {
+                                fontSize: '16px',
+                                color: '#1e293b',
+                                '::placeholder': { color: '#94a3b8' },
+                            },
+                            invalid: { color: '#ef4444' },
+                        },
+                        hidePostalCode: false,
+                    }}
+                />
+            </div>
+            {error && (
+                <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                    {error}
+                </div>
+            )}
+            <Button
+                type="submit"
+                disabled={!stripe || isProcessing}
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                data-testid="onboarding-add-card-btn"
+            >
+                {isProcessing ? (
+                    <>
+                        <LoaderIcon className="h-4 w-4 animate-spin mr-2" />
+                        Processing...
+                    </>
+                ) : (
+                    <>
+                        <CreditCardIcon className="h-4 w-4 mr-2" />
+                        Add Card &amp; Continue
+                    </>
+                )}
+            </Button>
+        </form>
+    );
+};
+
+// Wrapper that creates the SetupIntent and renders the card form
+const OnboardingCardStep: React.FC<{
+    merchantId: string;
+    onSuccess: () => void;
+    onSkip: () => void;
+}> = ({ merchantId, onSuccess, onSkip }) => {
+    const [clientSecret, setClientSecret] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const createSetupIntent = useCreateCardSetupIntent();
+
+    useEffect(() => {
+        const init = async () => {
+            try {
+                const result = await createSetupIntent.mutateAsync(merchantId);
+                if (result.success && result.clientSecret) {
+                    setClientSecret(result.clientSecret);
+                } else {
+                    setError(result.message || 'Failed to initialize card setup');
+                }
+            } catch (err: any) {
+                setError(err.message || 'Failed to initialize card setup');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        init();
+    }, [merchantId]);
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h1 className="font-light text-2xl text-slate-800 mb-2">Add a Payment Card</h1>
+                <p className="text-sm text-slate-600">
+                    Add a card for your subscription billing. Your first month will be charged now.
+                </p>
+                <div className="flex items-center gap-2 mt-2 text-sm text-slate-500">
+                    <span>Step 3 of 3</span>
+                </div>
+            </div>
+
+            {isLoading && (
+                <div className="flex items-center justify-center py-8">
+                    <LoaderIcon className="h-6 w-6 animate-spin text-slate-400" />
+                    <span className="ml-2 text-slate-500">Preparing card form...</span>
+                </div>
+            )}
+
+            {error && (
+                <div className="space-y-4">
+                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                        {error}
+                    </div>
+                </div>
+            )}
+
+            {clientSecret && (
+                <Elements
+                    stripe={getOnboardingStripe()}
+                    options={{
+                        clientSecret,
+                        appearance: {
+                            theme: 'stripe',
+                            variables: { colorPrimary: '#f59e0b' },
+                        },
+                    }}
+                >
+                    <OnboardingCardForm
+                        clientSecret={clientSecret}
+                        merchantId={merchantId}
+                        onSuccess={onSuccess}
+                    />
+                </Elements>
+            )}
+
+            <div className="flex items-center justify-between">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-slate-500 hover:text-slate-700"
+                    onClick={onSkip}
+                    data-testid="onboarding-skip-card-btn"
+                >
+                    Skip &amp; provide later
+                </Button>
+                <a
+                    href="https://stripe.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                    <span>Secured by</span>
+                    <StripeLogo height={20} />
+                </a>
+            </div>
+        </div>
+    );
+};
+
+const OnboardingConsent: React.FC<{ onAccepted: () => void }> = ({ onAccepted }) => {
+    const { data: session } = useSession();
+    const isLoggedIn = !!session?.user;
+    const { data: outstanding, isLoading } = useCheckOutstandingConsents('merchant-onboarding', isLoggedIn);
+    const recordConsents = useRecordConsents();
+    const [checkedDocs, setCheckedDocs] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        if (!isLoading && (!outstanding || outstanding.length === 0)) {
+            onAccepted();
+        }
+    }, [isLoading, outstanding, onAccepted]);
+
+    if (isLoading || !outstanding || outstanding.length === 0) return null;
+
+    const allChecked = outstanding.every(doc => checkedDocs.has(doc.documentType));
+
+    const handleToggle = (documentType: string) => {
+        setCheckedDocs(prev => {
+            const next = new Set(prev);
+            if (next.has(documentType)) {
+                next.delete(documentType);
+            } else {
+                next.add(documentType);
+            }
+            return next;
+        });
+    };
+
+    const handleAccept = async () => {
+        const inputs = outstanding.map(doc => ({
+            documentType: doc.documentType,
+            documentId: doc.documentId,
+            version: doc.version,
+            consentContext: 'site-modal',
+            documentTitle: doc.title,
+        }));
+        await recordConsents.mutateAsync(inputs);
+        onAccepted();
+    };
+
+    return (
+        <div className="flex flex-col space-y-6 p-8" data-testid="merchant-onboarding-consent">
+            <div>
+                <h1 className="font-light text-2xl text-slate-800 mb-2">Before You Begin</h1>
+                <p className="text-sm text-slate-600">
+                    Please review and accept the following to set up your merchant account.
+                </p>
+            </div>
+            <div className="space-y-4">
+                {outstanding.map(doc => (
+                    <div key={doc.documentType} className="space-y-2">
+                        <div className="flex items-start space-x-2">
+                            <Checkbox
+                                id={`onboarding-consent-${doc.documentType}`}
+                                data-testid={`onboarding-consent-${doc.documentType}`}
+                                checked={checkedDocs.has(doc.documentType)}
+                                onCheckedChange={() => handleToggle(doc.documentType)}
+                            />
+                            <label
+                                htmlFor={`onboarding-consent-${doc.documentType}`}
+                                className="text-sm text-slate-700 cursor-pointer select-none leading-tight"
+                            >
+                                I have read and agree to the{' '}
+                                <Link
+                                    href={`/legal/${doc.documentType}`}
+                                    target="_blank"
+                                    className="text-amber-600 underline hover:text-amber-800"
+                                >
+                                    {doc.title}
+                                </Link>
+                            </label>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <Button
+                data-testid="onboarding-consent-accept-btn"
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                disabled={!allChecked || recordConsents.isPending}
+                onClick={handleAccept}
+            >
+                {recordConsents.isPending ? 'Saving...' : 'Accept & Continue'}
+            </Button>
+        </div>
+    );
+};
+
 const CaptureProfile: React.FC<Props> = (props) => {
     const bl = useBL(props);
 
     const [urlInputActive, setUrlInputActive] = useState<boolean>(false);
-    const [step, setStep] = useState<1 | 2>(1);
+    const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [createdVendorSlug, setCreatedVendorSlug] = useState<string | null>(null);
 
     const field_label_width = "w-40";
 
@@ -322,17 +616,24 @@ const CaptureProfile: React.FC<Props> = (props) => {
     
     return (
         <>
-            <Form {...bl.form}>
+            {step === 0 && (
+                <OnboardingConsent onAccepted={() => setStep(1)} />
+            )}
+            {step > 0 && (<Form {...bl.form}>
                 <form onSubmit={bl.form.handleSubmit(async (values) => {
                     setIsSubmitting(true);
                     try {
-                        await bl.save(values);
+                        const slug = await bl.save(values);
+                        setCreatedVendorSlug(slug);
+                        setStep(3);
                     } catch (error) {
-                        setIsSubmitting(false);
                         throw error;
+                    } finally {
+                        setIsSubmitting(false);
                     }
                 })}
                     className={cn("flex flex-col flex-wrap space-y-6 p-8", props.className)}>
+                    {step !== 3 && (
                     <div className={cn("transition-all duration-500", props.animated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}>
                         <h1 className="font-light text-2xl text-slate-800 mb-2">
                             {step === 1 ? 'Merchant Details' : 'Choose Your Plan'}
@@ -342,10 +643,11 @@ const CaptureProfile: React.FC<Props> = (props) => {
                         </p>
                         {step === 2 && (
                             <div className="flex items-center gap-2 mt-2 text-sm text-slate-500">
-                                <span>Step 2 of 2</span>
+                                <span>Step 2 of 3</span>
                             </div>
                         )}
                     </div>
+                    )}
 
                     {step === 1 && (<>
                     <div className="flex flex-row items-center space-x-2">
@@ -605,12 +907,24 @@ const CaptureProfile: React.FC<Props> = (props) => {
                             disabled={isSubmitting}
                             className="mt-4 flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                         >
-                            {isSubmitting ? 'Processing...' : 'Finish'}
+                            {isSubmitting ? 'Creating your shop...' : 'Continue'}
                         </Button>
                     </div>
                     </>)}
+
+                    {step === 3 && (
+                        <OnboardingCardStep
+                            merchantId={props.merchantId}
+                            onSuccess={() => {
+                                window.location.href = `/m/${createdVendorSlug}`;
+                            }}
+                            onSkip={() => {
+                                window.location.href = `/m/${createdVendorSlug}`;
+                            }}
+                        />
+                    )}
                 </form>
-            </Form>
+            </Form>)}
         </>
     )
 }
