@@ -47,11 +47,12 @@ export default function PractitionerProfileStep({ form, onNext, onBack }: Props)
     };
 
     return (
-        <div className="flex flex-col space-y-6 p-8">
-            <div>
-                <h1 className="font-light text-2xl text-slate-800 mb-2">Practitioner Profile</h1>
-                <p className="text-base text-slate-600">Tell seekers about your practice.</p>
-            </div>
+        <div className="flex flex-col h-full">
+            <div className="flex-1 overflow-y-auto p-8 space-y-6">
+                <div>
+                    <h1 className="font-light text-2xl text-purple-900 mb-2">Practitioner Profile</h1>
+                    <p className="text-base text-purple-700/70">Tell seekers about your practice.</p>
+                </div>
 
             <FormField
                 control={form.control}
@@ -202,24 +203,27 @@ export default function PractitionerProfileStep({ form, onNext, onBack }: Props)
                     </FormItem>
                 )}
             />
+            </div>
 
-            <div className="flex gap-3 pt-2">
-                <Button
-                    type="button"
-                    variant="outline"
-                    data-testid="setup-practitioner-back-btn"
-                    onClick={onBack}
-                >
-                    Back
-                </Button>
-                <Button
-                    type="button"
-                    data-testid="setup-practitioner-continue-btn"
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
-                    onClick={handleContinue}
-                >
-                    Continue
-                </Button>
+            <div className="p-8 pt-0">
+                <div className="flex gap-3">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        data-testid="setup-practitioner-back-btn"
+                        onClick={onBack}
+                    >
+                        Back
+                    </Button>
+                    <Button
+                        type="button"
+                        data-testid="setup-practitioner-continue-btn"
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
+                        onClick={handleContinue}
+                    >
+                        Continue
+                    </Button>
+                </div>
             </div>
         </div>
     );

@@ -59,11 +59,12 @@ export default function MerchantProfileStep({ form, onSubmit, onBack, isSubmitti
     };
 
     return (
-        <div className="flex flex-col space-y-6 p-8">
-            <div>
-                <h1 className="font-light text-2xl text-slate-800 mb-2">Merchant Details</h1>
-                <p className="text-base text-slate-600">Set up your spiritual business profile.</p>
-            </div>
+        <div className="flex flex-col h-full">
+            <div className="flex-1 overflow-y-auto p-8 space-y-6">
+                <div>
+                    <h1 className="font-light text-2xl text-amber-900 mb-2">Merchant Details</h1>
+                    <p className="text-base text-amber-700/70">Set up your spiritual business profile.</p>
+                </div>
 
             <FormField
                 control={form.control}
@@ -188,32 +189,35 @@ export default function MerchantProfileStep({ form, onSubmit, onBack, isSubmitti
                     )}
                 />
             </div>
+            </div>
 
-            <div className="flex gap-3 pt-2">
-                <Button
-                    type="button"
-                    variant="outline"
-                    data-testid="setup-merchant-back-btn"
-                    onClick={onBack}
-                >
-                    Back
-                </Button>
-                <Button
-                    type="button"
-                    data-testid="setup-merchant-submit-btn"
-                    disabled={isSubmitting}
-                    className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-                    onClick={handleContinue}
-                >
-                    {isSubmitting ? (
-                        <>
-                            <LoaderIcon className="h-4 w-4 animate-spin mr-2" />
-                            Creating your shop...
-                        </>
-                    ) : (
-                        'Continue'
-                    )}
-                </Button>
+            <div className="p-8 pt-0">
+                <div className="flex gap-3">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        data-testid="setup-merchant-back-btn"
+                        onClick={onBack}
+                    >
+                        Back
+                    </Button>
+                    <Button
+                        type="button"
+                        data-testid="setup-merchant-submit-btn"
+                        disabled={isSubmitting}
+                        className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                        onClick={handleContinue}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <LoaderIcon className="h-4 w-4 animate-spin mr-2" />
+                                Creating your shop...
+                            </>
+                        ) : (
+                            'Continue'
+                        )}
+                    </Button>
+                </div>
             </div>
         </div>
     );

@@ -42,7 +42,7 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
     if (!tiers || tiers.length === 0) return null;
 
     return (
-        <div className="flex flex-col space-y-8 p-8" data-testid="choose-plan-step">
+        <div className="flex-1 flex flex-col space-y-8 p-8 min-h-0 overflow-y-auto" data-testid="choose-plan-step">
             <div className="text-center">
                 <h1 className="font-light text-3xl text-white mb-3">Choose Your Plan</h1>
                 <p className="text-slate-300">

@@ -1,5 +1,35 @@
-'use client';
+"use client";
 
+const TIER_DESCRIPTIONS: Record<string, string> = {
+    awaken: 'Get discovered and start earning',
+    manifest: 'Start selling alongside your services',
+    transcend: 'Remove the limits and grow your way',
+};
+
+const TIER_BULLETS: Record<string, string[]> = {
+    awaken: [
+        'Get listed and found by seekers',
+        'Fill your calendar with bookings',
+        'Accept payments instantly',
+        'Reach globally via SpiriReadings',
+        'Build a following with video',
+    ],
+    manifest: [
+        'Everything in Awaken, plus:',
+        'Open your online shop with up to 10 products',
+        'Run and sell ticketed events',
+        'Stock stays in sync automatically',
+        'Paranormal and spiritual investigations with SpiriAssist',
+    ],
+    transcend: [
+        'Everything in Manifest, plus:',
+        'List your full catalogue, unlimited',
+        'Bring practitioners into your space',
+        'Host and sell guided tours',
+        'Never miss a sale with backorders',
+        'Ship faster with auto labels',
+    ],
+};
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SubscriptionTierDefinition } from '@/hooks/UseSubscriptionTiers';
@@ -13,26 +43,11 @@ type TierCardProps = {
     disabled?: boolean;
 };
 
-const FEATURE_LABELS: Record<string, string> = {
-    canCreateMerchantProfile: 'Merchant storefront',
-    maxProducts: 'Product listings',
-    canHostPractitioners: 'Host practitioners',
-    hasInventoryAutomation: 'Inventory automation',
-    hasShippingAutomation: 'Shipping automation',
-};
 
 function formatPrice(cents: number): string {
     return `$${(cents / 100).toFixed(0)}`;
 }
 
-function formatFeatureValue(key: string, value: boolean | number | null): string {
-    if (key === 'maxProducts') {
-        if (value === null) return 'Unlimited';
-        if (value === 0) return 'None';
-        return `Up to ${value}`;
-    }
-    return value ? 'Included' : 'Not included';
-}
 
 export default function TierCard({ tier, billingInterval, selected, onSelect, badge, disabled }: TierCardProps) {
     const price = billingInterval === 'monthly' ? tier.monthlyPrice : tier.annualPrice;
@@ -47,7 +62,7 @@ export default function TierCard({ tier, billingInterval, selected, onSelect, ba
             onClick={() => !disabled && onSelect(tier.tier)}
             disabled={disabled}
             className={cn(
-                'relative flex flex-col rounded-xl border-2 p-6 text-left transition-all',
+                'relative flex flex-col rounded-xl border-2 p-6 text-left transition-all h-full cursor-pointer',
                 selected
                     ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20'
                     : 'border-slate-700 bg-slate-800/50 hover:border-slate-500',
@@ -70,7 +85,7 @@ export default function TierCard({ tier, billingInterval, selected, onSelect, ba
                 >
                     {tier.name}
                 </h3>
-                <p className="mt-1 text-sm text-slate-400">{tier.description}</p>
+                <p className="mt-1 text-sm text-slate-400">{TIER_DESCRIPTIONS[tier.tier] || tier.description}</p>
             </div>
 
             <div className="mb-6" data-testid={`tier-price-${tier.tier}`}>
@@ -86,40 +101,23 @@ export default function TierCard({ tier, billingInterval, selected, onSelect, ba
             </div>
 
             <ul className="space-y-2 flex-1">
-                {Object.entries(FEATURE_LABELS).map(([key, label]) => {
-                    const value = tier.features[key as keyof typeof tier.features];
-                    const included = key === 'maxProducts' ? (value as number | null) !== 0 : !!value;
-
-                    return (
-                        <li
-                            key={key}
-                            data-testid={`tier-feature-${tier.tier}-${key}`}
-                            className={cn(
-                                'flex items-center gap-2 text-sm',
-                                included ? 'text-slate-200' : 'text-slate-500'
-                            )}
-                        >
-                            <Check
-                                className={cn(
-                                    'h-4 w-4 flex-shrink-0',
-                                    included ? 'text-green-400' : 'text-slate-600'
-                                )}
-                            />
-                            <span>{label}: {formatFeatureValue(key, value as boolean | number | null)}</span>
-                        </li>
-                    );
-                })}
+                {TIER_BULLETS[tier.tier]?.map((bullet, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-slate-200">
+                        <Check className="h-4 w-4 flex-shrink-0 text-green-400 mt-0.5" />
+                        <span>{bullet}</span>
+                    </li>
+                ))}
             </ul>
 
-            {selected && (
-                <div
-                    data-testid={`tier-selected-${tier.tier}`}
-                    className="mt-4 flex items-center justify-center gap-1 rounded-lg bg-purple-600 py-2 text-sm font-medium text-white"
-                >
-                    <Check className="h-4 w-4" />
-                    Selected
-                </div>
-            )}
+            <div
+                data-testid={`tier-selected-${tier.tier}`}
+                className={`mt-4 -mx-6 -mb-6 flex items-center justify-center gap-1 rounded-b-[10px] py-3 text-sm font-medium ${
+                    selected ? 'bg-purple-600 text-white' : 'bg-transparent text-transparent'
+                }`}
+            >
+                <Check className="h-4 w-4" />
+                Selected
+            </div>
         </button>
     );
 }

@@ -1,7 +1,8 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { AzureNamedKeyCredential, TableClient } from "@azure/data-tables";
-import { DefaultAzureCredential } from "@azure/identity";
-import { SecretClient } from "@azure/keyvault-secrets";
+import { LogManager } from "../utils/functions";
+import { vault } from "../services/vault";
+import { TableStorageDataSource } from "../services/tablestorage";
+import NodeCache from "node-cache";
 
 interface AnalyticsPayload {
     sessionId: string;
@@ -57,39 +58,24 @@ function parseDeviceType(ua: string): string {
 
 function parseCountryFromAcceptLanguage(header: string | null): string {
     if (!header) return "Unknown";
-    // Accept-Language: en-AU,en-US;q=0.9,en;q=0.8
     const match = header.match(/[a-z]{2}-([A-Z]{2})/);
     return match ? match[1] : "Unknown";
 }
 
-let tableClient: TableClient | null = null;
+// Cached across invocations
+const cache = new NodeCache({ stdTTL: 300 });
+let tableStorage: TableStorageDataSource | null = null;
 
-async function getTableClient(context: InvocationContext): Promise<TableClient> {
-    if (tableClient) return tableClient;
+async function getTableStorage(request: HttpRequest, context: InvocationContext): Promise<TableStorageDataSource> {
+    if (tableStorage) return tableStorage;
 
-    const vaultUrl = process.env.AZURE_KEYVAULT_URL || process.env.vault_url;
-    if (!vaultUrl) throw new Error("Key vault URL not configured");
+    const host = request.headers.get("host") || "localhost";
+    const logger = new LogManager(context);
+    const keyVault = new vault(host, logger, cache);
 
-    const credential = new DefaultAzureCredential();
-    const secretClient = new SecretClient(vaultUrl, credential);
-
-    const storageName = (await secretClient.getSecret("storage-name")).value!;
-    const storageKey = (await secretClient.getSecret("storage-key")).value!;
-
-    const url = `https://${storageName}.table.core.windows.net`;
-    const tableCredential = new AzureNamedKeyCredential(storageName, storageKey);
-    tableClient = new TableClient(url, "Analytics", tableCredential);
-
-    // Ensure table exists (ignore 409)
-    try {
-        await tableClient.createTable();
-    } catch (e: any) {
-        if (e.statusCode !== 409) {
-            context.warn("Could not ensure Analytics table exists:", e.message);
-        }
-    }
-
-    return tableClient;
+    tableStorage = new TableStorageDataSource(logger, keyVault);
+    await tableStorage.init();
+    return tableStorage;
 }
 
 export async function analyticsTrack(
@@ -119,14 +105,14 @@ export async function analyticsTrack(
         }
 
         const now = new Date();
-        const partitionKey = now.toISOString().slice(0, 10); // YYYY-MM-DD
+        const partitionKey = now.toISOString().slice(0, 10);
         const hex = Math.random().toString(16).slice(2, 10);
         const rowKey = `${now.getTime()}-${hex}`;
 
         const acceptLanguage = request.headers.get("accept-language");
 
-        const client = await getTableClient(context);
-        await client.createEntity({
+        const storage = await getTableStorage(request, context);
+        await storage.createEntity("Analytics", {
             partitionKey,
             rowKey,
             sessionId: data.sessionId,
@@ -152,7 +138,7 @@ export async function analyticsTrack(
         return { status: 204, headers: corsHeaders };
     } catch (error) {
         context.error("Analytics tracking error:", error);
-        return { status: 204, headers: corsHeaders }; // Fail silently - don't break user experience
+        return { status: 204, headers: corsHeaders };
     }
 }
 

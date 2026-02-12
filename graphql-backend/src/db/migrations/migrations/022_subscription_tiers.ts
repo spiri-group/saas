@@ -3,7 +3,7 @@
  *
  * Replaces the old multi-plan subscription model with a 3-tier system:
  *   - Awaken ($16/mo, $154/yr) — practitioner profiles
- *   - Manifest ($32/mo, $307/yr) — merchant profiles
+ *   - Manifest ($39/mo, $374/yr) — merchant profiles
  *   - Transcend ($59/mo, $566/yr) — merchant profiles (premium)
  *
  * Changes:
@@ -20,8 +20,8 @@ import { v4 as uuid } from "uuid";
 const NEW_TIER_ENTRIES: Record<string, { percent: number; fixed: number; currency: string }> = {
     "subscription-awaken-monthly":    { percent: 0, fixed: 1600,  currency: "AUD" },
     "subscription-awaken-annual":     { percent: 0, fixed: 15400, currency: "AUD" },
-    "subscription-manifest-monthly":  { percent: 0, fixed: 3200,  currency: "AUD" },
-    "subscription-manifest-annual":   { percent: 0, fixed: 30700, currency: "AUD" },
+    "subscription-manifest-monthly":  { percent: 0, fixed: 3900,  currency: "AUD" },
+    "subscription-manifest-annual":   { percent: 0, fixed: 37400, currency: "AUD" },
     "subscription-transcend-monthly": { percent: 0, fixed: 5900,  currency: "AUD" },
     "subscription-transcend-annual":  { percent: 0, fixed: 56600, currency: "AUD" },
 };
@@ -54,7 +54,7 @@ const TIER_DEFINITIONS = {
         },
         manifest: {
             name: "Manifest",
-            description: "For merchants selling spiritual products and services",
+            description: "For merchants selling spiritual products with inventory management",
             profileType: "merchant",
             features: {
                 canCreateMerchantProfile: true,
@@ -66,7 +66,7 @@ const TIER_DEFINITIONS = {
         },
         transcend: {
             name: "Transcend",
-            description: "For established merchants with advanced inventory and practitioner hosting",
+            description: "For established merchants seeking to grow",
             profileType: "merchant",
             features: {
                 canCreateMerchantProfile: true,

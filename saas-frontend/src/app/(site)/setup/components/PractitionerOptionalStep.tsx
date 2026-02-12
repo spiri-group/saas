@@ -17,13 +17,14 @@ type Props = {
 
 export default function PractitionerOptionalStep({ form, onSubmit, onBack, isSubmitting }: Props) {
     return (
-        <div className="flex flex-col space-y-6 p-8">
-            <div>
-                <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-5 h-5 text-purple-600" />
-                    <h1 className="font-light text-2xl text-slate-800">Additional Details</h1>
-                </div>
-                <p className="text-base text-slate-600">
+        <div className="flex flex-col h-full">
+            <div className="flex-1 overflow-y-auto p-8 space-y-6">
+                <div>
+                    <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-5 h-5 text-purple-600" />
+                        <h1 className="font-light text-2xl text-purple-900">Additional Details</h1>
+                    </div>
+                <p className="text-base text-purple-700/70">
                     These details are optional but help seekers get to know you better.
                 </p>
             </div>
@@ -108,32 +109,35 @@ export default function PractitionerOptionalStep({ form, onSubmit, onBack, isSub
                     </FormItem>
                 )}
             />
+            </div>
 
-            <div className="flex gap-3 pt-2">
-                <Button
-                    type="button"
-                    variant="outline"
-                    data-testid="setup-practitioner-opt-back-btn"
-                    onClick={onBack}
-                >
-                    Back
-                </Button>
-                <Button
-                    type="button"
-                    data-testid="setup-practitioner-submit-btn"
-                    disabled={isSubmitting}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
-                    onClick={onSubmit}
-                >
-                    {isSubmitting ? (
-                        <>
-                            <LoaderIcon className="h-4 w-4 animate-spin mr-2" />
-                            Creating Profile...
-                        </>
-                    ) : (
-                        'Create My Profile'
-                    )}
-                </Button>
+            <div className="p-8 pt-0">
+                <div className="flex gap-3">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        data-testid="setup-practitioner-opt-back-btn"
+                        onClick={onBack}
+                    >
+                        Back
+                    </Button>
+                    <Button
+                        type="button"
+                        data-testid="setup-practitioner-submit-btn"
+                        disabled={isSubmitting}
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
+                        onClick={onSubmit}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <LoaderIcon className="h-4 w-4 animate-spin mr-2" />
+                                Creating Profile...
+                            </>
+                        ) : (
+                            'Create My Profile'
+                        )}
+                    </Button>
+                </div>
             </div>
         </div>
     );

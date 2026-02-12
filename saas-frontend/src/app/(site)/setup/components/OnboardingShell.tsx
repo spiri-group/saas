@@ -1,70 +1,62 @@
-'use client';
+"use client"
 
-import { ReactNode } from 'react';
-import { cn } from '@/lib/utils';
+import { ReactNode } from 'react'
+import { cn } from '@/lib/utils'
+import { signOut } from 'next-auth/react'
 
 export type OnboardingTheme = 'neutral' | 'amber' | 'purple';
 
-const BG_GRADIENT: Record<OnboardingTheme, string> = {
-    neutral: 'from-slate-900 via-slate-800 to-slate-900',
-    amber: 'from-amber-950 via-orange-900 to-slate-900',
-    purple: 'from-violet-950 via-purple-900 to-slate-900',
-};
-
-const ORB_COLORS: Record<OnboardingTheme, [string, string, string]> = {
-    neutral: ['bg-slate-500/20', 'bg-slate-400/20', 'bg-slate-600/10'],
-    amber: ['bg-amber-500/20', 'bg-orange-500/20', 'bg-yellow-500/10'],
-    purple: ['bg-purple-500/20', 'bg-violet-500/20', 'bg-indigo-500/10'],
-};
-
 type Props = {
-    theme: OnboardingTheme;
     isFullScreen: boolean;
+    isCentered?: boolean;
     marketingContent: ReactNode;
     children: ReactNode;
 };
 
-export default function OnboardingShell({ theme, isFullScreen, marketingContent, children }: Props) {
-    const orbs = ORB_COLORS[theme];
-
+export default function OnboardingShell({ isFullScreen, isCentered, marketingContent, children }: Props) {
     return (
         <div className={cn(
-            'w-screen min-h-screen-minus-nav relative overflow-hidden transition-colors duration-700',
-            'bg-gradient-to-br',
-            BG_GRADIENT[theme],
+            "w-full flex-1 flex flex-col min-h-0 relative",
+            isCentered && "justify-center",
         )}>
-            {/* Animated background orbs */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className={cn('absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse transition-colors duration-700', orbs[0])} />
-                <div className={cn('absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse transition-colors duration-700', orbs[1])} style={{ animationDelay: '1s' }} />
-                <div className={cn('absolute top-1/2 left-1/2 w-96 h-96 rounded-full blur-3xl animate-pulse transition-colors duration-700', orbs[2])} style={{ animationDelay: '2s' }} />
-            </div>
-
             {/* Content grid with animated transition */}
             <div
-                className="relative z-10 w-full min-h-screen-minus-nav grid gap-6 p-6 items-stretch"
+                className={cn(
+                    "relative z-10 w-full grid gap-4 p-4 md:gap-6 md:p-6 min-h-0",
+                    !isCentered && "flex-1",
+                    isCentered && "max-w-6xl mx-auto",
+                )}
                 style={{
                     gridTemplateColumns: isFullScreen ? '0fr 1fr' : '1fr 1fr',
+                    gridTemplateRows: isCentered ? 'auto' : '1fr',
                     transition: 'grid-template-columns 700ms ease-in-out',
                 }}
             >
                 {/* Marketing panel — collapses to 0fr when full-screen */}
                 <div
-                    className="overflow-hidden hidden lg:flex flex-col transition-opacity duration-700"
+                    className="overflow-hidden hidden lg:flex flex-col transition-opacity duration-700 min-w-0"
                     style={{ opacity: isFullScreen ? 0 : 1 }}
                 >
-                    <div className="min-w-[400px] h-full">
-                        {marketingContent}
-                    </div>
+                    {marketingContent}
                 </div>
 
                 {/* Form panel — stretches to center when full-screen */}
                 <div className={cn(
-                    'flex flex-col transition-all duration-700',
-                    isFullScreen ? 'max-w-5xl mx-auto w-full' : '',
+                    'flex flex-col min-h-0 min-w-0 overflow-hidden transition-all duration-700',
+                    isFullScreen ? 'max-w-7xl mx-auto w-full' : '',
                 )}>
                     {children}
                 </div>
+            </div>
+
+            {/* Sign out — always visible at bottom, outside the grid */}
+            <div className="flex-shrink-0 flex justify-center py-4">
+                <button
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="text-sm text-white/40 hover:text-white/70 hover:underline transition-colors cursor-pointer"
+                >
+                    Not ready? Sign out
+                </button>
             </div>
         </div>
     );

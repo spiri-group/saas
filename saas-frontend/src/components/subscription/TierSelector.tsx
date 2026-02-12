@@ -71,8 +71,8 @@ export default function TierSelector({
             {/* Tier cards */}
             <div
                 data-testid="tier-cards-grid"
-                className={`grid gap-4 ${
-                    tiers.length === 1 ? 'max-w-md mx-auto' : tiers.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-3'
+                className={`grid gap-6 ${
+                    tiers.length === 1 ? 'max-w-2xl mx-auto' : tiers.length === 2 ? 'grid-cols-1 md:grid-cols-2 max-w-5xl mx-auto' : 'grid-cols-1 md:grid-cols-3 max-w-7xl mx-auto'
                 }`}
             >
                 {tiers.map((tier) => (

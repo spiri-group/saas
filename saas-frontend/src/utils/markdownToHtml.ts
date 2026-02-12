@@ -1,5 +1,10 @@
 // Simple markdown to HTML converter for preview
 // Handles headings, bold, italic, links, lists, tables, horizontal rules, code blocks
+
+function slugify(text: string): string {
+  return text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+}
+
 export function markdownToHtml(md: string): string {
   let html = md
     // Escape HTML first
@@ -13,11 +18,11 @@ export function markdownToHtml(md: string): string {
     )
     // Inline code
     .replace(/`([^`]+)`/g, "<code>$1</code>")
-    // Headings
-    .replace(/^#### (.+)$/gm, "<h4>$1</h4>")
-    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
-    .replace(/^## (.+)$/gm, "<h2>$1</h2>")
-    .replace(/^# (.+)$/gm, "<h1>$1</h1>")
+    // Headings (with id for anchor navigation)
+    .replace(/^#### (.+)$/gm, (_m, t) => `<h4 id="${slugify(t)}">${t}</h4>`)
+    .replace(/^### (.+)$/gm, (_m, t) => `<h3 id="${slugify(t)}">${t}</h3>`)
+    .replace(/^## (.+)$/gm, (_m, t) => `<h2 id="${slugify(t)}">${t}</h2>`)
+    .replace(/^# (.+)$/gm, (_m, t) => `<h1 id="${slugify(t)}">${t}</h1>`)
     // Bold and italic
     .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")

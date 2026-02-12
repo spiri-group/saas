@@ -11,9 +11,10 @@ import { Session } from "next-auth"
 import Link from "next/link"
 import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { UserCircle } from "lucide-react"
 import UseUserComplete from "../../c/[customerId]/settings/hooks/UseUserComplete"
 import { VendorDocType } from "@/utils/spiriverse"
+import { usePathname } from "next/navigation"
+import SetupRedirectAnimator from '@/components/ux/SetupRedirectAnimator'
 
 interface HomeContentProps {
   session: Session | null
@@ -25,6 +26,7 @@ export default function HomeContent({ session: initialSession }: HomeContentProp
 
   // Use client session if available (after sign-in), otherwise use initial server session
   const session = clientSession || initialSession
+  const pathname = usePathname()
 
   const isLoggedIn = !!session?.user
   const vendors = session?.user?.vendors || []
@@ -32,7 +34,9 @@ export default function HomeContent({ session: initialSession }: HomeContentProp
 
   // Fetch user completion status client-side (will auto-update when session changes)
   const userCompleteQuery = UseUserComplete(session?.user?.id || "")
-  const needsProfileCompletion = isLoggedIn && userCompleteQuery.data?.requiresInput === true
+  // Avoid flashing quick-nav while the user-complete query is loading
+  const needsProfileCompletion = isLoggedIn && userCompleteQuery.data?.requiresInput === true && pathname !== '/setup'
+  const showQuickNav = isLoggedIn && !userCompleteQuery.isLoading && !needsProfileCompletion
 
   // Logged-in users see search-first layout
   if (isLoggedIn) {
@@ -57,29 +61,21 @@ export default function HomeContent({ session: initialSession }: HomeContentProp
             <HomeSearch />
           </div>
 
-          {/* Profile completion prompt */}
+          {/* Profile completion prompt (animated redirect) */}
           {needsProfileCompletion && (
-            <Link
-              href={`/u/${session?.user?.id}/setup`}
-              className="w-full max-w-md px-6 py-4 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 hover:from-yellow-500/30 hover:to-amber-500/30 transition-all duration-300 border-2 border-yellow-400/50 hover:border-yellow-400/70 backdrop-blur-sm"
-            >
-              <div className="flex items-center justify-center gap-3">
-                <UserCircle className="h-6 w-6 text-yellow-300" />
-                <p className="text-white font-medium text-lg">Complete Your Profile</p>
-              </div>
-            </Link>
+            <SetupRedirectAnimator />
           )}
 
           {/* Quick nav */}
           <div className="flex items-center gap-2 flex-wrap justify-center">
-            {!needsProfileCompletion && (
+            {showQuickNav && (
               <Link href={`/u/${session?.user?.id}/space`}>
                 <Button
                   variant="outline"
                   size="sm"
                   className="border-white/20 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white"
                 >
-                  My Space
+                  Your Journey
                 </Button>
               </Link>
             )}

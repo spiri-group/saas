@@ -23,9 +23,9 @@ import { useOnboardingForm } from './hooks/useOnboardingForm';
 // ── Step identifiers ────────────────────────────────────────────────
 
 type Step =
-    | 'consent'
     | 'basic'
     | 'plan'
+    | 'consent'
     | 'merchant-profile'
     | 'also-practitioner'
     | 'practitioner-profile'
@@ -37,15 +37,21 @@ type Branch = 'practitioner' | 'merchant' | null;
 
 // ── Theme & full-screen helpers ─────────────────────────────────────
 
-function themeForStep(step: Step): OnboardingTheme {
-    if (step === 'plan') return 'neutral';
+function themeForStep(step: Step, branch: Branch): OnboardingTheme {
+    if (step === 'basic' || step === 'plan') return 'neutral';
+    if (step === 'consent') {
+        // Consent theme matches the selected plan branch
+        if (branch === 'merchant') return 'amber';
+        if (branch === 'practitioner') return 'purple';
+        return 'neutral';
+    }
     if (step === 'merchant-profile' || step === 'also-practitioner') return 'amber';
     if (step === 'practitioner-profile' || step === 'practitioner-optional') return 'purple';
     return 'neutral';
 }
 
 function isFullScreenStep(step: Step): boolean {
-    return step === 'plan';
+    return step === 'plan' || step === 'consent';
 }
 
 // ── Step labels for indicator ───────────────────────────────────────
@@ -76,9 +82,9 @@ function stepNumber(step: Step, branch: Branch): number {
     return 1;
 }
 
-/** Plan step renders directly in the shell (dark bg), not inside the white card */
+/** Basic, plan & consent steps render directly in the shell — basic uses its own glass card */
 function isCardStep(step: Step): boolean {
-    return step !== 'plan';
+    return step !== 'plan' && step !== 'consent' && step !== 'basic';
 }
 
 // ── Main Component ──────────────────────────────────────────────────
@@ -89,7 +95,7 @@ export default function SetupUI() {
     const isLoading = status === 'loading';
 
     const [mounted, setMounted] = useState(false);
-    const [step, setStep] = useState<Step>('consent');
+    const [step, setStep] = useState<Step>('basic');
     const [branch, setBranch] = useState<Branch>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [createdMerchantSlug, setCreatedMerchantSlug] = useState<string | null>(null);
@@ -107,11 +113,16 @@ export default function SetupUI() {
 
     // ── Step handlers ───────────────────────────────────────────────
 
-    const handleConsentAccepted = useCallback(() => {
-        setStep('basic');
+    const handleBasicBrowse = useCallback(async () => {
+        // Customer just wants to browse - redirect to home
+        if (session?.user?.id) {
+            window.location.href = `/u/${session.user.id}/space`;
+        } else {
+            window.location.href = '/';
+        }
     }, []);
 
-    const handleBasicNext = useCallback(() => {
+    const handleBasicSetupBusiness = useCallback(() => {
         setStep('plan');
     }, []);
 
@@ -121,12 +132,26 @@ export default function SetupUI() {
 
         if (newBranch === 'merchant') {
             initMerchant();
-            setStep('merchant-profile');
         } else {
             initPractitioner();
+        }
+
+        // After selecting plan, go to consent
+        setStep('consent');
+    }, [initMerchant, initPractitioner]);
+
+    const handleConsentBack = useCallback(() => {
+        setStep('plan');
+    }, []);
+
+    const handleConsentAccepted = useCallback(() => {
+        // After consent, go to profile step based on branch
+        if (branch === 'merchant') {
+            setStep('merchant-profile');
+        } else if (branch === 'practitioner') {
             setStep('practitioner-profile');
         }
-    }, [initMerchant, initPractitioner]);
+    }, [branch]);
 
     const handlePlanBack = useCallback(() => {
         setStep('basic');
@@ -148,7 +173,7 @@ export default function SetupUI() {
     }, [createVendor]);
 
     const handleMerchantBack = useCallback(() => {
-        setStep('plan');
+        setStep('consent');
     }, []);
 
     // Also-practitioner decision
@@ -172,7 +197,7 @@ export default function SetupUI() {
         if (branch === 'merchant') {
             setStep('also-practitioner');
         } else {
-            setStep('plan');
+            setStep('consent');
         }
     }, [branch]);
 
@@ -205,34 +230,27 @@ export default function SetupUI() {
 
     if (!isLoading && !isAuthenticated) {
         return (
-            <div className="w-screen min-h-screen-minus-nav relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
-                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-                </div>
-                <div className="relative z-10 w-full min-h-screen-minus-nav flex items-center justify-center p-6">
-                    <div className={`w-full max-w-lg transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-8 shadow-2xl">
-                            <div className="flex items-center justify-center mb-6">
-                                <SpiriLogo height={50} />
+            <div className="w-full flex-1 flex items-center justify-center p-6">
+                <div className={`w-full max-w-lg transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                    <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-8 shadow-2xl">
+                        <div className="flex items-center justify-center mb-6">
+                            <SpiriLogo height={50} />
+                        </div>
+                        <div className="flex items-center justify-center gap-3 mb-4">
+                            <h1 className="text-2xl font-light text-white tracking-wide">
+                                Join SpiriVerse
+                            </h1>
+                        </div>
+                        <div className="space-y-6 text-center">
+                            <div className="flex items-center justify-center gap-2 text-indigo-300">
+                                <Mail className="w-5 h-5" />
+                                <p className="text-lg font-medium">First, we need your email</p>
                             </div>
-                            <div className="flex items-center justify-center gap-3 mb-4">
-                                <h1 className="text-2xl font-light text-white tracking-wide">
-                                    Join SpiriVerse
-                                </h1>
-                            </div>
-                            <div className="space-y-6 text-center">
-                                <div className="flex items-center justify-center gap-2 text-purple-300">
-                                    <Mail className="w-5 h-5" />
-                                    <p className="text-lg font-medium">First, we need your email</p>
-                                </div>
-                                <p className="text-slate-300 text-sm leading-relaxed">
-                                    Enter your email to get started. We&apos;ll send you a verification code.
-                                </p>
-                                <div className="pt-4">
-                                    <SignIn />
-                                </div>
+                            <p className="text-slate-300 text-sm leading-relaxed">
+                                Enter your email to get started. We&apos;ll send you a verification code.
+                            </p>
+                            <div className="pt-4">
+                                <SignIn />
                             </div>
                         </div>
                     </div>
@@ -243,7 +261,7 @@ export default function SetupUI() {
 
     if (isLoading) {
         return (
-            <div className="w-screen min-h-screen-minus-nav flex items-center justify-center bg-slate-900">
+            <div className="w-full flex-1 flex items-center justify-center">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
             </div>
         );
@@ -251,7 +269,7 @@ export default function SetupUI() {
 
     // ── Theme & layout state ────────────────────────────────────────
 
-    const theme = themeForStep(step);
+    const theme = themeForStep(step, branch);
     const fullScreen = isFullScreenStep(step);
     const labels = stepLabels(step, branch);
     const currentStepNum = stepNumber(step, branch);
@@ -262,15 +280,12 @@ export default function SetupUI() {
 
     const formContent = (
         <Form {...form}>
-            <form onSubmit={(e) => e.preventDefault()} className="flex-1">
-                {step === 'consent' && (
-                    <OnboardingConsent onAccepted={handleConsentAccepted} />
-                )}
-
+            <form onSubmit={(e) => e.preventDefault()} className="flex-1 flex flex-col min-h-0">
                 {step === 'basic' && (
                     <BasicDetailsStep
                         form={form}
-                        onNext={handleBasicNext}
+                        onBrowse={handleBasicBrowse}
+                        onSetupBusiness={handleBasicSetupBusiness}
                     />
                 )}
 
@@ -279,6 +294,14 @@ export default function SetupUI() {
                         form={form}
                         onSelect={handlePlanSelect}
                         onBack={handlePlanBack}
+                    />
+                )}
+
+                {step === 'consent' && (
+                    <OnboardingConsent 
+                        onAccepted={handleConsentAccepted} 
+                        onBack={handleConsentBack}
+                        branch={branch} 
                     />
                 )}
 
@@ -320,31 +343,49 @@ export default function SetupUI() {
 
     return (
         <OnboardingShell
-            theme={theme}
             isFullScreen={fullScreen}
+            isCentered={step === 'basic'}
             marketingContent={<MarketingPanel theme={theme} />}
-        >
-            {showCard ? (
+        >            {showCard ? (
                 <div
-                    className={`flex flex-col bg-white border border-slate-200 rounded-2xl shadow-2xl h-full overflow-y-auto transition-all duration-1000 ${
+                    className={`flex flex-col rounded-2xl flex-1 min-h-0 transition-all duration-1000 overflow-hidden ${
                         mounted ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'
+                    } ${
+                        theme === 'purple'
+                            ? 'bg-purple-50 border-2 border-purple-300/60 shadow-[0_8px_40px_-8px_rgba(147,51,234,0.25)]'
+                            : theme === 'amber'
+                                ? 'bg-amber-50 border-2 border-amber-300/60 shadow-[0_8px_40px_-8px_rgba(245,158,11,0.25)]'
+                                : 'bg-white border border-slate-200 shadow-2xl'
                     }`}
                 >
+                    {/* Themed accent bar */}
+                    <div className={`h-1.5 flex-shrink-0 ${
+                        theme === 'purple' ? 'bg-gradient-to-r from-purple-500 to-violet-500'
+                            : theme === 'amber' ? 'bg-gradient-to-r from-amber-500 to-orange-500'
+                                : 'bg-gradient-to-r from-indigo-500 to-cyan-500'
+                    }`} />
                     {showIndicator && (
                         <StepIndicator
                             currentStep={currentStepNum}
                             totalSteps={labels.length}
                             labels={labels}
+                            theme={theme}
                         />
                     )}
                     {formContent}
                 </div>
             ) : (
-                /* Plan step renders directly on the dark background — no white card */
-                <div className={`transition-all duration-1000 ${
+                /* Consent & plan steps render directly on the dark background — no white card */
+                <div className={`flex flex-col flex-1 min-h-0 transition-all duration-1000 ${
                     mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                 }`}>
-                    {formContent}
+                    {step === 'consent' ? (
+                        <div className="backdrop-blur-xl bg-white/[0.07] border border-white/15 rounded-2xl shadow-2xl flex flex-col flex-1 min-h-0 overflow-hidden">
+                            {formContent}
+                        </div>
+                    ) : (
+                        formContent
+                    )}
                 </div>
             )}
         </OnboardingShell>

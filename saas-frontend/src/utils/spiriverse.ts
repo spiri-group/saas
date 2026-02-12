@@ -389,6 +389,126 @@ export const enum Day {
 }
 
 //#endregion
+
+
+export enum VendorLifecycleStage {
+    CREATED = "CREATED",
+    STRIPE_ONBOARDING = "STRIPE_ONBOARDING",
+    FIRST_PAYOUT = "FIRST_PAYOUT",
+    CARD_ADDED = "CARD_ADDED",
+    PUBLISHED = "PUBLISHED",
+    BILLING_ACTIVE = "BILLING_ACTIVE",
+    BILLING_FAILED = "BILLING_FAILED",
+    BILLING_BLOCKED = "BILLING_BLOCKED"
+}
+
+/**
+ * Computes the lifecycle stage for a vendor based on their current state.
+ * Priority order (highest to lowest):
+ *   BILLING_BLOCKED > BILLING_FAILED > BILLING_ACTIVE > PUBLISHED >
+ *   CARD_ADDED > FIRST_PAYOUT > STRIPE_ONBOARDING > CREATED
+ */
+export function computeLifecycleStage(vendor: vendor_type): VendorLifecycleStage {
+    const sub = vendor.subscription
+
+    if (sub?.payouts_blocked) {
+        return VendorLifecycleStage.BILLING_BLOCKED
+    }
+    if (sub?.payment_status === "failed") {
+        return VendorLifecycleStage.BILLING_FAILED
+    }
+    if (sub?.payment_status === "success" && sub?.next_billing_date) {
+        return VendorLifecycleStage.BILLING_ACTIVE
+    }
+    if ((vendor as any).publishedAt) {
+        return VendorLifecycleStage.PUBLISHED
+    }
+    if (sub?.card_status === "saved") {
+        return VendorLifecycleStage.CARD_ADDED
+    }
+    if (sub?.first_payout_received) {
+        return VendorLifecycleStage.FIRST_PAYOUT
+    }
+    if (vendor.stripe?.accountId) {
+        return VendorLifecycleStage.STRIPE_ONBOARDING
+    }
+    return VendorLifecycleStage.CREATED
+}
+
+export interface AnalyticsEntity {
+    partitionKey: string;
+    rowKey: string;
+    sessionId: string;
+    url: string;
+    referrer: string;
+    screenWidth: number;
+    screenHeight: number;
+    browserName: string;
+    osName: string;
+    deviceType: string;
+    country: string;
+    utmSource: string;
+    utmMedium: string;
+    utmCampaign: string;
+    utmTerm: string;
+    utmContent: string;
+    scrollDepth: number;
+    timeOnPage: number;
+    eventType: string;
+    timestamp: string;
+}
+
+export interface AnalyticsSummary {
+    totalPageviews: number;
+    uniqueVisitors: number;
+    avgSessionDuration: number;
+    bounceRate: number;
+    avgScrollDepth: number;
+    avgTimeOnPage: number;
+}
+
+export interface AnalyticsDailyCount {
+    date: string;
+    pageviews: number;
+    uniqueVisitors: number;
+}
+
+export interface AnalyticsPageStat {
+    url: string;
+    views: number;
+    uniqueVisitors: number;
+    avgTimeOnPage: number;
+    avgScrollDepth: number;
+}
+
+export interface AnalyticsReferrerStat {
+    referrer: string;
+    views: number;
+    uniqueVisitors: number;
+}
+
+export interface AnalyticsBreakdownStat {
+    name: string;
+    count: number;
+    percentage: number;
+}
+
+export interface ConsoleAnalyticsDashboard {
+    summary: AnalyticsSummary;
+    dailyCounts: AnalyticsDailyCount[];
+    topPages: AnalyticsPageStat[];
+    topReferrers: AnalyticsReferrerStat[];
+    browsers: AnalyticsBreakdownStat[];
+    operatingSystems: AnalyticsBreakdownStat[];
+    devices: AnalyticsBreakdownStat[];
+    countries: AnalyticsBreakdownStat[];
+}
+
+export interface ConsoleAnalyticsRealtime {
+    activeVisitors: number;
+    currentPages: { url: string; visitors: number }[];
+}
+
 //#region Case
 
 
@@ -672,6 +792,34 @@ export type review_type = {
 }
 
 //#endregion
+export interface UserConsent {
+  partitionKey: string; // userId
+  rowKey: string; // documentType
+  documentId: string;
+  version: number;
+  consentedAt: string;
+  consentContext: "site-modal" | "checkout";
+  documentTitle: string;
+  [key: string]: unknown;
+}
+
+export interface OutstandingConsent {
+  documentType: string;
+  documentId: string;
+  title: string;
+  content: string;
+  version: number;
+  effectiveDate: string;
+}
+
+export interface RecordConsentInput {
+  documentType: string;
+  documentId: string;
+  version: number;
+  consentContext: string;
+  documentTitle: string;
+}
+
 
 
 // Crystal Reference Database Types
@@ -1752,6 +1900,66 @@ export interface gallery_filters {
   tags?: string[];
   unalbumedOnly?: boolean;
 }
+export interface LegalDocument {
+  docType: "legal-document";
+  id: string; // e.g., "terms-of-service", "privacy-policy"
+  documentType: string; // Category: "terms-of-service", "privacy-policy", etc.
+  title: string; // Human-readable title
+  content: string; // Markdown content
+  market: string; // "global" | "AU" | "UK" | "US"
+  version: number; // Auto-incrementing version number
+  isPublished: boolean; // Whether this version is live
+  effectiveDate: string; // When this version takes effect
+  changeSummary?: string; // Description of the most recent change
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string; // Staff member who last edited
+  placeholders?: Record<string, string>;
+}
+
+export interface LegalDocumentVersion {
+  docType: "legal-document-version";
+  id: string; // "{documentId}-v{version}" e.g., "terms-of-service-v1"
+  documentId: string; // Reference to parent document ID
+  version: number; // The version number of this snapshot
+  title: string;
+  content: string;
+  market: string;
+  isPublished: boolean;
+  effectiveDate: string;
+  changeSummary: string; // What changed in the next version (why this was replaced)
+  createdAt: string; // When this version was originally created
+  supersededAt: string; // When this version was replaced
+  supersededBy: string; // Who replaced it
+  placeholders?: Record<string, string>;
+}
+
+export interface LegalDocumentInput {
+  id: string;
+  documentType: string;
+  title: string;
+  content: string;
+  market: string;
+  isPublished?: boolean;
+  effectiveDate?: string;
+  changeSummary?: string;
+  placeholders?: Record<string, string>;
+}
+
+export const LEGAL_DOCUMENT_TYPES = [
+  "terms-of-service",
+  "privacy-policy",
+  "cookie-policy",
+  "merchant-terms",
+  "refund-policy",
+  "acceptable-use-policy",
+  "spiritual-services-disclaimer",
+  "payment-terms",
+  "intellectual-property-policy",
+] as const;
+
+export type LegalDocumentType = typeof LEGAL_DOCUMENT_TYPES[number];
+
 //#region Listing
 
 
@@ -4093,23 +4301,21 @@ export type social_platform_type = {
     id: string
 }
 
-export type subscription_tier = 'awaken' | 'manifest' | 'transcend'
-export type billing_status = 'pendingFirstBilling' | 'active' | 'suspended' | 'cancelled'
-
 export type vendorSubscription_type = {
   // Tier-based subscription fields
   subscriptionTier: subscription_tier,
   billingInterval: billing_interval,
   billingStatus: billing_status,
-  cumulativePayouts: number,
-  subscriptionCostThreshold: number,
-  firstBillingTriggeredAt?: string,
-  lastBilledAt?: string,
-  subscriptionExpiresAt?: string,
-  stripePaymentMethodId?: string,
-  failedPaymentAttempts: number,
-  nextRetryAt?: string,
-  lastPaymentAttemptAt?: string,
+  cumulativePayouts: number,            // all-time payout total (cents) for this vendor
+  subscriptionCostThreshold: number,    // tier monthly price (cents) — triggers first billing
+  firstBillingTriggeredAt?: string,     // ISO date when first billing was triggered
+  lastBilledAt?: string,               // ISO date of last successful charge
+  subscriptionExpiresAt?: string,       // ISO date when current period ends
+  stripePaymentMethodId?: string,       // Stripe PaymentMethod ID (replaces saved_payment_method)
+  failedPaymentAttempts: number,        // 0-3
+  nextRetryAt?: string,                // ISO date for next retry
+  lastPaymentAttemptAt?: string,        // ISO date of last attempt (safety check)
+  // Downgrade scheduling
   pendingDowngradeTo?: subscription_tier | null,
   downgradeEffectiveAt?: string | null,
   // Kept from legacy
@@ -4140,6 +4346,10 @@ export type plan_type =  {
   price: currency_amount_type
   name: string
 }
+
+export type subscription_tier = 'awaken' | 'manifest' | 'transcend'
+
+export type billing_status = 'pendingFirstBilling' | 'active' | 'suspended' | 'cancelled'
 
 export type teamMember_type ={
     id: string,
@@ -4210,7 +4420,7 @@ export enum merchant_subscription_payment_status {
 
 export enum billing_interval {
     monthly = "monthly",
-    yearly = "yearly"
+    annual = "annual"
 }
 
 export enum billing_record_status {

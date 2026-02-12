@@ -2,14 +2,24 @@
 
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { OnboardingTheme } from './OnboardingShell';
 
 type Props = {
     currentStep: number;
     totalSteps: number;
     labels: string[];
+    theme?: OnboardingTheme;
 };
 
-export default function StepIndicator({ currentStep, totalSteps, labels }: Props) {
+const THEME_COLORS: Record<OnboardingTheme, string> = {
+    purple: 'bg-purple-600',
+    amber: 'bg-amber-500',
+    neutral: 'bg-indigo-600',
+};
+
+export default function StepIndicator({ currentStep, totalSteps, labels, theme = 'neutral' }: Props) {
+    const activeColor = THEME_COLORS[theme];
+
     return (
         <div className="px-8 pt-6" data-testid="step-indicator">
             <div className="flex items-center justify-between mb-2">
@@ -21,7 +31,7 @@ export default function StepIndicator({ currentStep, totalSteps, labels }: Props
                                 className={cn(
                                     'w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all',
                                     currentStep === step
-                                        ? 'bg-purple-600 text-white'
+                                        ? `${activeColor} text-white`
                                         : currentStep > step
                                             ? 'bg-green-500 text-white'
                                             : 'bg-slate-200 text-slate-500',
