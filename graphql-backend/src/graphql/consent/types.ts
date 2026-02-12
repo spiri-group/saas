@@ -6,6 +6,7 @@ export interface UserConsent {
   consentedAt: string;
   consentContext: "site-modal" | "checkout";
   documentTitle: string;
+  [key: string]: unknown;
 }
 
 export interface OutstandingConsent {

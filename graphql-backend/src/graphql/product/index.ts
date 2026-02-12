@@ -5,7 +5,8 @@ import { ListingTypes } from "../listing/types";
 import { product_type, variant_type, inventory_transaction_type, inventory_alert_type, variant_inventory_type, inventory_rule_type, crystal_type_data } from "./types";
 import { currency_amount_type } from "../0_shared/types";
 import { isNullOrUndefined, slugify } from "../../utils/functions";
-import { merchantLocation_type, vendor_type } from "../vendor/types";
+import { merchantLocation_type, vendor_type, subscription_tier } from "../vendor/types";
+import { getTierFeatures } from "../subscription/featureGates";
 import { choice_config_type, choice_node_type, ChoiceKind } from "../choices/types";
 import { buildNodeTree } from "../choices";
 import { CRYSTAL_REFERENCE_CONFIG_ID, CRYSTAL_REFERENCE_CONTAINER, crystal_reference_type, chakra_type } from "../crystal-reference/types";
@@ -820,6 +821,25 @@ const resolvers = {
     Mutation: {
         create_product: async (_: any, args: any, context: serverContext) => {
             if (context.userId == null) throw "User must be present for this call";
+
+            // Check product limit based on subscription tier
+            const vendor = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", args.merchantId, args.merchantId);
+            if (vendor?.subscription?.subscriptionTier) {
+                const tierFeatures = getTierFeatures(vendor.subscription.subscriptionTier as subscription_tier);
+                if (tierFeatures.maxProducts !== null) {
+                    const productCountResult = await context.dataSources.cosmos.run_query<number>("Main-Listing", {
+                        query: `SELECT VALUE COUNT(1) FROM c WHERE c.vendorId = @vendorId AND c.type = "PRODUCT"`,
+                        parameters: [{ name: "@vendorId", value: args.merchantId }],
+                    });
+                    const currentCount = productCountResult[0] || 0;
+                    if (currentCount >= tierFeatures.maxProducts) {
+                        throw new GraphQLError(
+                            `Product limit reached (${tierFeatures.maxProducts}). Upgrade to Transcend for unlimited products.`,
+                            { extensions: { code: "PRODUCT_LIMIT_REACHED" } }
+                        );
+                    }
+                }
+            }
 
             const inputRef = {
                 id: args.product.id,

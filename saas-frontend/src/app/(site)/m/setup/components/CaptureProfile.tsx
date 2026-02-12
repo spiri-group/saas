@@ -13,9 +13,9 @@ import HierarchicalReligionPicker from '@/components/ux/HierarchicalReligionPick
 import HierarchicalMultiPicker from '@/components/ux/HierarchicalMultiPicker';
 import UseMerchantTypes from '@/shared/hooks/UseMerchantTypes';
 import useReverseGeocoding from '@/components/utils/useReverseGeoCoding';
-import MerchantSubscription from './MerchantSubscription';
+import TierSelector from '@/components/subscription/TierSelector';
 import { MediaSchema } from '@/shared/schemas/media';
-import { CurrencyAmountSchema } from '@/components/ux/CurrencyInput';
+
 import { cn } from '@/lib/utils';
 import { CircleHelpIcon, CreditCardIcon, LoaderIcon } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -153,12 +153,8 @@ const useBL = (props: BLProps) => {
         }),
         merchantTypeIds: z.array(z.string()).min(1, { message: "Please select at least one type" }),
         subscription: z.object({
-            plans: z.array(z.object({
-                productId: z.string(),
-                variantId: z.string(),
-                price: CurrencyAmountSchema,
-                name: z.string().min(1)
-            })).min(1, { message: "At least one subscription plan is required" })
+            tier: z.string().min(1, { message: "Please select a subscription tier" }),
+            billingInterval: z.enum(['monthly', 'annual'])
         })
     }); 
 
@@ -178,7 +174,8 @@ const useBL = (props: BLProps) => {
             },
             merchantTypeIds: [],
             subscription: {
-                plans: []
+                tier: '',
+                billingInterval: 'monthly' as const
             }
         },
         mode: 'onBlur',
@@ -247,7 +244,9 @@ const useBL = (props: BLProps) => {
                         religionId: religion.id,
                         slug: hasManuallySetSlug ? slug : undefined,
                         subscription: {
-                            plans: values.subscription.plans
+                            tier: values.subscription.tier,
+                            billingInterval: values.subscription.billingInterval,
+                            plans: [] // Legacy field
                         }
                     }
                 }
@@ -271,14 +270,20 @@ type Props = BLProps & {
     };
 }
 
-// Child component to watch country and render MerchantSubscription
-const MerchantSubscriptionSection: React.FC<{ control: any }> = ({ control }) => {
-    const country = useWatch({ control, name: "country" });
-    if (country) {
-        const currency = countryToCurrency[country];
-        return <MerchantSubscription control={control} currency={currency} />;
-    }
-    return null;
+// Child component to render tier selector for merchants
+const MerchantSubscriptionSection: React.FC<{ control: any, setValue: any }> = ({ control, setValue }) => {
+    const tier = useWatch({ control, name: "subscription.tier" });
+    const interval = useWatch({ control, name: "subscription.billingInterval" });
+
+    return (
+        <TierSelector
+            profileType="merchant"
+            selectedTier={tier}
+            selectedInterval={interval || 'monthly'}
+            onTierChange={(t) => setValue("subscription.tier", t, { shouldValidate: true })}
+            onIntervalChange={(i) => setValue("subscription.billingInterval", i, { shouldValidate: true })}
+        />
+    );
 };
 
 // Merchant Types Picker Component - defined outside to prevent remounting
@@ -890,7 +895,7 @@ const CaptureProfile: React.FC<Props> = (props) => {
 
                     {step === 2 && (<>
                     {/* Only show MerchantSubscription if country is set, in a child component for perf */}
-                    <MerchantSubscriptionSection control={bl.form.control} />
+                    <MerchantSubscriptionSection control={bl.form.control} setValue={bl.form.setValue} />
 
                     {/* Step 2: Navigation buttons */}
                     <div className="flex gap-3">

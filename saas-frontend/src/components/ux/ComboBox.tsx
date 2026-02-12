@@ -109,12 +109,12 @@ const ComboBox = <T,>({ objectName, placeholder, actionVerb, items, fieldMapping
                     role="combobox"
                     data-testid={props["data-testid"]}
                     className={cn(
-                        "w-full justify-between",
+                        "w-full justify-between text-foreground",
                         !value && "text-muted-foreground",
                         props.className
                     )}
                 >   
-                    <span className="truncate pr-3">
+                    <span className="truncate pr-3 text-inherit">
                     {!isNullOrUndefined(value) ? 
                         (fieldMapping != null ? value[fieldMapping.labelColumn] : value) 
                         : placeholder_string }

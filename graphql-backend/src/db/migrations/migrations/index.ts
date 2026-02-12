@@ -29,6 +29,13 @@ import { migration as migration018 } from "./018_remove_case_fees_from_markets";
 import { migration as migration019 } from "./019_seed_legal_documents";
 import { migration as migration020 } from "./020_legal_document_indexes";
 import { migration as migration021 } from "./021_seed_legal_placeholders";
+import { migration as migration022 } from "./022_subscription_tiers";
+import { migration as migration023 } from "./023_update_tier_descriptions";
+import { migration as migration024 } from "./024_update_manifest_price";
+import { migration as migration025 } from "./025_update_transcend_description";
+import { migration as migration026 } from "./026_rename_merchant_terms";
+import { migration as migration027 } from "./027_seed_legal_documents_from_export";
+import { migration as migration028 } from "./028_rebrand_merchant_terms_to_partner";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -53,4 +60,11 @@ export const migrations: Migration[] = [
     migration019,
     migration020,
     migration021,
+    migration022,
+    migration023,
+    migration024,
+    migration025,
+    migration026,
+    migration027,
+    migration028,
 ];

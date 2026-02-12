@@ -17,8 +17,7 @@ import countryToCurrency from "country-to-currency";
 import { cn } from '@/lib/utils';
 import { useSession } from 'next-auth/react';
 import { MODALITIES, SPECIALIZATIONS } from '../../_constants/practitionerOptions';
-import PractitionerSubscription from './PractitionerSubscription';
-import { CurrencyAmountSchema } from '@/components/ux/CurrencyInput';
+import TierSelector from '@/components/subscription/TierSelector';
 import { Checkbox } from '@/components/ui/checkbox';
 import useCheckOutstandingConsents from '../../../components/ConsentGuard/hooks/UseCheckOutstandingConsents';
 import useRecordConsents from '../../../components/ConsentGuard/hooks/UseRecordConsents';
@@ -69,23 +68,22 @@ const practitionerFormSchema = z.object({
 
     // Step 4: Subscription
     subscription: z.object({
-        plans: z.array(z.object({
-            productId: z.string(),
-            variantId: z.string(),
-            price: CurrencyAmountSchema,
-            name: z.string().min(1)
-        })).min(1, { message: "At least one subscription plan is required" })
+        tier: z.string().min(1, { message: "Please select a subscription tier" }),
+        billingInterval: z.enum(['monthly', 'annual'])
     })
 });
 
 type PractitionerFormValues = z.infer<typeof practitionerFormSchema>;
 
-// Helper component to render subscription with dynamic currency
-const SubscriptionWithCurrency = ({ control, currency }: { control: any, currency: string }) => {
+// Helper component to render tier selector for practitioners
+const SubscriptionWithCurrency = ({ setValue }: { setValue: any }) => {
     return (
-        <PractitionerSubscription
-            control={control}
-            currency={currency || 'AUD'}
+        <TierSelector
+            profileType="practitioner"
+            selectedTier="awaken"
+            selectedInterval="monthly"
+            onTierChange={(t) => setValue("subscription.tier", t, { shouldValidate: true })}
+            onIntervalChange={(i) => setValue("subscription.billingInterval", i, { shouldValidate: true })}
         />
     );
 };
@@ -220,7 +218,7 @@ export default function CaptureProfile({
             yearsExperience: undefined,
             spiritualJourney: '',
             approach: '',
-            subscription: { plans: [] },
+            subscription: { tier: 'awaken', billingInterval: 'monthly' as const },
         },
         mode: 'onChange',
     });
@@ -349,15 +347,9 @@ export default function CaptureProfile({
                         specializations: values.specializations,
                         pronouns: values.pronouns || undefined,
                         subscription: {
-                            plans: values.subscription.plans.map(plan => ({
-                                productId: plan.productId,
-                                variantId: plan.variantId,
-                                name: plan.name,
-                                price: {
-                                    amount: plan.price.amount,
-                                    currency: plan.price.currency
-                                }
-                            }))
+                            tier: values.subscription.tier,
+                            billingInterval: values.subscription.billingInterval,
+                            plans: [] // Legacy field
                         }
                     }
                 }
@@ -756,8 +748,7 @@ export default function CaptureProfile({
                             </p>
 
                             <SubscriptionWithCurrency
-                                control={form.control}
-                                currency={form.watch('currency')}
+                                setValue={form.setValue}
                             />
                         </div>
                     )}

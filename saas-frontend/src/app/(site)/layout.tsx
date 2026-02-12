@@ -8,12 +8,12 @@ import SpiriLogo from '@/icons/spiri-logo';
 import Providers from '@/lib/providers';
 import SignedIn from './components/SignedIn';
 import Link from 'next/link';
-import ProfileAction from './c/[customerId]/_components/profileAction';
 import { auth } from '@/lib/auth';
 import CartIcon from './components/Catalogue/components/ShoppingCart/Nav';
 import SearchBar from './components/SearchBar';
 import Notifications from '@/components/notifications';
 import ConditionalNav from './components/ConditionalNav';
+import ConditionalNavItems from './components/ConditionalNavItems';
 import ConditionalMainWrapper from './components/ConditionalMainWrapper';
 import SacredAnimatedBackground from './components/Home/SacredAnimatedBackground';
 import ResolveStripeSuccess from './components/ResolveStripeSuccess';
@@ -48,19 +48,18 @@ export default async function SiteLayout({
             <Link href="/">
               <SpiriLogo height={40} />
             </Link>
-              <SearchBar className="flex-grow mx-6" />
-              <div className="flex flex-row items-center space-x-2">
-              { session != null && session.user != null &&
-                <CartIcon
-                  />
-              }
-              <SignedIn/>
-              </div>
+              <ConditionalNavItems>
+                <SearchBar className="flex-grow mx-6" />
+                <div className="flex flex-row items-center space-x-2">
+                { session != null && session.user != null &&
+                  <CartIcon
+                    />
+                }
+                <SignedIn/>
+                </div>
+              </ConditionalNavItems>
           </div>
         </ConditionalNav>
-        { session != null && session.user != null &&
-          <ProfileAction customerId={session.user.id} />
-        }
         <ConditionalMainWrapper>
           {children}
         </ConditionalMainWrapper>

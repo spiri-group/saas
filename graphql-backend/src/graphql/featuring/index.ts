@@ -18,8 +18,9 @@ import {
     configure_featuring_pricing_input,
     featuring_delivery_context_type
 } from "./types"
-import { vendor_type } from "../vendor/types"
+import { vendor_type, subscription_tier } from "../vendor/types"
 import { service_type } from "../service/types"
+import { getTierFeatures } from "../subscription/featureGates"
 
 const CONTAINER = "Main-FeaturingRelationship"
 const VENDOR_CONTAINER = "Main-Vendor"
@@ -371,6 +372,17 @@ const resolvers = {
 
             if (!merchant) {
                 throw new GraphQLError("Merchant not found", { extensions: { code: "NOT_FOUND" } })
+            }
+
+            // Check tier allows hosting practitioners
+            if (merchant.subscription?.subscriptionTier) {
+                const features = getTierFeatures(merchant.subscription.subscriptionTier as subscription_tier)
+                if (!features.canHostPractitioners) {
+                    throw new GraphQLError(
+                        "Upgrade to Transcend to host practitioners on your storefront.",
+                        { extensions: { code: "TIER_FEATURE_LOCKED" } }
+                    )
+                }
             }
 
             if (!practitioner || practitioner.docType !== "PRACTITIONER") {

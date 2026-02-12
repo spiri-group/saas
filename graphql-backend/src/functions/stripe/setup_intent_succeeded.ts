@@ -170,18 +170,23 @@ const handler : StripeHandler = async (event, logger, services ) => {
             logger.logMessage(`[setup_intent_succeeded] Payout schedule updated to daily for account ${connectedAccountId}`);
         }
 
-        // 3. Save payment method and set up self-managed billing fields (no Stripe subscription)
-        if (merchant.subscription?.stripeSubscriptionId) {
-            logger.logMessage(`[setup_intent_succeeded] Merchant already has Stripe subscription ${merchant.subscription.stripeSubscriptionId} - skipping self-managed billing setup`);
-        } else {
-            logger.logMessage(`[setup_intent_succeeded] Setting up self-managed billing for merchant ${merchantId}`);
+        // 3. Save payment method to new stripePaymentMethodId field
+        // Billing processor handles charging (no immediate charge at card save)
+        logger.logMessage(`[setup_intent_succeeded] Saving payment method for merchant ${merchantId}`);
 
-            await cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
-                { op: "set", path: "/subscription/saved_payment_method", value: payment_method },
-                { op: "set", path: "/subscription/billing_interval", value: "monthly" },
-            ], "STRIPE");
+        await cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
+            { op: "set", path: "/subscription/stripePaymentMethodId", value: payment_method },
+            // Legacy field kept for backward compatibility
+            { op: "set", path: "/subscription/saved_payment_method", value: payment_method },
+        ], "STRIPE");
 
-            // 4. Charge first month immediately
+        // No immediate charge — the billing processor will trigger first billing
+        // when cumulativePayouts >= subscriptionCostThreshold
+        logger.logMessage(`[setup_intent_succeeded] Payment method saved. Billing processor will handle charging when payout threshold is reached.`);
+
+        // Keep the legacy block below but skip it since we no longer charge immediately
+        if (false) {
+            // Legacy: This block is kept for reference but no longer executes
             const hasExistingPayment = (merchant.subscription?.billing_history?.length ?? 0) > 0;
             if (!hasExistingPayment && merchant.subscription?.plans && merchant.subscription.plans.length > 0) {
                 logger.logMessage(`[setup_intent_succeeded] Charging first month subscription for merchant ${merchantId}`);
@@ -679,15 +684,10 @@ async function checkAndPublishVendor(
         return;
     }
 
-    // Check requirement 2: First month paid
-    const hasFirstPayment = (vendor.subscription?.billing_history?.length ?? 0) > 0
-        && vendor.subscription!.billing_history!.some(r => r.billingStatus === billing_record_status.success);
-    if (!hasFirstPayment) {
-        logger.logMessage(`[checkAndPublishVendor] Vendor ${merchantId} missing first payment`);
-        return;
-    }
+    // Subscription payment is NOT required for go-live.
+    // Billing triggers automatically once cumulative payouts reach the threshold.
 
-    // Check requirement 3: Stripe Connect onboarding complete
+    // Check requirement 2: Stripe Connect onboarding complete
     let hasStripeOnboarding = false;
     if (vendor.stripe?.accountId) {
         const accountResp = await stripe.callApi("GET", `accounts/${vendor.stripe.accountId}`);

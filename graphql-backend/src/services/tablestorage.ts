@@ -94,6 +94,14 @@ export class TableStorageDataSource {
     }
 
     /**
+     * Upsert an entity (insert or replace)
+     */
+    async upsertEntity<T extends TableEntity>(tableName: string, entity: T): Promise<void> {
+        const client = await this.getTableClient(tableName);
+        await client.upsertEntity(entity, "Replace");
+    }
+
+    /**
      * Delete an entity
      */
     async deleteEntity(tableName: string, partitionKey: string, rowKey: string): Promise<void> {

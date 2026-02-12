@@ -5,7 +5,7 @@ import React, { JSX } from "react";
 import SideNav, { NavOption } from "@/components/ui/sidenav";
 import EditTeamMembers from "./Profile/Edit/TeamMembers";
 import EditCatalogueBanner from "./Profile/Edit/PromiseBanner";
-import { AlignLeftIcon, BoxIcon, Building2, FileTextIcon, HistoryIcon, NewspaperIcon, PaintbrushIcon, PhoneIcon, RefreshCwIcon, RotateCcwIcon, Share2Icon, StoreIcon, TruckIcon, Users2Icon, Package, AlertTriangle, ImageIcon, PiggyBank, CreditCardIcon, VideoIcon, Sparkles, MapPin, ShoppingCart, Calendar, LayoutDashboard, Mail, User } from "lucide-react";
+import { AlignLeftIcon, BoxIcon, Building2, FileTextIcon, HistoryIcon, NewspaperIcon, PaintbrushIcon, PhoneIcon, RefreshCwIcon, RotateCcwIcon, Share2Icon, StoreIcon, TruckIcon, Users2Icon, Package, AlertTriangle, ImageIcon, PiggyBank, CreditCardIcon, VideoIcon, Sparkles, MapPin, ShoppingCart, Calendar, LayoutDashboard, Mail, User, Wallet } from "lucide-react";
 import EditTourDetails from "../[merchant_slug]/(manage)/manage/tour/_components/Edit/TourDetails/EditTourDetails";
 import EditItinerary from "../[merchant_slug]/(manage)/manage/tour/_components/Edit/Itinerary";
 import CreateTour from "../[merchant_slug]/(manage)/manage/tour/_components/Create";
@@ -24,6 +24,7 @@ import EditMerchantSocials from "./Profile/Edit/Social";
 import SpiriAssistLogo from "@/icons/spiri-assist-logo";
 import { Session } from "next-auth";
 import { isNullOrUndefined } from "@/lib/functions";
+import { useTierFeatures } from "@/hooks/UseTierFeatures";
 
 import MerchantTaxRegistrations from "./TaxRegistration";
 import UpsertRefundPolicies from "./Profile/Edit/RefundPolicies";
@@ -48,6 +49,12 @@ const useBL = (props: BLProps) => {
     const [editBrandingActive, setEditBrandingActive] = useState(false);
 
     const merchant = props.session.user.vendors.find(v => v.id === merchantId);
+    const { features } = useTierFeatures(merchantId);
+
+    const canHostPractitioners = features.canHostPractitioners;
+    const hasInventoryAutomation = features.hasInventoryAutomation;
+    const productLimit = features.maxProducts;
+    const productBadge = productLimit !== null ? `/${productLimit}` : undefined;
 
     const options : NavOption[] =  [
         {
@@ -82,7 +89,8 @@ const useBL = (props: BLProps) => {
                 {
                     icon: <ShoppingCart className="w-5 h-5" />,
                     label: "New Product",
-                    dialogId: "Create Product"
+                    dialogId: "Create Product",
+                    badge: productBadge,
                 },
                 {
                     icon: <MapPin className="w-5 h-5" />,
@@ -146,7 +154,9 @@ const useBL = (props: BLProps) => {
                 {
                     icon: <Users2Icon className="w-5 h-5" />,
                     label: "Featured Practitioners",
-                    href: `/m/${merchantSlug}/manage/featuring`
+                    href: `/m/${merchantSlug}/manage/featuring`,
+                    disabled: !canHostPractitioners,
+                    disabledReason: "Requires Transcend plan",
                 },
                 {
                     type: "divider",
@@ -166,6 +176,12 @@ const useBL = (props: BLProps) => {
                     icon: <FileTextIcon className="w-5 h-5" />,
                     label: "Tax",
                     dialogId: "Tax Registrations"
+                },
+                {
+                    icon: <Wallet className="w-5 h-5" />,
+                    label: "Subscription",
+                    href: `/m/${merchantSlug}/manage/subscription`,
+                    testId: "nav-subscription"
                 },
                 {
                     icon: <Building2 className="w-5 h-5" />,
@@ -259,17 +275,23 @@ const useBL = (props: BLProps) => {
                 {
                     icon: <Package className="w-5 h-5" />,
                     label: "Overview",
-                    href: `/m/${merchantSlug}/manage/inventory`
+                    href: `/m/${merchantSlug}/manage/inventory`,
+                    disabled: !hasInventoryAutomation,
+                    disabledReason: "Requires Transcend plan",
                 },
                 {
                     icon: <AlertTriangle className="w-5 h-5" />,
                     label: "Stock Alerts",
-                    href: `/m/${merchantSlug}/manage/inventory/alerts`
+                    href: `/m/${merchantSlug}/manage/inventory/alerts`,
+                    disabled: !hasInventoryAutomation,
+                    disabledReason: "Requires Transcend plan",
                 },
                 {
                     icon: <HistoryIcon className="w-5 h-5" />,
                     label: "Transactions",
-                    href: `/m/${merchantSlug}/manage/inventory/transactions`
+                    href: `/m/${merchantSlug}/manage/inventory/transactions`,
+                    disabled: !hasInventoryAutomation,
+                    disabledReason: "Requires Transcend plan",
                 }
             ]
         },

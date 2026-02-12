@@ -77,7 +77,6 @@ const GoLiveChecklist: React.FC<GoLiveChecklistProps> = ({ merchantId }) => {
     const completedCount = [
         goLiveReadiness.hasStripeOnboarding,
         goLiveReadiness.hasPaymentCard,
-        goLiveReadiness.hasFirstPayment,
     ].filter(Boolean).length;
 
     return (
@@ -88,7 +87,7 @@ const GoLiveChecklist: React.FC<GoLiveChecklistProps> = ({ merchantId }) => {
                         <Rocket className="w-5 h-5 text-orange-400" />
                         <CardTitle className="text-base text-white">Go Live Checklist</CardTitle>
                     </div>
-                    <span className="text-xs text-slate-400">{completedCount}/3 complete</span>
+                    <span className="text-xs text-slate-400">{completedCount}/2 complete</span>
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
                     Complete these steps to publish your shop and start accepting customers.
@@ -111,14 +110,6 @@ const GoLiveChecklist: React.FC<GoLiveChecklistProps> = ({ merchantId }) => {
                             ? () => openNavDialog(["Setup", "Cards"], "Payment Cards")
                             : undefined}
                         testId="go-live-card"
-                    />
-                    <ChecklistItem
-                        label="Pay first month subscription"
-                        completed={goLiveReadiness.hasFirstPayment}
-                        onClick={!goLiveReadiness.hasFirstPayment && goLiveReadiness.hasPaymentCard
-                            ? () => openNavDialog(["Setup", "Cards"], "Payment Cards")
-                            : undefined}
-                        testId="go-live-payment"
                     />
                 </div>
             </CardContent>

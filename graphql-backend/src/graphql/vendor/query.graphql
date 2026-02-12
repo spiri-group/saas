@@ -338,7 +338,6 @@ type Vendor {
 type GoLiveReadiness {
   isReady: Boolean!
   hasPaymentCard: Boolean!
-  hasFirstPayment: Boolean!
   hasStripeOnboarding: Boolean!
   missingRequirements: [String!]!
 }

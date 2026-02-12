@@ -2,54 +2,38 @@ import NodeCache from "node-cache";
 import { InvocationContext, Timer, app } from "@azure/functions";
 import { DateTime } from "luxon";
 import { v4 as uuidv4 } from "uuid";
-import { vendor_type, billing_record_status, plan_type } from "../graphql/vendor/types";
+import { vendor_type, billing_record_status, subscription_tier, billing_status } from "../graphql/vendor/types";
 import { CosmosDataSource } from "../utils/database";
 import { StripeDataSource } from "../services/stripe";
+import { AzureEmailDataSource } from "../services/azureEmail";
 import { LogManager } from "../utils/functions";
 import { vault } from "../services/vault";
+import { sender_details } from "../client/email_templates";
+import { getTierFeeKey } from "../graphql/subscription/featureGates";
 
 const myCache = new NodeCache();
 
-/**
- * Normalizes a plan name to a fee config key.
- * e.g. "SpiriVerse Core" -> "subscription-spiriverse-core"
- */
-function planNameToFeeKey(name: string): string {
-    return "subscription-" + name.toLowerCase().replace(/\s+/g, "-");
-}
-
 type FeeConfigEntry = { percent: number; fixed: number; currency: string };
 
-/**
- * Looks up the current price for a plan from the fee config.
- * Returns the fee config fixed amount if found, otherwise falls back to the vendor's stored price.
- */
-function getPlanAmount(plan: plan_type, feeConfig: Record<string, FeeConfigEntry> | null): number {
-    if (feeConfig) {
-        const key = planNameToFeeKey(plan.name);
-        const entry = feeConfig[key];
-        if (entry && typeof entry.fixed === "number" && entry.fixed > 0) {
-            return entry.fixed;
-        }
-    }
-    return plan.price.amount;
+function getTierAmount(
+    tier: subscription_tier,
+    interval: 'monthly' | 'annual',
+    feeConfig: Record<string, FeeConfigEntry> | null
+): number {
+    if (!feeConfig) return 0;
+    const key = getTierFeeKey(tier, interval);
+    const entry = feeConfig[key];
+    return entry?.fixed ?? 0;
 }
 
 /**
- * Self-Managed Billing Processor
+ * Tier-Based Billing Processor
  *
- * Runs daily at 6am AEST (8pm UTC) to charge merchants via PaymentIntents.
- *
- * Two query passes:
- * 1. Due billings: card_status = "saved", next_billing_date <= today, no stripeSubscriptionId
- * 2. Retries: payment_status = "failed", payment_retry_count < 3
- *
- * Per vendor:
- * - Sum plan amounts
- * - Create PaymentIntent (off_session, confirm) with idempotency key
- * - Success: advance next_billing_date, reset retry count, append to billing_history
- * - Failure: increment retry count, set next_billing_date = now + 3 days
- * - 3rd failure: set payouts_blocked = true, switch connected account to manual payouts
+ * Runs twice daily (7am UTC & 3pm UTC) with four passes:
+ * 1. First-billing trigger: pendingFirstBilling vendors whose cumulative payouts >= threshold
+ * 2. Due renewals: active subscriptions nearing expiry (within 3 days)
+ * 3. Retries: failed payments with retry scheduled
+ * 4. Pending downgrades: apply tier changes whose effective date has passed
  */
 export async function billingProcessor(myTimer: Timer, context: InvocationContext): Promise<void> {
     context.log('Billing processor started at:', new Date().toISOString());
@@ -61,13 +45,18 @@ export async function billingProcessor(myTimer: Timer, context: InvocationContex
 
         const cosmos = new CosmosDataSource(logger, keyVault);
         const stripe = new StripeDataSource(logger, keyVault);
+        const email = new AzureEmailDataSource(logger, keyVault);
 
         await cosmos.init(host);
         await stripe.init();
+        await email.init(host);
+        email.setDataSources({ cosmos });
 
-        const today = DateTime.now().toISODate();
+        const now = DateTime.now();
+        const nowISO = now.toISO();
+        const todayISO = now.toISODate();
 
-        // Load fee config for current subscription plan prices
+        // Load fee config
         let feeConfig: Record<string, FeeConfigEntry> | null = null;
         try {
             const feeResults = await cosmos.run_query<any>("System-Settings", {
@@ -79,70 +68,124 @@ export async function billingProcessor(myTimer: Timer, context: InvocationContex
             });
             if (feeResults.length > 0) {
                 feeConfig = feeResults[0];
-                context.log("Loaded fee config for subscription pricing");
-            } else {
-                context.log("Fee config not found – using vendor-stored prices");
+                context.log("Loaded fee config");
             }
         } catch (error) {
-            context.log("Failed to load fee config – using vendor-stored prices");
+            context.log("Failed to load fee config");
         }
 
         // ========================================
-        // Pass 1: Due billings (new charges)
+        // Pass 1: First-billing trigger
+        // Vendors in pendingFirstBilling whose cumulative payouts >= threshold and have a payment method
         // ========================================
-        context.log('Querying for due billings...');
+        context.log('Pass 1: Querying for first-billing triggers...');
 
-        const dueBillings = await cosmos.run_query<vendor_type>("Main-Vendor", {
+        const firstBillingVendors = await cosmos.run_query<vendor_type>("Main-Vendor", {
             query: `
                 SELECT * FROM c
-                WHERE c.subscription.card_status = "saved"
-                AND c.subscription.next_billing_date <= @today
-                AND (c.subscription.payment_status != "failed" OR NOT IS_DEFINED(c.subscription.payment_status))
-                AND NOT IS_DEFINED(c.subscription.stripeSubscriptionId)
-                AND IS_DEFINED(c.subscription.saved_payment_method)
+                WHERE c.subscription.billingStatus = "pendingFirstBilling"
+                AND c.subscription.cumulativePayouts >= c.subscription.subscriptionCostThreshold
+                AND IS_DEFINED(c.subscription.stripePaymentMethodId)
+                AND c.subscription.stripePaymentMethodId != null
             `,
-            parameters: [
-                { name: "@today", value: today }
-            ]
+            parameters: []
         }, true);
 
-        context.log(`Found ${dueBillings.length} merchants with due billings`);
+        context.log(`Pass 1: Found ${firstBillingVendors.length} vendors ready for first billing`);
 
-        for (const vendor of dueBillings) {
+        for (const vendor of firstBillingVendors) {
             try {
-                await processVendorBilling(vendor, cosmos, stripe, logger, context, feeConfig);
+                await processFirstBilling(vendor, cosmos, stripe, email, context, feeConfig, now);
             } catch (error) {
-                context.error(`Failed to process billing for vendor ${vendor.id}:`, error);
+                context.error(`Pass 1: Failed for vendor ${vendor.id}:`, error);
             }
         }
 
         // ========================================
-        // Pass 2: Retries (failed payments)
+        // Pass 2: Due renewals
+        // Active subscriptions whose subscriptionExpiresAt is within 3 days
         // ========================================
-        context.log('Querying for billing retries...');
+        context.log('Pass 2: Querying for due renewals...');
 
-        const retryBillings = await cosmos.run_query<vendor_type>("Main-Vendor", {
+        const threeDaysFromNow = now.plus({ days: 3 }).toISO();
+
+        const dueRenewals = await cosmos.run_query<vendor_type>("Main-Vendor", {
             query: `
                 SELECT * FROM c
-                WHERE c.subscription.card_status = "saved"
-                AND c.subscription.next_billing_date <= @today
-                AND c.subscription.payment_status = "failed"
-                AND c.subscription.payment_retry_count < 3
-                AND NOT IS_DEFINED(c.subscription.stripeSubscriptionId)
-                AND IS_DEFINED(c.subscription.saved_payment_method)
+                WHERE c.subscription.billingStatus = "active"
+                AND c.subscription.subscriptionExpiresAt <= @cutoff
+                AND c.subscription.failedPaymentAttempts = 0
+                AND IS_DEFINED(c.subscription.stripePaymentMethodId)
             `,
             parameters: [
-                { name: "@today", value: today }
+                { name: "@cutoff", value: threeDaysFromNow }
             ]
         }, true);
 
-        context.log(`Found ${retryBillings.length} merchants with billing retries`);
+        context.log(`Pass 2: Found ${dueRenewals.length} vendors with due renewals`);
 
-        for (const vendor of retryBillings) {
+        for (const vendor of dueRenewals) {
             try {
-                await processVendorBilling(vendor, cosmos, stripe, logger, context, feeConfig);
+                await processRenewal(vendor, cosmos, stripe, email, context, feeConfig, now);
             } catch (error) {
-                context.error(`Failed to process billing retry for vendor ${vendor.id}:`, error);
+                context.error(`Pass 2: Failed for vendor ${vendor.id}:`, error);
+            }
+        }
+
+        // ========================================
+        // Pass 3: Retries
+        // Failed payments with nextRetryAt <= now and failedPaymentAttempts < 3
+        // ========================================
+        context.log('Pass 3: Querying for payment retries...');
+
+        const retryVendors = await cosmos.run_query<vendor_type>("Main-Vendor", {
+            query: `
+                SELECT * FROM c
+                WHERE c.subscription.failedPaymentAttempts > 0
+                AND c.subscription.failedPaymentAttempts < 3
+                AND c.subscription.nextRetryAt <= @now
+                AND IS_DEFINED(c.subscription.stripePaymentMethodId)
+            `,
+            parameters: [
+                { name: "@now", value: nowISO }
+            ]
+        }, true);
+
+        context.log(`Pass 3: Found ${retryVendors.length} vendors with pending retries`);
+
+        for (const vendor of retryVendors) {
+            try {
+                await processRetry(vendor, cosmos, stripe, email, context, feeConfig, now);
+            } catch (error) {
+                context.error(`Pass 3: Failed for vendor ${vendor.id}:`, error);
+            }
+        }
+
+        // ========================================
+        // Pass 4: Pending downgrades
+        // Vendors with a pending downgrade whose effective date has passed
+        // ========================================
+        context.log('Pass 4: Querying for pending downgrades...');
+
+        const pendingDowngrades = await cosmos.run_query<vendor_type>("Main-Vendor", {
+            query: `
+                SELECT * FROM c
+                WHERE IS_DEFINED(c.subscription.pendingDowngradeTo)
+                AND c.subscription.pendingDowngradeTo != null
+                AND c.subscription.downgradeEffectiveAt <= @now
+            `,
+            parameters: [
+                { name: "@now", value: nowISO }
+            ]
+        }, true);
+
+        context.log(`Pass 4: Found ${pendingDowngrades.length} vendors with pending downgrades`);
+
+        for (const vendor of pendingDowngrades) {
+            try {
+                await applyDowngrade(vendor, cosmos, email, context, feeConfig);
+            } catch (error) {
+                context.error(`Pass 4: Failed for vendor ${vendor.id}:`, error);
             }
         }
 
@@ -153,206 +196,525 @@ export async function billingProcessor(myTimer: Timer, context: InvocationContex
     }
 }
 
-async function processVendorBilling(
+// ─── Pass 1: First Billing ──────────────────────────────────────
+
+async function processFirstBilling(
     vendor: vendor_type,
     cosmos: CosmosDataSource,
     stripe: StripeDataSource,
-    logger: LogManager,
+    email: AzureEmailDataSource,
     context: InvocationContext,
-    feeConfig: Record<string, FeeConfigEntry> | null
+    feeConfig: Record<string, FeeConfigEntry> | null,
+    now: DateTime
 ): Promise<void> {
-    const subscription = vendor.subscription;
-    if (!subscription || !subscription.plans || subscription.plans.length === 0) {
-        context.log(`Vendor ${vendor.id} has no plans - skipping`);
-        return;
-    }
+    const sub = vendor.subscription;
+    if (!sub?.stripePaymentMethodId || !vendor.stripe?.customerId) return;
 
-    if (!vendor.stripe?.customerId) {
-        context.log(`Vendor ${vendor.id} has no Stripe customer - skipping`);
-        return;
-    }
+    const tier = sub.subscriptionTier as subscription_tier;
+    const interval = (sub.billingInterval || "monthly") as 'monthly' | 'annual';
 
-    const periodStart = subscription.next_billing_date || DateTime.now().toISODate();
-    const interval = subscription.billing_interval || "monthly";
-    const periodEnd = DateTime.fromISO(periodStart)
-        .plus(interval === "yearly" ? { years: 1 } : { months: 1 })
-        .toISODate();
-
-    // Check waiver override
-    if (subscription.waived) {
-        const waiverExpired = subscription.waivedUntil && DateTime.fromISO(subscription.waivedUntil) < DateTime.now();
-
-        if (waiverExpired) {
-            // Waiver has expired - clear waiver fields and proceed to billing
-            context.log(`Waiver expired for vendor ${vendor.id} - clearing and proceeding to billing`);
+    // Check waiver
+    if (sub.waived) {
+        if (sub.waivedUntil && DateTime.fromISO(sub.waivedUntil) < now) {
             await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
                 { op: "remove", path: "/subscription/waived" },
                 { op: "remove", path: "/subscription/waivedUntil" },
             ], "BILLING_PROCESSOR");
         } else {
-            // Waiver still active - advance billing date without charging
-            const nextBillingDate = DateTime.fromISO(periodStart)
-                .plus(interval === "yearly" ? { years: 1 } : { months: 1 })
-                .toISODate();
-
-            context.log(`Vendor ${vendor.id} is waived - advancing billing date to ${nextBillingDate} without charging`);
-
+            context.log(`Vendor ${vendor.id} is waived - activating without charge`);
+            const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
             await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
-                { op: "set", path: "/subscription/next_billing_date", value: nextBillingDate },
-                { op: "set", path: "/subscription/payment_status", value: "success" },
-                { op: "set", path: "/subscription/payment_retry_count", value: 0 },
-                { op: "set", path: "/subscription/last_payment_date", value: DateTime.now().toISO() },
+                { op: "set", path: "/subscription/billingStatus", value: "active" as billing_status },
+                { op: "set", path: "/subscription/firstBillingTriggeredAt", value: now.toISO() },
+                { op: "set", path: "/subscription/subscriptionExpiresAt", value: periodEnd.toISO() },
+                { op: "set", path: "/subscription/lastBilledAt", value: now.toISO() },
             ], "BILLING_PROCESSOR");
             return;
         }
     }
 
-    // Sum plan amounts (use fee config prices when available, fallback to vendor-stored prices)
-    const rawAmount = subscription.plans.reduce((sum, plan) => sum + getPlanAmount(plan, feeConfig), 0);
-    const currency = subscription.plans[0].price.currency;
+    const rawAmount = getTierAmount(tier, interval, feeConfig);
+    const discountMultiplier = 1 - (sub.discountPercent || 0) / 100;
+    const amount = Math.round(rawAmount * discountMultiplier);
 
-    // Apply discount override
-    const discountMultiplier = 1 - (subscription.discountPercent || 0) / 100;
-    const totalAmount = Math.round(rawAmount * discountMultiplier);
-
-    if (totalAmount <= 0) {
-        // Discount results in zero charge - treat same as waived
-        const nextBillingDate = DateTime.fromISO(periodStart)
-            .plus(interval === "yearly" ? { years: 1 } : { months: 1 })
-            .toISODate();
-
-        context.log(`Vendor ${vendor.id} has zero total after discount - advancing billing date to ${nextBillingDate}`);
-
+    if (amount <= 0) {
+        const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
         await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
-            { op: "set", path: "/subscription/next_billing_date", value: nextBillingDate },
-            { op: "set", path: "/subscription/payment_status", value: "success" },
-            { op: "set", path: "/subscription/payment_retry_count", value: 0 },
-            { op: "set", path: "/subscription/last_payment_date", value: DateTime.now().toISO() },
+            { op: "set", path: "/subscription/billingStatus", value: "active" as billing_status },
+            { op: "set", path: "/subscription/firstBillingTriggeredAt", value: now.toISO() },
+            { op: "set", path: "/subscription/subscriptionExpiresAt", value: periodEnd.toISO() },
+            { op: "set", path: "/subscription/lastBilledAt", value: now.toISO() },
         ], "BILLING_PROCESSOR");
         return;
     }
 
-    const idempotencyKey = `billing_${vendor.id}_${periodStart}`;
+    // Safety: don't charge if last attempt was < 1 hour ago
+    if (sub.lastPaymentAttemptAt && now.diff(DateTime.fromISO(sub.lastPaymentAttemptAt), "hours").hours < 1) {
+        context.log(`Vendor ${vendor.id} last attempt too recent - skipping`);
+        return;
+    }
 
-    context.log(`Processing billing for vendor ${vendor.id}: ${totalAmount} ${currency}, period ${periodStart} to ${periodEnd}`);
+    const periodStart = now.toISODate();
+    const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
+    const idempotencyKey = `first_billing_${vendor.id}_${periodStart}`;
 
-    // Create PaymentIntent (off_session, confirm)
+    context.log(`First billing for vendor ${vendor.id}: ${amount} AUD`);
+
     const paymentResult = await stripe.callApi("POST", "payment_intents", {
-        amount: totalAmount,
-        currency: currency,
+        amount,
+        currency: "aud",
         customer: vendor.stripe.customerId,
-        payment_method: subscription.saved_payment_method,
+        payment_method: sub.stripePaymentMethodId,
         off_session: true,
         confirm: true,
         metadata: {
             merchantId: vendor.id,
             billing_period_start: periodStart,
-            billing_period_end: periodEnd,
-            billing_type: "self_managed"
+            billing_period_end: periodEnd.toISODate(),
+            billing_type: "first_billing",
         }
     }, idempotencyKey);
 
     const billingRecord = {
         id: uuidv4(),
-        date: DateTime.now().toISO(),
-        amount: totalAmount,
-        currency: currency,
+        date: now.toISO(),
+        amount,
+        currency: "aud",
         period_start: periodStart,
-        period_end: periodEnd
+        period_end: periodEnd.toISODate(),
     };
 
     if (paymentResult.status === 200 && paymentResult.data?.status === "succeeded") {
-        // ========== SUCCESS ==========
-        context.log(`Payment succeeded for vendor ${vendor.id}: ${paymentResult.data.id}`);
-
-        const nextBillingDate = DateTime.fromISO(periodStart)
-            .plus(interval === "yearly" ? { years: 1 } : { months: 1 })
-            .toISODate();
+        context.log(`First billing succeeded for vendor ${vendor.id}`);
 
         const successRecord = {
             ...billingRecord,
             billingStatus: billing_record_status.success,
-            stripePaymentIntentId: paymentResult.data.id
+            stripePaymentIntentId: paymentResult.data.id,
         };
 
-        const historyPatch = (!subscription.billing_history || subscription.billing_history.length === 0)
+        const historyPatch = (!sub.billing_history || sub.billing_history.length === 0)
             ? { op: "set" as const, path: "/subscription/billing_history", value: [successRecord] }
             : { op: "add" as const, path: "/subscription/billing_history/-", value: successRecord };
 
         await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
-            { op: "set", path: "/subscription/next_billing_date", value: nextBillingDate },
+            { op: "set", path: "/subscription/billingStatus", value: "active" as billing_status },
+            { op: "set", path: "/subscription/firstBillingTriggeredAt", value: now.toISO() },
+            { op: "set", path: "/subscription/lastBilledAt", value: now.toISO() },
+            { op: "set", path: "/subscription/lastPaymentAttemptAt", value: now.toISO() },
+            { op: "set", path: "/subscription/subscriptionExpiresAt", value: periodEnd.toISO() },
+            { op: "set", path: "/subscription/failedPaymentAttempts", value: 0 },
             { op: "set", path: "/subscription/payment_status", value: "success" },
-            { op: "set", path: "/subscription/payment_retry_count", value: 0 },
-            { op: "set", path: "/subscription/last_payment_date", value: DateTime.now().toISO() },
-            historyPatch
+            historyPatch,
         ], "BILLING_PROCESSOR");
 
+        await sendBillingEmail(email, vendor, "subscription-payment-succeeded", {
+            "payment.amount": formatCurrency(amount),
+            "payment.nextBillingDate": periodEnd.toFormat("dd MMMM yyyy"),
+        }, context);
     } else {
-        // ========== FAILURE ==========
-        const currentRetryCount = subscription.payment_retry_count || 0;
-        const newRetryCount = currentRetryCount + 1;
-        const errorMessage = paymentResult.data?.last_payment_error?.message
-            || paymentResult.data?.error?.message
-            || `Payment failed with status ${paymentResult.status}`;
-
-        context.log(`Payment failed for vendor ${vendor.id} (attempt ${newRetryCount}): ${errorMessage}`);
-
-        const failureRecord = {
-            ...billingRecord,
-            billingStatus: billing_record_status.failed,
-            stripePaymentIntentId: paymentResult.data?.id,
-            error: errorMessage
-        };
-
-        const historyPatch = (!subscription.billing_history || subscription.billing_history.length === 0)
-            ? { op: "set" as const, path: "/subscription/billing_history", value: [failureRecord] }
-            : { op: "add" as const, path: "/subscription/billing_history/-", value: failureRecord };
-
-        if (newRetryCount >= 3) {
-            // ========== 3RD FAILURE - BLOCK PAYOUTS ==========
-            context.log(`3rd failure for vendor ${vendor.id} - blocking payouts`);
-
-            await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
-                { op: "set", path: "/subscription/payment_status", value: "failed" },
-                { op: "set", path: "/subscription/payment_retry_count", value: newRetryCount },
-                { op: "set", path: "/subscription/payouts_blocked", value: true },
-                historyPatch
-            ], "BILLING_PROCESSOR");
-
-            // Switch connected account to manual payouts
-            if (vendor.stripe?.accountId) {
-                try {
-                    await stripe.callApi("POST", `accounts/${vendor.stripe.accountId}`, {
-                        settings: {
-                            payouts: {
-                                schedule: {
-                                    interval: "manual"
-                                }
-                            }
-                        }
-                    });
-                    context.log(`Switched vendor ${vendor.id} to manual payouts`);
-                } catch (payoutError) {
-                    context.error(`Failed to switch vendor ${vendor.id} to manual payouts:`, payoutError);
-                }
-            }
-        } else {
-            // Schedule retry in 3 days
-            const retryDate = DateTime.now().plus({ days: 3 }).toISODate();
-            context.log(`Scheduling retry for vendor ${vendor.id} on ${retryDate}`);
-
-            await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
-                { op: "set", path: "/subscription/payment_status", value: "failed" },
-                { op: "set", path: "/subscription/payment_retry_count", value: newRetryCount },
-                { op: "set", path: "/subscription/next_billing_date", value: retryDate },
-                historyPatch
-            ], "BILLING_PROCESSOR");
-        }
+        await handlePaymentFailure(vendor, sub, cosmos, stripe, email, context, now, billingRecord, paymentResult);
     }
 }
 
-// Register the timer function - runs daily at 6am AEST (8pm UTC)
-app.timer('billingProcessor', {
-    schedule: '0 0 20 * * *',
+// ─── Pass 2: Renewal ────────────────────────────────────────────
+
+async function processRenewal(
+    vendor: vendor_type,
+    cosmos: CosmosDataSource,
+    stripe: StripeDataSource,
+    email: AzureEmailDataSource,
+    context: InvocationContext,
+    feeConfig: Record<string, FeeConfigEntry> | null,
+    now: DateTime
+): Promise<void> {
+    const sub = vendor.subscription;
+    if (!sub?.stripePaymentMethodId || !vendor.stripe?.customerId) return;
+
+    const tier = sub.subscriptionTier as subscription_tier;
+    const interval = (sub.billingInterval || "monthly") as 'monthly' | 'annual';
+
+    // Check waiver
+    if (sub.waived) {
+        if (sub.waivedUntil && DateTime.fromISO(sub.waivedUntil) < now) {
+            await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
+                { op: "remove", path: "/subscription/waived" },
+                { op: "remove", path: "/subscription/waivedUntil" },
+            ], "BILLING_PROCESSOR");
+        } else {
+            const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
+            context.log(`Vendor ${vendor.id} is waived - extending period to ${periodEnd.toISO()}`);
+            await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
+                { op: "set", path: "/subscription/subscriptionExpiresAt", value: periodEnd.toISO() },
+                { op: "set", path: "/subscription/lastBilledAt", value: now.toISO() },
+                { op: "set", path: "/subscription/payment_status", value: "success" },
+            ], "BILLING_PROCESSOR");
+            return;
+        }
+    }
+
+    const rawAmount = getTierAmount(tier, interval, feeConfig);
+    const discountMultiplier = 1 - (sub.discountPercent || 0) / 100;
+    const amount = Math.round(rawAmount * discountMultiplier);
+
+    if (amount <= 0) {
+        const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
+        await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
+            { op: "set", path: "/subscription/subscriptionExpiresAt", value: periodEnd.toISO() },
+            { op: "set", path: "/subscription/lastBilledAt", value: now.toISO() },
+            { op: "set", path: "/subscription/payment_status", value: "success" },
+        ], "BILLING_PROCESSOR");
+        return;
+    }
+
+    if (sub.lastPaymentAttemptAt && now.diff(DateTime.fromISO(sub.lastPaymentAttemptAt), "hours").hours < 1) {
+        context.log(`Vendor ${vendor.id} last attempt too recent - skipping`);
+        return;
+    }
+
+    const periodStart = now.toISODate();
+    const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
+    const idempotencyKey = `renewal_${vendor.id}_${periodStart}`;
+
+    context.log(`Renewal for vendor ${vendor.id}: ${amount} AUD`);
+
+    const paymentResult = await stripe.callApi("POST", "payment_intents", {
+        amount,
+        currency: "aud",
+        customer: vendor.stripe.customerId,
+        payment_method: sub.stripePaymentMethodId,
+        off_session: true,
+        confirm: true,
+        metadata: {
+            merchantId: vendor.id,
+            billing_period_start: periodStart,
+            billing_period_end: periodEnd.toISODate(),
+            billing_type: "renewal",
+        }
+    }, idempotencyKey);
+
+    const billingRecord = {
+        id: uuidv4(),
+        date: now.toISO(),
+        amount,
+        currency: "aud",
+        period_start: periodStart,
+        period_end: periodEnd.toISODate(),
+    };
+
+    if (paymentResult.status === 200 && paymentResult.data?.status === "succeeded") {
+        context.log(`Renewal succeeded for vendor ${vendor.id}`);
+
+        const successRecord = {
+            ...billingRecord,
+            billingStatus: billing_record_status.success,
+            stripePaymentIntentId: paymentResult.data.id,
+        };
+
+        const historyPatch = (!sub.billing_history || sub.billing_history.length === 0)
+            ? { op: "set" as const, path: "/subscription/billing_history", value: [successRecord] }
+            : { op: "add" as const, path: "/subscription/billing_history/-", value: successRecord };
+
+        await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
+            { op: "set", path: "/subscription/subscriptionExpiresAt", value: periodEnd.toISO() },
+            { op: "set", path: "/subscription/lastBilledAt", value: now.toISO() },
+            { op: "set", path: "/subscription/lastPaymentAttemptAt", value: now.toISO() },
+            { op: "set", path: "/subscription/failedPaymentAttempts", value: 0 },
+            { op: "set", path: "/subscription/payment_status", value: "success" },
+            historyPatch,
+        ], "BILLING_PROCESSOR");
+
+        await sendBillingEmail(email, vendor, "subscription-payment-succeeded", {
+            "payment.amount": formatCurrency(amount),
+            "payment.nextBillingDate": periodEnd.toFormat("dd MMMM yyyy"),
+        }, context);
+    } else {
+        await handlePaymentFailure(vendor, sub, cosmos, stripe, email, context, now, billingRecord, paymentResult);
+    }
+}
+
+// ─── Pass 3: Retry ──────────────────────────────────────────────
+
+async function processRetry(
+    vendor: vendor_type,
+    cosmos: CosmosDataSource,
+    stripe: StripeDataSource,
+    email: AzureEmailDataSource,
+    context: InvocationContext,
+    feeConfig: Record<string, FeeConfigEntry> | null,
+    now: DateTime
+): Promise<void> {
+    const sub = vendor.subscription;
+    if (!sub?.stripePaymentMethodId || !vendor.stripe?.customerId) return;
+
+    const tier = sub.subscriptionTier as subscription_tier;
+    const interval = (sub.billingInterval || "monthly") as 'monthly' | 'annual';
+
+    const rawAmount = getTierAmount(tier, interval, feeConfig);
+    const discountMultiplier = 1 - (sub.discountPercent || 0) / 100;
+    const amount = Math.round(rawAmount * discountMultiplier);
+
+    if (amount <= 0) return;
+
+    if (sub.lastPaymentAttemptAt && now.diff(DateTime.fromISO(sub.lastPaymentAttemptAt), "hours").hours < 1) {
+        context.log(`Vendor ${vendor.id} last attempt too recent - skipping retry`);
+        return;
+    }
+
+    const periodStart = now.toISODate();
+    const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
+    const idempotencyKey = `retry_${vendor.id}_${periodStart}_${now.toMillis()}`;
+
+    context.log(`Retry (attempt ${(sub.failedPaymentAttempts || 0) + 1}) for vendor ${vendor.id}: ${amount} AUD`);
+
+    const paymentResult = await stripe.callApi("POST", "payment_intents", {
+        amount,
+        currency: "aud",
+        customer: vendor.stripe.customerId,
+        payment_method: sub.stripePaymentMethodId,
+        off_session: true,
+        confirm: true,
+        metadata: {
+            merchantId: vendor.id,
+            billing_period_start: periodStart,
+            billing_period_end: periodEnd.toISODate(),
+            billing_type: "retry",
+        }
+    }, idempotencyKey);
+
+    const billingRecord = {
+        id: uuidv4(),
+        date: now.toISO(),
+        amount,
+        currency: "aud",
+        period_start: periodStart,
+        period_end: periodEnd.toISODate(),
+    };
+
+    if (paymentResult.status === 200 && paymentResult.data?.status === "succeeded") {
+        context.log(`Retry succeeded for vendor ${vendor.id}`);
+
+        const successRecord = {
+            ...billingRecord,
+            billingStatus: billing_record_status.success,
+            stripePaymentIntentId: paymentResult.data.id,
+        };
+
+        const historyPatch = (!sub.billing_history || sub.billing_history.length === 0)
+            ? { op: "set" as const, path: "/subscription/billing_history", value: [successRecord] }
+            : { op: "add" as const, path: "/subscription/billing_history/-", value: successRecord };
+
+        await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
+            { op: "set", path: "/subscription/billingStatus", value: "active" as billing_status },
+            { op: "set", path: "/subscription/subscriptionExpiresAt", value: periodEnd.toISO() },
+            { op: "set", path: "/subscription/lastBilledAt", value: now.toISO() },
+            { op: "set", path: "/subscription/lastPaymentAttemptAt", value: now.toISO() },
+            { op: "set", path: "/subscription/failedPaymentAttempts", value: 0 },
+            { op: "set", path: "/subscription/payment_status", value: "success" },
+            { op: "set", path: "/subscription/payouts_blocked", value: false },
+            { op: "set", path: "/subscription/nextRetryAt", value: null },
+            historyPatch,
+        ], "BILLING_PROCESSOR");
+
+        // Re-enable automatic payouts
+        if (vendor.stripe?.accountId) {
+            try {
+                await stripe.callApi("POST", `accounts/${vendor.stripe.accountId}`, {
+                    settings: { payouts: { schedule: { interval: "daily" } } },
+                });
+            } catch (e) {
+                context.error(`Failed to re-enable payouts for vendor ${vendor.id}:`, e);
+            }
+        }
+
+        await sendBillingEmail(email, vendor, "subscription-payment-succeeded", {
+            "payment.amount": formatCurrency(amount),
+            "payment.nextBillingDate": periodEnd.toFormat("dd MMMM yyyy"),
+        }, context);
+    } else {
+        await handlePaymentFailure(vendor, sub, cosmos, stripe, email, context, now, billingRecord, paymentResult);
+    }
+}
+
+// ─── Pass 4: Downgrade ──────────────────────────────────────────
+
+async function applyDowngrade(
+    vendor: vendor_type,
+    cosmos: CosmosDataSource,
+    email: AzureEmailDataSource,
+    context: InvocationContext,
+    feeConfig: Record<string, FeeConfigEntry> | null
+): Promise<void> {
+    const sub = vendor.subscription;
+    if (!sub?.pendingDowngradeTo) return;
+
+    const fromTier = sub.subscriptionTier;
+    const toTier = sub.pendingDowngradeTo as subscription_tier;
+    const interval = (sub.billingInterval || "monthly") as 'monthly' | 'annual';
+    const newThreshold = getTierAmount(toTier, "monthly", feeConfig);
+
+    context.log(`Applying downgrade for vendor ${vendor.id}: ${fromTier} -> ${toTier}`);
+
+    await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
+        { op: "set", path: "/subscription/subscriptionTier", value: toTier },
+        { op: "set", path: "/subscription/subscriptionCostThreshold", value: newThreshold },
+        { op: "set", path: "/subscription/pendingDowngradeTo", value: null },
+        { op: "set", path: "/subscription/downgradeEffectiveAt", value: null },
+    ], "BILLING_PROCESSOR");
+
+    await sendBillingEmail(email, vendor, "subscription-downgrade-effective", {
+        "downgrade.fromTier": capitalize(fromTier),
+        "downgrade.toTier": capitalize(toTier),
+        "subscription.interval": interval,
+        "subscription.price": formatCurrency(getTierAmount(toTier, interval, feeConfig)),
+    }, context);
+}
+
+// ─── Shared: Payment Failure Handler ────────────────────────────
+
+async function handlePaymentFailure(
+    vendor: vendor_type,
+    sub: vendor_type['subscription'],
+    cosmos: CosmosDataSource,
+    stripe: StripeDataSource,
+    email: AzureEmailDataSource,
+    context: InvocationContext,
+    now: DateTime,
+    billingRecord: any,
+    paymentResult: any
+): Promise<void> {
+    const currentAttempts = sub.failedPaymentAttempts || 0;
+    const newAttempts = currentAttempts + 1;
+    const errorMessage = paymentResult.data?.last_payment_error?.message
+        || paymentResult.data?.error?.message
+        || `Payment failed with status ${paymentResult.status}`;
+
+    context.log(`Payment failed for vendor ${vendor.id} (attempt ${newAttempts}): ${errorMessage}`);
+
+    const failureRecord = {
+        ...billingRecord,
+        billingStatus: billing_record_status.failed,
+        stripePaymentIntentId: paymentResult.data?.id,
+        error: errorMessage,
+    };
+
+    const historyPatch = (!sub.billing_history || sub.billing_history.length === 0)
+        ? { op: "set" as const, path: "/subscription/billing_history", value: [failureRecord] }
+        : { op: "add" as const, path: "/subscription/billing_history/-", value: failureRecord };
+
+    if (newAttempts >= 3) {
+        // 3rd failure - suspend account
+        context.log(`3rd failure for vendor ${vendor.id} - suspending`);
+
+        await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
+            { op: "set", path: "/subscription/billingStatus", value: "suspended" as billing_status },
+            { op: "set", path: "/subscription/failedPaymentAttempts", value: newAttempts },
+            { op: "set", path: "/subscription/lastPaymentAttemptAt", value: now.toISO() },
+            { op: "set", path: "/subscription/payment_status", value: "failed" },
+            { op: "set", path: "/subscription/payouts_blocked", value: true },
+            { op: "set", path: "/subscription/nextRetryAt", value: null },
+            historyPatch,
+        ], "BILLING_PROCESSOR");
+
+        // Switch to manual payouts
+        if (vendor.stripe?.accountId) {
+            try {
+                await stripe.callApi("POST", `accounts/${vendor.stripe.accountId}`, {
+                    settings: { payouts: { schedule: { interval: "manual" } } },
+                });
+                context.log(`Switched vendor ${vendor.id} to manual payouts`);
+            } catch (e) {
+                context.error(`Failed to switch vendor ${vendor.id} to manual payouts:`, e);
+            }
+        }
+
+        await sendBillingEmail(email, vendor, "subscription-payment-failed-final", {}, context);
+        await sendBillingEmail(email, vendor, "subscription-account-suspended", {}, context);
+    } else {
+        // Smart retry schedule
+        let nextRetry: DateTime;
+        let emailTemplate: string;
+
+        if (newAttempts === 1) {
+            // 1st fail: retry same day afternoon or next morning
+            const currentHour = now.hour;
+            if (currentHour < 12) {
+                nextRetry = now.set({ hour: 15, minute: 0, second: 0 }); // afternoon today
+            } else {
+                nextRetry = now.plus({ days: 1 }).set({ hour: 7, minute: 0, second: 0 }); // next morning
+            }
+            emailTemplate = "subscription-payment-failed-first";
+        } else {
+            // 2nd fail: retry 3 days later at 7am
+            nextRetry = now.plus({ days: 3 }).set({ hour: 7, minute: 0, second: 0 });
+            emailTemplate = "subscription-payment-failed-second";
+        }
+
+        context.log(`Scheduling retry for vendor ${vendor.id} at ${nextRetry.toISO()}`);
+
+        await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
+            { op: "set", path: "/subscription/failedPaymentAttempts", value: newAttempts },
+            { op: "set", path: "/subscription/lastPaymentAttemptAt", value: now.toISO() },
+            { op: "set", path: "/subscription/payment_status", value: "failed" },
+            { op: "set", path: "/subscription/nextRetryAt", value: nextRetry.toISO() },
+            historyPatch,
+        ], "BILLING_PROCESSOR");
+
+        const tier = sub.subscriptionTier as subscription_tier;
+        const interval = (sub.billingInterval || "monthly") as 'monthly' | 'annual';
+        await sendBillingEmail(email, vendor, emailTemplate, {
+            "payment.amount": formatCurrency(billingRecord.amount),
+        }, context);
+    }
+}
+
+// ─── Helpers ────────────────────────────────────────────────────
+
+async function sendBillingEmail(
+    email: AzureEmailDataSource,
+    vendor: vendor_type,
+    templateId: string,
+    extraVars: Record<string, string>,
+    context: InvocationContext
+): Promise<void> {
+    const recipientEmail = vendor.contact?.internal?.email || vendor.contact?.public?.email;
+    if (!recipientEmail) {
+        context.log(`No email for vendor ${vendor.id} - skipping email`);
+        return;
+    }
+
+    try {
+        await email.sendEmail(
+            sender_details.from,
+            recipientEmail,
+            templateId,
+            {
+                "vendor.name": vendor.name,
+                "vendor.contactName": vendor.name,
+                "dashboardUrl": `https://www.spiriverse.com/m/${vendor.slug}/manage`,
+                ...extraVars,
+            }
+        );
+    } catch (e) {
+        context.log(`Failed to send ${templateId} email for vendor ${vendor.id}: ${e}`);
+    }
+}
+
+function formatCurrency(amountCents: number): string {
+    return `$${(amountCents / 100).toFixed(2)} AUD`;
+}
+
+function capitalize(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Register two timer functions for twice-daily billing
+app.timer('billingProcessorMorning', {
+    schedule: '0 0 7 * * *',  // 7am UTC
+    handler: billingProcessor,
+});
+
+app.timer('billingProcessorAfternoon', {
+    schedule: '0 0 15 * * *', // 3pm UTC
     handler: billingProcessor,
 });

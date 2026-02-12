@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 export type GoLiveReadiness = {
     isReady: boolean;
     hasPaymentCard: boolean;
-    hasFirstPayment: boolean;
     hasStripeOnboarding: boolean;
     missingRequirements: string[];
 };
@@ -25,7 +24,6 @@ const useGoLiveReadiness = (merchantId: string) => {
                         goLiveReadiness {
                             isReady
                             hasPaymentCard
-                            hasFirstPayment
                             hasStripeOnboarding
                             missingRequirements
                         }

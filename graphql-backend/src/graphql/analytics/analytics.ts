@@ -2,14 +2,10 @@ import { serverContext } from "../../services/azFunction";
 import { TableStorageDataSource } from "../../services/tablestorage";
 import { AnalyticsEntity } from "./types";
 
-let cachedTableClient: TableStorageDataSource | null = null;
+const ANALYTICS_TABLE = "Analytics";
 
-async function getTableStorage(context: serverContext): Promise<TableStorageDataSource> {
-    if (cachedTableClient) return cachedTableClient;
-    const ts = new TableStorageDataSource(context.logger, context.dataSources.vault);
-    await ts.init("Analytics");
-    cachedTableClient = ts;
-    return ts;
+function getTableStorage(context: serverContext): TableStorageDataSource {
+    return context.dataSources.tableStorage;
 }
 
 function buildDateRange(startDate: string, endDate: string): string[] {
@@ -49,9 +45,9 @@ const resolvers = {
             args: { startDate: string; endDate: string },
             context: serverContext
         ) => {
-            const ts = await getTableStorage(context);
+            const ts = getTableStorage(context);
             const filter = buildODataFilter(args.startDate, args.endDate);
-            const entities = await ts.queryEntities<AnalyticsEntity>(filter);
+            const entities = await ts.queryEntities<AnalyticsEntity>(ANALYTICS_TABLE, filter);
 
             const pageviews = entities.filter(e => e.eventType === "pageview");
             const pageleaves = entities.filter(e => e.eventType === "pageleave");
@@ -185,13 +181,13 @@ const resolvers = {
         },
 
         consoleAnalyticsRealtime: async (_: any, _args: any, context: serverContext) => {
-            const ts = await getTableStorage(context);
+            const ts = getTableStorage(context);
             const now = new Date();
             const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
             const today = now.toISOString().slice(0, 10);
 
             const filter = `PartitionKey eq '${today}' and timestamp ge '${fiveMinutesAgo.toISOString()}'`;
-            const entities = await ts.queryEntities<AnalyticsEntity>(filter);
+            const entities = await ts.queryEntities<AnalyticsEntity>(ANALYTICS_TABLE, filter);
 
             const pageviews = entities.filter(e => e.eventType === "pageview");
             const uniqueSessions = new Set(pageviews.map(e => e.sessionId));

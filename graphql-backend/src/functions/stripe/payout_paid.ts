@@ -6,9 +6,9 @@ import { merchant_card_status, vendor_type } from "../../graphql/vendor/types";
  * Handles payout.paid webhook for connected accounts.
  *
  * Flow:
- * 1. First payout goes through normally
- * 2. After first payout, switch to manual payouts (blocked until card added)
- * 3. When merchant adds card, payouts resume and subscription starts
+ * 1. Add payout amount to vendor's subscription.cumulativePayouts
+ * 2. If first payout ever: switch to manual payouts, block until card added
+ * 3. Billing processor picks up vendors who reach cumulative threshold
  */
 const handler: StripeHandler = async (event, logger, services) => {
     const { stripe, cosmos } = services;
@@ -40,15 +40,20 @@ const handler: StripeHandler = async (event, logger, services) => {
     const merchant = merchants[0];
     logger.logMessage(`[payout_paid] Found merchant ${merchant.id} (${merchant.name})`);
 
-    // If merchant already has a subscription, nothing to do
-    if (merchant.subscription?.stripeSubscriptionId) {
-        logger.logMessage(`[payout_paid] Merchant already has subscription - done`);
-        return;
-    }
+    // Add payout amount to cumulative payouts
+    const currentCumulative = merchant.subscription?.cumulativePayouts || 0;
+    const newCumulative = currentCumulative + payout.amount;
 
-    // If merchant already has a card, nothing to do (subscription will be created on card save)
+    logger.logMessage(`[payout_paid] Cumulative payouts: ${currentCumulative} + ${payout.amount} = ${newCumulative}`);
+
+    await cosmos.patch_record("Main-Vendor", merchant.id, merchant.id, [
+        { op: "set", path: "/subscription/cumulativePayouts", value: newCumulative },
+    ], "STRIPE");
+
+    // If merchant already has a card, nothing more to do
+    // The billing processor will pick up vendors who have reached the threshold
     if (merchant.subscription?.card_status === merchant_card_status.saved) {
-        logger.logMessage(`[payout_paid] Merchant already has card on file - done`);
+        logger.logMessage(`[payout_paid] Merchant already has card on file - cumulative payouts updated`);
         return;
     }
 
@@ -83,9 +88,6 @@ const handler: StripeHandler = async (event, logger, services) => {
         ], "STRIPE");
 
         logger.logMessage(`[payout_paid] Merchant ${merchant.id} needs to add card for future payouts`);
-
-        // TODO: Send notification to merchant to add payment method
-        // "Congratulations on your first sale! Add a payment method to continue receiving payouts."
     } else {
         // Shouldn't happen - payouts should be blocked after first payout
         logger.logMessage(`[payout_paid] Unexpected: Payout received after first payout but no card on file`);

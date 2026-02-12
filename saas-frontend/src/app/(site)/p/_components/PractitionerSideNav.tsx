@@ -28,7 +28,8 @@ import {
     Quote,
     Store,
     Plus,
-    Settings
+    Settings,
+    Wallet
 } from "lucide-react";
 import { VendorDocType } from "@/utils/spiriverse";
 import CreateReading from "../../m/[merchant_slug]/(manage)/manage/services/_components/CreateReading";
@@ -277,6 +278,12 @@ const useBL = (props: BLProps) => {
                     }
                 ] : [])
             ],
+        },
+        {
+            label: "Subscription",
+            icon: <Wallet className="w-5 h-5" />,
+            href: `/p/${practitionerSlug}/manage/subscription`,
+            testId: "nav-subscription"
         },
     ];
 
