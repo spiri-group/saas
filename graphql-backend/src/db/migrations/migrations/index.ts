@@ -38,6 +38,7 @@ import { migration as migration027 } from "./027_seed_legal_documents_from_expor
 import { migration as migration028 } from "./028_rebrand_merchant_terms_to_partner";
 import { migration as migration029 } from "./029_update_tier_feature_gates";
 import { migration as migration030 } from "./030_per_spread_reading_fees";
+import { migration as migration031 } from "./031_add_reading_base_prices";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -71,4 +72,5 @@ export const migrations: Migration[] = [
     migration028,
     migration029,
     migration030,
+    migration031,
 ];

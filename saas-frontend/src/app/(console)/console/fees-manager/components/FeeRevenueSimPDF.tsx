@@ -3,10 +3,11 @@ import {
   FeeGroup,
   SimulationInput,
   formatFeeKey,
-  formatPercent,
-  formatFixed,
   formatCentsAsDollars,
   computeMonthlyRevenue,
+  getCustomerPrice,
+  getPlatformPercent,
+  getPlatformAmount,
 } from "../constants/feeGroups";
 
 const styles = StyleSheet.create({
@@ -114,15 +115,20 @@ const styles = StyleSheet.create({
     color: "#1a7a3a",
     textAlign: "right",
   },
+  cellMuted: {
+    fontSize: 8,
+    color: "#999999",
+    textAlign: "right",
+  },
   // Column widths
-  colName: { width: "18%" },
+  colName: { width: "20%" },
   colKey: { width: "16%" },
-  colPercent: { width: "9%" },
-  colFixed: { width: "10%" },
-  colCurrency: { width: "8%" },
-  colVolume: { width: "11%" },
-  colAvgSale: { width: "11%" },
-  colRev: { width: "17%" },
+  colCustPrice: { width: "11%" },
+  colPlatPct: { width: "10%" },
+  colPlatAmt: { width: "11%" },
+  colCurrency: { width: "7%" },
+  colVolume: { width: "10%" },
+  colRev: { width: "15%" },
 });
 
 interface FeeRevenueSimPDFProps {
@@ -152,20 +158,20 @@ const FeeRevenueSimPDF: React.FC<FeeRevenueSimPDFProps> = ({
           <View style={styles.colKey}>
             <Text style={styles.headerCell}>Key</Text>
           </View>
-          <View style={styles.colPercent}>
-            <Text style={[styles.headerCell, { textAlign: "right" }]}>%</Text>
+          <View style={styles.colCustPrice}>
+            <Text style={[styles.headerCell, { textAlign: "right" }]}>Customer $</Text>
           </View>
-          <View style={styles.colFixed}>
-            <Text style={[styles.headerCell, { textAlign: "right" }]}>Fixed</Text>
+          <View style={styles.colPlatPct}>
+            <Text style={[styles.headerCell, { textAlign: "right" }]}>Platform %</Text>
+          </View>
+          <View style={styles.colPlatAmt}>
+            <Text style={[styles.headerCell, { textAlign: "right" }]}>Platform $</Text>
           </View>
           <View style={styles.colCurrency}>
             <Text style={styles.headerCell}>Ccy</Text>
           </View>
           <View style={styles.colVolume}>
             <Text style={[styles.headerCell, { textAlign: "right" }]}>Volume</Text>
-          </View>
-          <View style={styles.colAvgSale}>
-            <Text style={[styles.headerCell, { textAlign: "right" }]}>Avg Sale</Text>
           </View>
           <View style={styles.colRev}>
             <Text style={[styles.headerCell, { textAlign: "right" }]}>Monthly Rev</Text>
@@ -177,7 +183,7 @@ const FeeRevenueSimPDF: React.FC<FeeRevenueSimPDFProps> = ({
           let subtotal = 0;
           for (const { key, config } of group.fees) {
             const sim = simInputs[key] ?? { volume: 0, avgSale: 0 };
-            subtotal += computeMonthlyRevenue(config, sim);
+            subtotal += computeMonthlyRevenue(config, sim, key);
           }
           grandTotal += subtotal;
 
@@ -193,7 +199,10 @@ const FeeRevenueSimPDF: React.FC<FeeRevenueSimPDFProps> = ({
               {/* Fee rows */}
               {group.fees.map(({ key, config }) => {
                 const sim = simInputs[key] ?? { volume: 0, avgSale: 0 };
-                const rev = computeMonthlyRevenue(config, sim);
+                const rev = computeMonthlyRevenue(config, sim, key);
+                const custPrice = getCustomerPrice(key, config);
+                const platPct = getPlatformPercent(key, config);
+                const platAmt = getPlatformAmount(key, config);
 
                 return (
                   <View style={styles.feeRow} key={key}>
@@ -203,12 +212,19 @@ const FeeRevenueSimPDF: React.FC<FeeRevenueSimPDFProps> = ({
                     <View style={styles.colKey}>
                       <Text style={styles.cellMono}>{key}</Text>
                     </View>
-                    <View style={styles.colPercent}>
-                      <Text style={styles.cellRight}>{formatPercent(config.percent)}</Text>
+                    <View style={styles.colCustPrice}>
+                      <Text style={custPrice !== null ? styles.cellRight : styles.cellMuted}>
+                        {custPrice !== null ? formatCentsAsDollars(custPrice) : "Varies"}
+                      </Text>
                     </View>
-                    <View style={styles.colFixed}>
+                    <View style={styles.colPlatPct}>
                       <Text style={styles.cellRight}>
-                        {formatFixed(config.fixed)}
+                        {platPct > 0 ? `${platPct}%` : "-"}
+                      </Text>
+                    </View>
+                    <View style={styles.colPlatAmt}>
+                      <Text style={platAmt !== null ? styles.cellGreen : styles.cellMuted}>
+                        {platAmt !== null ? formatCentsAsDollars(platAmt) : "Varies"}
                       </Text>
                     </View>
                     <View style={styles.colCurrency}>
@@ -217,11 +233,6 @@ const FeeRevenueSimPDF: React.FC<FeeRevenueSimPDFProps> = ({
                     <View style={styles.colVolume}>
                       <Text style={styles.cellRight}>
                         {sim.volume > 0 ? sim.volume.toString() : "-"}
-                      </Text>
-                    </View>
-                    <View style={styles.colAvgSale}>
-                      <Text style={styles.cellRight}>
-                        {sim.avgSale > 0 ? `$${sim.avgSale.toFixed(2)}` : "-"}
                       </Text>
                     </View>
                     <View style={styles.colRev}>
@@ -235,7 +246,7 @@ const FeeRevenueSimPDF: React.FC<FeeRevenueSimPDFProps> = ({
 
               {/* Subtotal */}
               <View style={styles.subtotalRow}>
-                <View style={{ width: "83%" }}>
+                <View style={{ width: "85%" }}>
                   <Text style={[styles.subtotalLabel, { textAlign: "right" }]}>
                     Subtotal: {group.name}
                   </Text>
@@ -252,7 +263,7 @@ const FeeRevenueSimPDF: React.FC<FeeRevenueSimPDFProps> = ({
 
         {/* Grand total */}
         <View style={styles.grandTotalRow}>
-          <View style={{ width: "83%" }}>
+          <View style={{ width: "85%" }}>
             <Text style={[styles.grandTotalLabel, { textAlign: "right" }]}>Grand Total</Text>
           </View>
           <View style={styles.colRev}>

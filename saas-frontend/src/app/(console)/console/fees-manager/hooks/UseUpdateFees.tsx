@@ -17,15 +17,16 @@ const UseUpdateFees = () => {
       const response = await gql<{
         updateFeeConfig: boolean;
       }>(`
-        mutation UpdateFeeConfig($market: String!, $key: String!, $percent: Float!, $fixed: Float!, $currency: String!) {
-          updateFeeConfig(market: $market, key: $key, percent: $percent, fixed: $fixed, currency: $currency)
+        mutation UpdateFeeConfig($market: String!, $key: String!, $percent: Float!, $fixed: Float!, $currency: String!, $basePrice: Float) {
+          updateFeeConfig(market: $market, key: $key, percent: $percent, fixed: $fixed, currency: $currency, basePrice: $basePrice)
         }
       `, {
         market: input.market,
         key: input.key,
         percent: input.config.percent,
         fixed: input.config.fixed,
-        currency: input.config.currency
+        currency: input.config.currency,
+        basePrice: input.config.basePrice ?? null
       });
       return response.updateFeeConfig;
     },

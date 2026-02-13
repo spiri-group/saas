@@ -39,7 +39,21 @@ export class ReadingRequestManager {
   // ============================================
 
   async getSpreadConfigs(): Promise<spread_config[]> {
-    return SPREAD_CONFIGS;
+    // Merge hardcoded metadata with configurable prices from fee config
+    try {
+      const feeConfig = await getSpiriverseFeeConfig({ cosmos: this.cosmos });
+      return SPREAD_CONFIGS.map(config => {
+        const feeKey = getReadingFeeKey(config.type);
+        const targetFee = getTargetFeeConfig(feeKey, feeConfig);
+        return {
+          ...config,
+          price: targetFee.basePrice ?? config.price, // Fee config price overrides hardcoded
+        };
+      });
+    } catch {
+      // Fallback to hardcoded prices if fee config unavailable
+      return SPREAD_CONFIGS;
+    }
   }
 
   // ============================================
@@ -157,8 +171,10 @@ export class ReadingRequestManager {
     const now = DateTime.now().toISO();
     const feeConfig = await getSpiriverseFeeConfig({ cosmos: this.cosmos });
     const targetFee = getTargetFeeConfig(getReadingFeeKey(input.spreadType), feeConfig);
-    const platformFee = Math.floor(spreadConfig.price * (targetFee.percent / 100)) + (targetFee.fixed || 0);
-    const readerPayout = spreadConfig.price - platformFee;
+    // Use fee config basePrice if available, fallback to hardcoded SPREAD_CONFIGS price
+    const price = targetFee.basePrice ?? spreadConfig.price;
+    const platformFee = Math.floor(price * (targetFee.percent / 100)) + (targetFee.fixed || 0);
+    const readerPayout = price - platformFee;
     // Set expiry for 30 days if no reader claims it
     const expiresAt = DateTime.now().plus({ days: 30 }).toISO();
 
@@ -171,7 +187,7 @@ export class ReadingRequestManager {
       spreadType: input.spreadType,
       topic: input.topic,
       context: input.context,
-      price: spreadConfig.price,
+      price,
       platformFee,
       readerPayout,
       stripe: {
@@ -222,8 +238,10 @@ export class ReadingRequestManager {
     const now = DateTime.now().toISO();
     const feeConfig = await getSpiriverseFeeConfig({ cosmos: this.cosmos });
     const targetFee = getTargetFeeConfig(getReadingFeeKey(input.spreadType), feeConfig);
-    const platformFee = Math.floor(spreadConfig.price * (targetFee.percent / 100)) + (targetFee.fixed || 0);
-    const readerPayout = spreadConfig.price - platformFee;
+    // Use fee config basePrice if available, fallback to hardcoded SPREAD_CONFIGS price
+    const price = targetFee.basePrice ?? spreadConfig.price;
+    const platformFee = Math.floor(price * (targetFee.percent / 100)) + (targetFee.fixed || 0);
+    const readerPayout = price - platformFee;
     // Set expiry for 30 days if no reader claims it
     const expiresAt = DateTime.now().plus({ days: 30 }).toISO();
 
@@ -236,7 +254,7 @@ export class ReadingRequestManager {
       spreadType: input.spreadType,
       topic: input.topic,
       context: input.context,
-      price: spreadConfig.price,
+      price,
       platformFee,
       readerPayout,
       stripe: {
