@@ -6,6 +6,9 @@ import { tour_type, tour_input_type, tour_ticket_variant_type } from "../types";
 import { ListingTypes } from "../../listing/types";
 import { calculate_ticket_availability } from "../utils/ticket_inventory";
 import { MediaType } from "../../0_shared/types";
+import { vendor_type } from "../../vendor/types";
+import { getTierFeatures } from "../../subscription/featureGates";
+import { subscription_tier } from "../../vendor/types";
 
 export const tour_resolvers = {
     Query: {
@@ -18,6 +21,18 @@ export const tour_resolvers = {
     Mutation: {
         create_tour: async (_: any, args: { merchantId: string; tour: tour_input_type }, context: serverContext) => {
             const { merchantId, tour: tourInput } = args;
+
+            // Check tour creation gate based on subscription tier
+            const vendor = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", merchantId, merchantId);
+            if (vendor?.subscription?.subscriptionTier) {
+                const tierFeatures = getTierFeatures(vendor.subscription.subscriptionTier as subscription_tier);
+                if (!tierFeatures.canCreateTours) {
+                    throw new GraphQLError(
+                        "Tour creation requires the Transcend plan. Upgrade to create and sell guided tours.",
+                        { extensions: { code: "TIER_FEATURE_LOCKED", requiredTier: "transcend" } }
+                    );
+                }
+            }
 
             try {
                 // Initialize ticket variants with inventory

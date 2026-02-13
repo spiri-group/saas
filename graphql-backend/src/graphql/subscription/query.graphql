@@ -37,6 +37,10 @@ type TierFeatures {
   canHostPractitioners: Boolean!
   hasInventoryAutomation: Boolean!
   hasShippingAutomation: Boolean!
+  canCreateEvents: Boolean!
+  canCreateTours: Boolean!
+  hasSpiriAssist: Boolean!
+  hasBackorders: Boolean!
 }
 
 type BillingRecord {

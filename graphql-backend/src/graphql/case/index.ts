@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
+import { GraphQLError } from "graphql";
 import { currency_amount_type, recordref_type } from "../0_shared/types";
 import { serverContext } from "../../services/azFunction";
 import { DateTime, Duration } from "luxon";
@@ -15,6 +16,8 @@ import { sender_details } from '../../client/email_templates';
 import { CosmosDataSource } from '../../utils/database';
 import { PatchOperation, PatchOperationType } from '@azure/cosmos';
 import { user_business_logic } from '../user';
+import { getTierFeatures } from '../subscription/featureGates';
+import { subscription_tier } from '../vendor/types';
 
 const resolvers = {
     Query: {
@@ -363,7 +366,19 @@ const resolvers = {
             }
         }, context: serverContext) => {
             if (context.userId == null) throw "User must be present for this call"
-        
+
+            // Check SpiriAssist gate based on subscription tier
+            const vendor = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", args.offer.merchantId, args.offer.merchantId);
+            if (vendor?.subscription?.subscriptionTier) {
+                const tierFeatures = getTierFeatures(vendor.subscription.subscriptionTier as subscription_tier);
+                if (!tierFeatures.hasSpiriAssist) {
+                    throw new GraphQLError(
+                        "SpiriAssist investigations require the Manifest plan or higher.",
+                        { extensions: { code: "TIER_FEATURE_LOCKED", requiredTier: "manifest" } }
+                    );
+                }
+            }
+
             const offerExists = await context.dataSources.cosmos.record_exists("Main-CaseOffers", args.offer.id, args.offer.caseId)
 
             if (offerExists) {

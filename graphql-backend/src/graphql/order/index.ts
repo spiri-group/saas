@@ -17,6 +17,8 @@ import { pack_by_box_sources } from "../logistics/functions/packing";
 import { items_with_dimensions } from "../logistics/types";
 import { restore_orderline_quantities_webhook } from "./inventory_utils";
 import { process_refund } from "./refund_utils";
+import { getTierFeatures } from "../subscription/featureGates";
+import { subscription_tier } from "../vendor/types";
 
 const resolvers = {
     Query: { 
@@ -2339,6 +2341,7 @@ const commit_orderline_quantities = async (
     const containerName = "Main-Listing";
     const now = new Date().toISOString();
     const backorderPatches: PatchOperation[] = [];
+    const vendorCache = new Map<string, vendor_type>();
 
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
         const line = lines[lineIndex];
@@ -2370,6 +2373,20 @@ const commit_orderline_quantities = async (
                 if (qtyAvailable < quantity) {
                     // Check if backorders are allowed
                     if (currentInventory.allow_backorder) {
+                        // Verify vendor's tier supports backorders
+                        if (line.merchantId) {
+                            if (!vendorCache.has(line.merchantId)) {
+                                const v = await cosmos.get_record<vendor_type>("Main-Vendor", line.merchantId, line.merchantId);
+                                vendorCache.set(line.merchantId, v);
+                            }
+                            const vendor = vendorCache.get(line.merchantId)!;
+                            if (vendor?.subscription?.subscriptionTier) {
+                                const tierFeatures = getTierFeatures(vendor.subscription.subscriptionTier as subscription_tier);
+                                if (!tierFeatures.hasBackorders) {
+                                    throw new Error(`Backorders require the Transcend plan. Vendor ${line.merchantId} is on ${vendor.subscription.subscriptionTier}.`);
+                                }
+                            }
+                        }
                         const shortfall = quantity - qtyAvailable;
                         const currentBackorders = Math.abs(Math.min(0, currentInventory.qty_on_hand));
                         const maxBackorders = currentInventory.max_backorders || 0;

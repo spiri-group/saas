@@ -36,6 +36,7 @@ import { migration as migration025 } from "./025_update_transcend_description";
 import { migration as migration026 } from "./026_rename_merchant_terms";
 import { migration as migration027 } from "./027_seed_legal_documents_from_export";
 import { migration as migration028 } from "./028_rebrand_merchant_terms_to_partner";
+import { migration as migration029 } from "./029_update_tier_feature_gates";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -67,4 +68,5 @@ export const migrations: Migration[] = [
     migration026,
     migration027,
     migration028,
+    migration029,
 ];

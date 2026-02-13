@@ -25,6 +25,7 @@ import SpiriAssistLogo from "@/icons/spiri-assist-logo";
 import { Session } from "next-auth";
 import { isNullOrUndefined } from "@/lib/functions";
 import { useTierFeatures } from "@/hooks/UseTierFeatures";
+import { UseInventoryOverview } from "../[merchant_slug]/(manage)/manage/inventory/_hooks/UseInventoryOverview";
 
 import MerchantTaxRegistrations from "./TaxRegistration";
 import UpsertRefundPolicies from "./Profile/Edit/RefundPolicies";
@@ -50,11 +51,31 @@ const useBL = (props: BLProps) => {
 
     const merchant = props.session.user.vendors.find(v => v.id === merchantId);
     const { features } = useTierFeatures(merchantId);
+    const inventoryOverview = UseInventoryOverview(merchantId, "default");
 
     const canHostPractitioners = features.canHostPractitioners;
     const hasInventoryAutomation = features.hasInventoryAutomation;
+    const canCreateTours = features.canCreateTours;
+    const hasSpiriAssist = features.hasSpiriAssist;
     const productLimit = features.maxProducts;
-    const productBadge = productLimit !== null ? `/${productLimit}` : undefined;
+    const productCount = inventoryOverview.data?.total_products ?? 0;
+
+    // Product badge: show count/limit (e.g. "3/10") or just count for unlimited
+    const productBadge = productLimit !== null ? `${productCount}/${productLimit}` : undefined;
+    const productBadgeVariant: "default" | "warning" | "danger" | undefined =
+        productLimit !== null && productLimit > 0
+            ? productCount >= productLimit
+                ? "danger"
+                : productCount >= productLimit * 0.8
+                    ? "warning"
+                    : "default"
+            : undefined;
+    const productDisabled = productLimit === 0 || (productLimit !== null && productCount >= productLimit);
+    const productDisabledReason = productLimit === 0
+        ? "Open your shop with up to 10 products"
+        : productLimit !== null && productCount >= productLimit
+            ? `Product limit reached (${productLimit}). Upgrade for more.`
+            : undefined;
 
     const options : NavOption[] =  [
         {
@@ -91,12 +112,19 @@ const useBL = (props: BLProps) => {
                     label: "New Product",
                     dialogId: "Create Product",
                     badge: productBadge,
+                    badgeVariant: productBadgeVariant,
+                    disabled: productDisabled,
+                    disabledReason: productDisabledReason,
+                    requiredTier: productLimit === 0 ? "manifest" : "transcend",
                 },
                 {
                     icon: <MapPin className="w-5 h-5" />,
                     label: "New Tour",
                     dialogId: "Create Tour",
-                    className: "w-[870px] max-w-[95vw] h-[700px]"
+                    className: "w-[870px] max-w-[95vw] h-[700px]",
+                    disabled: !canCreateTours,
+                    disabledReason: "Host and sell guided tours",
+                    requiredTier: "transcend",
                 },
                 {
                     icon: <FileTextIcon className="w-5 h-5" />,
@@ -156,7 +184,8 @@ const useBL = (props: BLProps) => {
                     label: "Featured Practitioners",
                     href: `/m/${merchantSlug}/manage/featuring`,
                     disabled: !canHostPractitioners,
-                    disabledReason: "Requires Transcend plan",
+                    disabledReason: "Host featured practitioners on your storefront",
+                    requiredTier: "transcend",
                 },
                 {
                     type: "divider",
@@ -277,21 +306,24 @@ const useBL = (props: BLProps) => {
                     label: "Overview",
                     href: `/m/${merchantSlug}/manage/inventory`,
                     disabled: !hasInventoryAutomation,
-                    disabledReason: "Requires Transcend plan",
+                    disabledReason: "Automate inventory tracking and alerts",
+                    requiredTier: "manifest",
                 },
                 {
                     icon: <AlertTriangle className="w-5 h-5" />,
                     label: "Stock Alerts",
                     href: `/m/${merchantSlug}/manage/inventory/alerts`,
                     disabled: !hasInventoryAutomation,
-                    disabledReason: "Requires Transcend plan",
+                    disabledReason: "Automate inventory tracking and alerts",
+                    requiredTier: "manifest",
                 },
                 {
                     icon: <HistoryIcon className="w-5 h-5" />,
                     label: "Transactions",
                     href: `/m/${merchantSlug}/manage/inventory/transactions`,
                     disabled: !hasInventoryAutomation,
-                    disabledReason: "Requires Transcend plan",
+                    disabledReason: "Automate inventory tracking and alerts",
+                    requiredTier: "manifest",
                 }
             ]
         },
@@ -299,7 +331,10 @@ const useBL = (props: BLProps) => {
             icon: <div className="flex items-center justify-center"><SpiriAssistLogo height={20} /></div>,
             label: "SpiriAssist",
             testId: "nav-spiri-assist",
-            href: `/m/${merchantSlug}/manage/spiri-assist`
+            href: `/m/${merchantSlug}/manage/spiri-assist`,
+            disabled: !hasSpiriAssist,
+            disabledReason: "Paranormal investigations with SpiriAssist",
+            requiredTier: "manifest",
         },
     ]
 
