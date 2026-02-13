@@ -9,6 +9,10 @@ const DEFAULT_FEATURES: TierFeatures = {
     canHostPractitioners: false,
     hasInventoryAutomation: false,
     hasShippingAutomation: false,
+    canCreateEvents: false,
+    canCreateTours: false,
+    hasSpiriAssist: false,
+    hasBackorders: false,
 };
 
 export type TierFeaturesResult = {

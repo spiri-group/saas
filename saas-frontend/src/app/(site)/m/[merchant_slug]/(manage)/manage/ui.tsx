@@ -9,7 +9,10 @@ import RecentOrders from "./_components/RecentOrders";
 import GoLiveChecklist from "./_components/GoLiveChecklist";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, ShoppingCart, MapPin, Plus } from "lucide-react";
+import { ShoppingBag, ShoppingCart, MapPin, Plus, ArrowUpCircle, Sparkles, Lock } from "lucide-react";
+import { useTierFeatures } from "@/hooks/UseTierFeatures";
+import UpgradePrompt from "@/components/subscription/UpgradePrompt";
+import Link from "next/link";
 
 // Hooks
 import { UseInventoryOverview } from "./inventory/_hooks/UseInventoryOverview";
@@ -25,8 +28,17 @@ const CreateListingButton: React.FC<{
     icon: React.ReactNode;
     dialogId: string;
     dialogClassName?: string;
-}> = ({ label, description, icon, dialogId, dialogClassName }) => {
+    locked?: boolean;
+    lockedReason?: string;
+    requiredTier?: string;
+}> = ({ label, description, icon, dialogId, dialogClassName, locked, lockedReason, requiredTier }) => {
+    const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
+
     const handleClick = () => {
+        if (locked) {
+            setShowUpgradePrompt(true);
+            return;
+        }
         const event = new CustomEvent("open-nav-external", {
             detail: {
                 path: [label],
@@ -41,39 +53,71 @@ const CreateListingButton: React.FC<{
     };
 
     return (
-        <Card
-            className="bg-slate-800/50 border-slate-700 transition-all hover:border-orange-500/50 cursor-pointer group"
-            onClick={handleClick}
-            data-testid={`create-listing-${label.toLowerCase().replace(' ', '-')}-card`}
-        >
-            <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-orange-500/20 text-orange-400">
-                        {icon}
+        <>
+            <Card
+                className={
+                    locked
+                        ? "bg-slate-800/30 border-slate-700/50 transition-all hover:border-purple-500/30 cursor-pointer group"
+                        : "bg-slate-800/50 border-slate-700 transition-all hover:border-orange-500/50 cursor-pointer group"
+                }
+                onClick={handleClick}
+                data-testid={`create-listing-${label.toLowerCase().replace(' ', '-')}-card`}
+            >
+                <CardHeader className="pb-2">
+                    <div className="flex items-center gap-3">
+                        <div className={locked ? "p-2 rounded-lg bg-slate-700/30 text-slate-500" : "p-2 rounded-lg bg-orange-500/20 text-orange-400"}>
+                            {icon}
+                        </div>
+                        <div className="flex-1">
+                            <CardTitle className={locked ? "text-base text-slate-400 flex items-center gap-2" : "text-base text-white"}>
+                                {label}
+                                {locked && <Lock className="h-3.5 w-3.5 text-purple-400/60" />}
+                            </CardTitle>
+                            <CardDescription className="text-xs text-slate-400">{description}</CardDescription>
+                        </div>
                     </div>
-                    <div className="flex-1">
-                        <CardTitle className="text-base text-white">{label}</CardTitle>
-                        <CardDescription className="text-xs text-slate-400">{description}</CardDescription>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full bg-transparent border-orange-500/30 text-orange-400 hover:bg-orange-500/20 hover:text-orange-300"
-                    data-testid={`create-listing-${label.toLowerCase().replace(' ', '-')}-btn`}
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create {label}
-                </Button>
-            </CardContent>
-        </Card>
+                </CardHeader>
+                <CardContent className="pt-0">
+                    {locked ? (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full bg-transparent border-purple-500/20 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300"
+                            data-testid={`create-listing-${label.toLowerCase().replace(' ', '-')}-btn`}
+                        >
+                            <Lock className="w-3.5 h-3.5 mr-2" />
+                            Upgrade to Unlock
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full bg-transparent border-orange-500/30 text-orange-400 hover:bg-orange-500/20 hover:text-orange-300"
+                            data-testid={`create-listing-${label.toLowerCase().replace(' ', '-')}-btn`}
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create {label}
+                        </Button>
+                    )}
+                </CardContent>
+            </Card>
+            {showUpgradePrompt && requiredTier && (
+                <UpgradePrompt
+                    feature={lockedReason || label}
+                    requiredTier={requiredTier}
+                    onClose={() => setShowUpgradePrompt(false)}
+                />
+            )}
+        </>
     );
 };
 
 // My Listings Section Component
-const MyListingsSection: React.FC = () => {
+const MyListingsSection: React.FC<{ merchantId: string }> = ({ merchantId }) => {
+    const { features } = useTierFeatures(merchantId);
+    const productLocked = features.maxProducts === 0;
+    const tourLocked = !features.canCreateTours;
+
     return (
         <div className="mb-6">
             <div className="flex items-center gap-2 mb-4">
@@ -86,6 +130,9 @@ const MyListingsSection: React.FC = () => {
                     description="Physical or digital products for sale"
                     icon={<ShoppingCart className="w-5 h-5" />}
                     dialogId="Create Product"
+                    locked={productLocked}
+                    lockedReason="Open your shop with up to 10 products"
+                    requiredTier="manifest"
                 />
                 <CreateListingButton
                     label="Tour"
@@ -93,7 +140,67 @@ const MyListingsSection: React.FC = () => {
                     icon={<MapPin className="w-5 h-5" />}
                     dialogId="Create Tour"
                     dialogClassName="w-[870px] h-[700px]"
+                    locked={tourLocked}
+                    lockedReason="Host and sell guided tours"
+                    requiredTier="transcend"
                 />
+            </div>
+        </div>
+    );
+};
+
+const TIER_DISPLAY: Record<string, string> = {
+    awaken: 'Awaken',
+    manifest: 'Manifest',
+    transcend: 'Transcend',
+};
+
+// Features unlocked at each tier upgrade (what you'd gain)
+const UPGRADE_HIGHLIGHTS: Record<string, string[]> = {
+    awaken: ['Sell up to 10 products', 'Inventory automation', 'SpiriAssist investigations', 'Ticketed events'],
+    manifest: ['Unlimited products', 'Guided tours', 'Host practitioners', 'Backorder support', 'Shipping automation'],
+};
+
+const PlanIndicator: React.FC<{ merchantId: string; merchantSlug: string }> = ({ merchantId, merchantSlug }) => {
+    const { tier } = useTierFeatures(merchantId);
+    if (!tier || tier === 'transcend') return null;
+
+    const highlights = UPGRADE_HIGHLIGHTS[tier] || [];
+
+    return (
+        <div
+            data-testid="plan-indicator"
+            className="mb-6 rounded-xl border border-purple-500/15 bg-gradient-to-r from-purple-500/5 to-transparent p-4"
+        >
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="rounded-full bg-purple-500/15 p-2">
+                        <ArrowUpCircle className="h-5 w-5 text-purple-400" />
+                    </div>
+                    <div>
+                        <p className="text-sm text-white font-medium">
+                            You&apos;re on the {TIER_DISPLAY[tier] || tier} plan
+                        </p>
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                            {highlights.slice(0, 3).map((h, i) => (
+                                <span key={i} className="flex items-center gap-1 text-xs text-slate-400">
+                                    <Sparkles className="h-3 w-3 text-purple-400/60" />
+                                    {h}
+                                </span>
+                            ))}
+                            {highlights.length > 3 && (
+                                <span className="text-xs text-slate-500">+{highlights.length - 3} more</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <Link
+                    href={`/m/${merchantSlug}/manage/subscription`}
+                    className="flex-shrink-0 rounded-lg bg-purple-600/80 hover:bg-purple-600 px-4 py-2 text-xs font-medium text-white transition-colors"
+                    data-testid="plan-indicator-upgrade-link"
+                >
+                    Upgrade
+                </Link>
             </div>
         </div>
     );
@@ -212,11 +319,14 @@ const UI: React.FC<Props> = ({ merchantId, merchantSlug, merchantName, me }) => 
             <div className="h-screen-minus-nav p-4 md:p-6 overflow-auto">
                 <WelcomeHeader merchantName={merchantName} />
 
+                {/* Plan indicator for non-Transcend vendors */}
+                <PlanIndicator merchantId={merchantId} merchantSlug={merchantSlug} />
+
                 {/* Go Live Checklist - shown until vendor is published */}
                 <GoLiveChecklist merchantId={merchantId} />
 
                 {/* My Listings - top for new merchants */}
-                {isNewMerchant && <MyListingsSection />}
+                {isNewMerchant && <MyListingsSection merchantId={merchantId} />}
 
                 {/* Dashboard Stats Row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -247,7 +357,7 @@ const UI: React.FC<Props> = ({ merchantId, merchantSlug, merchantName, me }) => 
                 />
 
                 {/* My Listings - below orders for established merchants */}
-                {!isNewMerchant && <MyListingsSection />}
+                {!isNewMerchant && <MyListingsSection merchantId={merchantId} />}
             </div>
         </UIContainer>
     );

@@ -9,6 +9,10 @@ export type TierFeatures = {
     canHostPractitioners: boolean;
     hasInventoryAutomation: boolean;
     hasShippingAutomation: boolean;
+    canCreateEvents: boolean;
+    canCreateTours: boolean;
+    hasSpiriAssist: boolean;
+    hasBackorders: boolean;
 };
 
 export type SubscriptionTierDefinition = {
@@ -41,6 +45,10 @@ export const useSubscriptionTiers = (profileType?: string) => {
                             canHostPractitioners
                             hasInventoryAutomation
                             hasShippingAutomation
+                            canCreateEvents
+                            canCreateTours
+                            hasSpiriAssist
+                            hasBackorders
                         }
                         monthlyPrice
                         annualPrice

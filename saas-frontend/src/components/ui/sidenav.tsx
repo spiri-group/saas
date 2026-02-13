@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogTitle } from "./dialog";
 import { Button } from "./button";
 import VisuallyHidden from "../ux/VisuallyHidden";
+import { Lock } from "lucide-react";
+import UpgradePrompt from "../subscription/UpgradePrompt";
 
 const sidebar_size = {
     width: 200
@@ -39,6 +41,12 @@ export type NavOption = {
 
     // Tooltip shown on hover when disabled
     disabledReason?: string;
+
+    // Required subscription tier for this feature (used in upgrade prompt)
+    requiredTier?: string;
+
+    // Optional badge color variant (default | warning | danger)
+    badgeVariant?: "default" | "warning" | "danger";
 };
 
 type SideNavItemProps = {
@@ -52,6 +60,7 @@ type SideNavItemProps = {
 const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath, commandLocation }) => {
     const [showSubNav, setShowSubNav] = useState(false);
     const [flyoutMaxHeight, setFlyoutMaxHeight] = useState<number | undefined>(undefined);
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
     const flyoutRef = useRef<HTMLDivElement>(null);
 
     // Measure available vertical space when flyout opens
@@ -74,7 +83,12 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
 
     const handleClick = () => {
         if (navOption.path == null) return;
-        if (navOption.disabled) return;
+        if (navOption.disabled) {
+            if (navOption.requiredTier) {
+                setShowUpgradePrompt(true);
+            }
+            return;
+        }
 
         // if they are clicking the same nav item it should simply close the subnav and clear active state
         if (activePath.length == navOption.path.length && activePath.every((item, index) => navOption.path != null && item == navOption.path[index])) {
@@ -147,7 +161,10 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                         aria-haspopup={subNavOptions ? "menu" : undefined}
                         data-testid={navOption.testId}
                         className={cn(
-                            "group flex flex-row justify-start w-full hover:bg-amber-500/10",
+                            "group flex flex-row justify-start w-full",
+                            navOption.disabled && navOption.requiredTier
+                                ? "hover:bg-purple-500/5 cursor-pointer"
+                                : "hover:bg-amber-500/10",
                             subNavOptions ? "h-16" : "h-10"
                         )}
                         onClick={handleClick}
@@ -160,15 +177,32 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                                 handleClick();
                             }
                         }}>
-                        {navOption.icon && <div className={cn("mr-4 w-6 flex items-center justify-center transition-colors", navOption.disabled ? "text-slate-600" : "text-amber-400 group-hover:text-amber-300")} aria-hidden="true">{navOption.icon}</div>}
+                        {navOption.icon && (
+                            <div className={cn("mr-4 w-6 flex items-center justify-center transition-colors relative", navOption.disabled ? "text-slate-600" : "text-amber-400 group-hover:text-amber-300")} aria-hidden="true">
+                                {navOption.icon}
+                                {navOption.disabled && navOption.requiredTier && (
+                                    <div className="absolute -bottom-0.5 -right-0.5 rounded-full bg-slate-900 p-[1px]">
+                                        <Lock className="h-2.5 w-2.5 text-purple-400" />
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         <div className="flex flex-col items-start flex-grow min-w-0 space-y-1">
                             <span className={cn(
                                 "transition-colors text-left flex items-center gap-2",
-                                navOption.disabled ? "text-slate-500" : isActive ? "text-amber-400" : "text-white/90 group-hover:text-white"
+                                navOption.disabled && navOption.requiredTier ? "text-slate-500 group-hover:text-slate-400" : navOption.disabled ? "text-slate-500" : isActive ? "text-amber-400" : "text-white/90 group-hover:text-white"
                             )}>
                                 {navOption.label}
+                                {navOption.disabled && navOption.requiredTier && (
+                                    <Lock className="h-3 w-3 text-purple-400/60" />
+                                )}
                                 {navOption.badge && (
-                                    <span className="text-[10px] font-medium rounded-full bg-purple-500/20 text-purple-300 px-1.5 py-0.5">{navOption.badge}</span>
+                                    <span className={cn(
+                                        "text-[10px] font-medium rounded-full px-1.5 py-0.5",
+                                        navOption.badgeVariant === "danger" ? "bg-red-500/20 text-red-300" :
+                                        navOption.badgeVariant === "warning" ? "bg-amber-500/20 text-amber-300" :
+                                        "bg-purple-500/20 text-purple-300"
+                                    )}>{navOption.badge}</span>
                                 )}
                             </span>
                             {subNavOptions && (
@@ -199,6 +233,13 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                     </motion.div>
                 )}
             </div>
+            {showUpgradePrompt && navOption.requiredTier && (
+                <UpgradePrompt
+                    feature={navOption.disabledReason || navOption.label}
+                    requiredTier={navOption.requiredTier}
+                    onClose={() => setShowUpgradePrompt(false)}
+                />
+            )}
         </li>
     );
 };

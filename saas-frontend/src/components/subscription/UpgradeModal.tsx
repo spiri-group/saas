@@ -194,6 +194,10 @@ function getFeatureLabel(key: string, value: boolean | number | null): string {
         canHostPractitioners: 'Host practitioners',
         hasInventoryAutomation: 'Inventory automation',
         hasShippingAutomation: 'Shipping automation',
+        canCreateEvents: 'Ticketed events',
+        canCreateTours: 'Guided tours',
+        hasSpiriAssist: 'SpiriAssist investigations',
+        hasBackorders: 'Backorder support',
     };
     return labels[key] || key;
 }

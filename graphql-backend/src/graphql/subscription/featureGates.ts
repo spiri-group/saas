@@ -6,6 +6,10 @@ export type TierFeatures = {
     canHostPractitioners: boolean;
     hasInventoryAutomation: boolean;
     hasShippingAutomation: boolean;
+    canCreateEvents: boolean;
+    canCreateTours: boolean;
+    hasSpiriAssist: boolean;
+    hasBackorders: boolean;
 };
 
 const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
@@ -15,13 +19,21 @@ const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
         canHostPractitioners: false,
         hasInventoryAutomation: false,
         hasShippingAutomation: false,
+        canCreateEvents: false,
+        canCreateTours: false,
+        hasSpiriAssist: false,
+        hasBackorders: false,
     },
     manifest: {
         canCreateMerchantProfile: true,
-        maxProducts: 15,
+        maxProducts: 10,
         canHostPractitioners: false,
-        hasInventoryAutomation: false,
+        hasInventoryAutomation: true,
         hasShippingAutomation: false,
+        canCreateEvents: true,
+        canCreateTours: false,
+        hasSpiriAssist: true,
+        hasBackorders: false,
     },
     transcend: {
         canCreateMerchantProfile: true,
@@ -29,6 +41,10 @@ const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
         canHostPractitioners: true,
         hasInventoryAutomation: true,
         hasShippingAutomation: true,
+        canCreateEvents: true,
+        canCreateTours: true,
+        hasSpiriAssist: true,
+        hasBackorders: true,
     },
 };
 
