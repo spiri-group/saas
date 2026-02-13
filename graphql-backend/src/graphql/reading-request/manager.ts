@@ -17,6 +17,15 @@ import { user_type } from "../user/types";
 import { extractSymbolsFromCard } from "../personal-space/tarot-symbols";
 import { getSpiriverseFeeConfig, getTargetFeeConfig } from "../../utils/functions";
 
+/** Maps spread type to its per-spread fee key */
+function getReadingFeeKey(spreadType: spread_type): string {
+  switch (spreadType) {
+    case 'SINGLE': return 'reading-single';
+    case 'THREE_CARD': return 'reading-three-card';
+    case 'FIVE_CARD': return 'reading-five-card';
+  }
+}
+
 export class ReadingRequestManager {
   private containerName = "Main-PersonalSpace";
   private cosmos: CosmosDataSource;
@@ -147,7 +156,7 @@ export class ReadingRequestManager {
     const id = uuid();
     const now = DateTime.now().toISO();
     const feeConfig = await getSpiriverseFeeConfig({ cosmos: this.cosmos });
-    const targetFee = getTargetFeeConfig('reading-request', feeConfig);
+    const targetFee = getTargetFeeConfig(getReadingFeeKey(input.spreadType), feeConfig);
     const platformFee = Math.floor(spreadConfig.price * (targetFee.percent / 100)) + (targetFee.fixed || 0);
     const readerPayout = spreadConfig.price - platformFee;
     // Set expiry for 30 days if no reader claims it
@@ -212,7 +221,7 @@ export class ReadingRequestManager {
     const id = uuid();
     const now = DateTime.now().toISO();
     const feeConfig = await getSpiriverseFeeConfig({ cosmos: this.cosmos });
-    const targetFee = getTargetFeeConfig('reading-request', feeConfig);
+    const targetFee = getTargetFeeConfig(getReadingFeeKey(input.spreadType), feeConfig);
     const platformFee = Math.floor(spreadConfig.price * (targetFee.percent / 100)) + (targetFee.fixed || 0);
     const readerPayout = spreadConfig.price - platformFee;
     // Set expiry for 30 days if no reader claims it
