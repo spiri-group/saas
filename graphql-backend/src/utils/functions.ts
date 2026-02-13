@@ -408,7 +408,8 @@ export const getTargetFeeConfig = (target: string, feeConfig: any) => {
   return {
     percent: targetFee.percent || 0,
     fixed: targetFee.fixed || 0,
-    currency: targetFee.currency || 'AUD'
+    currency: targetFee.currency || 'AUD',
+    ...(targetFee.basePrice !== undefined ? { basePrice: targetFee.basePrice } : {})
   };
 }
 

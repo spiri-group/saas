@@ -18,6 +18,7 @@ export type FeeConfig = {
   percent: number;
   fixed: number;
   currency: string;
+  basePrice?: number; // Customer-facing price in cents (readings)
 };
 
 export type FeesData = {

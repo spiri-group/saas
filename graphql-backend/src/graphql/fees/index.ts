@@ -29,10 +29,19 @@ const resolvers = {
     },
 
     Mutation: {
-        updateFeeConfig: async (_: any, args: { market: string, key: string, percent: number, fixed: number, currency: string }, context: serverContext) => {
+        updateFeeConfig: async (_: any, args: { market: string, key: string, percent: number, fixed: number, currency: string, basePrice?: number }, context: serverContext) => {
             const docId = getDocId(args.market);
             try {
-                // Fixed amount is already in smallest units from frontend
+                const value: Record<string, any> = {
+                    percent: args.percent,
+                    fixed: args.fixed, // Already in smallest units
+                    currency: args.currency
+                };
+
+                // Include basePrice when provided (used for readings with platform-set pricing)
+                if (args.basePrice !== undefined && args.basePrice !== null) {
+                    value.basePrice = args.basePrice;
+                }
 
                 // Use patch_record to update just the specific fee configuration
                 await context.dataSources.cosmos.patch_record(
@@ -43,11 +52,7 @@ const resolvers = {
                         {
                             op: "set",
                             path: `/${args.key}`,
-                            value: {
-                                percent: args.percent,
-                                fixed: args.fixed, // Already in smallest units
-                                currency: args.currency
-                            }
+                            value
                         }
                     ],
                     context.userId
