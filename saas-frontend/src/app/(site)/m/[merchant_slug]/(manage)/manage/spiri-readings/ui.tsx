@@ -494,7 +494,7 @@ export default function UI({ merchantId }: UIProps) {
             <li>Your payout is deposited to your connected Stripe account</li>
           </ol>
           <p className="text-xs text-slate-500 mt-3">
-            You receive 80% of the reading price. The platform fee (20%) is deducted automatically.
+            A platform fee is deducted from each reading. See your payout amount on each request.
           </p>
         </div>
       </div>
