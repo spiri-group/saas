@@ -50,13 +50,7 @@ const initializeDBAdapter = () => {
     return TableStorageAdapter(authClient);
 };
 
-// Lazy-init: avoid running at module load time (crashes during Next.js build
-// when runtime env vars like AUTH_AZURE_ACCESS_KEY aren't available yet)
-let _dbAdapter: ReturnType<typeof initializeDBAdapter> | null = null;
-const getDbAdapter = () => {
-    if (!_dbAdapter) _dbAdapter = initializeDBAdapter();
-    return _dbAdapter;
-};
+const dbAdapter = initializeDBAdapter();
 
 export const authOptions: NextAuthConfig = {
     trustHost: true,
@@ -106,15 +100,15 @@ export const authOptions: NextAuthConfig = {
                     return null;
                 }
 
-                let user = await getDbAdapter().getUserByEmail!(email.toString());
+                let user = await dbAdapter.getUserByEmail!(email.toString());
                 if (user == null) {
-                    await getDbAdapter().createUser!({
+                    await dbAdapter.createUser!({
                         id: randomUUID(),
                         email: email.toString(),
                         emailVerified: DateTime.now().toJSDate(),
                     });
                 }
-                user = await getDbAdapter().getUserByEmail!(email.toString());
+                user = await dbAdapter.getUserByEmail!(email.toString());
 
                 return user;
             },
@@ -126,7 +120,7 @@ export const authOptions: NextAuthConfig = {
                 const sessionToken = randomUUID();
                 const expires = new Date(Date.now() + 60 * 60 * 24 * 30 * 1000);
 
-                const session = await getDbAdapter().createSession!({
+                const session = await dbAdapter.createSession!({
                     userId: user.id!,
                     sessionToken,
                     expires,
@@ -256,7 +250,7 @@ export const authOptions: NextAuthConfig = {
     events: {
         async signOut(message) {
             if ("session" in message && message.session?.sessionToken) {
-                await getDbAdapter().deleteSession!(message.session.sessionToken);
+                await dbAdapter.deleteSession!(message.session.sessionToken);
             }
         },
     },

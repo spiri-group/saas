@@ -73,6 +73,14 @@ jobs:
             GRAPHQL_PROXY="https://${CA_FQDN}/api/graphql"
           fi
 
+          # Fetch auth secrets needed at build time
+          NEXTAUTH_SECRET=$(az keyvault secret show --vault-name "$KV_NAME" --name "authjs-secret" --query value -o tsv)
+          AUTH_AZURE_ACCESS_KEY=$(az keyvault secret show --vault-name "$KV_NAME" --name "storage-key" --query value -o tsv)
+          CONSOLE_AD_TENANT_ID=$(az keyvault secret show --vault-name "$KV_NAME" --name "console-azure-ad-tenant-id" --query value -o tsv)
+          CONSOLE_AD_CLIENT_ID=$(az keyvault secret show --vault-name "$KV_NAME" --name "console-azure-ad-client-id" --query value -o tsv)
+          CONSOLE_AD_CLIENT_SECRET=$(az keyvault secret show --vault-name "$KV_NAME" --name "console-azure-ad-client-secret" --query value -o tsv)
+          CONSOLE_NEXTAUTH_SECRET=$(az keyvault secret show --vault-name "$KV_NAME" --name "console-nextauth-secret" --query value -o tsv)
+
           echo "SERVER_ENDPOINT=https://${FUNC_NAME}.azurewebsites.net/api" >> "$GITHUB_OUTPUT"
           echo "SERVER_ENDPOINT_CODE=${FUNC_KEY}" >> "$GITHUB_OUTPUT"
           echo "STRIPE_PK=${STRIPE_PK}" >> "$GITHUB_OUTPUT"
@@ -80,6 +88,20 @@ jobs:
           echo "STORAGE_ACCOUNT=stspvapp${{ env.ENV_NAME }}${{ env.ENV_SUFFIX }}" >> "$GITHUB_OUTPUT"
           echo "GRAPHQL_PROXY=${GRAPHQL_PROXY}" >> "$GITHUB_OUTPUT"
           echo "SITE_ADDRESS=${SITE_ADDRESS}" >> "$GITHUB_OUTPUT"
+
+          # Mask and output auth secrets
+          echo "::add-mask::${NEXTAUTH_SECRET}"
+          echo "::add-mask::${AUTH_AZURE_ACCESS_KEY}"
+          echo "::add-mask::${CONSOLE_AD_TENANT_ID}"
+          echo "::add-mask::${CONSOLE_AD_CLIENT_ID}"
+          echo "::add-mask::${CONSOLE_AD_CLIENT_SECRET}"
+          echo "::add-mask::${CONSOLE_NEXTAUTH_SECRET}"
+          echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}" >> "$GITHUB_OUTPUT"
+          echo "AUTH_AZURE_ACCESS_KEY=${AUTH_AZURE_ACCESS_KEY}" >> "$GITHUB_OUTPUT"
+          echo "CONSOLE_AD_TENANT_ID=${CONSOLE_AD_TENANT_ID}" >> "$GITHUB_OUTPUT"
+          echo "CONSOLE_AD_CLIENT_ID=${CONSOLE_AD_CLIENT_ID}" >> "$GITHUB_OUTPUT"
+          echo "CONSOLE_AD_CLIENT_SECRET=${CONSOLE_AD_CLIENT_SECRET}" >> "$GITHUB_OUTPUT"
+          echo "CONSOLE_NEXTAUTH_SECRET=${CONSOLE_NEXTAUTH_SECRET}" >> "$GITHUB_OUTPUT"
 
       - name: Login to ACR
         run: az acr login --name ${{ env.ACR_NAME }}
@@ -96,6 +118,12 @@ jobs:
             --build-arg NEXT_PUBLIC_STORAGE_ACCOUNT="${{ steps.secrets.outputs.STORAGE_ACCOUNT }}" \
             --build-arg NEXT_PUBLIC_graphql_proxy="${{ steps.secrets.outputs.GRAPHQL_PROXY }}" \
             --build-arg NEXT_PUBLIC_site_address="${{ steps.secrets.outputs.SITE_ADDRESS }}" \
+            --build-arg NEXTAUTH_SECRET="${{ steps.secrets.outputs.NEXTAUTH_SECRET }}" \
+            --build-arg AUTH_AZURE_ACCESS_KEY="${{ steps.secrets.outputs.AUTH_AZURE_ACCESS_KEY }}" \
+            --build-arg CONSOLE_AZURE_AD_TENANT_ID="${{ steps.secrets.outputs.CONSOLE_AD_TENANT_ID }}" \
+            --build-arg CONSOLE_AZURE_AD_CLIENT_ID="${{ steps.secrets.outputs.CONSOLE_AD_CLIENT_ID }}" \
+            --build-arg CONSOLE_AZURE_AD_CLIENT_SECRET="${{ steps.secrets.outputs.CONSOLE_AD_CLIENT_SECRET }}" \
+            --build-arg CONSOLE_NEXTAUTH_SECRET="${{ steps.secrets.outputs.CONSOLE_NEXTAUTH_SECRET }}" \
             -t "$IMAGE_TAG" \
             -t "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest" \
             .
