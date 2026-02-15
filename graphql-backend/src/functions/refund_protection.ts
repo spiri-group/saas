@@ -201,7 +201,6 @@ export async function runRefundProtection(
     }
 
     logger.logMessage('Refund protection completed successfully');
-  }
 }
 
 /**

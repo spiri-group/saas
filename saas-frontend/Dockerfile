@@ -2,7 +2,7 @@
 FROM node:20.19.0-alpine AS deps
 WORKDIR /app
 COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+RUN yarn install
 
 # Stage 2: Build the Next.js application
 FROM node:20.19.0-alpine AS builder
