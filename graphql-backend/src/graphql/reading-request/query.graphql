@@ -21,11 +21,36 @@ extend type Query {
   practitionerReviews(practitionerId: ID!): [ReadingReview!]!
 }
 
-# Spread type enum
+# ============================================
+# Enums
+# ============================================
+
+# Reading category
+enum ReadingRequestCategory {
+  TAROT
+  ASTROLOGY
+}
+
+# Spread type enum (includes both tarot and astrology tiers)
 enum SpreadType {
+  # Tarot spreads
   SINGLE
   THREE_CARD
   FIVE_CARD
+  # Astrology tiers
+  ASTRO_SNAPSHOT
+  ASTRO_FOCUS
+  ASTRO_DEEP_DIVE
+}
+
+# Astrology focus area
+enum AstrologyFocusArea {
+  birth_chart
+  transit
+  compatibility
+  solar_return
+  single_planet
+  life_area
 }
 
 # Request status enum
@@ -38,16 +63,25 @@ enum ReadingRequestStatus {
   EXPIRED
 }
 
+# ============================================
+# Spread Configuration
+# ============================================
+
 # Spread configuration type
 type SpreadConfig {
   type: SpreadType!
+  category: ReadingRequestCategory!
   label: String!
   cardCount: Int!
   price: Int! # In cents
   description: String!
 }
 
-# Card in a reading
+# ============================================
+# Tarot Types
+# ============================================
+
+# Card in a tarot reading
 type ReadingCard {
   name: String!
   reversed: Boolean!
@@ -55,6 +89,57 @@ type ReadingCard {
   interpretation: String!
   symbols: [String!] # Auto-extracted symbols from card name
 }
+
+# ============================================
+# Astrology Types (for reading requests)
+# ============================================
+
+# Birth data submitted with astrology request
+type ReadingBirthData {
+  birthDate: String!
+  birthTimePrecision: String!
+  birthTime: String
+  birthTimeApproximate: String
+  birthLocation: ReadingBirthLocation!
+}
+
+type ReadingBirthLocation {
+  city: String!
+  country: String!
+  countryCode: String!
+  latitude: Float!
+  longitude: Float!
+  timezone: String!
+}
+
+# Astrology-specific request data
+type AstrologyRequestData {
+  focusArea: AstrologyFocusArea!
+  birthData: ReadingBirthData!
+  partnerBirthData: ReadingBirthData
+  specificPlanet: String
+  specificLifeArea: String
+}
+
+# An aspect highlighted by the practitioner
+type HighlightedAspect {
+  planet1: String!
+  planet2: String!
+  aspect: String!
+  interpretation: String!
+}
+
+# Astrology-specific fulfillment data
+type AstrologyFulfillment {
+  interpretation: String!
+  highlightedAspects: [HighlightedAspect!]
+  chartImageUrl: String
+  practitionerRecommendation: String
+}
+
+# ============================================
+# Stripe & Core Types
+# ============================================
 
 # Stripe payment details
 type ReadingRequestStripe {
@@ -73,9 +158,13 @@ type ReadingRequest {
   userEmail: String
   userName: String
 
+  readingCategory: ReadingRequestCategory!
   spreadType: SpreadType!
   topic: String!
   context: String
+
+  # Astrology-specific request data
+  astrologyData: AstrologyRequestData
 
   # Payment info
   stripe: ReadingRequestStripe
@@ -90,10 +179,14 @@ type ReadingRequest {
   claimedAt: String
   claimDeadline: String # Shotclock - reader must fulfill by this time
 
-  # Fulfilled reading data
+  # Tarot fulfilled reading data
   photoUrl: String
   cards: [ReadingCard!]
   overallMessage: String
+
+  # Astrology fulfilled reading data
+  astrologyFulfillment: AstrologyFulfillment
+
   fulfilledAt: String
 
   createdAt: String!

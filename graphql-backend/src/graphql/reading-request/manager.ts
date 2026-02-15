@@ -5,12 +5,17 @@ import {
   reading_request_type,
   reading_request_status,
   spread_type,
+  reading_request_category,
   create_reading_request_input,
   claim_reading_request_input,
   fulfill_reading_request_input,
+  fulfill_astrology_reading_request_input,
   reading_request_response,
   reading_card_type,
+  astrology_fulfillment_type,
   SPREAD_CONFIGS,
+  TAROT_SPREAD_CONFIGS,
+  ASTROLOGY_SPREAD_CONFIGS,
   spread_config
 } from "./types";
 import { user_type } from "../user/types";
@@ -23,7 +28,16 @@ function getReadingFeeKey(spreadType: spread_type): string {
     case 'SINGLE': return 'reading-single';
     case 'THREE_CARD': return 'reading-three-card';
     case 'FIVE_CARD': return 'reading-five-card';
+    case 'ASTRO_SNAPSHOT': return 'reading-astro-snapshot';
+    case 'ASTRO_FOCUS': return 'reading-astro-focus';
+    case 'ASTRO_DEEP_DIVE': return 'reading-astro-deep-dive';
   }
+}
+
+/** Determines reading category from spread type */
+function getCategoryFromSpreadType(spreadType: spread_type): reading_request_category {
+  if (spreadType.startsWith('ASTRO_')) return 'ASTROLOGY';
+  return 'TAROT';
 }
 
 export class ReadingRequestManager {
@@ -167,6 +181,8 @@ export class ReadingRequestManager {
       };
     }
 
+    const readingCategory = input.readingCategory || getCategoryFromSpreadType(input.spreadType);
+
     const id = uuid();
     const now = DateTime.now().toISO();
     const feeConfig = await getSpiriverseFeeConfig({ cosmos: this.cosmos });
@@ -184,9 +200,11 @@ export class ReadingRequestManager {
       userId: input.userId,
       userEmail,
       userName,
+      readingCategory,
       spreadType: input.spreadType,
       topic: input.topic,
       context: input.context,
+      ...(readingCategory === 'ASTROLOGY' && input.astrologyData ? { astrologyData: input.astrologyData } : {}),
       price,
       platformFee,
       readerPayout,
@@ -234,6 +252,8 @@ export class ReadingRequestManager {
       };
     }
 
+    const readingCategory = input.readingCategory || getCategoryFromSpreadType(input.spreadType);
+
     const id = uuid();
     const now = DateTime.now().toISO();
     const feeConfig = await getSpiriverseFeeConfig({ cosmos: this.cosmos });
@@ -251,9 +271,11 @@ export class ReadingRequestManager {
       userId: input.userId,
       userEmail,
       userName,
+      readingCategory,
       spreadType: input.spreadType,
       topic: input.topic,
       context: input.context,
+      ...(readingCategory === 'ASTROLOGY' && input.astrologyData ? { astrologyData: input.astrologyData } : {}),
       price,
       platformFee,
       readerPayout,
@@ -558,6 +580,74 @@ export class ReadingRequestManager {
     return {
       success: true,
       message: "Reading fulfilled and payment captured successfully",
+      readingRequest: updatedRequest!
+    };
+  }
+
+  /**
+   * Fulfill an astrology reading request and charge the customer.
+   */
+  async fulfillAstrologyReadingRequestWithPayment(
+    input: fulfill_astrology_reading_request_input,
+    paymentInfo: {
+      paymentMethodId: string;
+      paymentIntentId: string;
+      chargeId: string;
+      connectedAccountId: string;
+    }
+  ): Promise<reading_request_response> {
+    // Find the claimed request
+    const querySpec = {
+      query: "SELECT * FROM c WHERE c.id = @id AND c.docType = @docType AND c.claimedBy = @readerId AND c.requestStatus = @reqStatus",
+      parameters: [
+        { name: "@id", value: input.requestId },
+        { name: "@docType", value: "READING_REQUEST" },
+        { name: "@readerId", value: input.readerId },
+        { name: "@reqStatus", value: "CLAIMED" }
+      ]
+    };
+
+    const results = await this.cosmos.run_query<reading_request_type>(this.containerName, querySpec);
+    if (results.length === 0) {
+      return {
+        success: false,
+        message: "Reading request not found or not claimed by you"
+      };
+    }
+
+    const request = results[0];
+    const now = DateTime.now().toISO();
+
+    const astrologyFulfillment: astrology_fulfillment_type = {
+      interpretation: input.interpretation,
+      highlightedAspects: input.highlightedAspects,
+      chartImageUrl: input.chartImageUrl,
+      practitionerRecommendation: input.practitionerRecommendation,
+    };
+
+    await this.cosmos.patch_record(
+      this.containerName,
+      input.requestId,
+      request.userId,
+      [
+        { op: "set", path: "/requestStatus", value: "FULFILLED" },
+        { op: "set", path: "/astrologyFulfillment", value: astrologyFulfillment },
+        { op: "set", path: "/fulfilledAt", value: now },
+        { op: "set", path: "/paidAt", value: now },
+        { op: "set", path: "/stripe/paymentMethodId", value: paymentInfo.paymentMethodId },
+        { op: "set", path: "/stripe/paymentIntentId", value: paymentInfo.paymentIntentId },
+        { op: "set", path: "/stripe/chargeId", value: paymentInfo.chargeId },
+        { op: "set", path: "/stripe/connectedAccountId", value: paymentInfo.connectedAccountId },
+        { op: "set", path: "/updatedAt", value: now }
+      ],
+      input.readerId
+    );
+
+    const updatedRequest = await this.getReadingRequest(input.requestId, request.userId);
+
+    return {
+      success: true,
+      message: "Astrology reading fulfilled and payment captured successfully",
       readingRequest: updatedRequest!
     };
   }

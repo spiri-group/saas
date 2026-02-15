@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Inbox, ListChecks, Loader2, AlertCircle, ChevronLeft, ChevronRight, Clock, DollarSign, Search, X, Filter } from 'lucide-react';
+import { Sparkles, Star, Inbox, ListChecks, Loader2, AlertCircle, ChevronLeft, ChevronRight, Clock, DollarSign, Search, X, Filter } from 'lucide-react';
 import {
   useAvailableReadingRequests,
   useClaimedReadingRequests,
@@ -14,7 +14,7 @@ import {
   ClaimedReadingRequest,
   ReadingRequest,
 } from './_hooks';
-import { ClaimedRequestCard, FulfillmentDialog } from './_components';
+import { ClaimedRequestCard, FulfillmentDialog, AstrologyFulfillmentDialog } from './_components';
 
 interface UIProps {
   merchantId: string;
@@ -29,9 +29,14 @@ const getSpreadLabel = (type: string): string => {
     case 'SINGLE': return 'Single Card';
     case 'THREE_CARD': return 'Three Card';
     case 'FIVE_CARD': return 'Five Card';
+    case 'ASTRO_SNAPSHOT': return 'Chart Snapshot';
+    case 'ASTRO_FOCUS': return 'Focused Reading';
+    case 'ASTRO_DEEP_DIVE': return 'Full Reading';
     default: return type;
   }
 };
+
+const isAstrologyRequest = (type: string): boolean => type.startsWith('ASTRO_');
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {
@@ -55,7 +60,11 @@ const RequestBankRow: React.FC<{
     >
       <td className="py-3 px-4">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0" />
+          {isAstrologyRequest(request.spreadType) ? (
+            <Star className="w-4 h-4 text-purple-400 flex-shrink-0" />
+          ) : (
+            <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0" />
+          )}
           <span className="text-white font-medium">{getSpreadLabel(request.spreadType)}</span>
         </div>
       </td>
@@ -118,6 +127,9 @@ export default function UI({ merchantId }: UIProps) {
     { value: 'SINGLE', label: 'Single Card' },
     { value: 'THREE_CARD', label: 'Three Card' },
     { value: 'FIVE_CARD', label: 'Five Card' },
+    { value: 'ASTRO_SNAPSHOT', label: 'Chart Snapshot' },
+    { value: 'ASTRO_FOCUS', label: 'Focused Reading' },
+    { value: 'ASTRO_DEEP_DIVE', label: 'Full Reading' },
   ];
 
   const toggleSpreadFilter = (spreadType: string) => {
@@ -499,8 +511,16 @@ export default function UI({ merchantId }: UIProps) {
         </div>
       </div>
 
-      {/* Fulfillment Dialog */}
-      {fulfillingRequest && (
+      {/* Fulfillment Dialog — route based on reading category */}
+      {fulfillingRequest && isAstrologyRequest(fulfillingRequest.spreadType) ? (
+        <AstrologyFulfillmentDialog
+          request={fulfillingRequest}
+          readerId={merchantId}
+          open={!!fulfillingRequest}
+          onOpenChange={(open) => !open && setFulfillingRequest(null)}
+          onSuccess={() => setFulfillingRequest(null)}
+        />
+      ) : fulfillingRequest ? (
         <FulfillmentDialog
           request={fulfillingRequest}
           readerId={merchantId}
@@ -508,7 +528,7 @@ export default function UI({ merchantId }: UIProps) {
           onOpenChange={(open) => !open && setFulfillingRequest(null)}
           onSuccess={() => setFulfillingRequest(null)}
         />
-      )}
+      ) : null}
     </div>
   );
 }

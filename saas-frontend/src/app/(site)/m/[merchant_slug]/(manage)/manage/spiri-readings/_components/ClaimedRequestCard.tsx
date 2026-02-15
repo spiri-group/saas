@@ -2,7 +2,7 @@
 
 import { ClaimedReadingRequest } from '../_hooks';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Clock, DollarSign, Loader2, Undo2, Send, AlertTriangle } from 'lucide-react';
+import { Sparkles, Star, Clock, DollarSign, Loader2, Undo2, Send, AlertTriangle } from 'lucide-react';
 
 interface ClaimedRequestCardProps {
   request: ClaimedReadingRequest;
@@ -20,6 +20,9 @@ const getSpreadLabel = (type: string): string => {
     case 'SINGLE': return 'Single Card';
     case 'THREE_CARD': return 'Three Card';
     case 'FIVE_CARD': return 'Five Card';
+    case 'ASTRO_SNAPSHOT': return 'Chart Snapshot';
+    case 'ASTRO_FOCUS': return 'Focused Reading';
+    case 'ASTRO_DEEP_DIVE': return 'Full Reading';
     default: return type;
   }
 };
@@ -32,6 +35,8 @@ const getSpreadCardCount = (type: string): number => {
     default: return 0;
   }
 };
+
+const isAstrologyRequest = (type: string): boolean => type.startsWith('ASTRO_');
 
 const ClaimedRequestCard: React.FC<ClaimedRequestCardProps> = ({
   request,
@@ -71,16 +76,24 @@ const ClaimedRequestCard: React.FC<ClaimedRequestCardProps> = ({
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-purple-400" />
+          {isAstrologyRequest(request.spreadType) ? (
+            <Star className="w-4 h-4 text-purple-400" />
+          ) : (
+            <Sparkles className="w-4 h-4 text-purple-400" />
+          )}
           <span className="text-white font-medium">{getSpreadLabel(request.spreadType)}</span>
         </div>
         <div className="flex items-center gap-1">
-          {Array.from({ length: cardCount }).map((_, i) => (
-            <div
-              key={i}
-              className="w-4 h-6 rounded border border-purple-400/50 bg-purple-500/20"
-            />
-          ))}
+          {isAstrologyRequest(request.spreadType) ? (
+            <span className="text-xs text-purple-400 font-medium px-2 py-0.5 rounded bg-purple-500/20 border border-purple-500/30">Astrology</span>
+          ) : (
+            Array.from({ length: cardCount }).map((_, i) => (
+              <div
+                key={i}
+                className="w-4 h-6 rounded border border-purple-400/50 bg-purple-500/20"
+              />
+            ))
+          )}
         </div>
       </div>
 

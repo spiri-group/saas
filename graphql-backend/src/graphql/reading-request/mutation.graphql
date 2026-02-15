@@ -8,8 +8,11 @@ extend type Mutation {
   # Claim a request from the bank (merchant)
   claimReadingRequest(input: ClaimReadingRequestInput!): ReadingRequestResponse!
 
-  # Fulfill a reading request (merchant submits the reading)
+  # Fulfill a tarot reading request (merchant submits the reading)
   fulfillReadingRequest(input: FulfillReadingRequestInput!): ReadingRequestResponse!
+
+  # Fulfill an astrology reading request (merchant submits interpretation)
+  fulfillAstrologyReadingRequest(input: FulfillAstrologyReadingRequestInput!): ReadingRequestResponse!
 
   # Cancel a reading request (user, before claimed)
   cancelReadingRequest(requestId: ID!, userId: ID!): ReadingRequestResponse!
@@ -23,10 +26,13 @@ extend type Mutation {
 
 input CreateReadingRequestInput {
   userId: ID!
+  readingCategory: ReadingRequestCategory
   spreadType: SpreadType!
   topic: String!
   context: String
   paymentMethodId: String # If provided, use existing saved card instead of creating setup intent
+  # Astrology-specific input
+  astrologyData: AstrologyRequestDataInput
 }
 
 input ClaimReadingRequestInput {
@@ -34,6 +40,7 @@ input ClaimReadingRequestInput {
   readerId: ID!
 }
 
+# Tarot fulfillment input
 input FulfillReadingRequestInput {
   requestId: ID!
   readerId: ID!
@@ -47,6 +54,49 @@ input ReadingCardInput {
   reversed: Boolean!
   position: String!
   interpretation: String!
+}
+
+# Astrology fulfillment input
+input FulfillAstrologyReadingRequestInput {
+  requestId: ID!
+  readerId: ID!
+  interpretation: String!
+  highlightedAspects: [HighlightedAspectInput!]
+  chartImageUrl: String
+  practitionerRecommendation: String
+}
+
+input HighlightedAspectInput {
+  planet1: String!
+  planet2: String!
+  aspect: String!
+  interpretation: String!
+}
+
+# Astrology request data inputs
+input AstrologyRequestDataInput {
+  focusArea: AstrologyFocusArea!
+  birthData: ReadingBirthDataInput!
+  partnerBirthData: ReadingBirthDataInput
+  specificPlanet: String
+  specificLifeArea: String
+}
+
+input ReadingBirthDataInput {
+  birthDate: String!
+  birthTimePrecision: String!
+  birthTime: String
+  birthTimeApproximate: String
+  birthLocation: ReadingBirthLocationInput!
+}
+
+input ReadingBirthLocationInput {
+  city: String!
+  country: String!
+  countryCode: String!
+  latitude: Float!
+  longitude: Float!
+  timezone: String!
 }
 
 type CreateReadingRequestResponse {

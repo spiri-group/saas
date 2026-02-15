@@ -13,9 +13,35 @@ export const useMyReadingRequests = (userId: string, status?: ReadingRequestStat
           myReadingRequests(userId: $userId, status: $status) {
             id
             userId
+            readingCategory
             spreadType
             topic
             context
+            astrologyData {
+              focusArea
+              birthData {
+                birthDate
+                birthTime
+                birthTimePrecision
+                birthTimeApproximate
+                birthLocation {
+                  city
+                  country
+                }
+              }
+              partnerBirthData {
+                birthDate
+                birthTime
+                birthTimePrecision
+                birthTimeApproximate
+                birthLocation {
+                  city
+                  country
+                }
+              }
+              specificPlanet
+              specificLifeArea
+            }
             price
             platformFee
             readerPayout
@@ -31,6 +57,17 @@ export const useMyReadingRequests = (userId: string, status?: ReadingRequestStat
               symbols
             }
             overallMessage
+            astrologyFulfillment {
+              interpretation
+              highlightedAspects {
+                planet1
+                planet2
+                aspect
+                interpretation
+              }
+              chartImageUrl
+              practitionerRecommendation
+            }
             fulfilledAt
             createdAt
             updatedAt

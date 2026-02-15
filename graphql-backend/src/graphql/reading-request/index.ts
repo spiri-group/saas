@@ -12,6 +12,7 @@ import {
   create_reading_request_input,
   claim_reading_request_input,
   fulfill_reading_request_input,
+  fulfill_astrology_reading_request_input,
   review_reading_request_input,
 } from "./types";
 
@@ -370,6 +371,113 @@ export const readingRequestResolvers = {
       return result;
     },
 
+    fulfillAstrologyReadingRequest: async (_: unknown, { input }: { input: fulfill_astrology_reading_request_input }, context: serverContext) => {
+      if (!context.userId) throw new Error("User must be authenticated");
+
+      const { requestId, readerId } = input;
+      const { cosmos, stripe } = context.dataSources;
+
+      // 1. Find the claimed reading request
+      const querySpec = {
+        query: "SELECT * FROM c WHERE c.id = @id AND c.docType = @docType AND c.claimedBy = @readerId AND c.requestStatus = @reqStatus",
+        parameters: [
+          { name: "@id", value: requestId },
+          { name: "@docType", value: "READING_REQUEST" },
+          { name: "@readerId", value: readerId },
+          { name: "@reqStatus", value: "CLAIMED" }
+        ]
+      };
+
+      const results = await cosmos.run_query<reading_request_type>("Main-PersonalSpace", querySpec);
+      if (results.length === 0) {
+        return { success: false, message: "Reading request not found or not claimed by you" };
+      }
+
+      const request = results[0];
+
+      // Verify this is an astrology request
+      if (request.readingCategory !== 'ASTROLOGY') {
+        return { success: false, message: "This is not an astrology reading request. Use fulfillReadingRequest instead." };
+      }
+
+      // 2. Get the reader's connected Stripe account
+      const merchant = await cosmos.get_record<vendor_type>("Main-Vendor", readerId, readerId);
+      if (!merchant) {
+        return { success: false, message: "Reader merchant not found" };
+      }
+      if (!merchant.stripe?.accountId) {
+        return { success: false, message: "Reader does not have a connected Stripe account" };
+      }
+
+      const connectedAccountId = merchant.stripe.accountId;
+
+      // 3. Get the payment method
+      let paymentMethodId: string;
+
+      if (request.stripe?.paymentMethodId) {
+        paymentMethodId = request.stripe.paymentMethodId;
+      } else if (request.stripe?.setupIntentId) {
+        const setupIntentResp = await stripe.callApi("GET", `setup_intents/${request.stripe.setupIntentId}`);
+        if (setupIntentResp.status !== 200 || !setupIntentResp.data.payment_method) {
+          return { success: false, message: "Could not retrieve saved payment method" };
+        }
+        paymentMethodId = setupIntentResp.data.payment_method;
+      } else {
+        return { success: false, message: "No payment method saved for this request" };
+      }
+
+      // 4. Clone payment method to connected account
+      const connectedStripe = stripe.asConnectedAccount(connectedAccountId);
+      const clonedPaymentMethodResp = await connectedStripe.callApi("POST", "payment_methods", {
+        customer: request.stripeCustomerId,
+        payment_method: paymentMethodId
+      });
+
+      if (clonedPaymentMethodResp.status !== 200) {
+        context.logger.error(`Failed to clone payment method: ${JSON.stringify(clonedPaymentMethodResp.data)}`);
+        return { success: false, message: "Failed to clone payment method to reader's account" };
+      }
+
+      const clonedPaymentMethodId = clonedPaymentMethodResp.data.id;
+
+      // 5. Create payment intent
+      const paymentIntentResp = await connectedStripe.callApi("POST", "payment_intents", {
+        amount: request.price,
+        currency: merchant.currency || "aud",
+        payment_method: clonedPaymentMethodId,
+        application_fee_amount: request.platformFee,
+        confirm: true,
+        metadata: {
+          target: "READING_REQUEST",
+          readingRequestId: requestId,
+          userId: request.userId,
+          readerId: readerId,
+          spreadType: request.spreadType,
+          readingCategory: "ASTROLOGY"
+        }
+      });
+
+      if (paymentIntentResp.status !== 200) {
+        context.logger.error(`Failed to create payment intent: ${JSON.stringify(paymentIntentResp.data)}`);
+        return { success: false, message: `Payment failed: ${paymentIntentResp.data?.error?.message || "Unknown error"}` };
+      }
+
+      const paymentIntent = paymentIntentResp.data;
+
+      if (paymentIntent.status !== "succeeded") {
+        return { success: false, message: `Payment not completed. Status: ${paymentIntent.status}` };
+      }
+
+      // 6. Fulfill the astrology reading
+      const ds = manager(context);
+      return ds.fulfillAstrologyReadingRequestWithPayment(input, {
+        paymentMethodId: clonedPaymentMethodId,
+        paymentIntentId: paymentIntent.id,
+        chargeId: paymentIntent.latest_charge,
+        connectedAccountId
+      });
+    },
+
     cancelReadingRequest: async (_: unknown, { requestId, userId }: { requestId: string; userId: string }, context: serverContext) => {
       if (!context.userId) throw new Error("User must be authenticated");
       const ds = manager(context);
@@ -496,6 +604,10 @@ export const readingRequestResolvers = {
   },
 
   ReadingRequest: {
+    readingCategory: (parent: any) => {
+      // Backward compatibility: existing requests without readingCategory are TAROT
+      return parent.readingCategory || 'TAROT';
+    },
     ref: async (parent: any) => {
       return {
         id: parent.id,

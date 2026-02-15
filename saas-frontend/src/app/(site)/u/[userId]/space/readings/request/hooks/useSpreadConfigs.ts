@@ -12,6 +12,7 @@ export const useSpreadConfigs = () => {
         query GetSpreadConfigs {
           spreadConfigs {
             type
+            category
             label
             cardCount
             price

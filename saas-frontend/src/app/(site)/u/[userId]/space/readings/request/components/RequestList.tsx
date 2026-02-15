@@ -1,10 +1,10 @@
 'use client';
 
 import { useMyReadingRequests, useCancelReadingRequest } from '../hooks';
-import { ReadingRequest, formatPrice, STATUS_CONFIG } from '../types';
+import { ReadingRequest, formatPrice, STATUS_CONFIG, isAstrologySpread } from '../types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Loader2, X, Eye, Clock, Sparkles } from 'lucide-react';
+import { Loader2, X, Eye, Clock, Sparkles, Star } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -39,10 +39,18 @@ const RequestCard: React.FC<{ request: ReadingRequest; onCancel: () => void; isC
     <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700" data-testid={`reading-request-${request.id}`}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-purple-400" />
+          {isAstrologySpread(request.spreadType) ? (
+            <Star className="w-4 h-4 text-purple-400" />
+          ) : (
+            <Sparkles className="w-4 h-4 text-purple-400" />
+          )}
           <span className="text-white font-medium">
             {request.spreadType === 'SINGLE' ? 'Single Card' :
-             request.spreadType === 'THREE_CARD' ? 'Three Card' : 'Five Card'}
+             request.spreadType === 'THREE_CARD' ? 'Three Card' :
+             request.spreadType === 'FIVE_CARD' ? 'Five Card' :
+             request.spreadType === 'ASTRO_SNAPSHOT' ? 'Chart Snapshot' :
+             request.spreadType === 'ASTRO_FOCUS' ? 'Focused Reading' :
+             request.spreadType === 'ASTRO_DEEP_DIVE' ? 'Full Reading' : request.spreadType}
           </span>
         </div>
         <span className={cn('text-sm', statusConfig.color)}>
@@ -63,7 +71,7 @@ const RequestCard: React.FC<{ request: ReadingRequest; onCancel: () => void; isC
       </div>
 
       {/* Fulfilled Reading */}
-      {request.requestStatus === 'FULFILLED' && request.cards && (
+      {request.requestStatus === 'FULFILLED' && (request.cards || request.astrologyFulfillment) && (
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
           <DialogTrigger asChild>
             <Button
@@ -130,11 +138,56 @@ const RequestCard: React.FC<{ request: ReadingRequest; onCancel: () => void; isC
                 ))}
               </div>
 
-              {/* Overall Message */}
+              {/* Overall Message (Tarot) */}
               {request.overallMessage && (
                 <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/30">
                   <h4 className="text-purple-400 font-medium mb-2">Overall Message</h4>
                   <p className="text-slate-300">{request.overallMessage}</p>
+                </div>
+              )}
+
+              {/* Astrology Fulfillment */}
+              {request.astrologyFulfillment && (
+                <div className="space-y-4">
+                  {/* Chart Image */}
+                  {request.astrologyFulfillment.chartImageUrl && (
+                    <img
+                      src={request.astrologyFulfillment.chartImageUrl}
+                      alt="Birth chart"
+                      className="w-full rounded-lg"
+                    />
+                  )}
+
+                  {/* Main Interpretation */}
+                  <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/30">
+                    <h4 className="text-purple-400 font-medium mb-2">Interpretation</h4>
+                    <p className="text-slate-300 whitespace-pre-wrap">{request.astrologyFulfillment.interpretation}</p>
+                  </div>
+
+                  {/* Highlighted Aspects */}
+                  {request.astrologyFulfillment.highlightedAspects && request.astrologyFulfillment.highlightedAspects.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-slate-300 font-medium">Key Aspects</h4>
+                      {request.astrologyFulfillment.highlightedAspects.map((aspect, i) => (
+                        <div key={i} className="p-3 rounded-lg bg-slate-800 border border-slate-700">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-purple-400 text-sm font-medium capitalize">
+                              {aspect.planet1} {aspect.aspect} {aspect.planet2}
+                            </span>
+                          </div>
+                          <p className="text-slate-300 text-sm">{aspect.interpretation}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Practitioner Recommendation (funnel) */}
+                  {request.astrologyFulfillment.practitionerRecommendation && (
+                    <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/30">
+                      <h4 className="text-indigo-400 font-medium mb-2">Recommended Next Steps</h4>
+                      <p className="text-slate-300">{request.astrologyFulfillment.practitionerRecommendation}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

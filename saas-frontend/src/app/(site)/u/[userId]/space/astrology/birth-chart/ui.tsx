@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sun, Edit, Calendar, MapPin, Clock, Loader2 } from 'lucide-react';
+import { Sun, Edit, Calendar, MapPin, Clock, Loader2, Star, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useBirthChart, getSignInfo } from '../_hooks/useBirthChart';
@@ -136,6 +136,39 @@ const UI: React.FC<Props> = ({ userId }) => {
           {/* Aspects */}
           <div className="backdrop-blur-xl bg-white/5 border border-white/20 rounded-2xl p-6 shadow-2xl">
             <AspectsList chart={chart} />
+          </div>
+
+          {/* Professional Reading CTA */}
+          <div
+            className="backdrop-blur-xl bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/30 rounded-2xl p-6 shadow-2xl cursor-pointer hover:border-purple-400/50 transition-colors group"
+            onClick={() => {
+              sessionStorage.setItem('spiri-reading-initial-category', 'ASTROLOGY');
+              window.dispatchEvent(new CustomEvent('open-nav-external', {
+                detail: {
+                  action: { type: 'dialog', dialog: 'spiri-readings' },
+                  path: []
+                }
+              }));
+            }}
+            data-testid="birth-chart-reading-cta"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-purple-500/20 rounded-xl flex-shrink-0">
+                  <Star className="w-6 h-6 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-white mb-1">
+                    Get a Professional Reading
+                  </h3>
+                  <p className="text-slate-400 text-sm">
+                    Your birth data is ready to go. Request a personalized interpretation from a practitioner
+                    &mdash; starting at just $8 for a quick snapshot.
+                  </p>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-purple-400 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+            </div>
           </div>
         </div>
       </div>
