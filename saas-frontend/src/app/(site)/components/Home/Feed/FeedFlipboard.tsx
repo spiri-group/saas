@@ -170,7 +170,7 @@ function VideoDigestCard({ post }: { post: FeedPost }) {
               <p className="text-white font-medium text-sm truncate">{post.vendorName}</p>
             </Link>
             <p className="text-white/40 text-xs">
-              {post.vendorDocType === VendorDocType.PRACTITIONER ? 'Practitioner' : 'Merchant'}
+              {post.videoPostedAt ? formatTimeAgo(post.videoPostedAt) : (post.vendorDocType === VendorDocType.PRACTITIONER ? 'Practitioner' : 'Merchant')}
             </p>
           </div>
           <Link
@@ -180,8 +180,8 @@ function VideoDigestCard({ post }: { post: FeedPost }) {
             <ExternalLink className="w-3.5 h-3.5 text-white/30" />
           </Link>
         </div>
-        {video.media.name && (
-          <p className="text-white/70 text-sm mt-3">{video.media.name}</p>
+        {post.videoCaption && (
+          <p className="text-white/70 text-sm mt-3">{post.videoCaption}</p>
         )}
       </div>
     </div>

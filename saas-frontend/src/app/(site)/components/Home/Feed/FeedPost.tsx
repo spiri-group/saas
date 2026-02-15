@@ -140,11 +140,11 @@ export default function FeedPost({ post, onClick }: FeedPostProps) {
               </div>
               <p className="text-white font-medium text-sm truncate">{post.vendorName}</p>
             </div>
-            {post.video.media.name && (
-              <p className="text-white/60 text-sm line-clamp-2">{post.video.media.name}</p>
+            {post.videoCaption && (
+              <p className="text-white/60 text-sm line-clamp-2">{post.videoCaption}</p>
             )}
             <p className="text-white/30 text-xs mt-1">
-              {post.vendorDocType === VendorDocType.PRACTITIONER ? 'Practitioner' : 'Merchant'}
+              {post.videoPostedAt ? formatTimeAgo(post.videoPostedAt) : (post.vendorDocType === VendorDocType.PRACTITIONER ? 'Practitioner' : 'Merchant')}
             </p>
           </div>
         </div>
