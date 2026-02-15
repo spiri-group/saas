@@ -13,7 +13,6 @@ const COLLAPSED_PREVIEW_COUNT = 3;
 
 export default function PractitionerFeed() {
   const [flipboardOpen, setFlipboardOpen] = useState(false);
-  const [flipboardStartIndex, setFlipboardStartIndex] = useState(0);
 
   const {
     data: feedData,
@@ -36,10 +35,7 @@ export default function PractitionerFeed() {
 
   const { data: recommendedVendors, isLoading: recommendedLoading } = useRecommendedVendors(6);
 
-  const openFlipboard = (startIdx: number = 0) => {
-    setFlipboardStartIndex(startIdx);
-    setFlipboardOpen(true);
-  };
+  const openDigest = () => setFlipboardOpen(true);
 
   if (feedLoading) {
     return (
@@ -59,7 +55,7 @@ export default function PractitionerFeed() {
         </div>
         {hasPosts && (
           <button
-            onClick={() => openFlipboard(0)}
+            onClick={() => openDigest()}
             className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
             data-testid="feed-open-flipboard"
           >
@@ -73,7 +69,7 @@ export default function PractitionerFeed() {
         <>
           {/* Collapsed preview — stacked avatar strip + tap to open */}
           <button
-            onClick={() => openFlipboard(0)}
+            onClick={() => openDigest()}
             className="w-full mb-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/[0.08] transition-all group cursor-pointer"
             data-testid="feed-summary-card"
           >
@@ -110,14 +106,14 @@ export default function PractitionerFeed() {
           {/* Preview cards — first few posts collapsed */}
           <div className="flex flex-col gap-3">
             {previewPosts.map((post, idx) => (
-              <FeedPost key={`${post.vendorId}-${idx}`} post={post} onClick={() => openFlipboard(idx)} />
+              <FeedPost key={`${post.vendorId}-${idx}`} post={post} onClick={() => openDigest()} />
             ))}
           </div>
 
           {/* "See more" prompt */}
           {remainingCount > 0 && (
             <button
-              onClick={() => openFlipboard(COLLAPSED_PREVIEW_COUNT)}
+              onClick={() => openDigest()}
               className="w-full mt-3 py-3 text-center text-sm text-purple-400 hover:text-purple-300 transition-colors rounded-lg hover:bg-white/5"
               data-testid="feed-see-more"
             >
@@ -136,14 +132,14 @@ export default function PractitionerFeed() {
             </div>
           )}
 
-          {/* Flipboard overlay */}
+          {/* Digest overlay */}
           <FeedFlipboard
             posts={allPosts}
             open={flipboardOpen}
             onClose={() => setFlipboardOpen(false)}
-            startIndex={flipboardStartIndex}
             onLoadMore={hasNextPage ? () => fetchNextPage() : undefined}
             hasMore={hasNextPage}
+            isLoadingMore={isFetchingNextPage}
           />
         </>
       ) : (
