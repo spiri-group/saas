@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useSpreadConfigs, useCreateReadingRequest } from '../hooks';
 import { useUserCards, SavedCard } from '../hooks/useUserCards';
-import { useBirthChart } from '../../astrology/_hooks/useBirthChart';
+import { useBirthChart } from '../../../astrology/_hooks/useBirthChart';
 import {
   SpreadType,
   ReadingRequestCategory,

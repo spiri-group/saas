@@ -107,7 +107,7 @@ const RequestCard: React.FC<{ request: ReadingRequest; onCancel: () => void; isC
 
               {/* Cards */}
               <div className="space-y-3">
-                {request.cards.map((card, index) => (
+                {request.cards?.map((card, index) => (
                   <div
                     key={index}
                     className="p-3 rounded-lg bg-slate-800 border border-slate-700"
