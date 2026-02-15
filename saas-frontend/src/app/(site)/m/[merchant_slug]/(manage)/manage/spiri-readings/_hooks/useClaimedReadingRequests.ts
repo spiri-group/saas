@@ -21,9 +21,35 @@ export const useClaimedReadingRequests = (readerId: string) => {
             userId
             userEmail
             userName
+            readingCategory
             spreadType
             topic
             context
+            astrologyData {
+              focusArea
+              birthData {
+                birthDate
+                birthTime
+                birthTimePrecision
+                birthTimeApproximate
+                birthLocation {
+                  city
+                  country
+                }
+              }
+              partnerBirthData {
+                birthDate
+                birthTime
+                birthTimePrecision
+                birthTimeApproximate
+                birthLocation {
+                  city
+                  country
+                }
+              }
+              specificPlanet
+              specificLifeArea
+            }
             price
             platformFee
             readerPayout

@@ -1,6 +1,6 @@
 'use client';
 
-import { Orbit, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Orbit, Loader2, AlertCircle, RefreshCw, Star, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useCurrentTransits } from '../_hooks/useTransits';
@@ -143,6 +143,36 @@ const UI: React.FC<Props> = ({ userId }) => {
                 {transits.generalTransits && transits.generalTransits.length > 0 && (
                   <GeneralTransits transits={transits.generalTransits} />
                 )}
+
+                {/* Professional Transit Reading CTA */}
+                <div
+                  className="backdrop-blur-xl bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/30 rounded-2xl p-5 cursor-pointer hover:border-purple-400/50 transition-colors group"
+                  onClick={() => {
+                    sessionStorage.setItem('spiri-reading-initial-category', 'ASTROLOGY');
+                    window.dispatchEvent(new CustomEvent('open-nav-external', {
+                      detail: {
+                        action: { type: 'dialog', dialog: 'spiri-readings' },
+                        path: []
+                      }
+                    }));
+                  }}
+                  data-testid="transits-reading-cta"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-start gap-3">
+                      <Star className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h3 className="text-white font-medium mb-0.5">
+                          Want a practitioner&apos;s take on your transits?
+                        </h3>
+                        <p className="text-slate-400 text-sm">
+                          Get a professional transit reading with personalised insights from $8.
+                        </p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-purple-400 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
               </>
             ) : (
               <>

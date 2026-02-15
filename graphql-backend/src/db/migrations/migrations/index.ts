@@ -40,6 +40,7 @@ import { migration as migration029 } from "./029_update_tier_feature_gates";
 import { migration as migration030 } from "./030_per_spread_reading_fees";
 import { migration as migration031 } from "./031_add_reading_base_prices";
 import { migration as migration032 } from "./032_fix_subscription_email_templates";
+import { migration as migration033 } from "./033_add_astrology_reading_fees";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -75,4 +76,5 @@ export const migrations: Migration[] = [
     migration030,
     migration031,
     migration032,
+    migration033,
 ];

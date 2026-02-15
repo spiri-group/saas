@@ -1,8 +1,8 @@
 'use client';
 
-import { SpreadConfig, formatPrice } from '../types';
+import { SpreadConfig, formatPrice, isAstrologySpread } from '../types';
 import { cn } from '@/lib/utils';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Star } from 'lucide-react';
 
 interface SpreadCardProps {
   config: SpreadConfig;
@@ -10,7 +10,17 @@ interface SpreadCardProps {
   onSelect: () => void;
 }
 
+// Depth indicator for astrology tiers
+const ASTRO_DEPTH: Record<string, number> = {
+  ASTRO_SNAPSHOT: 1,
+  ASTRO_FOCUS: 2,
+  ASTRO_DEEP_DIVE: 3,
+};
+
 const SpreadCard: React.FC<SpreadCardProps> = ({ config, selected, onSelect }) => {
+  const isAstro = isAstrologySpread(config.type);
+  const depth = ASTRO_DEPTH[config.type] || 0;
+
   return (
     <button
       type="button"
@@ -26,10 +36,17 @@ const SpreadCard: React.FC<SpreadCardProps> = ({ config, selected, onSelect }) =
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Sparkles className={cn(
-            'w-5 h-5',
-            selected ? 'text-purple-400' : 'text-slate-400'
-          )} />
+          {isAstro ? (
+            <Star className={cn(
+              'w-5 h-5',
+              selected ? 'text-purple-400' : 'text-slate-400'
+            )} />
+          ) : (
+            <Sparkles className={cn(
+              'w-5 h-5',
+              selected ? 'text-purple-400' : 'text-slate-400'
+            )} />
+          )}
           <h3 className="font-semibold text-white">{config.label}</h3>
         </div>
         <span className={cn(
@@ -41,20 +58,52 @@ const SpreadCard: React.FC<SpreadCardProps> = ({ config, selected, onSelect }) =
       </div>
       <p className="text-sm text-slate-400 mb-2">{config.description}</p>
       <div className="flex items-center gap-1">
-        {Array.from({ length: config.cardCount }).map((_, i) => (
-          <div
-            key={i}
-            className={cn(
-              'w-6 h-8 rounded border',
-              selected
-                ? 'border-purple-400/50 bg-purple-500/20'
-                : 'border-slate-600 bg-slate-700/50'
-            )}
-          />
-        ))}
-        <span className="ml-2 text-xs text-slate-500">
-          {config.cardCount} {config.cardCount === 1 ? 'card' : 'cards'}
-        </span>
+        {isAstro ? (
+          <>
+            {Array.from({ length: depth }).map((_, i) => (
+              <Star
+                key={i}
+                className={cn(
+                  'w-4 h-4',
+                  selected
+                    ? 'text-purple-400 fill-purple-400'
+                    : 'text-slate-500 fill-slate-500'
+                )}
+              />
+            ))}
+            {Array.from({ length: 3 - depth }).map((_, i) => (
+              <Star
+                key={`empty-${i}`}
+                className={cn(
+                  'w-4 h-4',
+                  selected
+                    ? 'text-purple-400/30'
+                    : 'text-slate-700'
+                )}
+              />
+            ))}
+            <span className="ml-2 text-xs text-slate-500">
+              {depth === 1 ? 'Quick insight' : depth === 2 ? 'In-depth focus' : 'Comprehensive'}
+            </span>
+          </>
+        ) : (
+          <>
+            {Array.from({ length: config.cardCount }).map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  'w-6 h-8 rounded border',
+                  selected
+                    ? 'border-purple-400/50 bg-purple-500/20'
+                    : 'border-slate-600 bg-slate-700/50'
+                )}
+              />
+            ))}
+            <span className="ml-2 text-xs text-slate-500">
+              {config.cardCount} {config.cardCount === 1 ? 'card' : 'cards'}
+            </span>
+          </>
+        )}
       </div>
     </button>
   );

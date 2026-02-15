@@ -17,6 +17,7 @@ export const useCreateReadingRequest = () => {
             readingRequest {
               id
               userId
+              readingCategory
               spreadType
               topic
               context
@@ -24,6 +25,17 @@ export const useCreateReadingRequest = () => {
               platformFee
               readerPayout
               requestStatus
+              astrologyData {
+                focusArea
+                birthData {
+                  birthDate
+                  birthTimePrecision
+                  birthTime
+                  birthLocation { city country }
+                }
+                specificPlanet
+                specificLifeArea
+              }
               stripe {
                 setupIntentId
                 setupIntentSecret
