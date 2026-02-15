@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useMyReadingRequests } from '../request/hooks/useMyReadingRequests';
 import { useMyPurchasedReadings, PurchasedReading } from '../request/hooks/useMyPurchasedReadings';
 import { useReviewReadingRequest } from '../request/hooks/useReviewReadingRequest';
-import { ReadingRequest, formatPrice, STATUS_CONFIG, ReadingRequestStatus } from '../request/types';
+import { ReadingRequest, formatPrice, STATUS_CONFIG, ReadingRequestStatus, ASTROLOGY_FOCUS_OPTIONS, isAstrologySpread } from '../request/types';
 import { ReflectionForm, ReflectionPrefillData } from '../../mediumship/reflections/components/ReflectionForm';
 import { toast } from 'sonner';
 import { gql } from '@/lib/services/gql';
@@ -171,11 +171,18 @@ const UI: React.FC<Props> = ({ userId }) => {
         else if (isInProgress) status = 'in_progress';
         else if (isCancelled) status = 'cancelled';
 
+        // Build description with focus area for astrology
+        let description = `${reading.spreadType.replace('_', ' ')} Spread`;
+        if (isAstrologySpread(reading.spreadType) && reading.astrologyData?.focusArea) {
+          const focusLabel = ASTROLOGY_FOCUS_OPTIONS.find(f => f.value === reading.astrologyData?.focusArea)?.label;
+          if (focusLabel) description += ` · ${focusLabel}`;
+        }
+
         unified.push({
           id: reading.id,
           type: 'spiri-reading',
           title: reading.topic,
-          description: `${reading.spreadType.replace('_', ' ')} Spread`,
+          description,
           price: reading.price,
           status,
           statusLabel: STATUS_CONFIG[reading.requestStatus].label,
@@ -261,14 +268,17 @@ const UI: React.FC<Props> = ({ userId }) => {
 
   // Create prefill data for Session Reflection from a SpiriVerse reading
   const handleReflectOnReading = (reading: ReadingRequest) => {
+    const isAstro = reading.readingCategory === 'ASTROLOGY';
     const prefillData: ReflectionPrefillData = {
       date: reading.fulfilledAt
         ? new Date(reading.fulfilledAt).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0],
-      readerName: 'SpiriVerse Reader', // Anonymous unless we add reader names later
-      readingType: 'Tarot Reading', // Default for now, could be enhanced
-      format: 'Pre-recorded', // SpiriVerse readings are async
-      mainMessages: reading.overallMessage || '',
+      readerName: 'SpiriVerse Reader',
+      readingType: isAstro ? 'Astrology Reading' : 'Tarot Reading',
+      format: 'Pre-recorded',
+      mainMessages: isAstro
+        ? (reading.astrologyFulfillment?.interpretation || '')
+        : (reading.overallMessage || ''),
       sourceReadingId: reading.id,
     };
     setReflectionPrefill(prefillData);
@@ -685,8 +695,12 @@ const UI: React.FC<Props> = ({ userId }) => {
         <DialogContent className="bg-slate-900 border-white/20 text-white max-w-[95vw] w-full sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-emerald-400" />
-              Your Reading
+              {selectedReading?.readingCategory === 'ASTROLOGY' ? (
+                <Star className="w-5 h-5 text-purple-400" />
+              ) : (
+                <Sparkles className="w-5 h-5 text-emerald-400" />
+              )}
+              Your {selectedReading?.readingCategory === 'ASTROLOGY' ? 'Astrology' : ''} Reading
             </DialogTitle>
           </DialogHeader>
 
@@ -698,6 +712,12 @@ const UI: React.FC<Props> = ({ userId }) => {
                 <p className="text-slate-400 text-sm">
                   {selectedReading.spreadType.replace('_', ' ')} Spread • {formatPrice(selectedReading.price)}
                 </p>
+                {/* Focus area for astrology */}
+                {isAstrologySpread(selectedReading.spreadType) && selectedReading.astrologyData?.focusArea && (
+                  <p className="text-purple-400 text-sm mt-1 capitalize">
+                    {ASTROLOGY_FOCUS_OPTIONS.find(f => f.value === selectedReading.astrologyData?.focusArea)?.label || selectedReading.astrologyData.focusArea.replaceAll('_', ' ')}
+                  </p>
+                )}
                 {selectedReading.context && (
                   <p className="text-slate-500 text-sm mt-2 italic">
                     Context: {selectedReading.context}
@@ -761,13 +781,66 @@ const UI: React.FC<Props> = ({ userId }) => {
                 </div>
               )}
 
-              {/* Overall Message */}
+              {/* Overall Message (tarot) */}
               {selectedReading.overallMessage && (
                 <div>
                   <h4 className="text-sm font-medium text-slate-300 mb-2">Reader&apos;s Message</h4>
                   <div className="bg-gradient-to-r from-purple-500/10 to-emerald-500/10 border border-purple-500/20 rounded-lg p-4">
                     <p className="text-slate-300 whitespace-pre-wrap">{selectedReading.overallMessage}</p>
                   </div>
+                </div>
+              )}
+
+              {/* Astrology Fulfillment */}
+              {selectedReading.astrologyFulfillment && (
+                <div className="space-y-4">
+                  {/* Chart Image */}
+                  {selectedReading.astrologyFulfillment.chartImageUrl && (
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-300 mb-2">Your Chart</h4>
+                      <img
+                        src={selectedReading.astrologyFulfillment.chartImageUrl}
+                        alt="Birth chart"
+                        className="w-full rounded-lg border border-slate-700"
+                      />
+                    </div>
+                  )}
+
+                  {/* Interpretation */}
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-300 mb-2">Interpretation</h4>
+                    <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20 rounded-lg p-4">
+                      <p className="text-slate-300 whitespace-pre-wrap">{selectedReading.astrologyFulfillment.interpretation}</p>
+                    </div>
+                  </div>
+
+                  {/* Highlighted Aspects */}
+                  {selectedReading.astrologyFulfillment.highlightedAspects && selectedReading.astrologyFulfillment.highlightedAspects.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-300 mb-3">Key Aspects</h4>
+                      <div className="space-y-3">
+                        {selectedReading.astrologyFulfillment.highlightedAspects.map((aspect, index) => (
+                          <div
+                            key={index}
+                            className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4"
+                          >
+                            <p className="text-purple-300 font-medium mb-1 capitalize">
+                              {aspect.planet1} {aspect.aspect} {aspect.planet2}
+                            </p>
+                            <p className="text-slate-400 text-sm">{aspect.interpretation}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Practitioner Recommendation */}
+                  {selectedReading.astrologyFulfillment.practitionerRecommendation && (
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                      <p className="text-xs text-amber-400 font-medium mb-1">Practitioner Recommendation</p>
+                      <p className="text-slate-300 text-sm whitespace-pre-wrap">{selectedReading.astrologyFulfillment.practitionerRecommendation}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
