@@ -30,54 +30,52 @@ const useEditMerchantVideo = (merchantId: string) => {
             }
 
             const response = await gql<{
-                update_merchant_video: {
+                post_vendor_video_update: {
                     vendor: vendor_type;
                 };
             }>(
                 `
-                mutation update_merchant_video($merchantId: ID!, $video: VideoInput) {
-                    update_merchant_video(merchantId: $merchantId, video: $video) {
+                mutation post_merchant_video_update($vendorId: ID!, $videoUpdate: VideoUpdateInput!) {
+                    post_vendor_video_update(vendorId: $vendorId, videoUpdate: $videoUpdate) {
                         code
                         success
                         message
                         vendor {
                             id
-                            videos {
+                            videoUpdates {
+                                id
                                 media {
                                     name
                                     url
-                                    urlRelative
-                                    size
                                     type
-                                    title
-                                    description
-                                    hashtags
                                 }
                                 coverPhoto {
                                     name
                                     url
-                                    urlRelative
-                                    size
                                     type
                                 }
+                                caption
+                                postedAt
                             }
                         }
                     }
                 }
             `,
                 {
-                    merchantId: values.id,
-                    video: {
-                        media: omit(values.latestVideo, ["url", "coverPhoto"]),
-                        coverPhoto: values.coverPhoto ? omit(values.coverPhoto, ["url"]) : undefined
+                    vendorId: values.id,
+                    videoUpdate: {
+                        media: omit(values.latestVideo, ["url", "coverPhoto", "title", "description", "hashtags"]),
+                        coverPhoto: values.coverPhoto ? omit(values.coverPhoto, ["url"]) : undefined,
+                        caption: values.latestVideo.description || null
                     }
                 }
             );
 
-            return response.update_merchant_video.vendor;
+            return response.post_vendor_video_update.vendor;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['vendorInformation', merchantId] });
+            queryClient.invalidateQueries({ queryKey: ['my-feed'] });
             // Reset form after successful upload
             form.reset({
                 id: merchantId,

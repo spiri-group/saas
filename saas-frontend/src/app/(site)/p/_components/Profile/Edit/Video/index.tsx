@@ -74,11 +74,11 @@ const EditPractitionerVideo: React.FC<Props> = (props) => {
             <DialogHeader>
                 <div className="flex items-center space-x-2">
                     <VideoIcon className="h-5 w-5" />
-                    <span>Share a Video Update</span>
+                    <span>Post a Video Update</span>
                 </div>
             </DialogHeader>
             <DialogDescription>
-                Upload a video to connect with your clients. Share insights, introduce yourself, or give a glimpse into your practice.
+                Share a video update with your followers. It will appear in their feed.
             </DialogDescription>
             <Form {...bl.form}>
                 <form className="mt-4" onSubmit={bl.form.handleSubmit(bl.finish)}>
@@ -200,7 +200,7 @@ const EditPractitionerVideo: React.FC<Props> = (props) => {
                             disabled={!bl.form.formState.isDirty}
                             data-testid="save-video-btn"
                         >
-                            {bl.status.formState === "idle" ? "Save Video" : bl.status.button.title }
+                            {bl.status.formState === "idle" ? "Post Update" : bl.status.button.title }
                         </Button>
                     </DialogFooter>
                 </form>

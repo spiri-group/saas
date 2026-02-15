@@ -29,7 +29,8 @@ import {
     Store,
     Plus,
     Settings,
-    Wallet
+    Wallet,
+    ImageIcon
 } from "lucide-react";
 import { VendorDocType } from "@/utils/spiriverse";
 import CreateReading from "../../m/[merchant_slug]/(manage)/manage/services/_components/CreateReading";
@@ -46,6 +47,7 @@ import EditPractitionerAudioIntro from "./Profile/Edit/AudioIntro";
 import EditPractitionerOracleMessage from "./Profile/Edit/OracleMessage";
 import EditPractitionerPinnedTestimonials from "./Profile/Edit/PinnedTestimonials";
 import MerchantEventsComponent from "../../m/_components/Events";
+import MerchantGalleryComponent from "../../m/_components/Gallery";
 import { Session } from "next-auth";
 import { isNullOrUndefined } from "@/lib/functions";
 import withProtection from "@/components/ux/HOC/withProtection";
@@ -220,6 +222,12 @@ const useBL = (props: BLProps) => {
                     className: "w-[900px] max-w-[95vw]"
                 },
                 {
+                    icon: <ImageIcon className="w-5 h-5" />,
+                    label: "Gallery",
+                    dialogId: "Practitioner Gallery",
+                    className: "w-[1000px] max-w-[95vw] h-[850px]"
+                },
+                {
                     icon: <Link className="w-5 h-5" />,
                     label: "Social Links",
                     dialogId: "Edit Socials",
@@ -301,6 +309,7 @@ const useBL = (props: BLProps) => {
             "Edit Training": () => <EditPractitionerTraining practitionerId={practitionerId} />,
             "Edit Journey": () => <EditPractitionerJourney practitionerId={practitionerId} />,
             "Edit Video": () => <EditPractitionerVideo practitionerId={practitionerId} />,
+            "Practitioner Gallery": () => <MerchantGalleryComponent merchantId={practitionerId} />,
             "Edit Socials": () => <EditPractitionerSocials practitionerId={practitionerId} />,
             "Edit Audio Intro": () => <EditPractitionerAudioIntro practitionerId={practitionerId} />,
             "Edit Oracle Message": () => <EditPractitionerOracleMessage practitionerId={practitionerId} />,
