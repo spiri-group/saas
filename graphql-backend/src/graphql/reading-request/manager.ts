@@ -575,8 +575,6 @@ export class ReadingRequestManager {
 
     const updatedRequest = await this.getReadingRequest(input.requestId, request.userId);
 
-    // TODO: Notify user that their reading is ready
-
     return {
       success: true,
       message: "Reading fulfilled and payment captured successfully",

@@ -4,6 +4,7 @@ import { createQueryResolver } from "../../utils/resolvers";
 import { user_type } from "../user/types";
 import { vendor_type } from "../vendor/types";
 import { PersonalSpaceManager } from "../personal-space/manager";
+import { DataAction } from "../../services/signalR";
 import {
   spread_type,
   reading_request_status,
@@ -242,8 +243,35 @@ export const readingRequestResolvers = {
       const ds = manager(context);
       const result = await ds.claimReadingRequest(input, claimDeadline);
 
-      // TODO: Broadcast via SignalR that this request has been claimed
+      // Broadcast via SignalR that this request has been claimed
       // so other readers see it disappear from their Request Bank in real-time
+      if (result.success) {
+        context.signalR.addDataMessage(
+          "reading-request-bank",
+          { id: requestId },
+          { group: "reading-request-bank", action: DataAction.DELETE }
+        );
+
+        // Notify the user that their reading has been claimed
+        context.signalR.addNotificationMessage(
+          {
+            title: "Your reading has been claimed!",
+            description: "A practitioner is now preparing your reading."
+          },
+          {
+            userId: request.userId,
+            status: "info",
+            url: `/u/${request.userId}/space/readings/received`
+          }
+        );
+
+        // Push data update so user's reading list shows "Being Prepared"
+        context.signalR.addDataMessage(
+          "my-reading-requests",
+          { id: requestId, requestStatus: "CLAIMED" },
+          { userId: request.userId, action: DataAction.UPSERT }
+        );
+      }
 
       return result;
     },
@@ -368,6 +396,27 @@ export const readingRequestResolvers = {
         }
       }
 
+      // 8. Notify user via SignalR that their reading is ready
+      if (result.success) {
+        context.signalR.addNotificationMessage(
+          {
+            title: "Your reading is ready!",
+            description: "Your tarot reading has been completed. Tap to view it now."
+          },
+          {
+            userId: request.userId,
+            status: "success",
+            url: `/u/${request.userId}/space/readings/received`
+          }
+        );
+
+        context.signalR.addDataMessage(
+          "my-reading-requests",
+          { id: requestId, requestStatus: "FULFILLED" },
+          { userId: request.userId, action: DataAction.UPSERT }
+        );
+      }
+
       return result;
     },
 
@@ -470,12 +519,35 @@ export const readingRequestResolvers = {
 
       // 6. Fulfill the astrology reading
       const ds = manager(context);
-      return ds.fulfillAstrologyReadingRequestWithPayment(input, {
+      const result = await ds.fulfillAstrologyReadingRequestWithPayment(input, {
         paymentMethodId: clonedPaymentMethodId,
         paymentIntentId: paymentIntent.id,
         chargeId: paymentIntent.latest_charge,
         connectedAccountId
       });
+
+      // 7. Notify user via SignalR that their astrology reading is ready
+      if (result.success) {
+        context.signalR.addNotificationMessage(
+          {
+            title: "Your astrology reading is ready!",
+            description: "Your astrology reading has been completed. Tap to view it now."
+          },
+          {
+            userId: request.userId,
+            status: "success",
+            url: `/u/${request.userId}/space/readings/received`
+          }
+        );
+
+        context.signalR.addDataMessage(
+          "my-reading-requests",
+          { id: requestId, requestStatus: "FULFILLED" },
+          { userId: request.userId, action: DataAction.UPSERT }
+        );
+      }
+
+      return result;
     },
 
     cancelReadingRequest: async (_: unknown, { requestId, userId }: { requestId: string; userId: string }, context: serverContext) => {
