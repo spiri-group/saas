@@ -11,7 +11,7 @@ import { Session } from "next-auth"
 import Link from "next/link"
 import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import UseUserComplete from "../../c/[customerId]/settings/hooks/UseUserComplete"
+import UseUserComplete from "@/hooks/user/UseUserComplete"
 import { VendorDocType } from "@/utils/spiriverse"
 import { usePathname } from "next/navigation"
 import SetupRedirectAnimator from '@/components/ux/SetupRedirectAnimator'
