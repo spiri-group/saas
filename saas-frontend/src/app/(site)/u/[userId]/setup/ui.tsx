@@ -1,6 +1,6 @@
 'use client';
 
-import UseUpdateUserProfile, { UpdateUserProfileFormSchema } from "@/app/(site)/c/[customerId]/settings/hooks/UseUpdateUserProfile"
+import UseUpdateUserProfile, { UpdateUserProfileFormSchema } from "@/hooks/user/UseUpdateUserProfile"
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";

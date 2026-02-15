@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import UseUserProfile from '@/app/(site)/c/[customerId]/settings/hooks/UseUserProfile';
+import UseUserProfile from '@/hooks/user/UseUserProfile';
 import { SpiritualInterest } from '@/app/(site)/u/[userId]/onboarding/types';
 
 /**

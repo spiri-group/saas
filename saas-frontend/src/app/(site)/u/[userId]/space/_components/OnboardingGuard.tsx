@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import UseUserProfile from '@/app/(site)/c/[customerId]/settings/hooks/UseUserProfile';
+import UseUserProfile from '@/hooks/user/UseUserProfile';
 import UseUpdateSpiritualInterests from '../../onboarding/hooks/UseUpdateSpiritualInterests';
 import { Loader2 } from 'lucide-react';
 import OnboardingUI from '../../onboarding/ui';

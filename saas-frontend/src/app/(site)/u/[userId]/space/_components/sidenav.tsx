@@ -3,8 +3,8 @@
 import { useParams } from "next/navigation";
 import SideNav, { NavOption } from "@/components/ui/sidenav";
 import { JSX, useMemo } from "react";
-import { Sparkles, Moon, Home, Send, Inbox, Wind, Gem, Star, Droplets, Grid3X3, BookOpen, Zap, Activity, Users, BookHeart, Cross, Heart, MessageCircle, Dumbbell, BookMarked, Layers, LibraryBig, Sun, Orbit } from "lucide-react";
-import UseUserProfile from "@/app/(site)/c/[customerId]/settings/hooks/UseUserProfile";
+import { Sparkles, Moon, Home, Send, Inbox, Wind, Gem, Star, Droplets, Grid3X3, BookOpen, Zap, Activity, Users, BookHeart, Cross, Heart, MessageCircle, Dumbbell, BookMarked, Layers, LibraryBig, Sun, Orbit, Package, CalendarDays, User } from "lucide-react";
+import UseUserProfile from "@/hooks/user/UseUserProfile";
 import { SpiritualInterest } from "@/app/(site)/u/[userId]/onboarding/types";
 import { useUnlockStatusForInterest } from "../_hooks/useUnlockStatus";
 import { SpiriReadingsWizard } from "../readings/request/components";
@@ -300,6 +300,36 @@ const useBL = () => {
                 ]
             });
         }
+
+        // ── Commerce & Account ──────────────────────────
+        // Always visible regardless of spiritual interests
+        navOptions.push({
+            icon: <Package className="w-5 h-5" />,
+            label: "Orders",
+            href: `/u/${userId}/space/orders`,
+            testId: "orders-nav"
+        });
+
+        navOptions.push({
+            icon: <CalendarDays className="w-5 h-5" />,
+            label: "Bookings",
+            href: `/u/${userId}/space/bookings`,
+            testId: "bookings-nav"
+        });
+
+        navOptions.push({
+            icon: <MessageCircle className="w-5 h-5" />,
+            label: "Messages",
+            href: `/u/${userId}/space/messages`,
+            testId: "messages-nav"
+        });
+
+        navOptions.push({
+            icon: <User className="w-5 h-5" />,
+            label: "Account",
+            href: `/u/${userId}/space/account`,
+            testId: "account-nav"
+        });
 
         return navOptions;
     }, [userId, userInterests, mediumshipUnlocks]);

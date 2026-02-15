@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import UseUserProfile from '@/app/(site)/c/[customerId]/settings/hooks/UseUserProfile';
+import UseUserProfile from '@/hooks/user/UseUserProfile';
 import { SpiritualInterest } from '../onboarding/types';
 import useMediumshipStats from './mediumship/hooks/useMediumshipStats';
 import { useRecentSpiritMessages } from './mediumship/hooks/useSpiritMessages';

@@ -8,7 +8,7 @@ import { v4 as uuid } from 'uuid';
 import { Store, Users, TrendingUp, Shield, Sparkles, Mail } from 'lucide-react';
 import SpiriLogo from "@/icons/spiri-logo";
 import { useSession } from "next-auth/react";
-import UseUserProfile from "@/app/(site)/c/[customerId]/settings/hooks/UseUserProfile";
+import UseUserProfile from "@/hooks/user/UseUserProfile";
 import { SignIn } from "@/components/ux/SignIn";
 
 const useBL = () => {
