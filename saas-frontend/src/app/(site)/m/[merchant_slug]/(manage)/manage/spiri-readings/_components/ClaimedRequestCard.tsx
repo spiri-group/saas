@@ -103,6 +103,35 @@ const ClaimedRequestCard: React.FC<ClaimedRequestCardProps> = ({
         <p className="text-slate-200 text-sm">{request.topic}</p>
       </div>
 
+      {/* Astrology details */}
+      {isAstrologyRequest(request.spreadType) && (request as any).astrologyData && (
+        <div className="mb-3 p-2 rounded bg-purple-500/5 border border-purple-500/20 space-y-1">
+          <p className="text-purple-300 text-xs capitalize">
+            {(request as any).astrologyData.focusArea?.replace(/_/g, ' ')}
+          </p>
+          {(request as any).astrologyData.birthData && (
+            <p className="text-slate-400 text-xs">
+              Born {(request as any).astrologyData.birthData.birthDate}
+              {(request as any).astrologyData.birthData.birthTime && ` at ${(request as any).astrologyData.birthData.birthTime}`}
+              {(request as any).astrologyData.birthData.birthLocation?.city && ` in ${(request as any).astrologyData.birthData.birthLocation.city}`}
+            </p>
+          )}
+          {(request as any).astrologyData.partnerBirthData && (
+            <p className="text-slate-400 text-xs">
+              Partner: {(request as any).astrologyData.partnerBirthData.birthDate}
+              {(request as any).astrologyData.partnerBirthData.birthTime && ` at ${(request as any).astrologyData.partnerBirthData.birthTime}`}
+              {(request as any).astrologyData.partnerBirthData.birthLocation?.city && ` in ${(request as any).astrologyData.partnerBirthData.birthLocation.city}`}
+            </p>
+          )}
+          {(request as any).astrologyData.specificPlanet && (
+            <p className="text-slate-400 text-xs capitalize">Planet: {(request as any).astrologyData.specificPlanet}</p>
+          )}
+          {(request as any).astrologyData.specificLifeArea && (
+            <p className="text-slate-400 text-xs capitalize">Life area: {(request as any).astrologyData.specificLifeArea}</p>
+          )}
+        </div>
+      )}
+
       {/* Context if present */}
       {request.context && (
         <div className="mb-3">

@@ -81,6 +81,12 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
     const [astroBirthCity, setAstroBirthCity] = useState('');
     const [birthDataPreFilled, setBirthDataPreFilled] = useState(false);
 
+    // Partner birth data (for compatibility)
+    const [partnerBirthDate, setPartnerBirthDate] = useState('');
+    const [partnerBirthTime, setPartnerBirthTime] = useState('');
+    const [partnerBirthTimePrecision, setPartnerBirthTimePrecision] = useState<'exact' | 'approximate' | 'unknown'>('unknown');
+    const [partnerBirthCity, setPartnerBirthCity] = useState('');
+
     // Saved card selection
     const [selectedCard, setSelectedCard] = useState<SavedCard | null>(null);
     const [useNewCard, setUseNewCard] = useState(false);
@@ -118,7 +124,16 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
     const getTopicLabel = (): string => {
         if (category === 'ASTROLOGY') {
             const focus = ASTROLOGY_FOCUS_OPTIONS.find(f => f.value === focusArea);
-            return focus?.label || 'Astrology Reading';
+            const base = focus?.label || 'Astrology Reading';
+            if (focusArea === 'single_planet' && specificPlanet) {
+                const planet = PLANET_OPTIONS.find(p => p.value === specificPlanet);
+                return `${base} — ${planet?.label || specificPlanet}`;
+            }
+            if (focusArea === 'life_area' && specificLifeArea) {
+                const area = LIFE_AREA_OPTIONS.find(a => a.value === specificLifeArea);
+                return `${base} — ${area?.label || specificLifeArea}`;
+            }
+            return base;
         }
         if (topic === 'other' && customTopic.trim()) {
             return customTopic.trim();
@@ -134,6 +149,10 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
             if (!hasBirthChart && !astroBirthCity.trim()) return false;
             if (focusArea === 'single_planet' && !specificPlanet) return false;
             if (focusArea === 'life_area' && !specificLifeArea) return false;
+            // Compatibility requires partner birth data
+            if (focusArea === 'compatibility') {
+                if (!partnerBirthDate || !partnerBirthCity.trim()) return false;
+            }
             return true;
         }
         // Tarot validation
@@ -178,9 +197,28 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
             };
         }
 
+        // Build partner birth data for compatibility
+        let partnerData: ReadingBirthData | undefined;
+        if (focusArea === 'compatibility' && partnerBirthDate) {
+            partnerData = {
+                birthDate: partnerBirthDate,
+                birthTimePrecision: partnerBirthTimePrecision,
+                birthTime: partnerBirthTimePrecision === 'exact' ? partnerBirthTime : undefined,
+                birthLocation: {
+                    city: partnerBirthCity,
+                    country: '',
+                    countryCode: '',
+                    latitude: 0,
+                    longitude: 0,
+                    timezone: '',
+                },
+            };
+        }
+
         return {
             focusArea: focusArea as AstrologyFocusArea,
             birthData,
+            partnerBirthData: partnerData,
             specificPlanet: focusArea === 'single_planet' ? specificPlanet : undefined,
             specificLifeArea: focusArea === 'life_area' ? specificLifeArea : undefined,
         };
@@ -540,21 +578,104 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                                 )}
                             </div>
                         ) : (
-                            <div className="space-y-3 p-3 rounded-lg bg-slate-800/30 border border-slate-700">
+                            <div className="space-y-3">
+                                {/* Recommendation to use birth chart */}
+                                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                                    <p className="text-amber-300 text-xs font-medium mb-1">
+                                        You don&apos;t have a birth chart saved yet
+                                    </p>
+                                    <p className="text-amber-200/70 text-xs mb-2">
+                                        For the most accurate reading, save your birth chart first. It calculates exact coordinates and timezone from your birth location, giving the practitioner precise data to work with.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            window.open(`/u/${userId}/space/astrology/birth-chart`, '_blank');
+                                        }}
+                                        className="text-amber-400 text-xs font-medium hover:text-amber-300 underline underline-offset-2"
+                                        data-testid="create-birth-chart-link"
+                                    >
+                                        Create your birth chart (opens in new tab)
+                                    </button>
+                                </div>
+
+                                {/* Manual fallback */}
+                                <div className="p-3 rounded-lg bg-slate-800/30 border border-slate-700 space-y-3">
+                                    <p className="text-slate-400 text-xs">Or enter basic details below:</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <Label className="text-slate-300 text-xs">Birth date <span className="text-red-400">*</span></Label>
+                                            <Input
+                                                type="date"
+                                                value={astroBirthDate}
+                                                onChange={(e) => setAstroBirthDate(e.target.value)}
+                                                data-testid="astro-birth-date"
+                                                className="bg-slate-900/80 border-slate-600 text-white text-sm"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-slate-300 text-xs">Birth time precision</Label>
+                                            <Select value={astroBirthTimePrecision} onValueChange={(v) => setAstroBirthTimePrecision(v as 'exact' | 'approximate' | 'unknown')}>
+                                                <SelectTrigger className="bg-slate-900/80 border-slate-600 text-white text-sm">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="exact">Exact</SelectItem>
+                                                    <SelectItem value="approximate">Approximate</SelectItem>
+                                                    <SelectItem value="unknown">Unknown</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    {astroBirthTimePrecision === 'exact' && (
+                                        <div>
+                                            <Label className="text-slate-300 text-xs">Birth time</Label>
+                                            <Input
+                                                type="time"
+                                                value={astroBirthTime}
+                                                onChange={(e) => setAstroBirthTime(e.target.value)}
+                                                data-testid="astro-birth-time"
+                                                className="bg-slate-900/80 border-slate-600 text-white text-sm"
+                                            />
+                                        </div>
+                                    )}
+                                    <div>
+                                        <Label className="text-slate-300 text-xs">Birth city &amp; country <span className="text-red-400">*</span></Label>
+                                        <Input
+                                            type="text"
+                                            value={astroBirthCity}
+                                            onChange={(e) => setAstroBirthCity(e.target.value)}
+                                            placeholder="e.g., Melbourne, Australia"
+                                            data-testid="astro-birth-city"
+                                            className="bg-slate-900/80 border-slate-600 text-white text-sm placeholder:text-slate-500"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Partner Birth Data (compatibility) */}
+                    {focusArea === 'compatibility' && (
+                        <div className="space-y-2">
+                            <Label className="text-white font-medium">
+                                Partner&apos;s birth data <span className="text-red-400">*</span>
+                            </Label>
+                            <div className="space-y-3 p-3 rounded-lg bg-slate-800/30 border border-purple-500/20">
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <Label className="text-slate-300 text-xs">Birth date <span className="text-red-400">*</span></Label>
                                         <Input
                                             type="date"
-                                            value={astroBirthDate}
-                                            onChange={(e) => setAstroBirthDate(e.target.value)}
-                                            data-testid="astro-birth-date"
+                                            value={partnerBirthDate}
+                                            onChange={(e) => setPartnerBirthDate(e.target.value)}
+                                            data-testid="partner-birth-date"
                                             className="bg-slate-900/80 border-slate-600 text-white text-sm"
                                         />
                                     </div>
                                     <div>
                                         <Label className="text-slate-300 text-xs">Birth time precision</Label>
-                                        <Select value={astroBirthTimePrecision} onValueChange={(v) => setAstroBirthTimePrecision(v as 'exact' | 'approximate' | 'unknown')}>
+                                        <Select value={partnerBirthTimePrecision} onValueChange={(v) => setPartnerBirthTimePrecision(v as 'exact' | 'approximate' | 'unknown')}>
                                             <SelectTrigger className="bg-slate-900/80 border-slate-600 text-white text-sm">
                                                 <SelectValue />
                                             </SelectTrigger>
@@ -566,14 +687,14 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                                         </Select>
                                     </div>
                                 </div>
-                                {astroBirthTimePrecision === 'exact' && (
+                                {partnerBirthTimePrecision === 'exact' && (
                                     <div>
                                         <Label className="text-slate-300 text-xs">Birth time</Label>
                                         <Input
                                             type="time"
-                                            value={astroBirthTime}
-                                            onChange={(e) => setAstroBirthTime(e.target.value)}
-                                            data-testid="astro-birth-time"
+                                            value={partnerBirthTime}
+                                            onChange={(e) => setPartnerBirthTime(e.target.value)}
+                                            data-testid="partner-birth-time"
                                             className="bg-slate-900/80 border-slate-600 text-white text-sm"
                                         />
                                     </div>
@@ -582,19 +703,16 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                                     <Label className="text-slate-300 text-xs">Birth city <span className="text-red-400">*</span></Label>
                                     <Input
                                         type="text"
-                                        value={astroBirthCity}
-                                        onChange={(e) => setAstroBirthCity(e.target.value)}
-                                        placeholder="e.g., Melbourne, Australia"
-                                        data-testid="astro-birth-city"
+                                        value={partnerBirthCity}
+                                        onChange={(e) => setPartnerBirthCity(e.target.value)}
+                                        placeholder="e.g., Sydney, Australia"
+                                        data-testid="partner-birth-city"
                                         className="bg-slate-900/80 border-slate-600 text-white text-sm placeholder:text-slate-500"
                                     />
                                 </div>
-                                <p className="text-xs text-slate-500">
-                                    For a more accurate reading, save your birth chart in your personal space first
-                                </p>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
 
                     {/* Additional context */}
                     <div className="space-y-2">

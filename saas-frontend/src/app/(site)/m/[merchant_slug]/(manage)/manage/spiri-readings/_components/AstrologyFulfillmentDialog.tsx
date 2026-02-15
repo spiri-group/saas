@@ -166,7 +166,7 @@ const AstrologyFulfillmentDialog: React.FC<AstrologyFulfillmentDialogProps> = ({
             <>
               <div>
                 <p className="text-sm text-slate-400 mb-1">Focus Area:</p>
-                <p className="text-purple-300 text-sm capitalize">{astrologyData.focusArea?.replace('_', ' ')}</p>
+                <p className="text-purple-300 text-sm capitalize">{astrologyData.focusArea?.replaceAll('_', ' ')}</p>
               </div>
               {astrologyData.birthData && (
                 <div>
@@ -176,6 +176,17 @@ const AstrologyFulfillmentDialog: React.FC<AstrologyFulfillmentDialogProps> = ({
                     {astrologyData.birthData.birthTime && ` at ${astrologyData.birthData.birthTime}`}
                     {astrologyData.birthData.birthLocation?.city && ` in ${astrologyData.birthData.birthLocation.city}`}
                     {astrologyData.birthData.birthLocation?.country && `, ${astrologyData.birthData.birthLocation.country}`}
+                  </p>
+                </div>
+              )}
+              {astrologyData.partnerBirthData && (
+                <div>
+                  <p className="text-sm text-slate-400 mb-1">Partner Birth Data:</p>
+                  <p className="text-slate-300 text-sm">
+                    {astrologyData.partnerBirthData.birthDate}
+                    {astrologyData.partnerBirthData.birthTime && ` at ${astrologyData.partnerBirthData.birthTime}`}
+                    {astrologyData.partnerBirthData.birthLocation?.city && ` in ${astrologyData.partnerBirthData.birthLocation.city}`}
+                    {astrologyData.partnerBirthData.birthLocation?.country && `, ${astrologyData.partnerBirthData.birthLocation.country}`}
                   </p>
                 </div>
               )}

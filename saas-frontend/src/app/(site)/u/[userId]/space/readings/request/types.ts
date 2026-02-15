@@ -31,7 +31,7 @@ export type AstrologyFocusArea =
 
 export const ASTROLOGY_FOCUS_OPTIONS: { value: AstrologyFocusArea; label: string; description: string; requiresPartner?: boolean }[] = [
   { value: 'birth_chart', label: 'Birth Chart', description: 'What stands out in my chart?' },
-  { value: 'transit', label: 'Current Transits', description: 'What&apos;s happening for me right now?' },
+  { value: 'transit', label: 'Current Transits', description: "What's happening for me right now?" },
   { value: 'compatibility', label: 'Compatibility', description: 'How compatible are we?', requiresPartner: true },
   { value: 'solar_return', label: 'Solar Return', description: 'What does my year ahead look like?' },
   { value: 'single_planet', label: 'Planet Focus', description: 'Deep dive on a specific planet' },

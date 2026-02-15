@@ -1,7 +1,7 @@
 'use client';
 
 import { useMyReadingRequests, useCancelReadingRequest } from '../hooks';
-import { ReadingRequest, formatPrice, STATUS_CONFIG, isAstrologySpread } from '../types';
+import { ReadingRequest, formatPrice, STATUS_CONFIG, isAstrologySpread, ASTROLOGY_FOCUS_OPTIONS } from '../types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Loader2, X, Eye, Clock, Sparkles, Star } from 'lucide-react';
@@ -57,6 +57,13 @@ const RequestCard: React.FC<{ request: ReadingRequest; onCancel: () => void; isC
           {statusConfig.label}
         </span>
       </div>
+
+      {/* Focus area for astrology */}
+      {isAstrologySpread(request.spreadType) && request.astrologyData?.focusArea && (
+        <p className="text-purple-400 text-xs mb-2 capitalize">
+          {ASTROLOGY_FOCUS_OPTIONS.find(f => f.value === request.astrologyData?.focusArea)?.label || request.astrologyData.focusArea.replace(/_/g, ' ')}
+        </p>
+      )}
 
       <p className="text-slate-300 text-sm mb-3 line-clamp-2">{request.topic}</p>
 

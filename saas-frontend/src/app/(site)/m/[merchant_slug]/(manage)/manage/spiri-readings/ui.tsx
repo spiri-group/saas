@@ -70,6 +70,11 @@ const RequestBankRow: React.FC<{
       </td>
       <td className="py-3 px-4">
         <p className="text-slate-300 text-sm line-clamp-2 max-w-xs">{request.topic}</p>
+        {isAstrologyRequest(request.spreadType) && (request as any).astrologyData?.focusArea && (
+          <p className="text-purple-400 text-xs capitalize mt-0.5">
+            {(request as any).astrologyData.focusArea.replace(/_/g, ' ')}
+          </p>
+        )}
       </td>
       <td className="py-3 px-4 text-slate-400 text-sm">
         {request.userEmail && (
