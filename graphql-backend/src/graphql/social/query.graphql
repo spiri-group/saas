@@ -16,6 +16,8 @@ type FeedPost {
   vendorDocType: String!
   postType: String!
   video: Video
+  videoCaption: String
+  videoPostedAt: DateTime
   oracleMessage: OracleMessage
 }
 

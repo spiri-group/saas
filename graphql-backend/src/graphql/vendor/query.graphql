@@ -221,6 +221,15 @@ type OracleMessage {
     expiresAt: DateTime!
 }
 
+# Video Update (intentional post to followers)
+type VideoUpdate {
+    id: ID!
+    media: Media!
+    coverPhoto: Media
+    caption: String
+    postedAt: DateTime!
+}
+
 type PractitionerSearchResult {
     practitioners: [Vendor!]!
     total: Int!
@@ -304,6 +313,7 @@ type Vendor {
   descriptions: [MerchantDescription]
   locations: [MerchantLocation]
   videos: [Video]
+  videoUpdates: [VideoUpdate]
   videoSettings: VideoSettings
   subscription: VendorSubscription
   social: MerchantSocial

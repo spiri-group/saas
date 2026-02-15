@@ -77,11 +77,11 @@ const EditMerchantVideo: React.FC<Props> = (props) => {
             <DialogHeader>
                 <div className="flex items-center space-x-2">
                     <VideoIcon className="h-5 w-5" />
-                    <span>Update Your Latest Video</span>
+                    <span>Post a Video Update</span>
                 </div>
             </DialogHeader>
             <DialogDescription>
-                Upload a video to showcase your latest updates. TikTok-style vertical format (9:16) works best!
+                Share a video update with your followers. It will appear in their feed.
             </DialogDescription>
             <Form {...bl.form}>
                 <form className="mt-4" onSubmit={bl.form.handleSubmit(bl.finish)}>
@@ -202,7 +202,7 @@ const EditMerchantVideo: React.FC<Props> = (props) => {
                             type="submit"
                             disabled={!bl.form.formState.isDirty}
                         >
-                            {bl.status.formState === "idle" ? "Save Video" : bl.status.button.title }
+                            {bl.status.formState === "idle" ? "Post Update" : bl.status.button.title }
                         </Button>
                     </DialogFooter>
                 </form>

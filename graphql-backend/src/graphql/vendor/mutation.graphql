@@ -33,6 +33,7 @@ type Mutation {
   update_merchant_promise_banner(merchantId: ID!, promiseBanner: String!): CreateVendorResponse,
   update_merchant_banner_config(merchantId: ID!, bannerConfig: BannerConfigInput!): CreateVendorResponse,
   update_merchant_video(merchantId: ID!, video: VideoInput, videoSettings: VideoSettingsInput): CreateVendorResponse,
+  post_vendor_video_update(vendorId: ID!, videoUpdate: VideoUpdateInput!): CreateVendorResponse,
   update_merchant_socials(merchantId: ID!, style: String!, socials: [SocialPlatformInput]!): CreateVendorResponse,
   upsert_product_return_policies(merchantId: ID!, policies: [ProductReturnPolicyInput]!): UpsertPolicyResponse,
   delete_product_return_policy(merchantId: ID!, policyId: ID!): MutationResponse,
@@ -445,6 +446,12 @@ input OracleMessageInput {
   id: ID
   audio: MediaInput!
   message: String
+}
+
+input VideoUpdateInput {
+  media: MediaInput!
+  coverPhoto: MediaInput
+  caption: String
 }
 
 input TrainingCredentialInput {
