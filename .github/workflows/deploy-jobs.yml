@@ -1,0 +1,80 @@
+name: Deploy Container Jobs
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'graphql-backend/src/functions/booking_reminder.ts'
+      - 'graphql-backend/src/functions/billing_processor.ts'
+      - 'graphql-backend/src/functions/refund_protection.ts'
+      - 'graphql-backend/src/functions/tour_reminder.ts'
+      - 'graphql-backend/jobs/**'
+      - 'graphql-backend/src/services/**'
+      - 'graphql-backend/src/utils/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'DEV'
+        type: choice
+        options: [ DEV, PROD ]
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  NODE_VERSION: 20.19.0
+  ENV_NAME: ${{ github.ref_name == 'main' && 'prd' || 'dev' }}
+  ENV_SUFFIX: "002"
+  ACR_NAME: ${{ github.ref_name == 'main' && 'crspvprd002' || 'crspvdev002' }}
+  RESOURCE_GROUP: ${{ github.ref_name == 'main' && 'rg-spiriverse-app-prd-002' || 'rg-spiriverse-app-dev-002' }}
+  IMAGE_NAME: spiriverse-jobs
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Jobs
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || (github.ref_name == 'main' && 'PROD' || 'DEV') }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Build Docker image
+        working-directory: graphql-backend
+        run: |
+          IMAGE_TAG="${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker build \
+            -f jobs/Dockerfile \
+            -t "$IMAGE_TAG" \
+            -t "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest" \
+            .
+
+      - name: Push to ACR
+        run: |
+          docker push "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker push "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest"
+
+      - name: Update Container Jobs
+        run: |
+          JOBS=("booking-reminder" "billing-processor" "refund-protection" "tour-reminder")
+          for JOB_NAME in "${JOBS[@]}"; do
+            FULL_NAME="job-${JOB_NAME}-${{ env.ENV_NAME }}-${{ env.ENV_SUFFIX }}"
+            echo "Updating job: ${FULL_NAME}"
+            az containerapp job update \
+              --name "${FULL_NAME}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
+              --image "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}" || echo "Warning: Failed to update ${FULL_NAME}"
+          done

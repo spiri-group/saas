@@ -1,0 +1,113 @@
+name: Deploy Frontend (Container Apps)
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'saas-frontend/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'DEV'
+        type: choice
+        options: [ DEV, PROD ]
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  NODE_VERSION: 20.19.0
+  ENV_NAME: ${{ github.ref_name == 'main' && 'prd' || 'dev' }}
+  ENV_SUFFIX: "002"
+  ACR_NAME: ${{ github.ref_name == 'main' && 'crspvprd002' || 'crspvdev002' }}
+  CONTAINER_APP_NAME: ${{ github.ref_name == 'main' && 'ca-spiriverse-app-prd-002' || 'ca-spiriverse-app-dev-002' }}
+  RESOURCE_GROUP: ${{ github.ref_name == 'main' && 'rg-spiriverse-app-prd-002' || 'rg-spiriverse-app-dev-002' }}
+  IMAGE_NAME: spiriverse-frontend
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Frontend
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || (github.ref_name == 'main' && 'PROD' || 'DEV') }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Fetch secrets from Key Vault
+        id: secrets
+        run: |
+          KV_NAME="kv-spv-server-${{ env.ENV_NAME }}-${{ env.ENV_SUFFIX }}"
+          FUNC_NAME="func-spiriverse-server-${{ env.ENV_NAME }}-${{ env.ENV_SUFFIX }}"
+          RG_SERVER="rg-spiriverse-server-${{ env.ENV_NAME }}-${{ env.ENV_SUFFIX }}"
+
+          # Fetch Function App key for API endpoint
+          FUNC_KEY=$(az functionapp keys list --name "$FUNC_NAME" --resource-group "$RG_SERVER" --query "functionKeys.client" -o tsv)
+
+          # Fetch Key Vault secrets
+          STRIPE_PK=$(az keyvault secret show --vault-name "$KV_NAME" --name "stripe-pk" --query value -o tsv)
+          GOOGLE_KEY=$(az keyvault secret show --vault-name "$KV_NAME" --name "google-key" --query value -o tsv)
+
+          # Determine public URLs
+          if [ "${{ env.ENV_NAME }}" = "prd" ]; then
+            SITE_ADDRESS="https://www.spiriverse.com"
+            GRAPHQL_PROXY="https://www.spiriverse.com/api/graphql"
+          else
+            CA_FQDN=$(az containerapp show --name "${{ env.CONTAINER_APP_NAME }}" --resource-group "${{ env.RESOURCE_GROUP }}" --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "")
+            if [ -z "$CA_FQDN" ]; then
+              # Fallback: construct from CAE default domain
+              DEFAULT_DOMAIN=$(az containerapp env show --name "cae-spiriverse-app-${{ env.ENV_NAME }}-${{ env.ENV_SUFFIX }}" --resource-group "${{ env.RESOURCE_GROUP }}" --query "properties.defaultDomain" -o tsv 2>/dev/null || echo "")
+              CA_FQDN="${{ env.CONTAINER_APP_NAME }}.${DEFAULT_DOMAIN}"
+            fi
+            SITE_ADDRESS="https://${CA_FQDN}"
+            GRAPHQL_PROXY="https://${CA_FQDN}/api/graphql"
+          fi
+
+          echo "SERVER_ENDPOINT=https://${FUNC_NAME}.azurewebsites.net/api" >> "$GITHUB_OUTPUT"
+          echo "SERVER_ENDPOINT_CODE=${FUNC_KEY}" >> "$GITHUB_OUTPUT"
+          echo "STRIPE_PK=${STRIPE_PK}" >> "$GITHUB_OUTPUT"
+          echo "GOOGLE_KEY=${GOOGLE_KEY}" >> "$GITHUB_OUTPUT"
+          echo "STORAGE_ACCOUNT=stspvapp${{ env.ENV_NAME }}${{ env.ENV_SUFFIX }}" >> "$GITHUB_OUTPUT"
+          echo "GRAPHQL_PROXY=${GRAPHQL_PROXY}" >> "$GITHUB_OUTPUT"
+          echo "SITE_ADDRESS=${SITE_ADDRESS}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to ACR
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Build Docker image
+        working-directory: saas-frontend
+        run: |
+          IMAGE_TAG="${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker build \
+            --build-arg NEXT_PUBLIC_server_endpoint="${{ steps.secrets.outputs.SERVER_ENDPOINT }}" \
+            --build-arg NEXT_PUBLIC_server_endpoint_code="${{ steps.secrets.outputs.SERVER_ENDPOINT_CODE }}" \
+            --build-arg NEXT_PUBLIC_stripe_token="${{ steps.secrets.outputs.STRIPE_PK }}" \
+            --build-arg NEXT_PUBLIC_GOOGLE_KEY="${{ steps.secrets.outputs.GOOGLE_KEY }}" \
+            --build-arg NEXT_PUBLIC_STORAGE_ACCOUNT="${{ steps.secrets.outputs.STORAGE_ACCOUNT }}" \
+            --build-arg NEXT_PUBLIC_graphql_proxy="${{ steps.secrets.outputs.GRAPHQL_PROXY }}" \
+            --build-arg NEXT_PUBLIC_site_address="${{ steps.secrets.outputs.SITE_ADDRESS }}" \
+            -t "$IMAGE_TAG" \
+            -t "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest" \
+            .
+
+      - name: Push to ACR
+        run: |
+          docker push "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker push "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest"
+
+      - name: Deploy to Container App
+        run: |
+          az containerapp update \
+            --name "${{ env.CONTAINER_APP_NAME }}" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}"

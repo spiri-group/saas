@@ -11,26 +11,36 @@ import { vault } from "../services/vault";
 const myCache = new NodeCache();
 
 /**
+ * Extracted core logic for tour reminders.
+ * Can be called from Azure Functions timer trigger or Container Job entry point.
+ */
+export async function runTourReminder(
+  cosmos: CosmosDataSource,
+  email: AzureEmailDataSource,
+  logger: LogManager
+): Promise<void> {
+  logger.logMessage('Tour reminder started at: ' + new Date().toISOString());
+
+  const now = DateTime.now();
+
+  await send24HourReminders(cosmos, email, now, logger);
+  await send2HourReminders(cosmos, email, now, logger);
+
+  logger.logMessage('Tour reminder completed successfully');
+}
+
+/**
  * Tour Reminder Email Scheduler
  *
  * Runs hourly to send reminder emails for upcoming tour sessions:
  *
  * 1. 24-hour reminder: Sent 24-48 hours before session start
  * 2. 2-hour reminder: Sent 2-4 hours before session start
- *
- * Flow:
- * - Query upcoming sessions in the reminder windows
- * - For each session, get all confirmed bookings
- * - Send reminder emails to customers who haven't been reminded yet
- * - Track reminderSent on the booking to avoid duplicates
  */
 export async function tourReminder(myTimer: Timer, context: InvocationContext): Promise<void> {
-  context.log('Tour reminder cron job started at:', new Date().toISOString());
-
+  const logger = new LogManager(context);
   try {
-    // Get host from environment variable for timer functions
     const host = process.env.WEBSITE_HOSTNAME || 'localhost:7071';
-    const logger = new LogManager(context);
     const keyVault = new vault(host, logger, myCache);
 
     const cosmos = new CosmosDataSource(logger, keyVault);
@@ -38,25 +48,11 @@ export async function tourReminder(myTimer: Timer, context: InvocationContext): 
 
     await cosmos.init(host);
     await email.init(host);
-
-    // Set dataSources reference for email service (needed for Cosmos template lookups)
     email.setDataSources({ cosmos });
 
-    const now = DateTime.now();
-
-    // ========================================
-    // Task 1: Send 24-hour reminders
-    // ========================================
-    await send24HourReminders(cosmos, email, now, context);
-
-    // ========================================
-    // Task 2: Send 2-hour reminders
-    // ========================================
-    await send2HourReminders(cosmos, email, now, context);
-
-    context.log('Tour reminder cron job completed successfully');
+    await runTourReminder(cosmos, email, logger);
   } catch (error) {
-    context.error('Tour reminder cron job failed:', error);
+    logger.error('Tour reminder cron job failed:', error);
     throw error;
   }
 }
@@ -68,9 +64,9 @@ async function send24HourReminders(
   cosmos: CosmosDataSource,
   email: AzureEmailDataSource,
   now: DateTime,
-  context: InvocationContext
+  logger: LogManager
 ): Promise<void> {
-  context.log('Checking for 24-hour reminders...');
+  logger.logMessage('Checking for 24-hour reminders...');
 
   // Find sessions starting between 24 and 48 hours from now
   const reminderWindowStart = now.plus({ hours: 24 });
@@ -81,10 +77,10 @@ async function send24HourReminders(
     cosmos,
     reminderWindowStart,
     reminderWindowEnd,
-    context
+    logger
   );
 
-  context.log(`Found ${upcomingSessions.length} sessions in 24-48 hour window`);
+  logger.logMessage(`Found ${upcomingSessions.length} sessions in 24-48 hour window`);
 
   for (const session of upcomingSessions) {
     await processSessionReminders(
@@ -93,7 +89,7 @@ async function send24HourReminders(
       session,
       '24H',
       'tour-reminder-24h',
-      context
+      logger
     );
   }
 }
@@ -105,9 +101,9 @@ async function send2HourReminders(
   cosmos: CosmosDataSource,
   email: AzureEmailDataSource,
   now: DateTime,
-  context: InvocationContext
+  logger: LogManager
 ): Promise<void> {
-  context.log('Checking for 2-hour reminders...');
+  logger.logMessage('Checking for 2-hour reminders...');
 
   // Find sessions starting between 2 and 4 hours from now
   const reminderWindowStart = now.plus({ hours: 2 });
@@ -118,10 +114,10 @@ async function send2HourReminders(
     cosmos,
     reminderWindowStart,
     reminderWindowEnd,
-    context
+    logger
   );
 
-  context.log(`Found ${upcomingSessions.length} sessions in 2-4 hour window`);
+  logger.logMessage(`Found ${upcomingSessions.length} sessions in 2-4 hour window`);
 
   for (const session of upcomingSessions) {
     await processSessionReminders(
@@ -130,7 +126,7 @@ async function send2HourReminders(
       session,
       '2H',
       'tour-reminder-2h',
-      context
+      logger
     );
   }
 }
@@ -142,7 +138,7 @@ async function queryUpcomingSessions(
   cosmos: CosmosDataSource,
   windowStart: DateTime,
   windowEnd: DateTime,
-  context: InvocationContext
+  logger: LogManager
 ): Promise<session_type[]> {
   // Query sessions by date range
   // Sessions have date (YYYY-MM-DD) and time.start (HH:mm) fields
@@ -178,7 +174,7 @@ async function processSessionReminders(
   session: session_type,
   reminderType: '24H' | '2H',
   templateId: string,
-  context: InvocationContext
+  logger: LogManager
 ): Promise<void> {
   try {
     // Get the tour for this session
@@ -189,9 +185,9 @@ async function processSessionReminders(
     );
 
     // Find all confirmed bookings for this session that haven't received this reminder type
-    const bookings = await getBookingsForSession(cosmos, session, reminderType, context);
+    const bookings = await getBookingsForSession(cosmos, session, reminderType, logger);
 
-    context.log(`Found ${bookings.length} bookings to remind for session ${session.id}`);
+    logger.logMessage(`Found ${bookings.length} bookings to remind for session ${session.id}`);
 
     for (const booking of bookings) {
       try {
@@ -236,14 +232,14 @@ async function processSessionReminders(
           "tour-reminder-cron"
         );
 
-        context.log(`Sent ${reminderType} reminder to ${booking.customerEmail} for booking ${booking.id}`);
+        logger.logMessage(`Sent ${reminderType} reminder to ${booking.customerEmail} for booking ${booking.id}`);
       } catch (bookingError) {
-        context.error(`Failed to send reminder for booking ${booking.id}:`, bookingError);
+        logger.error(`Failed to send reminder for booking ${booking.id}:`, bookingError);
         // Continue with next booking
       }
     }
   } catch (sessionError) {
-    context.error(`Failed to process session ${session.id}:`, sessionError);
+    logger.error(`Failed to process session ${session.id}:`, sessionError);
     // Continue with next session
   }
 }
@@ -258,7 +254,7 @@ async function getBookingsForSession(
   cosmos: CosmosDataSource,
   session: session_type,
   reminderType: '24H' | '2H',
-  context: InvocationContext
+  logger: LogManager
 ): Promise<booking_type[]> {
   // Query bookings that reference this session
   // Bookings have sessions[].ref pointing to session

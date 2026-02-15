@@ -1,0 +1,50 @@
+name: Cleanup PR Preview
+
+on:
+  pull_request:
+    types: [ closed ]
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  ACR_NAME: crspvdev002
+  RESOURCE_GROUP: rg-spiriverse-app-dev-002
+  IMAGE_NAME: spiriverse-frontend
+
+jobs:
+  cleanup:
+    name: Cleanup Preview
+    runs-on: ubuntu-latest
+    environment: DEV
+
+    steps:
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Delete preview Container App
+        run: |
+          PR_NUM=${{ github.event.pull_request.number }}
+          APP_NAME="ca-spiriverse-pr-${PR_NUM}"
+
+          echo "Deleting preview Container App: ${APP_NAME}"
+          az containerapp delete \
+            --name "$APP_NAME" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --yes || echo "Container App not found, skipping"
+
+      - name: Delete preview image from ACR
+        run: |
+          PR_NUM=${{ github.event.pull_request.number }}
+          TAG="pr-${PR_NUM}"
+
+          echo "Deleting image tag: ${{ env.IMAGE_NAME }}:${TAG}"
+          az acr repository delete \
+            --name "${{ env.ACR_NAME }}" \
+            --image "${{ env.IMAGE_NAME }}:${TAG}" \
+            --yes || echo "Image tag not found, skipping"
