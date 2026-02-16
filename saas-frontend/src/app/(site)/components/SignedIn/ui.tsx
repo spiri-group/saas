@@ -247,10 +247,10 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                 Close
                             </Button>
                             <Button type="button" variant="default" onClick={() => {
-                                if (typeof window !== "undefined" && window.location.pathname === `/u/${id}/setup`) {
+                                if (typeof window !== "undefined" && window.location.pathname === '/setup') {
                                     window.location.reload();
                                 } else {
-                                    router.push(`/u/${id}/setup`);
+                                    router.push('/setup');
                                 }
                             }}>
                                 Go to profile setup
