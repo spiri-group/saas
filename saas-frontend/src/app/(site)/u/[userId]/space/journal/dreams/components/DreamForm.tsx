@@ -173,7 +173,7 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
             type="date"
             value={formState.date}
             onChange={(e) => setFormState(prev => ({ ...prev, date: e.target.value }))}
-            className="bg-slate-800/50 border-slate-700 text-white"
+            dark
           />
         </div>
 
@@ -184,7 +184,7 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
             type="time"
             value={formState.wakeTime || ''}
             onChange={(e) => setFormState(prev => ({ ...prev, wakeTime: e.target.value }))}
-            className="bg-slate-800/50 border-slate-700 text-white"
+            dark
             placeholder="When did you wake up?"
           />
         </div>
@@ -199,7 +199,7 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
           id="title"
           value={formState.title}
           onChange={(e) => setFormState(prev => ({ ...prev, title: e.target.value }))}
-          className="bg-slate-800/50 border-slate-700 text-white"
+          dark
           placeholder="Give your dream a memorable title..."
         />
       </div>
@@ -213,7 +213,7 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
           id="content"
           value={formState.content}
           onChange={(e) => setFormState(prev => ({ ...prev, content: e.target.value }))}
-          className="bg-slate-800/50 border-slate-700 text-white min-h-[150px]"
+          dark className="min-h-[150px]"
           placeholder="Describe your dream in as much detail as you can remember..."
         />
       </div>
@@ -226,10 +226,10 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
             value={formState.dreamType || ''}
             onValueChange={(value) => setFormState(prev => ({ ...prev, dreamType: value as DreamType }))}
           >
-            <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
+            <SelectTrigger dark>
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent dark>
               {DREAM_TYPES.map((type) => (
                 <SelectItem key={type.key} value={type.key}>
                   {type.label}
@@ -245,10 +245,10 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
             value={formState.mood || ''}
             onValueChange={(value) => setFormState(prev => ({ ...prev, mood: value as DreamMood }))}
           >
-            <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
+            <SelectTrigger dark>
               <SelectValue placeholder="Select mood" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent dark>
               {DREAM_MOODS.map((mood) => (
                 <SelectItem key={mood.key} value={mood.key}>
                   {mood.emoji} {mood.label}
@@ -264,10 +264,10 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
             value={formState.clarity || ''}
             onValueChange={(value) => setFormState(prev => ({ ...prev, clarity: value as DreamClarity }))}
           >
-            <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
+            <SelectTrigger dark>
               <SelectValue placeholder="How clear?" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent dark>
               {DREAM_CLARITY.map((clarity) => (
                 <SelectItem key={clarity.key} value={clarity.key}>
                   {clarity.label}
@@ -295,10 +295,10 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
             value={formState.sleepQuality?.toString() || ''}
             onValueChange={(value) => setFormState(prev => ({ ...prev, sleepQuality: parseInt(value) }))}
           >
-            <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
+            <SelectTrigger dark>
               <SelectValue placeholder="Rate quality" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent dark>
               <SelectItem value="1">1 - Poor</SelectItem>
               <SelectItem value="2">2 - Fair</SelectItem>
               <SelectItem value="3">3 - Good</SelectItem>
@@ -339,7 +339,7 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
                 addTheme(newTheme);
               }
             }}
-            className="bg-slate-800/50 border-slate-700 text-white"
+            dark
             placeholder="Add a theme..."
           />
           <Button
@@ -400,7 +400,7 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
                 addSymbol(newSymbol);
               }
             }}
-            className="bg-slate-800/50 border-slate-700 text-white"
+            dark
             placeholder="Add a symbol (e.g., snake, key, mirror)..."
           />
           <Button
@@ -438,7 +438,7 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
           id="interpretation"
           value={formState.interpretation || ''}
           onChange={(e) => setFormState(prev => ({ ...prev, interpretation: e.target.value }))}
-          className="bg-slate-800/50 border-slate-700 text-white min-h-[100px]"
+          dark className="min-h-[100px]"
           placeholder="What do you think this dream means? Any messages or insights?"
         />
       </div>

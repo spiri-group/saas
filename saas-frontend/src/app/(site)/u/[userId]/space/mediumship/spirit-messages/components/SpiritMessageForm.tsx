@@ -148,7 +148,7 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="date"
             type="date"
             {...register('date', { required: true })}
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
 
@@ -158,10 +158,10 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
             value={watch('source')}
             onValueChange={(value) => setValue('source', value as SpiritSource)}
           >
-            <SelectTrigger className="bg-slate-800 border-slate-700">
+            <SelectTrigger dark>
               <SelectValue placeholder="Select source" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
+            <SelectContent dark>
               {SPIRIT_SOURCES.map((s) => (
                 <SelectItem key={s.value} value={s.value}>
                   {s.label}
@@ -180,7 +180,7 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
               id="sourceName"
               {...register('sourceName')}
               placeholder="Who sent the message?"
-              className="bg-slate-800 border-slate-700"
+              dark
             />
           </div>
           <div className="space-y-2">
@@ -189,7 +189,7 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
               id="sourceDescription"
               {...register('sourceDescription')}
               placeholder="Any identifying details?"
-              className="bg-slate-800 border-slate-700"
+              dark
             />
           </div>
         </div>
@@ -201,10 +201,10 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
           value={watch('receptionMethod')}
           onValueChange={(value) => setValue('receptionMethod', value as ReceptionMethod)}
         >
-          <SelectTrigger className="bg-slate-800 border-slate-700">
+          <SelectTrigger dark>
             <SelectValue placeholder="Select method" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-800 border-slate-700">
+          <SelectContent dark>
             {RECEPTION_METHODS.map((m) => (
               <SelectItem key={m.value} value={m.value}>
                 <div>
@@ -223,7 +223,7 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="receptionContext"
           {...register('receptionContext')}
           placeholder="What were you doing when you received this?"
-          className="bg-slate-800 border-slate-700"
+          dark
         />
       </div>
 
@@ -233,7 +233,7 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="messageContent"
           {...register('messageContent', { required: true })}
           placeholder="What message did you receive? Include all details..."
-          className="bg-slate-800 border-slate-700 min-h-[120px]"
+          dark className="min-h-[120px]"
           data-testid="message-content"
         />
       </div>
@@ -264,7 +264,7 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="evidentialDetails"
           {...register('evidentialDetails')}
           placeholder="Any specific names, dates, facts that could be verified?"
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark className="min-h-[60px]"
         />
       </div>
 
@@ -274,7 +274,7 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="interpretation"
           {...register('interpretation')}
           placeholder="What do you think this message means?"
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark className="min-h-[60px]"
         />
       </div>
 
@@ -286,7 +286,7 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
             value={newEmotionDuring}
             onChange={(e) => setNewEmotionDuring(e.target.value)}
             placeholder="How did you feel?"
-            className="bg-slate-800 border-slate-700"
+            dark
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addEmotionDuring())}
           />
           <Button type="button" variant="outline" size="icon" onClick={addEmotionDuring}>
@@ -319,7 +319,7 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
             value={newEmotionAfter}
             onChange={(e) => setNewEmotionAfter(e.target.value)}
             placeholder="How do you feel now?"
-            className="bg-slate-800 border-slate-700"
+            dark
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addEmotionAfter())}
           />
           <Button type="button" variant="outline" size="icon" onClick={addEmotionAfter}>
@@ -364,7 +364,7 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
                 id="validationNotes"
                 {...register('validationNotes')}
                 placeholder="How was this message validated?"
-                className="bg-slate-800 border-slate-700 min-h-[60px]"
+                dark className="min-h-[60px]"
               />
             </div>
           )}
@@ -375,7 +375,7 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
               id="actionTaken"
               {...register('actionTaken')}
               placeholder="What did you do in response to this message?"
-              className="bg-slate-800 border-slate-700 min-h-[60px]"
+              dark className="min-h-[60px]"
             />
           </div>
 
@@ -385,7 +385,7 @@ export const SpiritMessageForm: React.FC<Props> = ({ userId, existingEntry, onSu
               id="outcome"
               {...register('outcome')}
               placeholder="What was the result?"
-              className="bg-slate-800 border-slate-700 min-h-[60px]"
+              dark className="min-h-[60px]"
             />
           </div>
         </>

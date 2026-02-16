@@ -57,12 +57,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <div
           className={cn(
             "flex h-10 min-w-[96px] rounded-md flex-row items-center text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
-            withButtons 
+            withButtons
               ? cn(
                   "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                  glass
-                    ? "border border-white/20 bg-white/70 backdrop-blur-sm text-black placeholder:text-black/60 shadow-inner"
-                    : "border border-input bg-white text-black"
+                  dark
+                    ? "border border-slate-700 bg-slate-800 text-white placeholder:text-slate-400"
+                    : glass
+                      ? "border border-white/20 bg-white/70 backdrop-blur-sm text-black placeholder:text-black/60 shadow-inner"
+                      : "border border-input bg-white text-black"
                 )
               : "bg-transparent border-none",
             className
@@ -79,9 +81,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               withButtons 
                 ? "max-w-[120px] text-right rounded-l-md" 
                 : "text-left rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              glass
-                ? "bg-white/70 backdrop-blur-sm border-white/20 text-black placeholder:text-black/60"
-                : "bg-white border border-input text-black"
+              dark
+                ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-400"
+                : glass
+                  ? "bg-white/70 backdrop-blur-sm border-white/20 text-black placeholder:text-black/60"
+                  : "bg-white border border-input text-black"
             )}
             ref={ref}
             {...props}

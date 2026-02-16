@@ -160,7 +160,7 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
             id="date"
             type="date"
             {...register('date', { required: true })}
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
 
@@ -170,7 +170,7 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
             id="readerName"
             {...register('readerName', { required: true })}
             placeholder="Who gave the reading?"
-            className="bg-slate-800 border-slate-700"
+            dark
             data-testid="reader-name"
           />
         </div>
@@ -183,10 +183,10 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
             value={watch('readingType')}
             onValueChange={(value) => setValue('readingType', value)}
           >
-            <SelectTrigger className="bg-slate-800 border-slate-700">
+            <SelectTrigger dark>
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
+            <SelectContent dark>
               {READING_TYPES.map((type) => (
                 <SelectItem key={type} value={type}>
                   {type}
@@ -202,10 +202,10 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
             value={watch('format')}
             onValueChange={(value) => setValue('format', value)}
           >
-            <SelectTrigger className="bg-slate-800 border-slate-700">
+            <SelectTrigger dark>
               <SelectValue placeholder="Select format" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
+            <SelectContent dark>
               {FORMATS.map((format) => (
                 <SelectItem key={format} value={format}>
                   {format}
@@ -221,7 +221,7 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
             id="duration"
             type="number"
             {...register('duration', { valueAsNumber: true })}
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
       </div>
@@ -232,7 +232,7 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
           id="mainMessages"
           {...register('mainMessages')}
           placeholder="What were the key messages or themes?"
-          className="bg-slate-800 border-slate-700 min-h-[80px]"
+          dark className="min-h-[80px]"
         />
       </div>
 
@@ -242,7 +242,7 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
           id="evidentialInfo"
           {...register('evidentialInfo')}
           placeholder="Any specific details that could be verified (names, dates, facts)?"
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark className="min-h-[60px]"
         />
       </div>
 
@@ -253,7 +253,7 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
             id="predictions"
             {...register('predictions')}
             placeholder="Any predictions about the future?"
-            className="bg-slate-800 border-slate-700 min-h-[60px]"
+            dark className="min-h-[60px]"
           />
         </div>
 
@@ -263,7 +263,7 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
             id="guidance"
             {...register('guidance')}
             placeholder="Any advice or guidance given?"
-            className="bg-slate-800 border-slate-700 min-h-[60px]"
+            dark className="min-h-[60px]"
           />
         </div>
       </div>
@@ -276,7 +276,7 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
             value={newResonated}
             onChange={(e) => setNewResonated(e.target.value)}
             placeholder="Something that felt true..."
-            className="bg-slate-800 border-slate-700"
+            dark
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addResonated())}
           />
           <Button type="button" variant="outline" size="icon" onClick={addResonated}>
@@ -309,7 +309,7 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
             value={newDidntResonate}
             onChange={(e) => setNewDidntResonate(e.target.value)}
             placeholder="Something that didn&apos;t feel right..."
-            className="bg-slate-800 border-slate-700"
+            dark
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDidntResonate())}
           />
           <Button type="button" variant="outline" size="icon" onClick={addDidntResonate}>
@@ -375,7 +375,7 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
           id="emotionalImpact"
           {...register('emotionalImpact')}
           placeholder="How did the reading make you feel?"
-          className="bg-slate-800 border-slate-700"
+          dark
         />
       </div>
 
@@ -385,7 +385,7 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
           id="actionsTaken"
           {...register('actionsTaken')}
           placeholder="What did you do as a result of this reading?"
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark className="min-h-[60px]"
         />
       </div>
 
@@ -396,7 +396,7 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
             id="validatedLater"
             {...register('validatedLater')}
             placeholder="Did any predictions come true? Was anything confirmed later?"
-            className="bg-slate-800 border-slate-700 min-h-[60px]"
+            dark className="min-h-[60px]"
           />
         </div>
       )}
@@ -407,7 +407,7 @@ export const ReflectionForm: React.FC<Props> = ({ userId, existingReflection, pr
           id="notes"
           {...register('notes')}
           placeholder="Any other thoughts..."
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark className="min-h-[60px]"
         />
       </div>
 

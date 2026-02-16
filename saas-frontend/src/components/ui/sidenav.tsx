@@ -506,6 +506,17 @@ const RootControllerNode: React.FC<{
                         <DialogTitle>{activePath}</DialogTitle>
                     </VisuallyHidden>
                     {showDialog != null && renderDialog(showDialog, () => setShowDialog(null))}
+                    <div className="flex justify-end pt-3 mt-2 border-t border-slate-700/50">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setShowDialog(null)}
+                            className="text-slate-400 hover:text-white"
+                            data-testid="dialog-cancel-btn"
+                        >
+                            Cancel
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
         </>
