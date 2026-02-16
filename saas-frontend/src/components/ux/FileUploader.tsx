@@ -433,7 +433,7 @@ const FileUploader : React.FC<FileUploaderParams> = ({includePreview= true, ...p
             <input className="hidden"
                 accept={buildAcceptString()}
                 type="file" id={`input-file-upload-${props.id}`} multiple={true}
-                onInput={async (event: React.ChangeEvent<HTMLInputElement>) => {
+                onChange={async (event: React.ChangeEvent<HTMLInputElement>) => {
                     event.preventDefault();
                     event.stopPropagation();
                     if (event.target.files != null) {

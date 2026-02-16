@@ -1,4 +1,4 @@
-// middleware.ts
+// proxy.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 const isProd = process.env.NODE_ENV === "production";
@@ -15,7 +15,7 @@ async function decodeWithCandidates(req: NextRequest, bases: string[], secret: s
   return null;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const url = request.nextUrl;
   const path = url.pathname;
 
