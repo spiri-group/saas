@@ -499,7 +499,7 @@ const RootControllerNode: React.FC<{
                 open={showDialog != null}
                 onOpenChange={() => setShowDialog(null)}>
                 <DialogContent
-                    className="sm:max-w-xl max-h-[90vh] overflow-y-auto"
+                    className="sm:max-w-xl max-h-[90vh] overflow-y-auto backdrop-blur-none"
                     onPointerDownOutside={(e) => e.preventDefault()}
                     onEscapeKeyDown={(e) => e.preventDefault()}>
                     <VisuallyHidden>
