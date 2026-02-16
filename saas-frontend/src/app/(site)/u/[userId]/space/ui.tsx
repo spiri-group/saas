@@ -59,9 +59,14 @@ const UI: React.FC<Props> = ({ userId }) => {
         <SpiriReadingsBanner userId={userId} />
       )}
 
-      {/* Two-column layout: Dashboard (main) + Feed (sidebar) */}
+      {/* Two-column layout: Feed (left) + Dashboard (right) */}
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Main column - Dashboard content */}
+        {/* Left column - Social feed */}
+        <div className="w-full lg:w-96 lg:flex-shrink-0">
+          <PractitionerFeed />
+        </div>
+
+        {/* Right column - Dashboard content */}
         <div className="flex-1 min-w-0 space-y-6">
           {/* Quick Actions */}
           <QuickActions userId={userId} primaryInterest={primaryInterest} />
@@ -82,11 +87,6 @@ const UI: React.FC<Props> = ({ userId }) => {
 
           {/* Upcoming Dates - Only shows if there are dates */}
           <UpcomingDates stats={stats} isLoading={statsLoading} />
-        </div>
-
-        {/* Side column - Social feed */}
-        <div className="w-full lg:w-96 lg:flex-shrink-0">
-          <PractitionerFeed />
         </div>
       </div>
     </div>
