@@ -128,7 +128,7 @@ export default function PractitionerFeed() {
                 <Users className="w-4 h-4 text-purple-400" />
                 <h3 className="text-sm font-medium text-slate-400">Suggested for you</h3>
               </div>
-              <RecommendedVendors vendors={recommendedVendors} layout="horizontal" />
+              <RecommendedVendors vendors={recommendedVendors} layout="grid" />
             </div>
           )}
 
