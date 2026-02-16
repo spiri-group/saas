@@ -3,9 +3,9 @@ import { isNullOrWhitespace } from '@/lib/functions';
 import { Session } from 'next-auth';
 
 const gql_uri =
-    process.env.server_endpoint != undefined &&
-    !process.env.server_endpoint.includes('localhost')
-        ? `${process.env.server_endpoint}/graphql?code=${process.env.server_endpoint_code}`
+    process.env.NEXT_PUBLIC_server_endpoint != undefined &&
+    !process.env.NEXT_PUBLIC_server_endpoint.includes('localhost')
+        ? `${process.env.NEXT_PUBLIC_server_endpoint}/graphql?code=${process.env.NEXT_PUBLIC_server_endpoint_code}`
         : "http://127.0.0.1:7071/api/graphql"
 
 export async function POST(request: Request) {
