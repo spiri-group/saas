@@ -49,6 +49,7 @@ const initializeDBAdapter = () => {
 
     return TableStorageAdapter(authClient);
 };
+
 const dbAdapter = initializeDBAdapter();
 
 export const authOptions: NextAuthConfig = {

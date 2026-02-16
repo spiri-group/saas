@@ -1,4 +1,4 @@
-'use server';
+import "server-only";
 
 import { DefaultAzureCredential } from "@azure/identity";
 import qs from "qs";

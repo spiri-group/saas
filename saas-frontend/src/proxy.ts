@@ -1,8 +1,6 @@
-// middleware.ts
+// proxy.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import azure_environment from "./lib/services/azure_environment";
-
 const isProd = process.env.NODE_ENV === "production";
 const CONSOLE_COOKIE_BASE = isProd ? "__Secure-console.session-token" : "console.session-token";
 const AUTHJS_DEFAULT_SECURE_BASE = "__Secure-authjs.session-token";
@@ -17,17 +15,13 @@ async function decodeWithCandidates(req: NextRequest, bases: string[], secret: s
   return null;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const url = request.nextUrl;
   const path = url.pathname;
 
   const newHeaders = new Headers(request.headers);
   const auth = request.cookies.get("Authorization");
   if (auth) newHeaders.set("Authorization", auth.value);
-
-  const azure_env = azure_environment();
-  const environment = azure_env?.env_name ?? "production";
-  const isDev = environment === "dev" || process.env.NODE_ENV === "development";
 
   if (path.startsWith("/console")) {
     const token = await decodeWithCandidates(
@@ -44,14 +38,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request: { headers: newHeaders } });
   }
 
-  const isComingSoon = path.startsWith("/coming-soon");
-  const isBlog = path.startsWith("/blog");
-  const isLearnMore = path.startsWith("/learn-more");
-  const isSeoFile = path === "/sitemap.xml" || path === "/robots.txt";
-  if (isDev || isComingSoon || isBlog || isLearnMore || isSeoFile) {
-    return NextResponse.next({ request: { headers: newHeaders } });
-  }
-  return NextResponse.redirect(new URL("/coming-soon", request.url));
+  return NextResponse.next({ request: { headers: newHeaders } });
 }
 
 export const config = {

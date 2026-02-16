@@ -27,6 +27,132 @@ function getTierAmount(
 }
 
 /**
+ * Extracted core logic for billing processing.
+ * Can be called from Azure Functions timer trigger or Container Job entry point.
+ */
+export async function runBillingProcessor(
+    cosmos: CosmosDataSource,
+    stripe: StripeDataSource,
+    email: AzureEmailDataSource,
+    logger: LogManager
+): Promise<void> {
+    logger.logMessage('Billing processor started at: ' + new Date().toISOString());
+
+    const now = DateTime.now();
+    const nowISO = now.toISO();
+
+    // Load fee config
+    let feeConfig: Record<string, FeeConfigEntry> | null = null;
+    try {
+        const feeResults = await cosmos.run_query<any>("System-Settings", {
+            query: `SELECT * FROM c WHERE c.id = @id AND c.docType = @docType`,
+            parameters: [
+                { name: "@id", value: "spiriverse" },
+                { name: "@docType", value: "fees-config" },
+            ]
+        });
+        if (feeResults.length > 0) {
+            feeConfig = feeResults[0];
+            logger.logMessage("Loaded fee config");
+        }
+    } catch (error) {
+        logger.logMessage("Failed to load fee config");
+    }
+
+    // Pass 1: First-billing trigger
+    logger.logMessage('Pass 1: Querying for first-billing triggers...');
+    const firstBillingVendors = await cosmos.run_query<vendor_type>("Main-Vendor", {
+        query: `
+            SELECT * FROM c
+            WHERE c.subscription.billingStatus = "pendingFirstBilling"
+            AND c.subscription.cumulativePayouts >= c.subscription.subscriptionCostThreshold
+            AND IS_DEFINED(c.subscription.stripePaymentMethodId)
+            AND c.subscription.stripePaymentMethodId != null
+        `,
+        parameters: []
+    }, true);
+    logger.logMessage(`Pass 1: Found ${firstBillingVendors.length} vendors ready for first billing`);
+    for (const vendor of firstBillingVendors) {
+        try {
+            await processFirstBilling(vendor, cosmos, stripe, email, logger, feeConfig, now);
+        } catch (error) {
+            logger.error(`Pass 1: Failed for vendor ${vendor.id}:`, error);
+        }
+    }
+
+    // Pass 2: Due renewals
+    logger.logMessage('Pass 2: Querying for due renewals...');
+    const threeDaysFromNow = now.plus({ days: 3 }).toISO();
+    const dueRenewals = await cosmos.run_query<vendor_type>("Main-Vendor", {
+        query: `
+            SELECT * FROM c
+            WHERE c.subscription.billingStatus = "active"
+            AND c.subscription.subscriptionExpiresAt <= @cutoff
+            AND c.subscription.failedPaymentAttempts = 0
+            AND IS_DEFINED(c.subscription.stripePaymentMethodId)
+        `,
+        parameters: [
+            { name: "@cutoff", value: threeDaysFromNow }
+        ]
+    }, true);
+    logger.logMessage(`Pass 2: Found ${dueRenewals.length} vendors with due renewals`);
+    for (const vendor of dueRenewals) {
+        try {
+            await processRenewal(vendor, cosmos, stripe, email, logger, feeConfig, now);
+        } catch (error) {
+            logger.error(`Pass 2: Failed for vendor ${vendor.id}:`, error);
+        }
+    }
+
+    // Pass 3: Retries
+    logger.logMessage('Pass 3: Querying for payment retries...');
+    const retryVendors = await cosmos.run_query<vendor_type>("Main-Vendor", {
+        query: `
+            SELECT * FROM c
+            WHERE c.subscription.failedPaymentAttempts > 0
+            AND c.subscription.failedPaymentAttempts < 3
+            AND c.subscription.nextRetryAt <= @now
+            AND IS_DEFINED(c.subscription.stripePaymentMethodId)
+        `,
+        parameters: [
+            { name: "@now", value: nowISO }
+        ]
+    }, true);
+    logger.logMessage(`Pass 3: Found ${retryVendors.length} vendors with pending retries`);
+    for (const vendor of retryVendors) {
+        try {
+            await processRetry(vendor, cosmos, stripe, email, logger, feeConfig, now);
+        } catch (error) {
+            logger.error(`Pass 3: Failed for vendor ${vendor.id}:`, error);
+        }
+    }
+
+    // Pass 4: Pending downgrades
+    logger.logMessage('Pass 4: Querying for pending downgrades...');
+    const pendingDowngrades = await cosmos.run_query<vendor_type>("Main-Vendor", {
+        query: `
+            SELECT * FROM c
+            WHERE IS_DEFINED(c.subscription.pendingDowngradeTo)
+            AND c.subscription.pendingDowngradeTo != null
+            AND c.subscription.downgradeEffectiveAt <= @now
+        `,
+        parameters: [
+            { name: "@now", value: nowISO }
+        ]
+    }, true);
+    logger.logMessage(`Pass 4: Found ${pendingDowngrades.length} vendors with pending downgrades`);
+    for (const vendor of pendingDowngrades) {
+        try {
+            await applyDowngrade(vendor, cosmos, email, logger, feeConfig);
+        } catch (error) {
+            logger.error(`Pass 4: Failed for vendor ${vendor.id}:`, error);
+        }
+    }
+
+    logger.logMessage('Billing processor completed at: ' + new Date().toISOString());
+}
+
+/**
  * Tier-Based Billing Processor
  *
  * Runs twice daily (7am UTC & 3pm UTC) with four passes:
@@ -36,11 +162,9 @@ function getTierAmount(
  * 4. Pending downgrades: apply tier changes whose effective date has passed
  */
 export async function billingProcessor(myTimer: Timer, context: InvocationContext): Promise<void> {
-    context.log('Billing processor started at:', new Date().toISOString());
-
+    const logger = new LogManager(context);
     try {
         const host = process.env.WEBSITE_HOSTNAME || 'localhost:7071';
-        const logger = new LogManager(context);
         const keyVault = new vault(host, logger, myCache);
 
         const cosmos = new CosmosDataSource(logger, keyVault);
@@ -52,146 +176,9 @@ export async function billingProcessor(myTimer: Timer, context: InvocationContex
         await email.init(host);
         email.setDataSources({ cosmos });
 
-        const now = DateTime.now();
-        const nowISO = now.toISO();
-        const todayISO = now.toISODate();
-
-        // Load fee config
-        let feeConfig: Record<string, FeeConfigEntry> | null = null;
-        try {
-            const feeResults = await cosmos.run_query<any>("System-Settings", {
-                query: `SELECT * FROM c WHERE c.id = @id AND c.docType = @docType`,
-                parameters: [
-                    { name: "@id", value: "spiriverse" },
-                    { name: "@docType", value: "fees-config" },
-                ]
-            });
-            if (feeResults.length > 0) {
-                feeConfig = feeResults[0];
-                context.log("Loaded fee config");
-            }
-        } catch (error) {
-            context.log("Failed to load fee config");
-        }
-
-        // ========================================
-        // Pass 1: First-billing trigger
-        // Vendors in pendingFirstBilling whose cumulative payouts >= threshold and have a payment method
-        // ========================================
-        context.log('Pass 1: Querying for first-billing triggers...');
-
-        const firstBillingVendors = await cosmos.run_query<vendor_type>("Main-Vendor", {
-            query: `
-                SELECT * FROM c
-                WHERE c.subscription.billingStatus = "pendingFirstBilling"
-                AND c.subscription.cumulativePayouts >= c.subscription.subscriptionCostThreshold
-                AND IS_DEFINED(c.subscription.stripePaymentMethodId)
-                AND c.subscription.stripePaymentMethodId != null
-            `,
-            parameters: []
-        }, true);
-
-        context.log(`Pass 1: Found ${firstBillingVendors.length} vendors ready for first billing`);
-
-        for (const vendor of firstBillingVendors) {
-            try {
-                await processFirstBilling(vendor, cosmos, stripe, email, context, feeConfig, now);
-            } catch (error) {
-                context.error(`Pass 1: Failed for vendor ${vendor.id}:`, error);
-            }
-        }
-
-        // ========================================
-        // Pass 2: Due renewals
-        // Active subscriptions whose subscriptionExpiresAt is within 3 days
-        // ========================================
-        context.log('Pass 2: Querying for due renewals...');
-
-        const threeDaysFromNow = now.plus({ days: 3 }).toISO();
-
-        const dueRenewals = await cosmos.run_query<vendor_type>("Main-Vendor", {
-            query: `
-                SELECT * FROM c
-                WHERE c.subscription.billingStatus = "active"
-                AND c.subscription.subscriptionExpiresAt <= @cutoff
-                AND c.subscription.failedPaymentAttempts = 0
-                AND IS_DEFINED(c.subscription.stripePaymentMethodId)
-            `,
-            parameters: [
-                { name: "@cutoff", value: threeDaysFromNow }
-            ]
-        }, true);
-
-        context.log(`Pass 2: Found ${dueRenewals.length} vendors with due renewals`);
-
-        for (const vendor of dueRenewals) {
-            try {
-                await processRenewal(vendor, cosmos, stripe, email, context, feeConfig, now);
-            } catch (error) {
-                context.error(`Pass 2: Failed for vendor ${vendor.id}:`, error);
-            }
-        }
-
-        // ========================================
-        // Pass 3: Retries
-        // Failed payments with nextRetryAt <= now and failedPaymentAttempts < 3
-        // ========================================
-        context.log('Pass 3: Querying for payment retries...');
-
-        const retryVendors = await cosmos.run_query<vendor_type>("Main-Vendor", {
-            query: `
-                SELECT * FROM c
-                WHERE c.subscription.failedPaymentAttempts > 0
-                AND c.subscription.failedPaymentAttempts < 3
-                AND c.subscription.nextRetryAt <= @now
-                AND IS_DEFINED(c.subscription.stripePaymentMethodId)
-            `,
-            parameters: [
-                { name: "@now", value: nowISO }
-            ]
-        }, true);
-
-        context.log(`Pass 3: Found ${retryVendors.length} vendors with pending retries`);
-
-        for (const vendor of retryVendors) {
-            try {
-                await processRetry(vendor, cosmos, stripe, email, context, feeConfig, now);
-            } catch (error) {
-                context.error(`Pass 3: Failed for vendor ${vendor.id}:`, error);
-            }
-        }
-
-        // ========================================
-        // Pass 4: Pending downgrades
-        // Vendors with a pending downgrade whose effective date has passed
-        // ========================================
-        context.log('Pass 4: Querying for pending downgrades...');
-
-        const pendingDowngrades = await cosmos.run_query<vendor_type>("Main-Vendor", {
-            query: `
-                SELECT * FROM c
-                WHERE IS_DEFINED(c.subscription.pendingDowngradeTo)
-                AND c.subscription.pendingDowngradeTo != null
-                AND c.subscription.downgradeEffectiveAt <= @now
-            `,
-            parameters: [
-                { name: "@now", value: nowISO }
-            ]
-        }, true);
-
-        context.log(`Pass 4: Found ${pendingDowngrades.length} vendors with pending downgrades`);
-
-        for (const vendor of pendingDowngrades) {
-            try {
-                await applyDowngrade(vendor, cosmos, email, context, feeConfig);
-            } catch (error) {
-                context.error(`Pass 4: Failed for vendor ${vendor.id}:`, error);
-            }
-        }
-
-        context.log('Billing processor completed at:', new Date().toISOString());
+        await runBillingProcessor(cosmos, stripe, email, logger);
     } catch (error) {
-        context.error('Billing processor failed:', error);
+        logger.error('Billing processor failed:', error);
         throw error;
     }
 }
@@ -203,7 +190,7 @@ async function processFirstBilling(
     cosmos: CosmosDataSource,
     stripe: StripeDataSource,
     email: AzureEmailDataSource,
-    context: InvocationContext,
+    logger: LogManager,
     feeConfig: Record<string, FeeConfigEntry> | null,
     now: DateTime
 ): Promise<void> {
@@ -221,7 +208,7 @@ async function processFirstBilling(
                 { op: "remove", path: "/subscription/waivedUntil" },
             ], "BILLING_PROCESSOR");
         } else {
-            context.log(`Vendor ${vendor.id} is waived - activating without charge`);
+            logger.logMessage(`Vendor ${vendor.id} is waived - activating without charge`);
             const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
             await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
                 { op: "set", path: "/subscription/billingStatus", value: "active" as billing_status },
@@ -250,7 +237,7 @@ async function processFirstBilling(
 
     // Safety: don't charge if last attempt was < 1 hour ago
     if (sub.lastPaymentAttemptAt && now.diff(DateTime.fromISO(sub.lastPaymentAttemptAt), "hours").hours < 1) {
-        context.log(`Vendor ${vendor.id} last attempt too recent - skipping`);
+        logger.logMessage(`Vendor ${vendor.id} last attempt too recent - skipping`);
         return;
     }
 
@@ -258,7 +245,7 @@ async function processFirstBilling(
     const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
     const idempotencyKey = `first_billing_${vendor.id}_${periodStart}`;
 
-    context.log(`First billing for vendor ${vendor.id}: ${amount} AUD`);
+    logger.logMessage(`First billing for vendor ${vendor.id}: ${amount} AUD`);
 
     const paymentResult = await stripe.callApi("POST", "payment_intents", {
         amount,
@@ -285,7 +272,7 @@ async function processFirstBilling(
     };
 
     if (paymentResult.status === 200 && paymentResult.data?.status === "succeeded") {
-        context.log(`First billing succeeded for vendor ${vendor.id}`);
+        logger.logMessage(`First billing succeeded for vendor ${vendor.id}`);
 
         const successRecord = {
             ...billingRecord,
@@ -311,9 +298,9 @@ async function processFirstBilling(
         await sendBillingEmail(email, vendor, "subscription-payment-succeeded", {
             "payment.amount": formatCurrency(amount),
             "payment.nextBillingDate": periodEnd.toFormat("dd MMMM yyyy"),
-        }, context);
+        }, logger);
     } else {
-        await handlePaymentFailure(vendor, sub, cosmos, stripe, email, context, now, billingRecord, paymentResult);
+        await handlePaymentFailure(vendor, sub, cosmos, stripe, email, logger, now, billingRecord, paymentResult);
     }
 }
 
@@ -324,7 +311,7 @@ async function processRenewal(
     cosmos: CosmosDataSource,
     stripe: StripeDataSource,
     email: AzureEmailDataSource,
-    context: InvocationContext,
+    logger: LogManager,
     feeConfig: Record<string, FeeConfigEntry> | null,
     now: DateTime
 ): Promise<void> {
@@ -343,7 +330,7 @@ async function processRenewal(
             ], "BILLING_PROCESSOR");
         } else {
             const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
-            context.log(`Vendor ${vendor.id} is waived - extending period to ${periodEnd.toISO()}`);
+            logger.logMessage(`Vendor ${vendor.id} is waived - extending period to ${periodEnd.toISO()}`);
             await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
                 { op: "set", path: "/subscription/subscriptionExpiresAt", value: periodEnd.toISO() },
                 { op: "set", path: "/subscription/lastBilledAt", value: now.toISO() },
@@ -368,7 +355,7 @@ async function processRenewal(
     }
 
     if (sub.lastPaymentAttemptAt && now.diff(DateTime.fromISO(sub.lastPaymentAttemptAt), "hours").hours < 1) {
-        context.log(`Vendor ${vendor.id} last attempt too recent - skipping`);
+        logger.logMessage(`Vendor ${vendor.id} last attempt too recent - skipping`);
         return;
     }
 
@@ -376,7 +363,7 @@ async function processRenewal(
     const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
     const idempotencyKey = `renewal_${vendor.id}_${periodStart}`;
 
-    context.log(`Renewal for vendor ${vendor.id}: ${amount} AUD`);
+    logger.logMessage(`Renewal for vendor ${vendor.id}: ${amount} AUD`);
 
     const paymentResult = await stripe.callApi("POST", "payment_intents", {
         amount,
@@ -403,7 +390,7 @@ async function processRenewal(
     };
 
     if (paymentResult.status === 200 && paymentResult.data?.status === "succeeded") {
-        context.log(`Renewal succeeded for vendor ${vendor.id}`);
+        logger.logMessage(`Renewal succeeded for vendor ${vendor.id}`);
 
         const successRecord = {
             ...billingRecord,
@@ -427,9 +414,9 @@ async function processRenewal(
         await sendBillingEmail(email, vendor, "subscription-payment-succeeded", {
             "payment.amount": formatCurrency(amount),
             "payment.nextBillingDate": periodEnd.toFormat("dd MMMM yyyy"),
-        }, context);
+        }, logger);
     } else {
-        await handlePaymentFailure(vendor, sub, cosmos, stripe, email, context, now, billingRecord, paymentResult);
+        await handlePaymentFailure(vendor, sub, cosmos, stripe, email, logger, now, billingRecord, paymentResult);
     }
 }
 
@@ -440,7 +427,7 @@ async function processRetry(
     cosmos: CosmosDataSource,
     stripe: StripeDataSource,
     email: AzureEmailDataSource,
-    context: InvocationContext,
+    logger: LogManager,
     feeConfig: Record<string, FeeConfigEntry> | null,
     now: DateTime
 ): Promise<void> {
@@ -457,7 +444,7 @@ async function processRetry(
     if (amount <= 0) return;
 
     if (sub.lastPaymentAttemptAt && now.diff(DateTime.fromISO(sub.lastPaymentAttemptAt), "hours").hours < 1) {
-        context.log(`Vendor ${vendor.id} last attempt too recent - skipping retry`);
+        logger.logMessage(`Vendor ${vendor.id} last attempt too recent - skipping retry`);
         return;
     }
 
@@ -465,7 +452,7 @@ async function processRetry(
     const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
     const idempotencyKey = `retry_${vendor.id}_${periodStart}_${now.toMillis()}`;
 
-    context.log(`Retry (attempt ${(sub.failedPaymentAttempts || 0) + 1}) for vendor ${vendor.id}: ${amount} AUD`);
+    logger.logMessage(`Retry (attempt ${(sub.failedPaymentAttempts || 0) + 1}) for vendor ${vendor.id}: ${amount} AUD`);
 
     const paymentResult = await stripe.callApi("POST", "payment_intents", {
         amount,
@@ -492,7 +479,7 @@ async function processRetry(
     };
 
     if (paymentResult.status === 200 && paymentResult.data?.status === "succeeded") {
-        context.log(`Retry succeeded for vendor ${vendor.id}`);
+        logger.logMessage(`Retry succeeded for vendor ${vendor.id}`);
 
         const successRecord = {
             ...billingRecord,
@@ -523,16 +510,16 @@ async function processRetry(
                     settings: { payouts: { schedule: { interval: "daily" } } },
                 });
             } catch (e) {
-                context.error(`Failed to re-enable payouts for vendor ${vendor.id}:`, e);
+                logger.error(`Failed to re-enable payouts for vendor ${vendor.id}:`, e);
             }
         }
 
         await sendBillingEmail(email, vendor, "subscription-payment-succeeded", {
             "payment.amount": formatCurrency(amount),
             "payment.nextBillingDate": periodEnd.toFormat("dd MMMM yyyy"),
-        }, context);
+        }, logger);
     } else {
-        await handlePaymentFailure(vendor, sub, cosmos, stripe, email, context, now, billingRecord, paymentResult);
+        await handlePaymentFailure(vendor, sub, cosmos, stripe, email, logger, now, billingRecord, paymentResult);
     }
 }
 
@@ -542,7 +529,7 @@ async function applyDowngrade(
     vendor: vendor_type,
     cosmos: CosmosDataSource,
     email: AzureEmailDataSource,
-    context: InvocationContext,
+    logger: LogManager,
     feeConfig: Record<string, FeeConfigEntry> | null
 ): Promise<void> {
     const sub = vendor.subscription;
@@ -553,7 +540,7 @@ async function applyDowngrade(
     const interval = (sub.billingInterval || "monthly") as 'monthly' | 'annual';
     const newThreshold = getTierAmount(toTier, "monthly", feeConfig);
 
-    context.log(`Applying downgrade for vendor ${vendor.id}: ${fromTier} -> ${toTier}`);
+    logger.logMessage(`Applying downgrade for vendor ${vendor.id}: ${fromTier} -> ${toTier}`);
 
     await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
         { op: "set", path: "/subscription/subscriptionTier", value: toTier },
@@ -567,7 +554,7 @@ async function applyDowngrade(
         "downgrade.toTier": capitalize(toTier),
         "subscription.interval": interval,
         "subscription.price": formatCurrency(getTierAmount(toTier, interval, feeConfig)),
-    }, context);
+    }, logger);
 }
 
 // ─── Shared: Payment Failure Handler ────────────────────────────
@@ -578,7 +565,7 @@ async function handlePaymentFailure(
     cosmos: CosmosDataSource,
     stripe: StripeDataSource,
     email: AzureEmailDataSource,
-    context: InvocationContext,
+    logger: LogManager,
     now: DateTime,
     billingRecord: any,
     paymentResult: any
@@ -589,7 +576,7 @@ async function handlePaymentFailure(
         || paymentResult.data?.error?.message
         || `Payment failed with status ${paymentResult.status}`;
 
-    context.log(`Payment failed for vendor ${vendor.id} (attempt ${newAttempts}): ${errorMessage}`);
+    logger.logMessage(`Payment failed for vendor ${vendor.id} (attempt ${newAttempts}): ${errorMessage}`);
 
     const failureRecord = {
         ...billingRecord,
@@ -604,7 +591,7 @@ async function handlePaymentFailure(
 
     if (newAttempts >= 3) {
         // 3rd failure - suspend account
-        context.log(`3rd failure for vendor ${vendor.id} - suspending`);
+        logger.logMessage(`3rd failure for vendor ${vendor.id} - suspending`);
 
         await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
             { op: "set", path: "/subscription/billingStatus", value: "suspended" as billing_status },
@@ -622,14 +609,14 @@ async function handlePaymentFailure(
                 await stripe.callApi("POST", `accounts/${vendor.stripe.accountId}`, {
                     settings: { payouts: { schedule: { interval: "manual" } } },
                 });
-                context.log(`Switched vendor ${vendor.id} to manual payouts`);
+                logger.logMessage(`Switched vendor ${vendor.id} to manual payouts`);
             } catch (e) {
-                context.error(`Failed to switch vendor ${vendor.id} to manual payouts:`, e);
+                logger.error(`Failed to switch vendor ${vendor.id} to manual payouts:`, e);
             }
         }
 
-        await sendBillingEmail(email, vendor, "subscription-payment-failed-final", {}, context);
-        await sendBillingEmail(email, vendor, "subscription-account-suspended", {}, context);
+        await sendBillingEmail(email, vendor, "subscription-payment-failed-final", {}, logger);
+        await sendBillingEmail(email, vendor, "subscription-account-suspended", {}, logger);
     } else {
         // Smart retry schedule
         let nextRetry: DateTime;
@@ -650,7 +637,7 @@ async function handlePaymentFailure(
             emailTemplate = "subscription-payment-failed-second";
         }
 
-        context.log(`Scheduling retry for vendor ${vendor.id} at ${nextRetry.toISO()}`);
+        logger.logMessage(`Scheduling retry for vendor ${vendor.id} at ${nextRetry.toISO()}`);
 
         await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
             { op: "set", path: "/subscription/failedPaymentAttempts", value: newAttempts },
@@ -664,7 +651,7 @@ async function handlePaymentFailure(
         const interval = (sub.billingInterval || "monthly") as 'monthly' | 'annual';
         await sendBillingEmail(email, vendor, emailTemplate, {
             "payment.amount": formatCurrency(billingRecord.amount),
-        }, context);
+        }, logger);
     }
 }
 
@@ -675,11 +662,11 @@ async function sendBillingEmail(
     vendor: vendor_type,
     templateId: string,
     extraVars: Record<string, string>,
-    context: InvocationContext
+    logger: LogManager
 ): Promise<void> {
     const recipientEmail = vendor.contact?.internal?.email || vendor.contact?.public?.email;
     if (!recipientEmail) {
-        context.log(`No email for vendor ${vendor.id} - skipping email`);
+        logger.logMessage(`No email for vendor ${vendor.id} - skipping email`);
         return;
     }
 
@@ -696,7 +683,7 @@ async function sendBillingEmail(
             }
         );
     } catch (e) {
-        context.log(`Failed to send ${templateId} email for vendor ${vendor.id}: ${e}`);
+        logger.logMessage(`Failed to send ${templateId} email for vendor ${vendor.id}: ${e}`);
     }
 }
 

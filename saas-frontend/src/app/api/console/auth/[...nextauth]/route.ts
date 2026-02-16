@@ -29,10 +29,10 @@ const { handlers } = NextAuth({
     sessionToken: {
       name: isProd ? "__Secure-console.session-token" : "console.session-token",
       options: {
-        path: "/",                 // <-- changed from "/console"
+        path: "/",
         httpOnly: true,
         sameSite: "lax",
-        secure: isProd,            // required when using "__Secure-" in prod
+        secure: isProd,
       },
     }
   }

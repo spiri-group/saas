@@ -14,6 +14,26 @@ import { renderEmailTemplate } from "../graphql/email/utils";
 const myCache = new NodeCache();
 
 /**
+ * Extracted core logic for booking reminders.
+ * Can be called from Azure Functions timer trigger or Container Job entry point.
+ */
+export async function runBookingReminder(
+    cosmos: CosmosDataSource,
+    email: AzureEmailDataSource,
+    logger: LogManager
+): Promise<void> {
+    logger.logMessage('Booking reminder started at: ' + new Date().toISOString());
+
+    const now = DateTime.now();
+
+    await send24HourReminders(cosmos, email, now, logger);
+    await send1HourReminders(cosmos, email, now, logger);
+    await expireUnconfirmedBookings(cosmos, email, now, logger);
+
+    logger.logMessage('Booking reminder completed successfully');
+}
+
+/**
  * Service Booking Reminder Email Scheduler
  *
  * Runs every 15 minutes to send reminder emails for upcoming scheduled service bookings:
@@ -27,8 +47,6 @@ const myCache = new NodeCache();
  * - Track remindersSent on the booking to avoid duplicates
  */
 export async function bookingReminder(myTimer: Timer, context: InvocationContext): Promise<void> {
-    context.log('Booking reminder cron job started at:', new Date().toISOString());
-
     try {
         const host = process.env.WEBSITE_HOSTNAME || 'localhost:7071';
         const logger = new LogManager(context);
@@ -39,28 +57,9 @@ export async function bookingReminder(myTimer: Timer, context: InvocationContext
 
         await cosmos.init(host);
         await email.init(host);
-
-        // Set dataSources reference for email service (needed for Cosmos template lookups)
         email.setDataSources({ cosmos });
 
-        const now = DateTime.now();
-
-        // ========================================
-        // Task 1: Send 24-hour reminders
-        // ========================================
-        await send24HourReminders(cosmos, email, now, context);
-
-        // ========================================
-        // Task 2: Send 1-hour reminders
-        // ========================================
-        await send1HourReminders(cosmos, email, now, context);
-
-        // ========================================
-        // Task 3: Expire unconfirmed bookings
-        // ========================================
-        await expireUnconfirmedBookings(cosmos, email, now, context);
-
-        context.log('Booking reminder cron job completed successfully');
+        await runBookingReminder(cosmos, email, logger);
     } catch (error) {
         context.error('Booking reminder cron job failed:', error);
         throw error;
@@ -74,9 +73,9 @@ async function send24HourReminders(
     cosmos: CosmosDataSource,
     email: AzureEmailDataSource,
     now: DateTime,
-    context: InvocationContext
+    logger: LogManager
 ): Promise<void> {
-    context.log('Checking for 24-hour reminders...');
+    logger.logMessage('Checking for 24-hour reminders...');
 
     // Find bookings starting between 24 and 48 hours from now
     const reminderWindowStart = now.plus({ hours: 24 });
@@ -87,13 +86,13 @@ async function send24HourReminders(
         reminderWindowStart,
         reminderWindowEnd,
         '24h',
-        context
+        logger
     );
 
-    context.log(`Found ${bookings.length} bookings needing 24-hour reminders`);
+    logger.logMessage(`Found ${bookings.length} bookings needing 24-hour reminders`);
 
     for (const booking of bookings) {
-        await sendReminderEmails(cosmos, email, booking, '24h', context);
+        await sendReminderEmails(cosmos, email, booking, '24h', logger);
     }
 }
 
@@ -104,9 +103,9 @@ async function send1HourReminders(
     cosmos: CosmosDataSource,
     email: AzureEmailDataSource,
     now: DateTime,
-    context: InvocationContext
+    logger: LogManager
 ): Promise<void> {
-    context.log('Checking for 1-hour reminders...');
+    logger.logMessage('Checking for 1-hour reminders...');
 
     // Find bookings starting between 1 and 2 hours from now
     const reminderWindowStart = now.plus({ hours: 1 });
@@ -117,13 +116,13 @@ async function send1HourReminders(
         reminderWindowStart,
         reminderWindowEnd,
         '1h',
-        context
+        logger
     );
 
-    context.log(`Found ${bookings.length} bookings needing 1-hour reminders`);
+    logger.logMessage(`Found ${bookings.length} bookings needing 1-hour reminders`);
 
     for (const booking of bookings) {
-        await sendReminderEmails(cosmos, email, booking, '1h', context);
+        await sendReminderEmails(cosmos, email, booking, '1h', logger);
     }
 }
 
@@ -134,9 +133,9 @@ async function expireUnconfirmedBookings(
     cosmos: CosmosDataSource,
     email: AzureEmailDataSource,
     now: DateTime,
-    context: InvocationContext
+    logger: LogManager
 ): Promise<void> {
-    context.log('Checking for expired bookings...');
+    logger.logMessage('Checking for expired bookings...');
 
     // Find pending bookings past their confirmation deadline
     const querySpec = {
@@ -152,7 +151,7 @@ async function expireUnconfirmedBookings(
     };
 
     const expiredBookings = await cosmos.run_query<serviceBooking_type>("Main-Bookings", querySpec, true);
-    context.log(`Found ${expiredBookings.length} expired bookings`);
+    logger.logMessage(`Found ${expiredBookings.length} expired bookings`);
 
     for (const booking of expiredBookings) {
         try {
@@ -176,11 +175,11 @@ async function expireUnconfirmedBookings(
             // Note: This would need Stripe integration - skipping for now as auth expires automatically
 
             // Send expiration emails
-            await sendExpirationEmails(cosmos, email, booking, context);
+            await sendExpirationEmails(cosmos, email, booking, logger);
 
-            context.log(`Expired booking ${booking.id}`);
+            logger.logMessage(`Expired booking ${booking.id}`);
         } catch (error) {
-            context.error(`Failed to expire booking ${booking.id}:`, error);
+            logger.error(`Failed to expire booking ${booking.id}:`, error);
         }
     }
 }
@@ -193,7 +192,7 @@ async function queryBookingsInWindow(
     windowStart: DateTime,
     windowEnd: DateTime,
     reminderType: '24h' | '1h',
-    context: InvocationContext
+    logger: LogManager
 ): Promise<serviceBooking_type[]> {
     // Query bookings where:
     // - confirmationStatus = CONFIRMED
@@ -227,7 +226,7 @@ async function sendReminderEmails(
     email: AzureEmailDataSource,
     booking: serviceBooking_type,
     reminderType: '24h' | '1h',
-    context: InvocationContext
+    logger: LogManager
 ): Promise<void> {
     try {
         // Fetch customer and practitioner details
@@ -235,7 +234,7 @@ async function sendReminderEmails(
         const practitioner = await cosmos.get_record<vendor_type>("Main-Vendor", booking.vendorId, booking.vendorId);
 
         if (!customer || !practitioner) {
-            context.warn(`Missing customer or practitioner for booking ${booking.id}`);
+            logger.warn(`Missing customer or practitioner for booking ${booking.id}`);
             return;
         }
 
@@ -276,7 +275,7 @@ async function sendReminderEmails(
                 customerEmailContent.subject,
                 customerEmailContent.html
             );
-            context.log(`Sent ${reminderType} reminder to customer ${booking.customerEmail}`);
+            logger.logMessage(`Sent ${reminderType} reminder to customer ${booking.customerEmail}`);
         }
 
         // Send reminder to practitioner
@@ -302,7 +301,7 @@ async function sendReminderEmails(
                 practitionerEmailContent.subject,
                 practitionerEmailContent.html
             );
-            context.log(`Sent ${reminderType} reminder to practitioner ${practitionerEmail}`);
+            logger.logMessage(`Sent ${reminderType} reminder to practitioner ${practitionerEmail}`);
         }
 
         // Update booking to mark reminder as sent
@@ -320,9 +319,9 @@ async function sendReminderEmails(
             "system"
         );
 
-        context.log(`Marked ${reminderType} reminder as sent for booking ${booking.id}`);
+        logger.logMessage(`Marked ${reminderType} reminder as sent for booking ${booking.id}`);
     } catch (error) {
-        context.error(`Failed to send ${reminderType} reminder for booking ${booking.id}:`, error);
+        logger.error(`Failed to send ${reminderType} reminder for booking ${booking.id}:`, error);
     }
 }
 
@@ -333,7 +332,7 @@ async function sendExpirationEmails(
     cosmos: CosmosDataSource,
     email: AzureEmailDataSource,
     booking: serviceBooking_type,
-    context: InvocationContext
+    logger: LogManager
 ): Promise<void> {
     try {
         const customer = await cosmos.get_record<user_type>("Main-User", booking.customerId, booking.customerId);
@@ -389,9 +388,9 @@ async function sendExpirationEmails(
             );
         }
 
-        context.log(`Sent expiration emails for booking ${booking.id}`);
+        logger.logMessage(`Sent expiration emails for booking ${booking.id}`);
     } catch (error) {
-        context.error(`Failed to send expiration emails for booking ${booking.id}:`, error);
+        logger.error(`Failed to send expiration emails for booking ${booking.id}:`, error);
     }
 }
 
