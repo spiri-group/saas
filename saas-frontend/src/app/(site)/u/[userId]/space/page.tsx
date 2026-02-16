@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import UI from "./ui";
 
 export const metadata: Metadata = {
-  title: "Personal Space | SpiriVerse",
+  title: "My Journey | SpiriVerse",
   description: "Your sacred digital space for spiritual growth and exploration.",
 };
 

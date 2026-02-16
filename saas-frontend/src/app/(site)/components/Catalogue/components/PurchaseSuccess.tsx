@@ -22,7 +22,7 @@ const PurchaseSuccess = () => {
 
     const handleGoToOrders = () => {
         if (user?.id) {
-            router.push(`/c/${user.id}/orders`);
+            router.push(`/u/${user.id}/space/orders`);
         } else {
             router.push('/orders'); // fallback for logged out users
         }

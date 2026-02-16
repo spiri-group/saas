@@ -15,7 +15,7 @@ import OrderDialog from "./_components/OrderDialog";
 import useRealTimeArrayState from "@/components/utils/useRealTimeArray";
 import { gql } from "@/lib/services/gql";
 import { isNullOrUndefined } from "@/lib/functions";
-import UseTourBookings from "@/app/(site)/c/[customerId]/bookings/hooks/UseTourBookings";
+import UseTourBookings from "@/app/(site)/u/[userId]/space/bookings/hooks/UseTourBookings";
 
 type BLProps = {
     merchantId: string,

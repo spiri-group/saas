@@ -1,7 +1,7 @@
 'use client';
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Package, CalendarDays, MessageSquare, CreditCard, Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard } from "lucide-react";
+import { Package, Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -83,36 +83,20 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                         {/* Customer quick links */}
                         <div className="py-1">
                             <DropdownMenuItem
+                                data-testid="user-menu-space"
+                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
+                                onClick={() => router.push(`/u/${id}/space`)}
+                            >
+                                <Sparkles className="w-4 h-4 mr-3 text-amber-400" />
+                                My Journey
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                                 data-testid="user-menu-orders"
                                 className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
-                                onClick={() => router.push(`/c/${id}/orders`)}
+                                onClick={() => router.push(`/u/${id}/space/orders`)}
                             >
                                 <Package className="w-4 h-4 mr-3 text-amber-400" />
                                 Orders
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                data-testid="user-menu-bookings"
-                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
-                                onClick={() => router.push(`/c/${id}/bookings`)}
-                            >
-                                <CalendarDays className="w-4 h-4 mr-3 text-amber-400" />
-                                Bookings
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                data-testid="user-menu-messages"
-                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
-                                onClick={() => router.push(`/c/${id}/messages`)}
-                            >
-                                <MessageSquare className="w-4 h-4 mr-3 text-amber-400" />
-                                Messages
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                data-testid="user-menu-payments"
-                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
-                                onClick={() => router.push(`/c/${id}/payments`)}
-                            >
-                                <CreditCard className="w-4 h-4 mr-3 text-amber-400" />
-                                Payments
                             </DropdownMenuItem>
                         </div>
 
@@ -228,7 +212,7 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                             <DropdownMenuItem
                                 data-testid="user-menu-settings"
                                 className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
-                                onClick={() => router.push(`/c/${id}/settings`)}
+                                onClick={() => router.push(`/u/${id}/space/account`)}
                             >
                                 <Settings className="w-4 h-4 mr-3 text-amber-400" />
                                 Account Settings
@@ -263,10 +247,10 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                 Close
                             </Button>
                             <Button type="button" variant="default" onClick={() => {
-                                if (typeof window !== "undefined" && window.location.pathname === `/u/${id}/setup`) {
+                                if (typeof window !== "undefined" && window.location.pathname === '/setup') {
                                     window.location.reload();
                                 } else {
-                                    router.push(`/u/${id}/setup`);
+                                    router.push('/setup');
                                 }
                             }}>
                                 Go to profile setup
