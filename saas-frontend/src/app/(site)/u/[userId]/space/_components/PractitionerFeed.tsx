@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Rss, Users, ChevronRight } from 'lucide-react';
+import { Loader2, Flame, Users, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import FeedPost from '@/app/(site)/components/Home/Feed/FeedPost';
 import FeedFlipboard from '@/app/(site)/components/Home/Feed/FeedFlipboard';
@@ -50,7 +50,7 @@ export default function PractitionerFeed() {
       {/* Section header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Rss className="w-4 h-4 text-purple-400" />
+          <Flame className="w-4 h-4 text-purple-400" />
           <h2 className="text-sm font-medium text-slate-400">Your Feed</h2>
         </div>
         {hasPosts && (
@@ -146,7 +146,7 @@ export default function PractitionerFeed() {
         /* Empty state — discovery experience */
         <div data-testid="feed-empty-state">
           <div className="text-center py-8 px-4 rounded-xl bg-white/5 border border-white/10 mb-6">
-            <Rss className="w-8 h-8 text-purple-400/60 mx-auto mb-3" />
+            <Flame className="w-8 h-8 text-purple-400/60 mx-auto mb-3" />
             <p className="text-white/80 text-sm font-medium mb-1">Your feed is empty</p>
             <p className="text-white/40 text-xs">
               Follow practitioners and merchants to see their video updates and daily oracle messages here.
