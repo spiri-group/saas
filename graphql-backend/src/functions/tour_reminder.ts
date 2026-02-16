@@ -1,14 +1,9 @@
-import NodeCache from "node-cache";
-import { InvocationContext, Timer, app } from "@azure/functions";
 import { DateTime } from "luxon";
 import { sender_details } from "../client/email_templates";
 import { booking_type, session_type, tour_type } from "../graphql/eventandtour/types";
 import { CosmosDataSource } from "../utils/database";
 import { AzureEmailDataSource } from "../services/azureEmail";
 import { LogManager } from "../utils/functions";
-import { vault } from "../services/vault";
-
-const myCache = new NodeCache();
 
 /**
  * Extracted core logic for tour reminders.
@@ -27,34 +22,6 @@ export async function runTourReminder(
   await send2HourReminders(cosmos, email, now, logger);
 
   logger.logMessage('Tour reminder completed successfully');
-}
-
-/**
- * Tour Reminder Email Scheduler
- *
- * Runs hourly to send reminder emails for upcoming tour sessions:
- *
- * 1. 24-hour reminder: Sent 24-48 hours before session start
- * 2. 2-hour reminder: Sent 2-4 hours before session start
- */
-export async function tourReminder(myTimer: Timer, context: InvocationContext): Promise<void> {
-  const logger = new LogManager(context);
-  try {
-    const host = process.env.WEBSITE_HOSTNAME || 'localhost:7071';
-    const keyVault = new vault(host, logger, myCache);
-
-    const cosmos = new CosmosDataSource(logger, keyVault);
-    const email = new AzureEmailDataSource(logger, keyVault);
-
-    await cosmos.init(host);
-    await email.init(host);
-    email.setDataSources({ cosmos });
-
-    await runTourReminder(cosmos, email, logger);
-  } catch (error) {
-    logger.error('Tour reminder cron job failed:', error);
-    throw error;
-  }
 }
 
 /**
@@ -355,8 +322,3 @@ function formatTime(time: string): string {
   return dt.toFormat('h:mm a'); // e.g., "2:30 PM"
 }
 
-// Run hourly (cron: "0 0 * * * *" means at minute 0 of every hour)
-app.timer("tourReminder", {
-  schedule: "0 0 * * * *",
-  handler: tourReminder
-});
