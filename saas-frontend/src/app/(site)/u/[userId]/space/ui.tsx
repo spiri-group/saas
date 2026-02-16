@@ -13,6 +13,7 @@ import JournalEntries from './_components/JournalEntries';
 import ActivitySummary from './_components/ActivitySummary';
 import RecentActivity from './_components/RecentActivity';
 import UpcomingDates from './_components/UpcomingDates';
+import PractitionerFeed from './_components/PractitionerFeed';
 
 interface Props {
   userId: string;
@@ -45,7 +46,7 @@ const UI: React.FC<Props> = ({ userId }) => {
   }
 
   return (
-    <div className="min-h-screen-minus-nav p-6 max-w-4xl  mx-auto lg:max-w-none">
+    <div className="min-h-screen-minus-nav p-6 max-w-6xl mx-auto">
       {/* Personalized Welcome Header */}
       <WelcomeHeader
         firstName={user?.firstname}
@@ -58,27 +59,35 @@ const UI: React.FC<Props> = ({ userId }) => {
         <SpiriReadingsBanner userId={userId} />
       )}
 
-      {/* Main Dashboard Content */}
-      <div className="space-y-6">
-        {/* Quick Actions */}
-        <QuickActions userId={userId} primaryInterest={primaryInterest} />
+      {/* Two-column layout: Feed (main) + Dashboard (sidebar) */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Main column - Social feed */}
+        <div className="flex-1 min-w-0 lg:max-w-2xl">
+          <PractitionerFeed />
+        </div>
 
-        {/* Recent Journal Entries */}
-        <JournalEntries userId={userId} />
+        {/* Sidebar - Dashboard content */}
+        <div className="w-full lg:w-80 lg:flex-shrink-0 space-y-6">
+          {/* Quick Actions */}
+          <QuickActions userId={userId} primaryInterest={primaryInterest} />
 
-        {/* Activity Summary */}
-        <ActivitySummary stats={stats} isLoading={statsLoading} />
+          {/* Recent Journal Entries */}
+          <JournalEntries userId={userId} />
 
-        {/* Recent Activity */}
-        <RecentActivity
-          userId={userId}
-          spiritMessages={recentMessages}
-          synchronicities={recentSyncs}
-          isLoading={messagesLoading || syncsLoading}
-        />
+          {/* Activity Summary */}
+          <ActivitySummary stats={stats} isLoading={statsLoading} />
 
-        {/* Upcoming Dates - Only shows if there are dates */}
-        <UpcomingDates stats={stats} isLoading={statsLoading} />
+          {/* Recent Activity */}
+          <RecentActivity
+            userId={userId}
+            spiritMessages={recentMessages}
+            synchronicities={recentSyncs}
+            isLoading={messagesLoading || syncsLoading}
+          />
+
+          {/* Upcoming Dates - Only shows if there are dates */}
+          <UpcomingDates stats={stats} isLoading={statsLoading} />
+        </div>
       </div>
     </div>
   );

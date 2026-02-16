@@ -41,15 +41,17 @@ const resolvers = {
                             vendorDocType: vendor.docType || "MERCHANT"
                         }
 
-                        // Add videos
-                        if (vendor.videos && vendor.videos.length > 0) {
-                            for (const video of vendor.videos) {
+                        // Add video updates (intentional posts, not profile gallery)
+                        if (vendor.videoUpdates && vendor.videoUpdates.length > 0) {
+                            for (const update of vendor.videoUpdates) {
                                 allPosts.push({
                                     ...vendorInfo,
                                     postType: "VIDEO",
-                                    video,
+                                    video: { media: update.media, coverPhoto: update.coverPhoto },
+                                    videoCaption: update.caption || null,
+                                    videoPostedAt: update.postedAt,
                                     oracleMessage: null,
-                                    _sortDate: video.media?.createdDate || "2000-01-01"
+                                    _sortDate: update.postedAt
                                 })
                             }
                         }

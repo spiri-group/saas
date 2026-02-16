@@ -90,6 +90,14 @@ export type oracle_message_type = {
     expiresAt: string
 }
 
+export type video_update_type = {
+    id: string,
+    media: media_type,
+    coverPhoto?: media_type,
+    caption?: string | null,
+    postedAt: string
+}
+
 export type practitioner_profile_type = {
     // Identity
     pronouns?: string,
@@ -252,6 +260,7 @@ export type vendor_type = {
     customers: customer_type[],
     descriptions: merchant_description_type[],
     videos?: video_type[],
+    videoUpdates?: video_update_type[],
     videoSettings?: {
         autoplay: boolean,
         autoplayDelay: number // in seconds

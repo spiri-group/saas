@@ -24,6 +24,8 @@ export interface FeedPost {
   vendorDocType: string;
   postType: 'VIDEO' | 'ORACLE';
   video: FeedVideo | null;
+  videoCaption: string | null;
+  videoPostedAt: string | null;
   oracleMessage: FeedOracleMessage | null;
 }
 
@@ -76,6 +78,8 @@ export const useMyFeed = (enabled: boolean = true) => {
                   name
                 }
               }
+              videoCaption
+              videoPostedAt
               oracleMessage {
                 id
                 audio {
