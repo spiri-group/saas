@@ -54,7 +54,7 @@ const UI: React.FC<Props> = ({ userId }) => {
   );
 
   return (
-    <div className="min-h-screen-minus-nav p-6">
+    <div className="min-h-screen-minus-nav p-6 flex flex-col">
       {/* Personalized Welcome Header */}
       <WelcomeHeader
         firstName={user?.firstname}
@@ -68,7 +68,7 @@ const UI: React.FC<Props> = ({ userId }) => {
       )}
 
       {/* Two-column layout: Feed (left) + Dashboard (right) */}
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-6 flex-1">
         {/* Left column - Social feed */}
         <div className="w-full lg:w-96 lg:flex-shrink-0">
           <PractitionerFeed />

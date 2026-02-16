@@ -46,7 +46,7 @@ export default function PractitionerFeed() {
   }
 
   return (
-    <div data-testid="practitioner-feed">
+    <div data-testid="practitioner-feed" className="h-full">
       {/* Section header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
