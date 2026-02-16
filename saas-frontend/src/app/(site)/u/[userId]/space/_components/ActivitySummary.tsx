@@ -32,18 +32,7 @@ const ActivitySummary: React.FC<Props> = ({ stats, isLoading }) => {
   );
 
   if (!hasActivity) {
-    return (
-      <div className="space-y-3">
-        <h2 className="text-sm font-medium text-slate-400">Your Activity</h2>
-        <div data-testid="activity-empty-state" className="p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-indigo-500/10 border border-purple-500/20 text-center">
-          <Sparkles className="w-8 h-8 text-purple-400 mx-auto mb-3" />
-          <p className="text-white font-medium mb-1">Begin Your Journey</p>
-          <p className="text-sm text-slate-400">
-            Start logging your spiritual experiences to see your activity summary here.
-          </p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
