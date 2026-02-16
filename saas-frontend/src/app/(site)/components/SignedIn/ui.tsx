@@ -1,7 +1,7 @@
 'use client';
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard } from "lucide-react";
+import { Package, Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -80,7 +80,7 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
 
                         <DropdownMenuSeparator className="bg-white/10" />
 
-                        {/* Customer quick link */}
+                        {/* Customer quick links */}
                         <div className="py-1">
                             <DropdownMenuItem
                                 data-testid="user-menu-space"
@@ -88,7 +88,15 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                 onClick={() => router.push(`/u/${id}/space`)}
                             >
                                 <Sparkles className="w-4 h-4 mr-3 text-amber-400" />
-                                My Space
+                                My Journey
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                data-testid="user-menu-orders"
+                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
+                                onClick={() => router.push(`/u/${id}/space/orders`)}
+                            >
+                                <Package className="w-4 h-4 mr-3 text-amber-400" />
+                                Orders
                             </DropdownMenuItem>
                         </div>
 
