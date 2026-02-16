@@ -46,6 +46,16 @@ const useBL = () => {
                 label: "Home",
                 href: `/u/${userId}/space`,
                 icon: <Home className="w-5 h-5" />
+            },
+            {
+                icon: <MessageCircle className="w-5 h-5" />,
+                label: "Messages",
+                href: `/u/${userId}/space/messages`,
+                testId: "messages-nav"
+            },
+            {
+                type: "divider",
+                label: ""
             }
         ];
 
@@ -304,6 +314,11 @@ const useBL = () => {
         // ── Commerce & Account ──────────────────────────
         // Always visible regardless of spiritual interests
         navOptions.push({
+            type: "divider",
+            label: ""
+        });
+
+        navOptions.push({
             icon: <Package className="w-5 h-5" />,
             label: "Orders",
             href: `/u/${userId}/space/orders`,
@@ -315,13 +330,6 @@ const useBL = () => {
             label: "Bookings",
             href: `/u/${userId}/space/bookings`,
             testId: "bookings-nav"
-        });
-
-        navOptions.push({
-            icon: <MessageCircle className="w-5 h-5" />,
-            label: "Messages",
-            href: `/u/${userId}/space/messages`,
-            testId: "messages-nav"
         });
 
         navOptions.push({

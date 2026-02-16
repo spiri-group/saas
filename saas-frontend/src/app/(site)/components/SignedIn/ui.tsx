@@ -1,7 +1,7 @@
 'use client';
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Package, CalendarDays, MessageSquare, Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard } from "lucide-react";
+import { Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -80,7 +80,7 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
 
                         <DropdownMenuSeparator className="bg-white/10" />
 
-                        {/* Customer quick links */}
+                        {/* Customer quick link */}
                         <div className="py-1">
                             <DropdownMenuItem
                                 data-testid="user-menu-space"
@@ -89,30 +89,6 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                             >
                                 <Sparkles className="w-4 h-4 mr-3 text-amber-400" />
                                 My Space
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                data-testid="user-menu-orders"
-                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
-                                onClick={() => router.push(`/u/${id}/space/orders`)}
-                            >
-                                <Package className="w-4 h-4 mr-3 text-amber-400" />
-                                Orders
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                data-testid="user-menu-bookings"
-                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
-                                onClick={() => router.push(`/u/${id}/space/bookings`)}
-                            >
-                                <CalendarDays className="w-4 h-4 mr-3 text-amber-400" />
-                                Bookings
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                data-testid="user-menu-messages"
-                                className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
-                                onClick={() => router.push(`/u/${id}/space/messages`)}
-                            >
-                                <MessageSquare className="w-4 h-4 mr-3 text-amber-400" />
-                                Messages
                             </DropdownMenuItem>
                         </div>
 
