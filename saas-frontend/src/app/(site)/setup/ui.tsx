@@ -8,6 +8,7 @@ import { Mail } from 'lucide-react';
 import SpiriLogo from '@/icons/spiri-logo';
 import { SignIn } from '@/components/ux/SignIn';
 
+import { gql } from '@/lib/services/gql';
 import OnboardingShell, { type OnboardingTheme } from './components/OnboardingShell';
 import MarketingPanel from './components/MarketingPanel';
 import StepIndicator from './components/StepIndicator';
@@ -114,13 +115,34 @@ export default function SetupUI() {
     // ── Step handlers ───────────────────────────────────────────────
 
     const handleBasicBrowse = useCallback(async () => {
-        // Customer just wants to browse - redirect to home
-        if (session?.user?.id) {
-            window.location.href = `/u/${session.user.id}/space`;
-        } else {
+        if (!session?.user?.id) {
             window.location.href = '/';
+            return;
         }
-    }, []);
+
+        // Save basic details so requiresInput is set to false
+        const vals = form.getValues();
+        try {
+            await gql<{ update_user: { success: boolean } }>(
+                `mutation UpdateUser($customer: CustomerUpdateInput!) {
+                    update_user(customer: $customer) {
+                        success
+                    }
+                }`,
+                {
+                    customer: {
+                        id: session.user.id,
+                        firstname: vals.firstName,
+                        lastname: vals.lastName,
+                    }
+                }
+            );
+        } catch (error) {
+            console.error('Failed to save basic details:', error);
+        }
+
+        window.location.href = `/u/${session.user.id}/space`;
+    }, [session, form]);
 
     const handleBasicSetupBusiness = useCallback(() => {
         setStep('plan');
