@@ -75,13 +75,13 @@ const UI: React.FC<Props> = ({ userId }) => {
         </div>
 
         {/* Right column - Dashboard content */}
-        <div className="flex-1 min-w-0 space-y-6">
+        <div className="flex-1 min-w-0 flex flex-col gap-6">
           {/* Quick Actions */}
           <QuickActions userId={userId} primaryInterest={primaryInterest} />
 
           {/* Warm nudge when the user hasn't started yet */}
           {!dataLoading && !hasActivity && (
-            <div className="p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-indigo-500/10 border border-purple-500/20 text-center">
+            <div className="flex-1 p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-indigo-500/10 border border-purple-500/20 flex flex-col items-center justify-center text-center">
               <Sparkles className="w-8 h-8 text-purple-400 mx-auto mb-3" />
               <p className="text-white font-medium mb-1">Your journey starts here</p>
               <p className="text-sm text-slate-400">

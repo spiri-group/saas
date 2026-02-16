@@ -46,7 +46,7 @@ export default function PractitionerFeed() {
   }
 
   return (
-    <div data-testid="practitioner-feed" className="h-full">
+    <div data-testid="practitioner-feed" className="h-full flex flex-col">
       {/* Section header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -144,8 +144,8 @@ export default function PractitionerFeed() {
         </>
       ) : (
         /* Empty state — discovery experience */
-        <div data-testid="feed-empty-state">
-          <div className="text-center py-8 px-4 rounded-xl bg-white/5 border border-white/10 mb-6">
+        <div data-testid="feed-empty-state" className="flex-1 flex flex-col">
+          <div className="text-center py-8 px-4 rounded-xl bg-white/5 border border-white/10 mb-6 flex-1 flex flex-col items-center justify-center">
             <Flame className="w-8 h-8 text-purple-400/60 mx-auto mb-3" />
             <p className="text-white/80 text-sm font-medium mb-1">Your feed is empty</p>
             <p className="text-white/40 text-xs">
