@@ -177,11 +177,20 @@ const useBL = () => {
                 });
             }
 
-            navOptions.push({
-                icon: <Sparkles className="w-5 h-5" />,
-                label: "Mediumship",
-                navOptions: mediumshipNavOptions
-            });
+            // If only one child, link directly instead of showing a flyout
+            if (mediumshipNavOptions.length === 1) {
+                navOptions.push({
+                    icon: <Sparkles className="w-5 h-5" />,
+                    label: "Mediumship",
+                    href: mediumshipNavOptions[0].href
+                });
+            } else {
+                navOptions.push({
+                    icon: <Sparkles className="w-5 h-5" />,
+                    label: "Mediumship",
+                    navOptions: mediumshipNavOptions
+                });
+            }
 
             // Tarot section - shown for MEDIUMSHIP interest
             navOptions.push({
@@ -433,7 +442,7 @@ const PersonalSpaceSideNav: React.FC = () => {
     return (
         <SideNav
             aria-label="personal-space-side-nav"
-            className="mt-2 ml-2"
+            className="mt-2"
             navOptions={bl.options.get}
             renderDialog={bl.renderDialog}
         />
