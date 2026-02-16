@@ -77,7 +77,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent className="bg-slate-900 border-white/20 text-white max-w-[95vw] w-full sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] w-full sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Moon className="w-5 h-5 text-indigo-400" />

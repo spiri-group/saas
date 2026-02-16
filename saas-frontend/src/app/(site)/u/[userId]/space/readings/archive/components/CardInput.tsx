@@ -43,7 +43,7 @@ const CardInput: React.FC<CardInputProps> = ({
 
       <div className="space-y-3">
         <div>
-          <Label htmlFor={`card-name-${index}`} className="text-slate-300 text-sm">
+          <Label htmlFor={`card-name-${index}`} dark className="text-sm">
             Card Name
           </Label>
           <Input
@@ -51,7 +51,8 @@ const CardInput: React.FC<CardInputProps> = ({
             value={card.name}
             onChange={(e) => onUpdate({ ...card, name: e.target.value })}
             placeholder="e.g., The Fool, Ten of Cups"
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="mt-1"
             data-testid={`card-name-input-${index}`}
           />
         </div>
@@ -59,12 +60,13 @@ const CardInput: React.FC<CardInputProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <RotateCcw className={`w-4 h-4 ${card.reversed ? 'text-purple-400' : 'text-slate-500'}`} />
-            <Label htmlFor={`card-reversed-${index}`} className="text-slate-300 text-sm cursor-pointer">
+            <Label htmlFor={`card-reversed-${index}`} dark className="text-sm cursor-pointer">
               Reversed
             </Label>
           </div>
           <Switch
             id={`card-reversed-${index}`}
+            dark
             checked={card.reversed}
             onCheckedChange={(checked) => onUpdate({ ...card, reversed: checked })}
             data-testid={`card-reversed-switch-${index}`}
@@ -72,7 +74,7 @@ const CardInput: React.FC<CardInputProps> = ({
         </div>
 
         <div>
-          <Label htmlFor={`card-interpretation-${index}`} className="text-slate-300 text-sm">
+          <Label htmlFor={`card-interpretation-${index}`} dark className="text-sm">
             Interpretation (optional)
           </Label>
           <Textarea
@@ -80,7 +82,8 @@ const CardInput: React.FC<CardInputProps> = ({
             value={card.interpretation || ''}
             onChange={(e) => onUpdate({ ...card, interpretation: e.target.value })}
             placeholder="What does this card mean to you?"
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 min-h-[60px] text-sm"
+            dark
+            className="mt-1 min-h-[60px] text-sm"
             data-testid={`card-interpretation-input-${index}`}
           />
         </div>

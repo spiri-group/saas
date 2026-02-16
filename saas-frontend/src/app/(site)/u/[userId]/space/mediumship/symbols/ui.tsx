@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Panel } from '@/components/ui/panel';
 import usePersonalSymbols, { PersonalSymbol } from '../hooks/usePersonalSymbols';
 import { SymbolForm } from './components/SymbolForm';
 import { SymbolCard } from './components/SymbolCard';
@@ -174,7 +175,8 @@ const UI: React.FC<Props> = ({ userId }) => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search symbols..."
-                  className="pl-10 bg-slate-800/50 border-slate-700 focus:border-amber-500/50"
+                  dark
+                  className="pl-10 focus:border-amber-500/50"
                 />
               </div>
               <Button
@@ -267,7 +269,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-amber-500/20 text-white sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="border-amber-500/20 sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-amber-400" />
@@ -285,7 +287,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Detail View Dialog */}
       <Dialog open={!!selectedSymbol} onOpenChange={(open) => !open && setSelectedSymbol(null)}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-amber-500/20 text-white sm:max-w-md">
+        <DialogContent className="border-amber-500/20 sm:max-w-md">
           {selectedSymbol && (
             <>
               <div className="text-center mb-6">
@@ -308,7 +310,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                     <p className="text-slate-300 text-sm leading-relaxed">{selectedSymbol.personalMeaning}</p>
                   </div>
                 ) : (
-                  <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700 border-dashed">
+                  <Panel dark className="p-4 rounded-xl border border-slate-700 border-dashed">
                     <p className="text-slate-500 text-sm text-center">
                       You haven&apos;t defined a personal meaning yet.
                       <button
@@ -321,23 +323,23 @@ const UI: React.FC<Props> = ({ userId }) => {
                         Add one
                       </button>
                     </p>
-                  </div>
+                  </Panel>
                 )}
 
                 {/* Occurrence Stats */}
                 <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="p-3 bg-slate-800/50 rounded-xl">
+                  <Panel dark className="p-3 rounded-xl">
                     <div className="text-2xl font-bold text-white">{selectedSymbol.dreamOccurrences}</div>
                     <div className="text-xs text-slate-500">Dreams</div>
-                  </div>
-                  <div className="p-3 bg-slate-800/50 rounded-xl">
+                  </Panel>
+                  <Panel dark className="p-3 rounded-xl">
                     <div className="text-2xl font-bold text-white">{selectedSymbol.readingOccurrences}</div>
                     <div className="text-xs text-slate-500">Readings</div>
-                  </div>
-                  <div className="p-3 bg-slate-800/50 rounded-xl">
+                  </Panel>
+                  <Panel dark className="p-3 rounded-xl">
                     <div className="text-2xl font-bold text-white">{selectedSymbol.synchronicityOccurrences}</div>
                     <div className="text-xs text-slate-500">Synchronicities</div>
-                  </div>
+                  </Panel>
                 </div>
 
                 {/* Timeline */}

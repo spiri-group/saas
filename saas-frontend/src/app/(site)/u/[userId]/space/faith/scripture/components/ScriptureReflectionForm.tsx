@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Panel } from '@/components/ui/panel';
 import {
   useCreateScriptureReflection,
   useUpdateScriptureReflection,
@@ -162,7 +163,6 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
             id="date"
             type="date"
             {...register('date', { required: true })}
-            className="bg-slate-800 border-slate-700"
             data-testid="scripture-date"
           />
         </div>
@@ -173,10 +173,10 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
             value={watch('version') || ''}
             onValueChange={(value) => setValue('version', value)}
           >
-            <SelectTrigger className="bg-slate-800 border-slate-700">
+            <SelectTrigger>
               <SelectValue placeholder="Select version" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
+            <SelectContent>
               {BIBLE_VERSIONS.map((version) => (
                 <SelectItem key={version} value={version}>
                   {version}
@@ -193,7 +193,6 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
           id="reference"
           {...register('reference', { required: true })}
           placeholder="e.g., John 3:16-17 or Psalm 23"
-          className="bg-slate-800 border-slate-700"
           data-testid="scripture-reference"
         />
       </div>
@@ -205,7 +204,6 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
             id="book"
             {...register('book')}
             placeholder="e.g., John"
-            className="bg-slate-800 border-slate-700"
           />
         </div>
 
@@ -216,7 +214,6 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
             type="number"
             {...register('chapter', { valueAsNumber: true })}
             placeholder="3"
-            className="bg-slate-800 border-slate-700"
           />
         </div>
 
@@ -226,10 +223,10 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
             value={watch('bookType') || ''}
             onValueChange={(value) => setValue('bookType', value as ScriptureBookType)}
           >
-            <SelectTrigger className="bg-slate-800 border-slate-700">
+            <SelectTrigger>
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
+            <SelectContent>
               {BOOK_TYPES.map((type) => (
                 <SelectItem key={type.value} value={type.value}>
                   {type.label}
@@ -248,7 +245,6 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
             type="number"
             {...register('verseStart', { valueAsNumber: true })}
             placeholder="16"
-            className="bg-slate-800 border-slate-700"
           />
         </div>
 
@@ -259,7 +255,6 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
             type="number"
             {...register('verseEnd', { valueAsNumber: true })}
             placeholder="17"
-            className="bg-slate-800 border-slate-700"
           />
         </div>
       </div>
@@ -270,10 +265,10 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
           value={watch('readingContext') || ''}
           onValueChange={(value) => setValue('readingContext', value)}
         >
-          <SelectTrigger className="bg-slate-800 border-slate-700">
+          <SelectTrigger>
             <SelectValue placeholder="When/where did you read this?" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-800 border-slate-700">
+          <SelectContent>
             {READING_CONTEXTS.map((context) => (
               <SelectItem key={context} value={context}>
                 {context}
@@ -289,7 +284,7 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
           id="text"
           {...register('text')}
           placeholder="Copy the passage text here..."
-          className="bg-slate-800 border-slate-700 min-h-[80px]"
+          className="min-h-[80px]"
         />
       </div>
 
@@ -299,7 +294,7 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
           id="whatSpokeToMe"
           {...register('whatSpokeToMe', { required: true })}
           placeholder="What stood out? What touched your heart?"
-          className="bg-slate-800 border-slate-700 min-h-[100px]"
+          className="min-h-[100px]"
           data-testid="what-spoke-to-me"
         />
       </div>
@@ -310,7 +305,7 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
           id="personalApplication"
           {...register('personalApplication')}
           placeholder="How can you apply this to your life?"
-          className="bg-slate-800 border-slate-700 min-h-[80px]"
+          className="min-h-[80px]"
           data-testid="personal-application"
         />
       </div>
@@ -323,7 +318,6 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
             value={newQuestion}
             onChange={(e) => setNewQuestion(e.target.value)}
             placeholder="Add a question..."
-            className="bg-slate-800 border-slate-700"
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addQuestion())}
           />
           <Button type="button" variant="outline" size="icon" onClick={addQuestion}>
@@ -333,16 +327,16 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
         {questions.length > 0 && (
           <div className="space-y-2 mt-2">
             {questions.map((question, index) => (
-              <div key={index} className="flex items-center gap-2 bg-slate-800/50 rounded-lg px-3 py-2">
-                <span className="text-sm text-slate-300 flex-1">{question}</span>
+              <Panel glass key={index} className="flex items-center gap-2 rounded-lg px-3 py-2">
+                <span className="text-sm text-black/70 flex-1">{question}</span>
                 <button
                   type="button"
                   onClick={() => removeQuestion(index)}
-                  className="text-slate-400 hover:text-white"
+                  className="text-black/40 hover:text-black"
                 >
                   <X className="w-4 h-4" />
                 </button>
-              </div>
+              </Panel>
             ))}
           </div>
         )}
@@ -356,7 +350,6 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
             value={newCrossRef}
             onChange={(e) => setNewCrossRef(e.target.value)}
             placeholder="Add a related verse (e.g., Romans 8:28)"
-            className="bg-slate-800 border-slate-700"
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCrossRef())}
           />
           <Button type="button" variant="outline" size="icon" onClick={addCrossRef}>
@@ -366,12 +359,12 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
         {crossReferences.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {crossReferences.map((ref, index) => (
-              <Badge key={index} variant="secondary" className="bg-emerald-500/20 text-emerald-300">
+              <Badge key={index} variant="secondary" className="bg-emerald-500/20 text-emerald-700">
                 {ref}
                 <button
                   type="button"
                   onClick={() => removeCrossRef(index)}
-                  className="ml-1 hover:text-white"
+                  className="ml-1 hover:text-black"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -387,7 +380,7 @@ export const ScriptureReflectionForm: React.FC<Props> = ({ userId, existingEntry
           id="prayerResponse"
           {...register('prayerResponse')}
           placeholder="A prayer in response to what you read..."
-          className="bg-slate-800 border-slate-700 min-h-[80px]"
+          className="min-h-[80px]"
         />
       </div>
 

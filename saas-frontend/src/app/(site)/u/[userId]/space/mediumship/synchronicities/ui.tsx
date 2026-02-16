@@ -233,7 +233,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-purple-500/20 text-white sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="border-purple-500/20 sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-purple-400" />
@@ -251,7 +251,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Detail View Dialog */}
       <Dialog open={!!selectedEntry} onOpenChange={(open) => !open && setSelectedEntry(null)}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-purple-500/20 text-white sm:max-w-lg">
+        <DialogContent className="border-purple-500/20 sm:max-w-lg">
           {selectedEntry && (
             <>
               <DialogHeader>

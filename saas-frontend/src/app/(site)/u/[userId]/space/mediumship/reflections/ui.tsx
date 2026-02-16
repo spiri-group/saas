@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { BookMarked, Plus, Star, CheckCircle2, Clock, User, ChevronRight, Sparkles, Calendar, Heart, Quote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Panel } from '@/components/ui/panel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import useReadingReflections, { ReadingReflection } from '../hooks/useReadingReflections';
@@ -311,7 +312,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-violet-500/20 text-white sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="border-violet-500/20 sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BookMarked className="w-5 h-5 text-violet-400" />
@@ -329,7 +330,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Detail View Dialog */}
       <Dialog open={!!selectedReflection} onOpenChange={(open) => !open && setSelectedReflection(null)}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-violet-500/20 text-white sm:max-w-lg">
+        <DialogContent className="border-violet-500/20 sm:max-w-lg">
           {selectedReflection && (
             <>
               <DialogHeader>
@@ -420,10 +421,10 @@ const UI: React.FC<Props> = ({ userId }) => {
 
                 {/* Emotional Impact */}
                 {selectedReflection.emotionalImpact && (
-                  <div className="p-4 bg-slate-800/50 rounded-xl">
+                  <Panel dark className="p-4 rounded-xl">
                     <div className="text-sm text-slate-500 mb-1">Emotional Impact</div>
                     <p className="text-slate-300 text-sm italic">{selectedReflection.emotionalImpact}</p>
-                  </div>
+                  </Panel>
                 )}
 
                 {/* Validation Notes */}

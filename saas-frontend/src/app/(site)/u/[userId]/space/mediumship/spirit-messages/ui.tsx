@@ -5,6 +5,7 @@ import { MessageCircle, Plus, CheckCircle2, Clock, Feather, Wind, Heart, Chevron
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Panel } from '@/components/ui/panel';
 import { format, formatDistanceToNow } from 'date-fns';
 import useSpiritMessages, { SpiritMessage } from '../hooks/useSpiritMessages';
 import { SpiritMessageForm } from './components/SpiritMessageForm';
@@ -221,7 +222,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-indigo-500/20 text-white sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="border-indigo-500/20 sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Feather className="w-5 h-5 text-indigo-400" />
@@ -239,7 +240,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Detail View Dialog */}
       <Dialog open={!!selectedMessage} onOpenChange={(open) => !open && setSelectedMessage(null)}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-indigo-500/20 text-white sm:max-w-lg">
+        <DialogContent className="border-indigo-500/20 sm:max-w-lg">
           {selectedMessage && (
             <>
               <DialogHeader>
@@ -290,10 +291,10 @@ const UI: React.FC<Props> = ({ userId }) => {
 
                 {/* Your Interpretation */}
                 {selectedMessage.interpretation && (
-                  <div className="p-4 bg-slate-800/50 rounded-xl">
+                  <Panel dark className="p-4 rounded-xl">
                     <div className="text-sm text-slate-500 mb-1">Your Interpretation</div>
                     <p className="text-slate-300 text-sm">{selectedMessage.interpretation}</p>
-                  </div>
+                  </Panel>
                 )}
 
                 {/* Validation Notes */}

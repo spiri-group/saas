@@ -203,7 +203,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-rose-500/20 text-white max-w-[95vw] w-full sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="border-rose-500/20 max-w-[95vw] w-full sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Heart className="w-5 h-5 text-rose-400" />
@@ -221,7 +221,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Detail View Dialog */}
       <Dialog open={!!selectedLovedOne} onOpenChange={(open) => !open && setSelectedLovedOne(null)}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-rose-500/20 text-white sm:max-w-lg">
+        <DialogContent className="border-rose-500/20 sm:max-w-lg">
           {selectedLovedOne && (
             <>
               <div className="text-center mb-6">

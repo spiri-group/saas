@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Panel } from '@/components/ui/panel';
 import {
   useCreatePersonalSymbol,
   useUpdatePersonalSymbol,
@@ -105,7 +106,7 @@ export const SymbolForm: React.FC<Props> = ({ userId, existingSymbol, onSuccess 
           id="symbolName"
           {...register('symbolName', { required: true })}
           placeholder="e.g., Butterfly, Number 11, Red Cardinal..."
-          className="bg-slate-800 border-slate-700"
+          dark
           disabled={!!existingSymbol}
           data-testid="symbol-name"
         />
@@ -120,7 +121,7 @@ export const SymbolForm: React.FC<Props> = ({ userId, existingSymbol, onSuccess 
           id="category"
           {...register('category')}
           placeholder="e.g., Animals, Numbers, Colors..."
-          className="bg-slate-800 border-slate-700"
+          dark
           list="categories"
         />
         <datalist id="categories">
@@ -152,7 +153,8 @@ export const SymbolForm: React.FC<Props> = ({ userId, existingSymbol, onSuccess 
           id="personalMeaning"
           {...register('personalMeaning', { required: true })}
           placeholder="What does this symbol mean to you personally?"
-          className="bg-slate-800 border-slate-700 min-h-[100px]"
+          dark
+          className="min-h-[100px]"
           data-testid="personal-meaning"
         />
       </div>
@@ -168,13 +170,13 @@ export const SymbolForm: React.FC<Props> = ({ userId, existingSymbol, onSuccess 
             value={newContext}
             onChange={(e) => setNewContext(e.target.value)}
             placeholder="Context (e.g., In dreams)"
-            className="bg-slate-800 border-slate-700"
+            dark
           />
           <Input
             value={newContextMeaning}
             onChange={(e) => setNewContextMeaning(e.target.value)}
             placeholder="Meaning in this context"
-            className="bg-slate-800 border-slate-700"
+            dark
           />
           <Button type="button" variant="outline" size="icon" onClick={addContextualMeaning}>
             <Plus className="w-4 h-4" />
@@ -183,9 +185,9 @@ export const SymbolForm: React.FC<Props> = ({ userId, existingSymbol, onSuccess 
         {contextualMeanings.length > 0 && (
           <div className="space-y-2 mt-2">
             {contextualMeanings.map((cm, index) => (
-              <div
+              <Panel dark
                 key={index}
-                className="flex items-start gap-2 p-2 bg-slate-800/50 rounded-lg"
+                className="flex items-start gap-2 p-2 rounded-lg"
               >
                 <div className="flex-1">
                   <Badge variant="outline" className="text-amber-400 border-amber-400/30 text-xs mb-1">
@@ -200,7 +202,7 @@ export const SymbolForm: React.FC<Props> = ({ userId, existingSymbol, onSuccess 
                 >
                   <X className="w-4 h-4" />
                 </button>
-              </div>
+              </Panel>
             ))}
           </div>
         )}
@@ -212,27 +214,28 @@ export const SymbolForm: React.FC<Props> = ({ userId, existingSymbol, onSuccess 
           id="notes"
           {...register('notes')}
           placeholder="Any other thoughts or observations about this symbol..."
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark
+          className="min-h-[60px]"
         />
       </div>
 
       {/* Symbol Stats (for existing symbols) */}
       {existingSymbol && (
         <div className="border-t border-slate-700 pt-4">
-          <Label className="text-slate-400">Symbol Statistics</Label>
+          <Label dark>Symbol Statistics</Label>
           <div className="grid grid-cols-3 gap-4 mt-2">
-            <div className="text-center p-2 bg-slate-800/50 rounded-lg">
+            <Panel dark className="text-center p-2 rounded-lg">
               <div className="text-2xl font-bold text-white">{existingSymbol.totalOccurrences}</div>
               <div className="text-xs text-slate-500">Total</div>
-            </div>
-            <div className="text-center p-2 bg-slate-800/50 rounded-lg">
+            </Panel>
+            <Panel dark className="text-center p-2 rounded-lg">
               <div className="text-2xl font-bold text-purple-400">{existingSymbol.dreamOccurrences}</div>
               <div className="text-xs text-slate-500">In Dreams</div>
-            </div>
-            <div className="text-center p-2 bg-slate-800/50 rounded-lg">
+            </Panel>
+            <Panel dark className="text-center p-2 rounded-lg">
               <div className="text-2xl font-bold text-indigo-400">{existingSymbol.readingOccurrences}</div>
               <div className="text-xs text-slate-500">In Readings</div>
-            </div>
+            </Panel>
           </div>
         </div>
       )}

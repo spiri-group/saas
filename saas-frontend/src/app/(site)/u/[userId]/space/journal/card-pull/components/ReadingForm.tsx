@@ -300,20 +300,21 @@ const ReadingForm: React.FC<ReadingFormProps> = ({
 
         {/* Date */}
         <div>
-          <Label htmlFor="date" className="text-slate-300">Date</Label>
+          <Label htmlFor="date" dark>Date</Label>
           <Input
             type="date"
             id="date"
             value={formState.date}
             onChange={(e) => setFormState(prev => ({ ...prev, date: e.target.value }))}
-            className="mt-1 bg-white/5 border-white/20 text-white w-fit"
+            dark
+            className="mt-1 w-fit"
             data-testid="date-input"
           />
         </div>
 
         {/* Spread Type */}
         <div>
-          <Label className="text-slate-300">Spread</Label>
+          <Label dark>Spread</Label>
           <div className="grid grid-cols-2 gap-2 mt-2">
             {SPREAD_TYPES.map((spread) => (
               <button
@@ -335,7 +336,7 @@ const ReadingForm: React.FC<ReadingFormProps> = ({
 
         {/* Source Selection */}
         <div>
-          <Label className="text-slate-300">Source</Label>
+          <Label dark>Source</Label>
           <div className="grid grid-cols-2 gap-2 mt-2">
             {SOURCE_OPTIONS.map((option) => (
               <button
@@ -417,12 +418,13 @@ const ReadingForm: React.FC<ReadingFormProps> = ({
         {/* Source-specific fields */}
         {formState.sourceType === 'SELF' && (
           <div>
-            <Label htmlFor="deck" className="text-slate-300">Deck</Label>
+            <Label htmlFor="deck" dark>Deck</Label>
             <Select
               value={formState.deck}
               onValueChange={(value) => setFormState(prev => ({ ...prev, deck: value }))}
+              dark
             >
-              <SelectTrigger id="deck" className="mt-1 bg-white/5 border-white/20 text-white" data-testid="deck-select">
+              <SelectTrigger id="deck" className="mt-1" data-testid="deck-select">
                 <SelectValue placeholder="Select your deck" />
               </SelectTrigger>
               <SelectContent>
@@ -437,7 +439,8 @@ const ReadingForm: React.FC<ReadingFormProps> = ({
                 value={formState.customDeck}
                 onChange={(e) => setFormState(prev => ({ ...prev, customDeck: e.target.value }))}
                 placeholder="Enter deck name"
-                className="mt-2 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+                dark
+                className="mt-2"
                 data-testid="custom-deck-input"
               />
             )}
@@ -447,7 +450,7 @@ const ReadingForm: React.FC<ReadingFormProps> = ({
         {formState.sourceType === 'EXTERNAL' && (
           <div className="space-y-4">
             <div>
-              <Label className="text-slate-300">Platform</Label>
+              <Label dark>Platform</Label>
               <div className="grid grid-cols-3 gap-2 mt-2">
                 {EXTERNAL_PLATFORMS.map((platform) => (
                   <button
@@ -469,20 +472,21 @@ const ReadingForm: React.FC<ReadingFormProps> = ({
             </div>
 
             <div>
-              <Label htmlFor="readerName" className="text-slate-300">Reader/Creator Name (optional)</Label>
+              <Label htmlFor="readerName" dark>Reader/Creator Name (optional)</Label>
               <Input
                 id="readerName"
                 value={formState.readerName || ''}
                 onChange={(e) => setFormState(prev => ({ ...prev, readerName: e.target.value }))}
                 placeholder="Who did the reading?"
-                className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+                dark
+                className="mt-1"
                 data-testid="reader-name-input"
               />
             </div>
 
             {(formState.platform === 'TIKTOK' || formState.platform === 'YOUTUBE') && (
               <div>
-                <Label htmlFor="sourceUrl" className="text-slate-300">Link (optional)</Label>
+                <Label htmlFor="sourceUrl" dark>Link (optional)</Label>
                 <div className="relative mt-1">
                   <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <Input
@@ -490,7 +494,8 @@ const ReadingForm: React.FC<ReadingFormProps> = ({
                     value={formState.sourceUrl || ''}
                     onChange={(e) => setFormState(prev => ({ ...prev, sourceUrl: e.target.value }))}
                     placeholder="Paste video link"
-                    className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+                    dark
+                    className="pl-10"
                     data-testid="source-url-input"
                   />
                 </div>
@@ -502,7 +507,7 @@ const ReadingForm: React.FC<ReadingFormProps> = ({
         {/* Cards Section */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <Label className="text-slate-300">Cards Pulled</Label>
+            <Label dark>Cards Pulled</Label>
             <Button
               type="button"
               variant="ghost"
@@ -591,33 +596,35 @@ const ReadingForm: React.FC<ReadingFormProps> = ({
 
       {/* Question */}
       <div>
-        <Label htmlFor="question" className="text-slate-300">Question/Focus</Label>
+        <Label htmlFor="question" dark>Question/Focus</Label>
         <Input
           id="question"
           value={formState.question || ''}
           onChange={(e) => setFormState(prev => ({ ...prev, question: e.target.value }))}
           placeholder="What did you ask or focus on?"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+          dark
+          className="mt-1"
           data-testid="question-input"
         />
       </div>
 
       {/* First Impression */}
       <div>
-        <Label htmlFor="firstImpression" className="text-slate-300">First Impression</Label>
+        <Label htmlFor="firstImpression" dark>First Impression</Label>
         <Textarea
           id="firstImpression"
           value={formState.firstImpression || ''}
           onChange={(e) => setFormState(prev => ({ ...prev, firstImpression: e.target.value }))}
           placeholder="What stood out to you?"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 min-h-[60px]"
+          dark
+          className="mt-1 min-h-[60px]"
           data-testid="first-impression-input"
         />
       </div>
 
       {/* Per-card interpretations */}
       <div>
-        <Label className="text-slate-300 mb-2 block">Card Interpretations</Label>
+        <Label dark className="mb-2 block">Card Interpretations</Label>
         <div className="space-y-2">
           {formState.cards.filter(c => c.name.trim()).map((card, index) => (
             <div key={card.id} className="p-2 rounded-lg bg-white/5 border border-white/10">
@@ -631,7 +638,8 @@ const ReadingForm: React.FC<ReadingFormProps> = ({
                   { ...card, interpretation: e.target.value }
                 )}
                 placeholder="What does this card mean to you?"
-                className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 min-h-[50px] text-sm"
+                dark
+                className="min-h-[50px] text-sm"
                 data-testid={`card-interpretation-input-${index}`}
               />
             </div>
@@ -641,7 +649,7 @@ const ReadingForm: React.FC<ReadingFormProps> = ({
 
       {/* Resonance Score */}
       <div>
-        <Label className="text-slate-300">Resonance</Label>
+        <Label dark>Resonance</Label>
         <div className="flex gap-1.5 mt-1.5">
           {[1, 2, 3, 4, 5].map((score) => (
             <button

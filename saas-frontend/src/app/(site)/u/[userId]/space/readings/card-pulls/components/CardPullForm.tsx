@@ -128,15 +128,16 @@ const CardPullForm: React.FC<CardPullFormProps> = ({
       {/* Date (only if creating new) */}
       {!isEditing && (
         <div>
-          <Label htmlFor="date" className="text-slate-300">
+          <Label htmlFor="date" dark>
             Date
           </Label>
           <Input
             type="date"
             id="date"
+            dark
             value={formState.date}
             onChange={(e) => setFormState(prev => ({ ...prev, date: e.target.value }))}
-            className="mt-1 bg-white/5 border-white/20 text-white w-fit"
+            className="mt-1 w-fit"
             data-testid="date-input"
           />
         </div>
@@ -144,16 +145,17 @@ const CardPullForm: React.FC<CardPullFormProps> = ({
 
       {/* Deck Selection */}
       <div>
-        <Label htmlFor="deck" className="text-slate-300">
+        <Label htmlFor="deck" dark>
           Deck
         </Label>
         <Select
+          dark
           value={formState.deck}
           onValueChange={(value) => setFormState(prev => ({ ...prev, deck: value }))}
         >
           <SelectTrigger
             id="deck"
-            className="mt-1 bg-white/5 border-white/20 text-white"
+            className="mt-1"
             data-testid="deck-select"
           >
             <SelectValue placeholder="Select your deck" />
@@ -172,7 +174,8 @@ const CardPullForm: React.FC<CardPullFormProps> = ({
             value={formState.customDeck}
             onChange={(e) => setFormState(prev => ({ ...prev, customDeck: e.target.value }))}
             placeholder="Enter deck name"
-            className="mt-2 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="mt-2"
             data-testid="custom-deck-input"
           />
         )}
@@ -181,7 +184,7 @@ const CardPullForm: React.FC<CardPullFormProps> = ({
       {/* Cards Section */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <Label className="text-slate-300">Cards Pulled</Label>
+          <Label dark>Cards Pulled</Label>
           <Button
             type="button"
             variant="ghost"

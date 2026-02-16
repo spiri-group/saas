@@ -121,7 +121,8 @@ const SymbolCard: React.FC<SymbolCardProps> = ({ symbol, userId, onUpdate }) => 
             value={meaning}
             onChange={(e) => setMeaning(e.target.value)}
             placeholder="What does this symbol mean to you personally?"
-            className="bg-slate-800/50 border-slate-600 text-white min-h-[80px] text-sm"
+            dark
+            className="min-h-[80px] text-sm"
           />
           <div className="flex gap-2 justify-end">
             <Button
@@ -222,7 +223,8 @@ const PersonalSymbolDictionary: React.FC<PersonalSymbolDictionaryProps> = ({ use
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search symbols..."
-            className="pl-10 bg-white/5 border-white/10 text-white"
+            dark
+            className="pl-10"
           />
         </div>
         <div className="flex flex-wrap gap-2">

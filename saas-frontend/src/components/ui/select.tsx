@@ -6,10 +6,27 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+type SelectTheme = { dark?: boolean; glass?: boolean }
+
+const SelectThemeContext = React.createContext<SelectTheme>({})
+
+function useSelectTheme(overrides?: SelectTheme) {
+  const ctx = React.useContext(SelectThemeContext)
+  const dark = overrides?.dark ?? ctx.dark ?? false
+  const glass = overrides?.glass ?? ctx.glass ?? !dark
+  return { dark, glass }
+}
+
 function Select({
+  dark,
+  glass,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />
+}: React.ComponentProps<typeof SelectPrimitive.Root> & SelectTheme) {
+  return (
+    <SelectThemeContext.Provider value={{ dark, glass }}>
+      <SelectPrimitive.Root data-slot="select" {...props} />
+    </SelectThemeContext.Provider>
+  )
 }
 
 function SelectGroup({
@@ -28,16 +45,25 @@ function SelectTrigger({
   className,
   size = "default",
   children,
+  dark: darkProp,
+  glass: glassProp,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
   size?: "sm" | "default"
-}) {
+} & SelectTheme) {
+  const { dark, glass } = useSelectTheme({ dark: darkProp, glass: glassProp })
+
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-full items-center justify-between gap-2 rounded-md border border-white/20 bg-white/70 backdrop-blur-sm px-3 py-2 text-sm text-black placeholder:text-black/60 shadow-inner transition-[color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-10 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[placeholder]:text-black/60",
+        "flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-sm transition-[color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-offset-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-10 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        dark
+          ? "border border-slate-700 bg-slate-800 text-white data-[placeholder]:text-slate-400 focus-visible:ring-slate-500"
+          : glass
+            ? "border border-white/20 bg-white/70 backdrop-blur-sm text-black data-[placeholder]:text-black/60 shadow-inner focus-visible:ring-white/20"
+            : "border border-input bg-white text-black data-[placeholder]:text-muted-foreground focus-visible:ring-ring",
         className
       )}
       {...props}
@@ -54,14 +80,23 @@ function SelectContent({
   className,
   children,
   position = "popper",
+  dark: darkProp,
+  glass: glassProp,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+}: React.ComponentProps<typeof SelectPrimitive.Content> & SelectTheme) {
+  const { dark, glass } = useSelectTheme({ dark: darkProp, glass: glassProp })
+
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          "bg-white/70 backdrop-blur-sm border border-white/20 text-black shadow-inner data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md",
+          dark
+            ? "bg-slate-800 border border-slate-700 text-white"
+            : glass
+              ? "bg-white/70 backdrop-blur-sm border border-white/20 text-black shadow-inner"
+              : "bg-white border border-input text-black",
           position === "popper" &&
             "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
           className
@@ -89,10 +124,15 @@ function SelectLabel({
   className,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Label>) {
+  const { dark } = useSelectTheme()
   return (
     <SelectPrimitive.Label
       data-slot="select-label"
-      className={cn("text-muted-foreground px-2 py-1.5 text-xs", className)}
+      className={cn(
+        "px-2 py-1.5 text-xs",
+        dark ? "text-slate-400" : "text-muted-foreground",
+        className
+      )}
       {...props}
     />
   )
@@ -103,11 +143,15 @@ function SelectItem({
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Item>) {
+  const { dark } = useSelectTheme()
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-pointer items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm text-black outline-hidden select-none hover:bg-white/50 focus:bg-white/60 data-[state=checked]:cursor-default data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "relative flex w-full cursor-pointer items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[state=checked]:cursor-default data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        dark
+          ? "text-white hover:bg-white/10 focus:bg-white/15"
+          : "text-black hover:bg-white/50 focus:bg-white/60",
         className
       )}
       {...props}

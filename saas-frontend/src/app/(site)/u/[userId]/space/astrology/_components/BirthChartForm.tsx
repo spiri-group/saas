@@ -109,7 +109,7 @@ export const BirthChartForm: React.FC<Props> = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Birth Date */}
       <div className="space-y-2">
-        <Label className="text-slate-300 flex items-center gap-2">
+        <Label dark className="flex items-center gap-2">
           <Calendar className="w-4 h-4" />
           Birth Date
         </Label>
@@ -117,7 +117,7 @@ export const BirthChartForm: React.FC<Props> = ({
           type="date"
           value={birthDate}
           onChange={(e) => setBirthDate(e.target.value)}
-          className="bg-slate-800/50 border-white/20 text-white"
+          dark
           required
           data-testid="birth-date-input"
         />
@@ -125,7 +125,7 @@ export const BirthChartForm: React.FC<Props> = ({
 
       {/* Birth Time */}
       <div className="space-y-2">
-        <Label className="text-slate-300">Birth Time</Label>
+        <Label dark>Birth Time</Label>
         <BirthTimeSelector
           precision={birthTimePrecision}
           exactTime={exactTime}
@@ -138,7 +138,7 @@ export const BirthChartForm: React.FC<Props> = ({
 
       {/* Birth Location */}
       <div className="space-y-2">
-        <Label className="text-slate-300 flex items-center gap-2">
+        <Label dark className="flex items-center gap-2">
           <MapPin className="w-4 h-4" />
           Birth Location
         </Label>
@@ -149,14 +149,15 @@ export const BirthChartForm: React.FC<Props> = ({
         />
         {selectedCity && (
           <div className="mt-2">
-            <Label className="text-slate-400 text-xs">
+            <Label dark className="text-xs">
               Location note (optional)
             </Label>
             <Textarea
               value={locationNote}
               onChange={(e) => setLocationNote(e.target.value)}
               placeholder="e.g., Born in a small town near this city..."
-              className="mt-1 bg-slate-800/50 border-white/20 text-white placeholder:text-slate-500 text-sm"
+              dark
+              className="mt-1 text-sm"
               rows={2}
               data-testid="location-note-input"
             />

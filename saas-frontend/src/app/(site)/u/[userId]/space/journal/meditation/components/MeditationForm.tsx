@@ -121,7 +121,7 @@ const MeditationForm: React.FC<MeditationFormProps> = ({
       {/* Date (only if creating new) */}
       {!isEditing && (
         <div>
-          <Label htmlFor="date" className="text-slate-300">
+          <Label htmlFor="date" dark>
             Date
           </Label>
           <Input
@@ -129,7 +129,8 @@ const MeditationForm: React.FC<MeditationFormProps> = ({
             id="date"
             value={formState.date}
             onChange={(e) => setFormState(prev => ({ ...prev, date: e.target.value }))}
-            className="mt-1 bg-white/5 border-white/20 text-white w-fit"
+            dark
+            className="mt-1 w-fit"
             data-testid="date-input"
           />
         </div>
@@ -137,7 +138,7 @@ const MeditationForm: React.FC<MeditationFormProps> = ({
 
       {/* Duration */}
       <div>
-        <Label htmlFor="duration" className="text-slate-300">
+        <Label htmlFor="duration" dark>
           Duration (minutes)
         </Label>
         <Input
@@ -147,23 +148,25 @@ const MeditationForm: React.FC<MeditationFormProps> = ({
           max={180}
           value={formState.duration}
           onChange={(e) => setFormState(prev => ({ ...prev, duration: parseInt(e.target.value) || 0 }))}
-          className="mt-1 bg-white/5 border-white/20 text-white w-32"
+          dark
+          className="mt-1 w-32"
           data-testid="duration-input"
         />
       </div>
 
       {/* Technique */}
       <div>
-        <Label htmlFor="technique" className="text-slate-300">
+        <Label htmlFor="technique" dark>
           Technique
         </Label>
         <Select
           value={formState.technique}
           onValueChange={(value) => setFormState(prev => ({ ...prev, technique: value as any }))}
+          dark
         >
           <SelectTrigger
             id="technique"
-            className="mt-1 bg-white/5 border-white/20 text-white"
+            className="mt-1"
             data-testid="technique-select"
           >
             <SelectValue placeholder="Select technique" />
@@ -181,7 +184,7 @@ const MeditationForm: React.FC<MeditationFormProps> = ({
       {/* Guided By (show only if technique is 'guided') */}
       {formState.technique === 'guided' && (
         <div>
-          <Label htmlFor="guidedBy" className="text-slate-300">
+          <Label htmlFor="guidedBy" dark>
             Guided By
           </Label>
           <Input
@@ -189,7 +192,8 @@ const MeditationForm: React.FC<MeditationFormProps> = ({
             value={formState.guidedBy || ''}
             onChange={(e) => setFormState(prev => ({ ...prev, guidedBy: e.target.value }))}
             placeholder="e.g., Headspace, Calm, teacher name"
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="mt-1"
             data-testid="guided-by-input"
           />
         </div>
@@ -198,16 +202,17 @@ const MeditationForm: React.FC<MeditationFormProps> = ({
       {/* Mood - Pre and Post */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="preSessionMood" className="text-slate-300">
+          <Label htmlFor="preSessionMood" dark>
             Mood Before
           </Label>
           <Select
             value={formState.preSessionMood}
             onValueChange={(value) => setFormState(prev => ({ ...prev, preSessionMood: value as any }))}
+            dark
           >
             <SelectTrigger
               id="preSessionMood"
-              className="mt-1 bg-white/5 border-white/20 text-white"
+              className="mt-1"
             >
               <SelectValue placeholder="How did you feel?" />
             </SelectTrigger>
@@ -222,16 +227,17 @@ const MeditationForm: React.FC<MeditationFormProps> = ({
         </div>
 
         <div>
-          <Label htmlFor="postSessionMood" className="text-slate-300">
+          <Label htmlFor="postSessionMood" dark>
             Mood After
           </Label>
           <Select
             value={formState.postSessionMood}
             onValueChange={(value) => setFormState(prev => ({ ...prev, postSessionMood: value as any }))}
+            dark
           >
             <SelectTrigger
               id="postSessionMood"
-              className="mt-1 bg-white/5 border-white/20 text-white"
+              className="mt-1"
             >
               <SelectValue placeholder="How do you feel now?" />
             </SelectTrigger>
@@ -249,7 +255,7 @@ const MeditationForm: React.FC<MeditationFormProps> = ({
       {/* Depth and Distraction Sliders */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label className="text-slate-300">
+          <Label dark>
             Depth: {formState.depth}/5
           </Label>
           <Slider
@@ -267,7 +273,7 @@ const MeditationForm: React.FC<MeditationFormProps> = ({
         </div>
 
         <div>
-          <Label className="text-slate-300">
+          <Label dark>
             Distraction: {formState.distractionLevel}/5
           </Label>
           <Slider
@@ -287,7 +293,7 @@ const MeditationForm: React.FC<MeditationFormProps> = ({
 
       {/* Insights */}
       <div>
-        <Label htmlFor="insights" className="text-slate-300">
+        <Label htmlFor="insights" dark>
           Insights (optional)
         </Label>
         <Textarea
@@ -295,14 +301,15 @@ const MeditationForm: React.FC<MeditationFormProps> = ({
           value={formState.insights || ''}
           onChange={(e) => setFormState(prev => ({ ...prev, insights: e.target.value }))}
           placeholder="Any realizations or thoughts that came up..."
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 min-h-[80px]"
+          dark
+          className="mt-1 min-h-[80px]"
           data-testid="insights-input"
         />
       </div>
 
       {/* Experiences */}
       <div>
-        <Label htmlFor="experiences" className="text-slate-300">
+        <Label htmlFor="experiences" dark>
           Experiences (optional)
         </Label>
         <Textarea
@@ -310,7 +317,8 @@ const MeditationForm: React.FC<MeditationFormProps> = ({
           value={formState.experiences || ''}
           onChange={(e) => setFormState(prev => ({ ...prev, experiences: e.target.value }))}
           placeholder="Notable sensations, visions, or feelings..."
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 min-h-[80px]"
+          dark
+          className="mt-1 min-h-[80px]"
           data-testid="experiences-input"
         />
       </div>

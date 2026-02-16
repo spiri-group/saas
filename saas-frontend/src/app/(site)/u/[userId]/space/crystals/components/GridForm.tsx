@@ -169,7 +169,7 @@ const GridForm: React.FC<GridFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-5" data-testid="grid-form">
       {/* Grid Name */}
       <div>
-        <Label htmlFor="gridName" className="text-slate-300">
+        <Label htmlFor="gridName" dark>
           Grid Name <span className="text-red-400">*</span>
         </Label>
         <Input
@@ -177,14 +177,15 @@ const GridForm: React.FC<GridFormProps> = ({
           value={formState.name}
           onChange={(e) => setFormState(prev => ({ ...prev, name: e.target.value }))}
           placeholder="e.g., Abundance Grid, Love Manifestation"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+          dark
+          className="mt-1"
           data-testid="grid-name-input"
         />
       </div>
 
       {/* Purpose */}
       <div>
-        <Label htmlFor="gridPurpose" className="text-slate-300">
+        <Label htmlFor="gridPurpose" dark>
           Purpose/Intention <span className="text-red-400">*</span>
         </Label>
         <Textarea
@@ -192,18 +193,20 @@ const GridForm: React.FC<GridFormProps> = ({
           value={formState.purpose}
           onChange={(e) => setFormState(prev => ({ ...prev, purpose: e.target.value }))}
           placeholder="What is this grid designed to manifest or support?"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 min-h-[80px]"
+          dark
+          className="mt-1 min-h-[80px]"
         />
       </div>
 
       {/* Grid Shape */}
       <div>
-        <Label className="text-slate-300">Grid Shape</Label>
+        <Label dark>Grid Shape</Label>
         <Select
           value={formState.gridShape || ''}
           onValueChange={(value) => setFormState(prev => ({ ...prev, gridShape: value }))}
+          dark
         >
-          <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white">
+          <SelectTrigger className="mt-1">
             <SelectValue placeholder="Select sacred geometry" />
           </SelectTrigger>
           <SelectContent>
@@ -219,7 +222,7 @@ const GridForm: React.FC<GridFormProps> = ({
       {/* Crystal Placements */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <Label className="text-slate-300">
+          <Label dark>
             Crystal Placements <span className="text-red-400">*</span>
           </Label>
           <Button
@@ -271,12 +274,13 @@ const GridForm: React.FC<GridFormProps> = ({
                 <div className="grid grid-cols-2 gap-3">
                   {/* Crystal Selection */}
                   <div>
-                    <Label className="text-xs text-slate-400">Crystal</Label>
+                    <Label dark className="text-xs">Crystal</Label>
                     <Select
                       value={placement.crystalId || 'custom'}
                       onValueChange={(value) => handleSelectCrystal(index, value)}
+                      dark
                     >
-                      <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white text-sm">
+                      <SelectTrigger className="mt-1 text-sm">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
@@ -293,19 +297,21 @@ const GridForm: React.FC<GridFormProps> = ({
                         value={placement.crystalName}
                         onChange={(e) => handleUpdatePlacement(index, { crystalName: e.target.value })}
                         placeholder="Crystal name"
-                        className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 text-sm"
+                        dark
+                        className="mt-1 text-sm"
                       />
                     )}
                   </div>
 
                   {/* Position */}
                   <div>
-                    <Label className="text-xs text-slate-400">Position</Label>
+                    <Label dark className="text-xs">Position</Label>
                     <Select
                       value={placement.position}
                       onValueChange={(value) => handleUpdatePlacement(index, { position: value })}
+                      dark
                     >
-                      <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white text-sm">
+                      <SelectTrigger className="mt-1 text-sm">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
@@ -321,12 +327,13 @@ const GridForm: React.FC<GridFormProps> = ({
 
                 {/* Role */}
                 <div>
-                  <Label className="text-xs text-slate-400">Role</Label>
+                  <Label dark className="text-xs">Role</Label>
                   <Select
                     value={placement.role || ''}
                     onValueChange={(value) => handleUpdatePlacement(index, { role: value })}
+                    dark
                   >
-                    <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white text-sm">
+                    <SelectTrigger className="mt-1 text-sm">
                       <SelectValue placeholder="Crystal's role in grid" />
                     </SelectTrigger>
                     <SelectContent>
@@ -346,13 +353,14 @@ const GridForm: React.FC<GridFormProps> = ({
 
       {/* Notes */}
       <div>
-        <Label htmlFor="gridNotes" className="text-slate-300">Notes</Label>
+        <Label htmlFor="gridNotes" dark>Notes</Label>
         <Textarea
           id="gridNotes"
           value={formState.notes}
           onChange={(e) => setFormState(prev => ({ ...prev, notes: e.target.value }))}
           placeholder="Any additional notes about your grid setup"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 min-h-[60px]"
+          dark
+          className="mt-1 min-h-[60px]"
         />
       </div>
 

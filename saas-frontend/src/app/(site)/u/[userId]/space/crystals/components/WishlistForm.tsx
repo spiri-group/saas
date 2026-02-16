@@ -120,7 +120,7 @@ const WishlistForm: React.FC<WishlistFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-5" data-testid="wishlist-form">
       {/* Crystal Type Selector */}
       <div>
-        <Label className="text-slate-300">
+        <Label dark>
           Crystal Type
         </Label>
         <p className="text-xs text-slate-500 mb-2">
@@ -135,7 +135,7 @@ const WishlistForm: React.FC<WishlistFormProps> = ({
 
       {/* Crystal Name (manual entry/override) */}
       <div>
-        <Label htmlFor="wishName" className="text-slate-300">
+        <Label htmlFor="wishName" dark>
           Crystal Name <span className="text-red-400">*</span>
         </Label>
         <Input
@@ -143,7 +143,8 @@ const WishlistForm: React.FC<WishlistFormProps> = ({
           value={formState.name}
           onChange={(e) => setFormState(prev => ({ ...prev, name: e.target.value, crystalRefId: undefined }))}
           placeholder="e.g., Black Tourmaline, Labradorite"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+          dark
+          className="mt-1"
           data-testid="wishlist-name-input"
         />
         {formState.crystalRefId && (
@@ -155,7 +156,7 @@ const WishlistForm: React.FC<WishlistFormProps> = ({
 
       {/* Priority */}
       <div>
-        <Label className="text-slate-300">Priority</Label>
+        <Label dark>Priority</Label>
         <div className="flex gap-2 mt-2">
           {PRIORITY_OPTIONS.map((option) => (
             <button
@@ -177,12 +178,13 @@ const WishlistForm: React.FC<WishlistFormProps> = ({
       {/* Preferences Row */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label className="text-slate-300">Preferred Form</Label>
+          <Label dark>Preferred Form</Label>
           <Select
             value={formState.preferredForm || ''}
             onValueChange={(value) => setFormState(prev => ({ ...prev, preferredForm: value as CrystalForm }))}
+            dark
           >
-            <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white">
+            <SelectTrigger className="mt-1">
               <SelectValue placeholder="Any form" />
             </SelectTrigger>
             <SelectContent>
@@ -196,50 +198,54 @@ const WishlistForm: React.FC<WishlistFormProps> = ({
         </div>
 
         <div>
-          <Label htmlFor="wishSize" className="text-slate-300">Preferred Size</Label>
+          <Label htmlFor="wishSize" dark>Preferred Size</Label>
           <Input
             id="wishSize"
             value={formState.preferredSize}
             onChange={(e) => setFormState(prev => ({ ...prev, preferredSize: e.target.value }))}
             placeholder="e.g., Palm size"
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="mt-1"
           />
         </div>
       </div>
 
       {/* Origin */}
       <div>
-        <Label htmlFor="wishOrigin" className="text-slate-300">Preferred Origin</Label>
+        <Label htmlFor="wishOrigin" dark>Preferred Origin</Label>
         <Input
           id="wishOrigin"
           value={formState.preferredOrigin}
           onChange={(e) => setFormState(prev => ({ ...prev, preferredOrigin: e.target.value }))}
           placeholder="e.g., Madagascar, Brazil"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+          dark
+          className="mt-1"
         />
       </div>
 
       {/* Budget Row */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="maxBudget" className="text-slate-300">Max Budget</Label>
+          <Label htmlFor="maxBudget" dark>Max Budget</Label>
           <Input
             id="maxBudget"
             type="number"
             value={formState.maxBudget || ''}
             onChange={(e) => setFormState(prev => ({ ...prev, maxBudget: e.target.value ? parseFloat(e.target.value) : undefined }))}
             placeholder="0.00"
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="mt-1"
           />
         </div>
 
         <div>
-          <Label className="text-slate-300">Currency</Label>
+          <Label dark>Currency</Label>
           <Select
             value={formState.currency}
             onValueChange={(value) => setFormState(prev => ({ ...prev, currency: value }))}
+            dark
           >
-            <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white">
+            <SelectTrigger className="mt-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -255,25 +261,27 @@ const WishlistForm: React.FC<WishlistFormProps> = ({
 
       {/* Purpose */}
       <div>
-        <Label htmlFor="wishPurpose" className="text-slate-300">Purpose</Label>
+        <Label htmlFor="wishPurpose" dark>Purpose</Label>
         <Input
           id="wishPurpose"
           value={formState.purpose}
           onChange={(e) => setFormState(prev => ({ ...prev, purpose: e.target.value }))}
           placeholder="What will you use this crystal for?"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+          dark
+          className="mt-1"
         />
       </div>
 
       {/* Reason */}
       <div>
-        <Label htmlFor="wishReason" className="text-slate-300">Why do you want this crystal?</Label>
+        <Label htmlFor="wishReason" dark>Why do you want this crystal?</Label>
         <Textarea
           id="wishReason"
           value={formState.reason}
           onChange={(e) => setFormState(prev => ({ ...prev, reason: e.target.value }))}
           placeholder="What draws you to this crystal?"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 min-h-[80px]"
+          dark
+          className="mt-1 min-h-[80px]"
         />
       </div>
 
@@ -289,6 +297,7 @@ const WishlistForm: React.FC<WishlistFormProps> = ({
         <Switch
           checked={formState.alertEnabled}
           onCheckedChange={(checked) => setFormState(prev => ({ ...prev, alertEnabled: checked }))}
+          dark
         />
       </div>
 

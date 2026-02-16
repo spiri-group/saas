@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Sparkles, Plus, Calendar, TrendingUp, Eye, Sun, Clock, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Panel } from '@/components/ui/panel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useChakraCheckins, ChakraCheckin } from '../hooks';
@@ -220,7 +221,7 @@ const UI: React.FC<Props> = ({ userId }) => {
             {/* Today's Check-In Card OR New Check-In Prompt */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Visual Chakra Display */}
-              <div className="p-6 bg-slate-800/50 rounded-2xl border border-white/10 backdrop-blur-sm">
+              <Panel dark className="p-6 rounded-2xl border border-white/10 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-violet-400" />
@@ -270,7 +271,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                     Overall Balance: <span className="text-white font-medium">{todaysCheckin.overallBalance}/10</span>
                   </div>
                 )}
-              </div>
+              </Panel>
 
               {/* Action Card */}
               <div className="flex flex-col gap-4">
@@ -357,7 +358,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-violet-500/20 text-white max-w-[95vw] w-full sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="border-violet-500/20 max-w-[95vw] w-full sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-violet-400" />
@@ -375,7 +376,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Detail View Dialog */}
       <Dialog open={!!selectedCheckin} onOpenChange={(open) => !open && setSelectedCheckin(null)}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-violet-500/20 text-white sm:max-w-lg">
+        <DialogContent className="border-violet-500/20 sm:max-w-lg">
           {selectedCheckin && (
             <>
               <DialogHeader>

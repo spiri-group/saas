@@ -285,7 +285,7 @@ const UI: React.FC<Props> = ({ userId }) => {
             if (!open) handleCancel();
           }}
         >
-          <DialogContent className="bg-slate-900 border-slate-700 max-w-[95vw] w-full md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-[95vw] w-full md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-white">
                 {viewMode === 'edit' ? 'Edit Entry' : 'New Journal Entry'}

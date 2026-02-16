@@ -148,20 +148,21 @@ export const ExerciseForm: React.FC<Props> = ({ userId, existingExercise, onSucc
             id="date"
             type="date"
             {...register('date', { required: true })}
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="exerciseType">Exercise Type</Label>
           <Select
+            dark
             value={watch('exerciseType')}
             onValueChange={(value) => setValue('exerciseType', value as ExerciseType)}
           >
-            <SelectTrigger className="bg-slate-800 border-slate-700">
+            <SelectTrigger>
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700 max-h-[200px]">
+            <SelectContent className="max-h-[200px]">
               {EXERCISE_TYPES.map((type) => (
                 <SelectItem key={type.value} value={type.value}>
                   <div>
@@ -181,7 +182,7 @@ export const ExerciseForm: React.FC<Props> = ({ userId, existingExercise, onSucc
           id="exerciseName"
           {...register('exerciseName', { required: true })}
           placeholder="What did you practice?"
-          className="bg-slate-800 border-slate-700"
+          dark
           data-testid="exercise-name"
         />
       </div>
@@ -190,13 +191,14 @@ export const ExerciseForm: React.FC<Props> = ({ userId, existingExercise, onSucc
         <div className="space-y-2">
           <Label htmlFor="difficulty">Difficulty</Label>
           <Select
+            dark
             value={watch('difficulty')}
             onValueChange={(value) => setValue('difficulty', value as ExerciseDifficulty)}
           >
-            <SelectTrigger className="bg-slate-800 border-slate-700">
+            <SelectTrigger>
               <SelectValue placeholder="Select" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
+            <SelectContent>
               {DIFFICULTY_LEVELS.map((level) => (
                 <SelectItem key={level.value} value={level.value}>
                   {level.label}
@@ -212,7 +214,7 @@ export const ExerciseForm: React.FC<Props> = ({ userId, existingExercise, onSucc
             id="duration"
             type="number"
             {...register('duration', { valueAsNumber: true })}
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
 
@@ -222,7 +224,7 @@ export const ExerciseForm: React.FC<Props> = ({ userId, existingExercise, onSucc
             id="source"
             {...register('source')}
             placeholder="Book, course..."
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
       </div>
@@ -233,7 +235,7 @@ export const ExerciseForm: React.FC<Props> = ({ userId, existingExercise, onSucc
           id="environment"
           {...register('environment')}
           placeholder="Where and how did you practice?"
-          className="bg-slate-800 border-slate-700"
+          dark
         />
       </div>
 
@@ -243,7 +245,8 @@ export const ExerciseForm: React.FC<Props> = ({ userId, existingExercise, onSucc
           id="results"
           {...register('results')}
           placeholder="What happened during the exercise?"
-          className="bg-slate-800 border-slate-700 min-h-[80px]"
+          dark
+          className="min-h-[80px]"
         />
       </div>
 
@@ -255,7 +258,7 @@ export const ExerciseForm: React.FC<Props> = ({ userId, existingExercise, onSucc
             value={newHit}
             onChange={(e) => setNewHit(e.target.value)}
             placeholder="Something you got right..."
-            className="bg-slate-800 border-slate-700"
+            dark
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addHit())}
           />
           <Button type="button" variant="outline" size="icon" onClick={addHit}>
@@ -288,7 +291,7 @@ export const ExerciseForm: React.FC<Props> = ({ userId, existingExercise, onSucc
             value={newMiss}
             onChange={(e) => setNewMiss(e.target.value)}
             placeholder="Something to improve..."
-            className="bg-slate-800 border-slate-700"
+            dark
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addMiss())}
           />
           <Button type="button" variant="outline" size="icon" onClick={addMiss}>
@@ -351,7 +354,8 @@ export const ExerciseForm: React.FC<Props> = ({ userId, existingExercise, onSucc
           id="insights"
           {...register('insights')}
           placeholder="What did you learn?"
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark
+          className="min-h-[60px]"
         />
       </div>
 
@@ -361,17 +365,18 @@ export const ExerciseForm: React.FC<Props> = ({ userId, existingExercise, onSucc
           id="nextSteps"
           {...register('nextSteps')}
           placeholder="What will you work on next?"
-          className="bg-slate-800 border-slate-700"
+          dark
         />
       </div>
 
       <div className="flex items-center gap-2 pt-2">
         <Switch
+          dark
           id="willRepeat"
           checked={watch('willRepeat')}
           onCheckedChange={(checked) => setValue('willRepeat', checked)}
         />
-        <Label htmlFor="willRepeat" className="text-sm text-slate-400">
+        <Label htmlFor="willRepeat" dark className="text-sm">
           Will practice this again
         </Label>
       </div>

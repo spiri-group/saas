@@ -426,7 +426,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Form Dialogs */}
       <Dialog open={dialogType !== null} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="bg-slate-900 border-white/20 text-white sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {dialogType === 'crystal' && <Gem className="w-5 h-5 text-purple-400" />}

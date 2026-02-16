@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapPin, Loader2, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Panel } from '@/components/ui/panel';
 import { useSearchCities, CitySearchResult } from '../_hooks/useBirthChart';
 import { debounce } from '@/lib/functions';
 
@@ -71,7 +72,7 @@ export const CityAutocomplete: React.FC<Props> = ({
     <div ref={containerRef} className="relative">
       {value ? (
         // Selected city display
-        <div className="flex items-center gap-2 p-3 bg-slate-800/50 border border-white/20 rounded-lg">
+        <Panel dark className="flex items-center gap-2 p-3 border border-white/20 rounded-lg">
           <MapPin className="w-4 h-4 text-amber-400 flex-shrink-0" />
           <div className="flex-grow min-w-0">
             <div className="text-white font-medium truncate">
@@ -94,7 +95,7 @@ export const CityAutocomplete: React.FC<Props> = ({
               <X className="w-4 h-4 text-slate-400" />
             </button>
           )}
-        </div>
+        </Panel>
       ) : (
         // Search input
         <>
@@ -107,7 +108,8 @@ export const CityAutocomplete: React.FC<Props> = ({
               onFocus={() => query.length >= 2 && setIsOpen(true)}
               placeholder={placeholder}
               disabled={disabled}
-              className="pl-10 bg-slate-800/50 border-white/20 text-white placeholder:text-slate-500"
+              dark
+              className="pl-10"
               data-testid="city-search-input"
             />
             {isLoading && (

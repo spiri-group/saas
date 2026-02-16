@@ -138,7 +138,7 @@ export const EnergyJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="date"
             type="date"
             {...register('date', { required: true })}
-            className="bg-slate-800 border-slate-700"
+            dark
             data-testid="energy-journal-date"
           />
         </div>
@@ -146,13 +146,14 @@ export const EnergyJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
         <div className="space-y-2">
           <Label htmlFor="entryType">Entry Type</Label>
           <Select
+            dark
             value={watch('entryType')}
             onValueChange={(value) => setValue('entryType', value as EnergyEntryType)}
           >
-            <SelectTrigger className="bg-slate-800 border-slate-700" data-testid="energy-entry-type">
+            <SelectTrigger data-testid="energy-entry-type">
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
+            <SelectContent>
               {ENTRY_TYPES.map((type) => (
                 <SelectItem key={type.value} value={type.value}>
                   {type.label}
@@ -169,7 +170,7 @@ export const EnergyJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="title"
           {...register('title')}
           placeholder="Give this entry a title..."
-          className="bg-slate-800 border-slate-700"
+          dark
           data-testid="energy-journal-title"
         />
       </div>
@@ -178,13 +179,14 @@ export const EnergyJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
         <div className="space-y-2">
           <Label htmlFor="modality">Modality</Label>
           <Select
+            dark
             value={watch('modality') || ''}
             onValueChange={(value) => setValue('modality', value as EnergyModality)}
           >
-            <SelectTrigger className="bg-slate-800 border-slate-700" data-testid="energy-modality">
+            <SelectTrigger data-testid="energy-modality">
               <SelectValue placeholder="Select modality" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
+            <SelectContent>
               {MODALITIES.map((mod) => (
                 <SelectItem key={mod.value} value={mod.value}>
                   {mod.label}
@@ -201,7 +203,7 @@ export const EnergyJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             type="number"
             {...register('duration', { valueAsNumber: true })}
             placeholder="30"
-            className="bg-slate-800 border-slate-700"
+            dark
             data-testid="energy-duration"
           />
         </div>
@@ -212,13 +214,14 @@ export const EnergyJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
           <div className="space-y-2">
             <Label htmlFor="role">Your Role</Label>
             <Select
+              dark
               value={watch('role') || ''}
               onValueChange={(value) => setValue('role', value as SessionRole)}
             >
-              <SelectTrigger className="bg-slate-800 border-slate-700">
+              <SelectTrigger>
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700">
+              <SelectContent>
                 <SelectItem value="practitioner">Practitioner</SelectItem>
                 <SelectItem value="recipient">Recipient</SelectItem>
               </SelectContent>
@@ -232,7 +235,7 @@ export const EnergyJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
                 id="practitionerName"
                 {...register('practitionerName')}
                 placeholder="Enter name..."
-                className="bg-slate-800 border-slate-700"
+                dark
               />
             </div>
           )}
@@ -244,7 +247,7 @@ export const EnergyJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
                 id="clientInitials"
                 {...register('clientInitials')}
                 placeholder="J.D."
-                className="bg-slate-800 border-slate-700"
+                dark
               />
             </div>
           )}
@@ -257,7 +260,7 @@ export const EnergyJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="intention"
           {...register('intention')}
           placeholder="What was your intention?"
-          className="bg-slate-800 border-slate-700"
+          dark
           data-testid="energy-intention"
         />
       </div>
@@ -269,7 +272,7 @@ export const EnergyJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="preSessionFeeling"
             {...register('preSessionFeeling')}
             placeholder="How did you feel before?"
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
 
@@ -279,7 +282,7 @@ export const EnergyJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="postSessionFeeling"
             {...register('postSessionFeeling')}
             placeholder="How did you feel after?"
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
       </div>
@@ -302,7 +305,8 @@ export const EnergyJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="insights"
           {...register('insights')}
           placeholder="What insights or messages did you receive?"
-          className="bg-slate-800 border-slate-700 min-h-[80px]"
+          dark
+          className="min-h-[80px]"
           data-testid="energy-insights"
         />
       </div>
@@ -313,7 +317,8 @@ export const EnergyJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="notes"
           {...register('notes')}
           placeholder="Any other observations..."
-          className="bg-slate-800 border-slate-700 min-h-[80px]"
+          dark
+          className="min-h-[80px]"
           data-testid="energy-notes"
         />
       </div>

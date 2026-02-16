@@ -167,24 +167,24 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
       {/* Date and Title Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="date" className="text-slate-300">Date</Label>
+          <Label htmlFor="date" dark>Date</Label>
           <Input
             id="date"
             type="date"
             value={formState.date}
             onChange={(e) => setFormState(prev => ({ ...prev, date: e.target.value }))}
-            className="bg-slate-800/50 border-slate-700 text-white"
+            dark
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="wakeTime" className="text-slate-300">Wake Time</Label>
+          <Label htmlFor="wakeTime" dark>Wake Time</Label>
           <Input
             id="wakeTime"
             type="time"
             value={formState.wakeTime || ''}
             onChange={(e) => setFormState(prev => ({ ...prev, wakeTime: e.target.value }))}
-            className="bg-slate-800/50 border-slate-700 text-white"
+            dark
             placeholder="When did you wake up?"
           />
         </div>
@@ -192,28 +192,29 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
 
       {/* Title */}
       <div className="space-y-2">
-        <Label htmlFor="title" className="text-slate-300">
+        <Label htmlFor="title" dark>
           Dream Title <span className="text-red-400">*</span>
         </Label>
         <Input
           id="title"
           value={formState.title}
           onChange={(e) => setFormState(prev => ({ ...prev, title: e.target.value }))}
-          className="bg-slate-800/50 border-slate-700 text-white"
+          dark
           placeholder="Give your dream a memorable title..."
         />
       </div>
 
       {/* Dream Content */}
       <div className="space-y-2">
-        <Label htmlFor="content" className="text-slate-300">
+        <Label htmlFor="content" dark>
           Dream Description <span className="text-red-400">*</span>
         </Label>
         <Textarea
           id="content"
           value={formState.content}
           onChange={(e) => setFormState(prev => ({ ...prev, content: e.target.value }))}
-          className="bg-slate-800/50 border-slate-700 text-white min-h-[150px]"
+          dark
+          className="min-h-[150px]"
           placeholder="Describe your dream in as much detail as you can remember..."
         />
       </div>
@@ -221,12 +222,13 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
       {/* Dream Type, Mood, Clarity Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label className="text-slate-300">Dream Type</Label>
+          <Label dark>Dream Type</Label>
           <Select
             value={formState.dreamType || ''}
             onValueChange={(value) => setFormState(prev => ({ ...prev, dreamType: value as DreamType }))}
+            dark
           >
-            <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
+            <SelectTrigger>
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
             <SelectContent>
@@ -240,12 +242,13 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
         </div>
 
         <div className="space-y-2">
-          <Label className="text-slate-300">Mood</Label>
+          <Label dark>Mood</Label>
           <Select
             value={formState.mood || ''}
             onValueChange={(value) => setFormState(prev => ({ ...prev, mood: value as DreamMood }))}
+            dark
           >
-            <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
+            <SelectTrigger>
               <SelectValue placeholder="Select mood" />
             </SelectTrigger>
             <SelectContent>
@@ -259,12 +262,13 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
         </div>
 
         <div className="space-y-2">
-          <Label className="text-slate-300">Clarity</Label>
+          <Label dark>Clarity</Label>
           <Select
             value={formState.clarity || ''}
             onValueChange={(value) => setFormState(prev => ({ ...prev, clarity: value as DreamClarity }))}
+            dark
           >
-            <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
+            <SelectTrigger>
               <SelectValue placeholder="How clear?" />
             </SelectTrigger>
             <SelectContent>
@@ -281,21 +285,23 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
       {/* Lucid Dream Toggle and Sleep Quality */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
-          <Label htmlFor="isLucid" className="text-slate-300">Lucid Dream?</Label>
+          <Label htmlFor="isLucid" dark>Lucid Dream?</Label>
           <Switch
             id="isLucid"
             checked={formState.isLucid || false}
             onCheckedChange={(checked) => setFormState(prev => ({ ...prev, isLucid: checked }))}
+            dark
           />
         </div>
 
         <div className="space-y-2">
-          <Label className="text-slate-300">Sleep Quality (1-5)</Label>
+          <Label dark>Sleep Quality (1-5)</Label>
           <Select
             value={formState.sleepQuality?.toString() || ''}
             onValueChange={(value) => setFormState(prev => ({ ...prev, sleepQuality: parseInt(value) }))}
+            dark
           >
-            <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
+            <SelectTrigger>
               <SelectValue placeholder="Rate quality" />
             </SelectTrigger>
             <SelectContent>
@@ -311,7 +317,7 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
 
       {/* Themes */}
       <div className="space-y-2">
-        <Label className="text-slate-300">Themes</Label>
+        <Label dark>Themes</Label>
         <div className="flex flex-wrap gap-2 mb-2">
           {formState.themes?.map((theme) => (
             <span
@@ -339,7 +345,7 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
                 addTheme(newTheme);
               }
             }}
-            className="bg-slate-800/50 border-slate-700 text-white"
+            dark
             placeholder="Add a theme..."
           />
           <Button
@@ -368,7 +374,7 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
 
       {/* Symbols - Enhanced with categories */}
       <div className="space-y-2">
-        <Label className="text-slate-300">Significant Symbols</Label>
+        <Label dark>Significant Symbols</Label>
         <p className="text-xs text-slate-500">Symbols are tracked across your dreams and readings to reveal patterns</p>
         <div className="flex flex-wrap gap-2 mb-2">
           {formState.symbols.map((symbol) => (
@@ -400,7 +406,7 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
                 addSymbol(newSymbol);
               }
             }}
-            className="bg-slate-800/50 border-slate-700 text-white"
+            dark
             placeholder="Add a symbol (e.g., snake, key, mirror)..."
           />
           <Button
@@ -433,12 +439,13 @@ const DreamForm: React.FC<DreamFormProps> = ({ userId, existingDream, onSuccess 
 
       {/* Interpretation */}
       <div className="space-y-2">
-        <Label htmlFor="interpretation" className="text-slate-300">Your Interpretation</Label>
+        <Label htmlFor="interpretation" dark>Your Interpretation</Label>
         <Textarea
           id="interpretation"
           value={formState.interpretation || ''}
           onChange={(e) => setFormState(prev => ({ ...prev, interpretation: e.target.value }))}
-          className="bg-slate-800/50 border-slate-700 text-white min-h-[100px]"
+          dark
+          className="min-h-[100px]"
           placeholder="What do you think this dream means? Any messages or insights?"
         />
       </div>

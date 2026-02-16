@@ -4,6 +4,7 @@ import { useMyReadingRequests, useCancelReadingRequest } from '../hooks';
 import { ReadingRequest, formatPrice, STATUS_CONFIG, isAstrologySpread, ASTROLOGY_FOCUS_OPTIONS } from '../types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Panel } from '@/components/ui/panel';
 import { Loader2, X, Eye, Clock, Sparkles, Star } from 'lucide-react';
 import {
   Dialog,
@@ -36,7 +37,7 @@ const RequestCard: React.FC<{ request: ReadingRequest; onCancel: () => void; isC
   };
 
   return (
-    <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700" data-testid={`reading-request-${request.id}`}>
+    <Panel dark className="p-4 rounded-lg border border-slate-700" data-testid={`reading-request-${request.id}`}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           {isAstrologySpread(request.spreadType) ? (
@@ -91,7 +92,7 @@ const RequestCard: React.FC<{ request: ReadingRequest; onCancel: () => void; isC
               View Your Reading
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-slate-900 border-slate-700">
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-white">Your Reading</DialogTitle>
             </DialogHeader>
@@ -220,7 +221,7 @@ const RequestCard: React.FC<{ request: ReadingRequest; onCancel: () => void; isC
           Cancel Request
         </Button>
       )}
-    </div>
+    </Panel>
   );
 };
 

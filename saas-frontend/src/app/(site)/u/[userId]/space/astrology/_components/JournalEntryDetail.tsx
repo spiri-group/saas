@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Panel } from '@/components/ui/panel';
 import {
   AstrologyJournalEntry,
   getMoodInfo,
@@ -102,7 +103,7 @@ export const JournalEntryDetail: React.FC<Props> = ({
       </div>
 
       {/* Transit Snapshot Card */}
-      <div className="backdrop-blur-xl bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
+      <Panel dark className="backdrop-blur-xl border border-slate-700/50 rounded-xl p-4">
         <h3 className="text-sm font-medium text-slate-400 mb-3">Sky at time of writing</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -160,7 +161,7 @@ export const JournalEntryDetail: React.FC<Props> = ({
             </div>
           </div>
         )}
-      </div>
+      </Panel>
 
       {/* Entry Content */}
       <div className="backdrop-blur-xl bg-slate-800/30 border border-slate-700/50 rounded-xl p-6">

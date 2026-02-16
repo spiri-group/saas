@@ -6,6 +6,7 @@ import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { Button } from '@/components/ui/button';
 import { Loader2, CreditCard, CheckCircle2 } from 'lucide-react';
 import CurrencySpan from '@/components/ux/CurrencySpan';
+import { Panel } from '@/components/ui/panel';
 
 interface PaymentMethodCollectorProps {
   clientSecret: string;
@@ -84,7 +85,7 @@ const PaymentForm = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Order Summary */}
-      <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
+      <Panel dark className="p-4 rounded-lg border border-slate-700">
         <div className="flex justify-between items-center mb-2">
           <span className="text-slate-300 text-sm">{itemDescription}</span>
           <CurrencySpan value={amount} className="text-white font-medium" />
@@ -93,7 +94,7 @@ const PaymentForm = ({
           <span className="text-white font-medium">Total</span>
           <CurrencySpan value={amount} className="text-purple-400 font-bold text-lg" />
         </div>
-      </div>
+      </Panel>
 
       {/* Payment Element */}
       <div className="bg-white rounded-lg p-4">

@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { Dumbbell, Plus, Target, Clock, Flame, Zap, Award, ChevronRight, RefreshCw, Sparkles, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Panel } from '@/components/ui/panel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, differenceInDays, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import useDevelopmentExercises, { DevelopmentExercise } from '../hooks/useDevelopmentExercises';
@@ -313,7 +314,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-cyan-500/20 text-white sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="border-cyan-500/20 sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Dumbbell className="w-5 h-5 text-cyan-400" />
@@ -331,7 +332,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Detail View Dialog */}
       <Dialog open={!!selectedExercise} onOpenChange={(open) => !open && setSelectedExercise(null)}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-cyan-500/20 text-white sm:max-w-lg">
+        <DialogContent className="border-cyan-500/20 sm:max-w-lg">
           {selectedExercise && (
             <>
               <DialogHeader>
@@ -417,13 +418,13 @@ const UI: React.FC<Props> = ({ userId }) => {
 
                 {/* Insights */}
                 {selectedExercise.insights && (
-                  <div className="p-4 bg-slate-800/50 rounded-xl">
+                  <Panel dark className="p-4 rounded-xl">
                     <div className="text-sm text-slate-500 mb-1 flex items-center gap-2">
                       <Sparkles className="w-3 h-3" />
                       Insights
                     </div>
                     <p className="text-slate-300 text-sm italic">{selectedExercise.insights}</p>
-                  </div>
+                  </Panel>
                 )}
 
                 <div className="flex gap-2 pt-4">

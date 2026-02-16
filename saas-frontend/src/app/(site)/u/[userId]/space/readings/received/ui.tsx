@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Panel } from '@/components/ui/panel';
 import { useMyReadingRequests } from '../request/hooks/useMyReadingRequests';
 import { useMyPurchasedReadings, PurchasedReading } from '../request/hooks/useMyPurchasedReadings';
 import { useReviewReadingRequest } from '../request/hooks/useReviewReadingRequest';
@@ -692,7 +693,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Reading Detail Dialog */}
       <Dialog open={!!selectedReading} onOpenChange={(open) => !open && setSelectedReading(null)}>
-        <DialogContent className="bg-slate-900 border-white/20 text-white max-w-[95vw] w-full sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] w-full sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {selectedReading?.readingCategory === 'ASTROLOGY' ? (
@@ -707,7 +708,7 @@ const UI: React.FC<Props> = ({ userId }) => {
           {selectedReading && (
             <div className="space-y-6">
               {/* Topic & Spread Info */}
-              <div className="bg-slate-800/50 rounded-lg p-4">
+              <Panel dark className="rounded-lg p-4">
                 <h3 className="text-lg font-medium text-white mb-2">{selectedReading.topic}</h3>
                 <p className="text-slate-400 text-sm">
                   {selectedReading.spreadType.replace('_', ' ')} Spread • {formatPrice(selectedReading.price)}
@@ -723,7 +724,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                     Context: {selectedReading.context}
                   </p>
                 )}
-              </div>
+              </Panel>
 
               {/* Photo */}
               {selectedReading.photoUrl && (
@@ -860,7 +861,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                       <Check className="w-4 h-4 text-emerald-400" />
                       <h4 className="text-sm font-medium text-emerald-400">Your Review</h4>
                     </div>
-                    <div className="bg-slate-800/50 rounded-lg p-4 space-y-2">
+                    <Panel dark className="rounded-lg p-4 space-y-2">
                       <div className="flex items-center gap-2">
                         {renderStarRating(selectedReading.review.rating)}
                         <span className="text-slate-400 text-sm ml-2">
@@ -869,7 +870,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                       </div>
                       <h5 className="text-white font-medium">{selectedReading.review.headline}</h5>
                       <p className="text-slate-400 text-sm">{selectedReading.review.text}</p>
-                    </div>
+                    </Panel>
                   </div>
                 ) : showReviewForm ? (
                   // Review form
@@ -885,28 +886,29 @@ const UI: React.FC<Props> = ({ userId }) => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-slate-400 text-sm">Rating</Label>
+                      <Label dark className="text-sm">Rating</Label>
                       {renderStarRating(reviewRating, true)}
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-slate-400 text-sm">Headline</Label>
+                      <Label dark className="text-sm">Headline</Label>
                       <Input
                         value={reviewHeadline}
                         onChange={(e) => setReviewHeadline(e.target.value)}
                         placeholder="What&apos;s most important to know?"
-                        className="bg-slate-800/50 border-slate-700 text-white"
+                        dark
                         maxLength={100}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-slate-400 text-sm">Your Review</Label>
+                      <Label dark className="text-sm">Your Review</Label>
                       <Textarea
                         value={reviewText}
                         onChange={(e) => setReviewText(e.target.value)}
                         placeholder="Share your experience with this reading..."
-                        className="bg-slate-800/50 border-slate-700 text-white min-h-[80px]"
+                        dark
+                        className="min-h-[80px]"
                         maxLength={500}
                       />
                     </div>
@@ -979,7 +981,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Session Reflection Form Dialog */}
       <Dialog open={!!reflectionPrefill} onOpenChange={(open) => !open && setReflectionPrefill(null)}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-violet-500/20 text-white sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="border-violet-500/20 sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BookMarked className="w-5 h-5 text-violet-400" />
@@ -999,7 +1001,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Purchased Reading Detail Dialog */}
       <Dialog open={!!selectedPurchasedReading} onOpenChange={(open) => !open && setSelectedPurchasedReading(null)}>
-        <DialogContent className="bg-slate-900 border-white/20 text-white max-w-[95vw] w-full sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="reading-detail-dialog">
+        <DialogContent className="max-w-[95vw] w-full sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="reading-detail-dialog">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Store className="w-5 h-5 text-purple-400" />
@@ -1010,7 +1012,7 @@ const UI: React.FC<Props> = ({ userId }) => {
           {selectedPurchasedReading && (
             <div className="space-y-6">
               {/* Service Info */}
-              <div className="bg-slate-800/50 rounded-lg p-4">
+              <Panel dark className="rounded-lg p-4">
                 <h3 className="text-lg font-medium text-white mb-2">{selectedPurchasedReading.service.name}</h3>
                 <p className="text-slate-400 text-sm">
                   by {selectedPurchasedReading.service.vendor?.name} • {formatPrice(selectedPurchasedReading.price?.amount ?? 0)}
@@ -1020,7 +1022,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                     {selectedPurchasedReading.service.description}
                   </p>
                 )}
-              </div>
+              </Panel>
 
               {/* Questionnaire Responses */}
               {selectedPurchasedReading.questionnaireResponses && selectedPurchasedReading.questionnaireResponses.length > 0 && (
@@ -1086,7 +1088,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                   // Show review form
                   <div className="space-y-4">
                     <div>
-                      <Label className="text-slate-300 text-sm">Your Rating</Label>
+                      <Label dark className="text-sm">Your Rating</Label>
                       <div className="flex gap-1 mt-1" data-testid="review-rating-stars">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <button
@@ -1108,7 +1110,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor="review-headline" className="text-slate-300 text-sm">
+                      <Label htmlFor="review-headline" dark className="text-sm">
                         Headline
                       </Label>
                       <Input
@@ -1118,11 +1120,12 @@ const UI: React.FC<Props> = ({ userId }) => {
                         value={serviceReviewHeadline}
                         onChange={(e) => setServiceReviewHeadline(e.target.value)}
                         maxLength={100}
-                        className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 mt-1"
+                        dark
+                        className="mt-1"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="review-text" className="text-slate-300 text-sm">
+                      <Label htmlFor="review-text" dark className="text-sm">
                         Your Review
                       </Label>
                       <Textarea
@@ -1133,7 +1136,8 @@ const UI: React.FC<Props> = ({ userId }) => {
                         onChange={(e) => setServiceReviewText(e.target.value)}
                         maxLength={500}
                         rows={4}
-                        className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 mt-1"
+                        dark
+                        className="mt-1"
                       />
                       <p className="text-slate-500 text-xs mt-1">{serviceReviewText.length}/500 characters</p>
                     </div>

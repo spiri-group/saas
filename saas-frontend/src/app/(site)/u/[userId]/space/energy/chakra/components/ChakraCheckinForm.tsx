@@ -116,7 +116,7 @@ export const ChakraCheckinForm: React.FC<Props> = ({ userId, existingCheckin, on
             id="date"
             type="date"
             {...register('date', { required: true })}
-            className="bg-slate-800 border-slate-700"
+            dark
             data-testid="chakra-checkin-date"
           />
         </div>
@@ -127,7 +127,7 @@ export const ChakraCheckinForm: React.FC<Props> = ({ userId, existingCheckin, on
             id="checkInTime"
             type="time"
             {...register('checkInTime')}
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
       </div>
@@ -191,7 +191,7 @@ export const ChakraCheckinForm: React.FC<Props> = ({ userId, existingCheckin, on
             id="physicalState"
             {...register('physicalState')}
             placeholder="How does your body feel?"
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
 
@@ -201,7 +201,7 @@ export const ChakraCheckinForm: React.FC<Props> = ({ userId, existingCheckin, on
             id="emotionalState"
             {...register('emotionalState')}
             placeholder="How are you feeling emotionally?"
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
 
@@ -211,7 +211,7 @@ export const ChakraCheckinForm: React.FC<Props> = ({ userId, existingCheckin, on
             id="mentalState"
             {...register('mentalState')}
             placeholder="How is your mental clarity?"
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
       </div>
@@ -222,7 +222,8 @@ export const ChakraCheckinForm: React.FC<Props> = ({ userId, existingCheckin, on
           id="observations"
           {...register('observations')}
           placeholder="What did you notice during this check-in?"
-          className="bg-slate-800 border-slate-700 min-h-[80px]"
+          dark
+          className="min-h-[80px]"
           data-testid="chakra-observations"
         />
       </div>
@@ -233,7 +234,8 @@ export const ChakraCheckinForm: React.FC<Props> = ({ userId, existingCheckin, on
           id="actionTaken"
           {...register('actionTaken')}
           placeholder="What did you do to address any imbalances?"
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark
+          className="min-h-[60px]"
         />
       </div>
 
