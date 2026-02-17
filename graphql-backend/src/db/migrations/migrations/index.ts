@@ -41,6 +41,8 @@ import { migration as migration030 } from "./030_per_spread_reading_fees";
 import { migration as migration031 } from "./031_add_reading_base_prices";
 import { migration as migration032 } from "./032_fix_subscription_email_templates";
 import { migration as migration033 } from "./033_add_astrology_reading_fees";
+import { migration as migration034 } from "./034_add_spiritual_interests_to_categories";
+import { migration as migration035 } from "./035_rebrand_legal_docs_to_partner";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -77,4 +79,6 @@ export const migrations: Migration[] = [
     migration031,
     migration032,
     migration033,
+    migration034,
+    migration035,
 ];

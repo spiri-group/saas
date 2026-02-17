@@ -108,6 +108,8 @@ export const CreateProductSchema = z.object({
     productType: z.enum(ProductTypeValues),
     // Type-specific data
     typeData: ProductTypeDataSchema.optional(),
+    // Spiritual practice tags
+    spiritualInterests: z.array(z.string()).optional(),
 }).refine((data) => {
     // Either productReturnPolicyId or noRefunds must be provided
     return !!(data.productReturnPolicyId || data.noRefunds);
@@ -150,6 +152,7 @@ const UseCreateProduct = (merchantId: string, merchantCurrency: string, existing
             noRefunds: false,
             productType: 'STANDARD',
             typeData: undefined,
+            spiritualInterests: [],
             thumbnail: {
                 ...default_thumbnail,
                 image: {
