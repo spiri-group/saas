@@ -56,6 +56,26 @@ export default function HomeContent({ session: initialSession }: HomeContentProp
             Welcome back{session?.user?.name ? `, ${session.user.name}` : ''}
           </p>
 
+          {/* Learn More & Blog Links */}
+          <div className="flex items-center gap-3">
+            <Link href="/learn-more">
+              <Button
+                variant="outline"
+                className="border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20"
+              >
+                Learn More
+              </Button>
+            </Link>
+            <Link href="/blog">
+              <Button
+                variant="outline"
+                className="border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20"
+              >
+                Visit Blog
+              </Button>
+            </Link>
+          </div>
+
           {/* Search */}
           <div className="w-full max-w-2xl">
             <HomeSearch />
