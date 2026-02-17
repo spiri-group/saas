@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Heart, Plus, Calendar, Sparkles, Feather, Flower2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import useLovedOnes, { LovedOneInSpirit } from '../hooks/useLovedOnes';
 import { LovedOneForm } from './components/LovedOneForm';
@@ -216,6 +216,11 @@ const UI: React.FC<Props> = ({ userId }) => {
             existingLovedOne={editingLovedOne}
             onSuccess={handleFormSuccess}
           />
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
 

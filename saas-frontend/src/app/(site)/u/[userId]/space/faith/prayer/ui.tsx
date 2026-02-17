@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { BookHeart, Plus, Heart, CheckCircle2, Clock, ChevronRight, Flame, Calendar, User, Sparkles, HandHeart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, formatDistanceToNow } from 'date-fns';
 import usePrayerJournalEntries, { PrayerJournalEntry } from '../hooks/usePrayerJournal';
 import { PrayerJournalForm } from './components/PrayerJournalForm';
@@ -326,6 +326,11 @@ const UI: React.FC<Props> = ({ userId }) => {
             existingEntry={editingEntry}
             onSuccess={handleFormSuccess}
           />
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
 

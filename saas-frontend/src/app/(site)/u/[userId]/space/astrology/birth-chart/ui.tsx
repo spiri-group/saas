@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Sun, Edit, Calendar, MapPin, Clock, Loader2, Star, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useBirthChart, getSignInfo } from '../_hooks/useBirthChart';
 import { BirthChartForm, BigThree, PlanetPlacements, AspectsList } from '../_components';
 
@@ -189,6 +189,11 @@ const UI: React.FC<Props> = ({ userId }) => {
             onSuccess={handleFormSuccess}
             onCancel={() => setShowEditDialog(false)}
           />
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
     </div>

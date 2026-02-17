@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Moon, History, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DreamForm, DreamHistory } from './components';
 import { useDreams, DreamJournalEntry } from './hooks';
 
@@ -90,6 +90,11 @@ const UI: React.FC<Props> = ({ userId }) => {
             existingDream={editingDream}
             onSuccess={handleFormSuccess}
           />
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
     </div>

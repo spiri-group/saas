@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { Activity, Plus, Clock, Zap, Flame, ChevronRight, Calendar, Sun, Sparkles, Heart, Wind } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Panel } from '@/components/ui/panel';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useEnergyJournalEntries, EnergyJournalEntry } from '../hooks';
 import { EnergyJournalForm } from './components/EnergyJournalForm';
@@ -287,6 +287,11 @@ const UI: React.FC<Props> = ({ userId }) => {
             existingEntry={editingEntry}
             onSuccess={handleFormSuccess}
           />
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
 

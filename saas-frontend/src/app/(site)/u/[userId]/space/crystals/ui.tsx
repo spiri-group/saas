@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { Gem, Star, Sparkles, Droplets, Grid3X3, Plus, BarChart3, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   CrystalForm,
@@ -475,6 +475,11 @@ const UI: React.FC<Props> = ({ userId }) => {
               onSuccess={closeDialog}
             />
           )}
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
     </div>

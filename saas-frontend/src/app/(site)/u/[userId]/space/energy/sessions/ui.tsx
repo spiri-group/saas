@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { Heart, Plus, Calendar, Clock, ChevronRight, Star, User, Sparkles, Hand } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Panel } from '@/components/ui/panel';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useSessionReflections, SessionReflection } from '../hooks';
@@ -292,6 +292,11 @@ const UI: React.FC<Props> = ({ userId }) => {
             existingReflection={editingReflection}
             onSuccess={handleFormSuccess}
           />
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
 

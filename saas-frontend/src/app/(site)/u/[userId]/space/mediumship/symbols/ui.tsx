@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { BookOpen, Plus, Search, TrendingUp, Moon, Sun, Flame, Feather, Eye, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Panel } from '@/components/ui/panel';
 import usePersonalSymbols, { PersonalSymbol } from '../hooks/usePersonalSymbols';
@@ -282,6 +282,11 @@ const UI: React.FC<Props> = ({ userId }) => {
             existingSymbol={editingSymbol}
             onSuccess={handleFormSuccess}
           />
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
 

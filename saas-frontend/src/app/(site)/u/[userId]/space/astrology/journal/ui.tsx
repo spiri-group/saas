@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -299,6 +300,11 @@ const UI: React.FC<Props> = ({ userId }) => {
               onCancel={handleCancel}
               isSaving={createEntry.isPending || updateEntry.isPending}
             />
+            <DialogClose asChild>
+              <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+                Cancel
+              </Button>
+            </DialogClose>
           </DialogContent>
         </Dialog>
       </div>

@@ -5,7 +5,7 @@ import { BookMarked, Plus, Star, CheckCircle2, Clock, User, ChevronRight, Sparkl
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Panel } from '@/components/ui/panel';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import useReadingReflections, { ReadingReflection } from '../hooks/useReadingReflections';
 import { ReflectionForm } from './components/ReflectionForm';
@@ -325,6 +325,11 @@ const UI: React.FC<Props> = ({ userId }) => {
             existingReflection={editingReflection}
             onSuccess={handleFormSuccess}
           />
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
 

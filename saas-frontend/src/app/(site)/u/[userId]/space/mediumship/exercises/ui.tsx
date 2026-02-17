@@ -5,7 +5,7 @@ import { Dumbbell, Plus, Target, Clock, Flame, Zap, Award, ChevronRight, Refresh
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Panel } from '@/components/ui/panel';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, differenceInDays, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import useDevelopmentExercises, { DevelopmentExercise } from '../hooks/useDevelopmentExercises';
 import { ExerciseForm } from './components/ExerciseForm';
@@ -327,6 +327,12 @@ const UI: React.FC<Props> = ({ userId }) => {
             existingExercise={editingExercise}
             onSuccess={handleFormSuccess}
           />
+
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
 

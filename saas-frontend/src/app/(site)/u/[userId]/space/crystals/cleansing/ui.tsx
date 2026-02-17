@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Droplets, Plus, Moon, Sparkles, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   CleansingForm,
   CleansingHistory,
@@ -188,6 +188,11 @@ const UI: React.FC<Props> = ({ userId }) => {
             crystals={crystals}
             onSuccess={handleFormSuccess}
           />
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
     </div>
