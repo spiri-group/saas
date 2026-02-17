@@ -81,7 +81,7 @@ export default function PlaceholderEditor({
       <div className="flex items-center justify-between mb-2">
         <div>
           <h4 className="text-xs font-medium text-console">{label}</h4>
-          <p className="text-[10px] text-console-muted">{description}</p>
+          <p className="text-xs text-console-muted">{description}</p>
         </div>
         <div className="flex items-center space-x-2">
           {onSave && (
@@ -111,7 +111,7 @@ export default function PlaceholderEditor({
       </div>
 
       {entries.length === 0 && !isAdding && (
-        <p className="text-[10px] text-console-muted/50 py-2">
+        <p className="text-xs text-console-muted py-2">
           No placeholders defined. Click Add to create one.
         </p>
       )}
