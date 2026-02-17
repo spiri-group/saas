@@ -1,7 +1,7 @@
 const analyticsUri =
-    process.env.server_endpoint != undefined &&
-    !process.env.server_endpoint.includes('localhost')
-        ? `${process.env.server_endpoint}/analytics-track?code=${process.env.server_endpoint_code}`
+    process.env.NEXT_PUBLIC_server_endpoint != undefined &&
+    !process.env.NEXT_PUBLIC_server_endpoint.includes('localhost')
+        ? `${process.env.NEXT_PUBLIC_server_endpoint}/analytics-track?code=${process.env.NEXT_PUBLIC_server_endpoint_code}`
         : "http://127.0.0.1:7071/api/analytics-track";
 
 export async function POST(request: Request) {
