@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { ShieldCheck, CheckCircle2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { markdownToHtml } from '@/utils/markdownToHtml';
+import { markdownToHtml, stripForConsent } from '@/utils/markdownToHtml';
 import { resolvePlaceholders } from '@/utils/resolvePlaceholders';
 import UseLegalPlaceholders from '@/hooks/UseLegalPlaceholders';
 import useCheckOutstandingConsents from './hooks/UseCheckOutstandingConsents';
@@ -187,7 +187,7 @@ const ConsentGuard = () => {
                 data-testid={`consent-content-${activeDoc.documentType}`}
                 className="border rounded-lg p-4 overflow-y-auto text-sm text-gray-700 bg-gray-50 prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-indigo-600 prose-strong:text-gray-900 prose-li:text-gray-700 flex-1 min-h-0"
                 onClick={handleContentClick}
-                dangerouslySetInnerHTML={{ __html: markdownToHtml(resolvePlaceholders(activeDoc.content, globalPlaceholders || {}, activeDoc.placeholders)) }}
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(stripForConsent(resolvePlaceholders(activeDoc.content, globalPlaceholders || {}, activeDoc.placeholders))) }}
               />
             </div>
 

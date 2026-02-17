@@ -5,6 +5,15 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
 }
 
+/** Strip title heading and Table of Contents from markdown — not needed in consent review */
+export function stripForConsent(md: string): string {
+  return md
+    // Remove the first H1 title (already shown by the UI)
+    .replace(/^#\s+[^\r\n]+[\r\n]+/, '')
+    // Remove everything from a "Table of Contents" heading up to the next heading
+    .replace(/^#{1,4}\s*Table of Contents[^\n]*\n[\s\S]*?(?=^#{1,4}\s)/gim, '');
+}
+
 export function markdownToHtml(md: string): string {
   let html = md
     // Escape HTML first

@@ -5,20 +5,11 @@ import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ShieldCheck, CheckCircle2, ChevronRight } from 'lucide-react';
-import { markdownToHtml } from '@/utils/markdownToHtml';
+import { markdownToHtml, stripForConsent } from '@/utils/markdownToHtml';
 import { resolvePlaceholders } from '@/utils/resolvePlaceholders';
 import UseLegalPlaceholders from '@/hooks/UseLegalPlaceholders';
 import useCheckOutstandingConsents from '../../components/ConsentGuard/hooks/UseCheckOutstandingConsents';
 import useRecordConsents from '../../components/ConsentGuard/hooks/UseRecordConsents';
-
-/** Strip title heading and Table of Contents from markdown — not needed in consent review */
-function stripForConsent(md: string): string {
-    return md
-        // Remove the first H1 title (already shown by the UI)
-        .replace(/^#\s+[^\r\n]+[\r\n]+/, '')
-        // Remove everything from a "Table of Contents" heading up to the next heading
-        .replace(/^#{1,4}\s*Table of Contents[^\n]*\n[\s\S]*?(?=^#{1,4}\s)/gim, '');
-}
 
 type Props = {
     onAccepted: () => void;
