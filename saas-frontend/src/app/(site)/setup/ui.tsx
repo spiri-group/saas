@@ -38,8 +38,9 @@ type Branch = 'practitioner' | 'merchant' | null;
 
 // ── Theme & full-screen helpers ─────────────────────────────────────
 
-function themeForStep(step: Step, branch: Branch): OnboardingTheme {
-    if (step === 'basic' || step === 'plan') return 'neutral';
+function themeForStep(step: Step, branch: Branch, hasReligion?: boolean): OnboardingTheme {
+    if (step === 'basic') return hasReligion ? 'faith' : 'neutral';
+    if (step === 'plan') return 'neutral';
     if (step === 'consent') {
         // Consent theme matches the selected plan branch
         if (branch === 'merchant') return 'amber';
@@ -134,6 +135,10 @@ export default function SetupUI() {
                         id: session.user.id,
                         firstname: vals.firstName,
                         lastname: vals.lastName,
+                        ...(vals.religionId ? {
+                            religionId: vals.religionId,
+                            openToOtherExperiences: vals.openToOtherExperiences ?? true,
+                        } : {}),
                     }
                 }
             );
@@ -291,7 +296,7 @@ export default function SetupUI() {
 
     // ── Theme & layout state ────────────────────────────────────────
 
-    const theme = themeForStep(step, branch);
+    const theme = themeForStep(step, branch, !!form.watch('religionId'));
     const fullScreen = isFullScreenStep(step);
     const labels = stepLabels(step, branch);
     const currentStepNum = stepNumber(step, branch);

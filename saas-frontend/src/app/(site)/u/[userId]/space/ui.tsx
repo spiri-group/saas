@@ -15,6 +15,7 @@ import ActivitySummary from './_components/ActivitySummary';
 import RecentActivity from './_components/RecentActivity';
 import UpcomingDates from './_components/UpcomingDates';
 import PractitionerFeed from './_components/PractitionerFeed';
+import { useVocab } from './_hooks/useVocab';
 
 interface Props {
   userId: string;
@@ -22,6 +23,7 @@ interface Props {
 
 const UI: React.FC<Props> = ({ userId }) => {
   const { data: user, isLoading: userLoading } = UseUserProfile(userId);
+  const { vocab } = useVocab(userId);
   const { data: stats, isLoading: statsLoading } = useMediumshipStats(userId);
   const { data: recentMessages, isLoading: messagesLoading } = useRecentSpiritMessages(userId, 5);
   const { data: recentSyncs, isLoading: syncsLoading } = useRecentSynchronicities(userId, 5);
@@ -83,9 +85,9 @@ const UI: React.FC<Props> = ({ userId }) => {
           {!dataLoading && !hasActivity && (
             <div className="flex-1 p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-indigo-500/10 border border-purple-500/20 flex flex-col items-center justify-center text-center">
               <Sparkles className="w-8 h-8 text-purple-400 mx-auto mb-3" />
-              <p className="text-white font-medium mb-1">Your journey starts here</p>
+              <p className="text-white font-medium mb-1">{vocab('journey_starts_here')}</p>
               <p className="text-sm text-slate-400">
-                Try one of the quick actions above and we&apos;ll light up your recent activity as you go.
+                {vocab('journey_nudge')}
               </p>
             </div>
           )}

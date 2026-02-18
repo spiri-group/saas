@@ -47,6 +47,6 @@ export const SPIRITUAL_INTERESTS: SpiritualInterestOption[] = [
   {
     key: 'FAITH',
     label: 'Faith & Prayer',
-    supportingText: 'Walking with God, scripture, spiritual devotion'
+    supportingText: 'Walking with God, scripture, devotion'
   }
 ];

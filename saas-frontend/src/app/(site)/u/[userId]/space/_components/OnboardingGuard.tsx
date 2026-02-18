@@ -39,11 +39,27 @@ const PersonalSpaceOnboardingGuard: React.FC<Props> = ({ children }) => {
   const updateMutation = UseUpdateSpiritualInterests(userId);
   const [autoSetupTriggered, setAutoSetupTriggered] = useState(false);
 
-  // Auto-setup: if autoSetup param is present and valid
-  // Case 1: User has no primary interest → set autoSetup as primary
+  // Faith-only: user selected religion + unchecked "open to other experiences"
+  const faithOnly = !!(user && !user.primarySpiritualInterest &&
+    user.religion?.id && user.openToOtherExperiences === false);
+
+  // Auto-setup: if autoSetup param is present and valid, or faith-only user
+  // Case 1: User has no primary interest → set autoSetup/FAITH as primary
   // Case 2: User has different primary → add autoSetup to secondary interests
   useEffect(() => {
-    if (!autoSetup || !user || autoSetupTriggered || updateMutation.isPending) return;
+    if (!user || autoSetupTriggered || updateMutation.isPending) return;
+
+    // Faith-only auto-setup: skip onboarding entirely, set FAITH as primary
+    if (faithOnly) {
+      setAutoSetupTriggered(true);
+      updateMutation.mutate({
+        primarySpiritualInterest: 'FAITH',
+        secondarySpiritualInterests: []
+      });
+      return;
+    }
+
+    if (!autoSetup) return;
 
     const hasInterest = user.primarySpiritualInterest === autoSetup ||
       user.secondarySpiritualInterests?.includes(autoSetup);
@@ -63,12 +79,12 @@ const PersonalSpaceOnboardingGuard: React.FC<Props> = ({ children }) => {
         secondarySpiritualInterests: [...(user.secondarySpiritualInterests || []), autoSetup]
       });
     }
-  }, [autoSetup, user, autoSetupTriggered, updateMutation]);
+  }, [autoSetup, faithOnly, user, autoSetupTriggered, updateMutation]);
 
   // Show loading state while fetching user data or auto-setting up
-  const needsAutoSetup = autoSetup && user && (
+  const needsAutoSetup = (autoSetup || faithOnly) && user && (
     !user.primarySpiritualInterest ||
-    (user.primarySpiritualInterest !== autoSetup && !user.secondarySpiritualInterests?.includes(autoSetup))
+    (autoSetup && user.primarySpiritualInterest !== autoSetup && !user.secondarySpiritualInterests?.includes(autoSetup))
   );
   if (isLoading || (needsAutoSetup && (updateMutation.isPending || autoSetupTriggered))) {
     return (
@@ -76,7 +92,7 @@ const PersonalSpaceOnboardingGuard: React.FC<Props> = ({ children }) => {
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-purple-400 mx-auto mb-4" />
           <p className="text-slate-400">
-            {autoSetup ? 'Setting up your space...' : 'Loading your space...'}
+            {autoSetup || faithOnly ? 'Setting up your space...' : 'Loading your space...'}
           </p>
         </div>
       </div>

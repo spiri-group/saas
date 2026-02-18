@@ -1,6 +1,6 @@
 'use client';
 
-import { Store, Star, Users, TrendingUp, Shield, Sparkles, Heart } from 'lucide-react';
+import { Store, Star, Users, TrendingUp, Shield, Sparkles, Heart, Cross, BookHeart } from 'lucide-react';
 import type { OnboardingTheme } from './OnboardingShell';
 
 const CONTENT: Record<OnboardingTheme, {
@@ -18,14 +18,28 @@ const CONTENT: Record<OnboardingTheme, {
         iconColor: 'text-indigo-300',
         accentBorder: 'border-l-indigo-400/50',
         title: 'Welcome to SpiriVerse',
-        subtitle: 'A sacred digital space connecting seekers, practitioners, and spiritual communities.',
+        subtitle: 'A space for community, growth, and connection.',
         features: [
-            { icon: Heart, iconColor: 'text-indigo-400', title: 'Discover & Explore', description: 'Find authentic spiritual connections, guidance, and products that resonate with your journey.' },
-            { icon: Users, iconColor: 'text-cyan-400', title: 'Join the Community', description: 'Connect with like-minded souls in a supportive space dedicated to spiritual growth.' },
+            { icon: Heart, iconColor: 'text-indigo-400', title: 'Discover & Explore', description: 'Find authentic connections, guidance, and products that resonate with your journey.' },
+            { icon: Users, iconColor: 'text-cyan-400', title: 'Join the Community', description: 'Connect with like-minded people in a supportive space dedicated to growth.' },
             { icon: Shield, iconColor: 'text-green-400', title: 'Trust & Security', description: 'Your information is protected and used only to create the best experience for you.' },
         ],
         sparkleColor: 'text-indigo-300',
-        sparkleText: 'Your spiritual journey starts here.',
+        sparkleText: 'Your journey starts here.',
+    },
+    faith: {
+        icon: Cross,
+        iconColor: 'text-indigo-300',
+        accentBorder: 'border-l-indigo-400/50',
+        title: 'Welcome to SpiriVerse',
+        subtitle: 'A space for faith, community, and spiritual growth.',
+        features: [
+            { icon: BookHeart, iconColor: 'text-indigo-400', title: 'Deepen Your Practice', description: 'Tools for prayer, scripture reflection, and daily devotion to strengthen your walk with God.' },
+            { icon: Users, iconColor: 'text-cyan-400', title: 'Find Your Community', description: 'Connect with faith-based practitioners, churches, and believers in a trusted space.' },
+            { icon: Shield, iconColor: 'text-green-400', title: 'Trust & Security', description: 'Your information is protected and used only to create the best experience for you.' },
+        ],
+        sparkleColor: 'text-indigo-300',
+        sparkleText: 'Your faith journey starts here.',
     },
     amber: {
         icon: Store,
@@ -65,8 +79,8 @@ export default function MarketingPanel({ theme }: Props) {
     const c = CONTENT[theme];
     const Icon = c.icon;
 
-    // Step 1 (neutral) keeps the glass card style
-    if (theme === 'neutral') {
+    // Step 1 (neutral/faith) keeps the glass card style
+    if (theme === 'neutral' || theme === 'faith') {
         return (
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-8 shadow-2xl h-full flex flex-col justify-between animate-fade-in">
                 <div className="flex items-center mb-8">

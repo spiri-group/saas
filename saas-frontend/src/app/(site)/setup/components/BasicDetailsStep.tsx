@@ -4,6 +4,8 @@ import { UseFormReturn } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import ComboBox from '@/components/ux/ComboBox';
+import HierarchicalReligionPicker from '@/components/ux/HierarchicalReligionPicker';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useMemo, useEffect } from 'react';
 import useReverseGeocoding from '@/components/utils/useReverseGeoCoding';
 import type { OnboardingFormValues } from '../hooks/useOnboardingForm';
@@ -143,6 +145,41 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
                                 </FormItem>
                             )}
                         />
+
+                        <div data-testid="setup-religion-picker">
+                            <label className="text-slate-300 text-sm font-medium">Religion (optional)</label>
+                            <div className="mt-2">
+                                <HierarchicalReligionPicker
+                                    selectedReligionId={form.watch('religionId')}
+                                    onReligionSelect={(id) => {
+                                        form.setValue('religionId', id);
+                                        if (!id) {
+                                            form.setValue('openToOtherExperiences', true);
+                                        }
+                                    }}
+                                    placeholder="No religious alignment"
+                                    className="bg-white/[0.08] border-white/15 text-white hover:bg-white/[0.12] hover:text-white"
+                                />
+                            </div>
+                        </div>
+
+                        {form.watch('religionId') && (
+                            <div className="flex items-center gap-2">
+                                <Checkbox
+                                    id="open-to-other"
+                                    checked={form.watch('openToOtherExperiences') ?? true}
+                                    onCheckedChange={(checked) => form.setValue('openToOtherExperiences', checked === true)}
+                                    dark
+                                    data-testid="setup-open-to-other-checkbox"
+                                />
+                                <label
+                                    htmlFor="open-to-other"
+                                    className="text-sm text-slate-300 cursor-pointer select-none"
+                                >
+                                    I&apos;m open to non-religious experiences
+                                </label>
+                            </div>
+                        )}
                     </div>
                 </div>
 
