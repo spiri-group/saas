@@ -76,6 +76,43 @@ export default function HomeContent({ session: initialSession }: HomeContentProp
             </Link>
           </div>
 
+          {/* Social Media Links */}
+          <div className="flex items-center justify-center gap-3 md:gap-6">
+            <a
+              href="https://www.tiktok.com/@spiriverse"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group transition-all hover:scale-110"
+              aria-label="Follow us on TikTok"
+            >
+              <div className="opacity-70 group-hover:opacity-100 transition-opacity">
+                <TikTokIcon mode={IconStyle.Fill} height={28} className="h-7 md:h-[40px]" />
+              </div>
+            </a>
+            <a
+              href="https://www.instagram.com/spiri_verse/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group transition-all hover:scale-110"
+              aria-label="Follow us on Instagram"
+            >
+              <div className="opacity-70 group-hover:opacity-100 transition-opacity">
+                <InstagramIcon mode={IconStyle.Fill} height={28} className="h-7 md:h-[40px]" />
+              </div>
+            </a>
+            <a
+              href="https://www.facebook.com/SpiriVerse"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group transition-all hover:scale-110"
+              aria-label="Follow us on Facebook"
+            >
+              <div className="opacity-70 group-hover:opacity-100 transition-opacity">
+                <FacebookIcon mode={IconStyle.Fill} height={28} className="h-7 md:h-[40px]" />
+              </div>
+            </a>
+          </div>
+
           {/* Search */}
           <div className="w-full max-w-2xl">
             <HomeSearch />
