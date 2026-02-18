@@ -24,6 +24,8 @@ const UseLegalDocuments = (market?: string, documentType?: string) => {
             updatedAt
             updatedBy
             placeholders
+            parentDocumentId
+            supplementOrder
           }
         }
       `, { market, documentType });

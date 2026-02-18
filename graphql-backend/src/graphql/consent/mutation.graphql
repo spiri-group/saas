@@ -4,6 +4,8 @@ input RecordConsentInput {
   version: Int!
   consentContext: String!
   documentTitle: String!
+  supplementDocumentId: String
+  supplementVersion: Int
 }
 
 type Mutation {

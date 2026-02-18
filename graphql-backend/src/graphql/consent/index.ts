@@ -14,7 +14,7 @@ const SCOPE_DOCUMENT_TYPES: Record<string, string[]> = {
 
 const resolvers = {
   Query: {
-    checkOutstandingConsents: async (_: any, args: { scope: string }, context: serverContext) => {
+    checkOutstandingConsents: async (_: any, args: { scope: string; market?: string }, context: serverContext) => {
       if (!context.userId) {
         throw new Error('Authentication required');
       }
@@ -25,18 +25,31 @@ const resolvers = {
       }
 
       // Fetch current published documents for the required types
+      // When market is provided, fetch both global base docs and market-specific supplements
       const typeList = requiredTypes.map(t => `"${t}"`).join(',');
-      const query = `SELECT * FROM c WHERE c.docType = 'legal-document' AND c.isPublished = true AND c.documentType IN (${typeList})`;
+      let query: string;
+      const parameters: { name: string; value: any }[] = [];
+
+      if (args.market) {
+        query = `SELECT * FROM c WHERE c.docType = 'legal-document' AND c.isPublished = true AND c.documentType IN (${typeList}) AND (c.market = 'global' OR c.market = @market)`;
+        parameters.push({ name: '@market', value: args.market });
+      } else {
+        query = `SELECT * FROM c WHERE c.docType = 'legal-document' AND c.isPublished = true AND c.documentType IN (${typeList}) AND c.market = 'global'`;
+      }
 
       const documents = await context.dataSources.cosmos.run_query<LegalDocument>(
         container,
-        { query, parameters: [] },
+        { query, parameters },
         true
       );
 
       if (documents.length === 0) {
         return [];
       }
+
+      // Separate into base docs and supplements
+      const baseDocs = documents.filter(d => !d.parentDocumentId);
+      const supplements = documents.filter(d => !!d.parentDocumentId);
 
       // Fetch user's consent records from Table Storage
       let userConsents: UserConsent[] = [];
@@ -51,9 +64,22 @@ const resolvers = {
 
       // Find outstanding consents
       const outstanding = [];
-      for (const doc of documents) {
-        const consent = userConsents.find(c => c.rowKey === doc.documentType);
-        if (!consent || consent.version < doc.version) {
+      for (const doc of baseDocs) {
+        const baseConsent = userConsents.find(c => c.rowKey === doc.documentType);
+        const baseOutstanding = !baseConsent || baseConsent.version < doc.version;
+
+        // Find matching supplement for this document type and market
+        const supplement = supplements.find(s => s.parentDocumentId === doc.id);
+        let supplementOutstanding = false;
+
+        if (supplement) {
+          const supplementRowKey = `${doc.documentType}::${supplement.market}`;
+          const supplementConsent = userConsents.find(c => c.rowKey === supplementRowKey);
+          supplementOutstanding = !supplementConsent || supplementConsent.version < supplement.version;
+        }
+
+        // If either base or supplement needs consent, include in response
+        if (baseOutstanding || supplementOutstanding) {
           outstanding.push({
             documentType: doc.documentType,
             documentId: doc.id,
@@ -62,6 +88,10 @@ const resolvers = {
             version: doc.version,
             effectiveDate: doc.effectiveDate,
             placeholders: doc.placeholders,
+            supplementContent: supplement?.content,
+            supplementDocumentId: supplement?.id,
+            supplementVersion: supplement?.version,
+            supplementTitle: supplement?.title,
           });
         }
       }
@@ -103,6 +133,7 @@ const resolvers = {
       const now = new Date().toISOString();
 
       for (const input of args.inputs) {
+        // Record base document consent
         const entity: UserConsent = {
           partitionKey: context.userId,
           rowKey: input.documentType,
@@ -114,6 +145,25 @@ const resolvers = {
         };
 
         await context.dataSources.tableStorage.upsertEntity(CONSENT_TABLE, entity);
+
+        // If supplement is present, also record supplement consent
+        if (input.supplementDocumentId && input.supplementVersion) {
+          // Derive market from the supplement document ID (e.g., "terms-of-service-AU" → "AU")
+          const marketMatch = input.supplementDocumentId.match(/-([A-Z]{2})$/);
+          if (marketMatch) {
+            const supplementEntity: UserConsent = {
+              partitionKey: context.userId,
+              rowKey: `${input.documentType}::${marketMatch[1]}`,
+              documentId: input.supplementDocumentId,
+              version: input.supplementVersion,
+              consentedAt: now,
+              consentContext: input.consentContext as "site-modal" | "checkout",
+              documentTitle: `${input.documentTitle} (${marketMatch[1]} Supplement)`,
+            };
+
+            await context.dataSources.tableStorage.upsertEntity(CONSENT_TABLE, supplementEntity);
+          }
+        }
       }
 
       return true;

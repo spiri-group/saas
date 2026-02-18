@@ -8,6 +8,8 @@ input LegalDocumentInput {
   effectiveDate: String
   changeSummary: String
   placeholders: JSON
+  parentDocumentId: String
+  supplementOrder: Int
 }
 
 type Mutation {

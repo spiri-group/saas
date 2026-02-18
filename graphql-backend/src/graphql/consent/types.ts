@@ -16,6 +16,10 @@ export interface OutstandingConsent {
   content: string;
   version: number;
   effectiveDate: string;
+  supplementContent?: string;
+  supplementDocumentId?: string;
+  supplementVersion?: number;
+  supplementTitle?: string;
 }
 
 export interface RecordConsentInput {
@@ -24,4 +28,6 @@ export interface RecordConsentInput {
   version: number;
   consentContext: string;
   documentTitle: string;
+  supplementDocumentId?: string;
+  supplementVersion?: number;
 }

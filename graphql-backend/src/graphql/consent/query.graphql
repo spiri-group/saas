@@ -6,6 +6,10 @@ type OutstandingConsent {
   version: Int!
   effectiveDate: String!
   placeholders: JSON
+  supplementContent: String
+  supplementDocumentId: String
+  supplementVersion: Int
+  supplementTitle: String
 }
 
 type UserConsent {
@@ -18,6 +22,6 @@ type UserConsent {
 }
 
 type Query {
-  checkOutstandingConsents(scope: String!): [OutstandingConsent!]!
+  checkOutstandingConsents(scope: String!, market: String): [OutstandingConsent!]!
   userConsents: [UserConsent!]!
 }

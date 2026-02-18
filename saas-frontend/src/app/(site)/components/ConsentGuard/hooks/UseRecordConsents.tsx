@@ -7,6 +7,8 @@ type RecordConsentInput = {
   version: number;
   consentContext: string;
   documentTitle: string;
+  supplementDocumentId?: string;
+  supplementVersion?: number;
 };
 
 const useRecordConsents = () => {

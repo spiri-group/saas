@@ -12,6 +12,8 @@ type LegalDocument {
   updatedAt: String!
   updatedBy: String!
   placeholders: JSON
+  parentDocumentId: String
+  supplementOrder: Int
 }
 
 type LegalDocumentVersion {

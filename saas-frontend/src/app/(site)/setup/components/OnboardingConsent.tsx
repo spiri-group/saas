@@ -8,6 +8,7 @@ import { ShieldCheck, CheckCircle2, ChevronRight } from 'lucide-react';
 import { markdownToHtml, stripForConsent } from '@/utils/markdownToHtml';
 import { resolvePlaceholders } from '@/utils/resolvePlaceholders';
 import UseLegalPlaceholders from '@/hooks/UseLegalPlaceholders';
+import useUserMarket from '@/hooks/UseUserMarket';
 import useCheckOutstandingConsents from '../../components/ConsentGuard/hooks/UseCheckOutstandingConsents';
 import useRecordConsents from '../../components/ConsentGuard/hooks/UseRecordConsents';
 
@@ -20,7 +21,8 @@ type Props = {
 export default function OnboardingConsent({ onAccepted, onBack, branch }: Props) {
     const { data: session } = useSession();
     const isLoggedIn = !!session?.user;
-    const { data: outstanding, isLoading } = useCheckOutstandingConsents('merchant-onboarding', isLoggedIn);
+    const market = useUserMarket();
+    const { data: outstanding, isLoading } = useCheckOutstandingConsents('merchant-onboarding', isLoggedIn, market);
     const { data: globalPlaceholders } = UseLegalPlaceholders();
     const recordConsents = useRecordConsents();
     const [checkedDocs, setCheckedDocs] = useState<Set<string>>(new Set());
@@ -96,6 +98,8 @@ export default function OnboardingConsent({ onAccepted, onBack, branch }: Props)
             version: doc.version,
             consentContext: 'site-modal',
             documentTitle: doc.title,
+            supplementDocumentId: doc.supplementDocumentId,
+            supplementVersion: doc.supplementVersion,
         }));
         await recordConsents.mutateAsync(inputs);
         onAccepted();
@@ -184,7 +188,8 @@ export default function OnboardingConsent({ onAccepted, onBack, branch }: Props)
                         data-testid={`consent-content-${activeDoc.documentType}`}
                         className="border border-white/10 rounded-lg p-4 overflow-y-auto text-sm text-slate-300 bg-white/[0.03] prose prose-sm prose-invert max-w-none prose-headings:text-white prose-p:text-slate-300 prose-a:text-indigo-400 prose-strong:text-white prose-li:text-slate-300 flex-1 min-h-0"
                         onClick={handleContentClick}
-                        dangerouslySetInnerHTML={{
+                    >
+                        <div dangerouslySetInnerHTML={{
                             __html: markdownToHtml(
                                 stripForConsent(
                                     resolvePlaceholders(
@@ -194,8 +199,24 @@ export default function OnboardingConsent({ onAccepted, onBack, branch }: Props)
                                     )
                                 )
                             )
-                        }}
-                    />
+                        }} />
+                        {activeDoc.supplementContent && (
+                            <>
+                                <hr className="my-6 border-white/20" />
+                                <h4 className="text-sm font-semibold text-white mb-2">{activeDoc.supplementTitle || 'Country Supplement'}</h4>
+                                <div dangerouslySetInnerHTML={{
+                                    __html: markdownToHtml(
+                                        stripForConsent(
+                                            resolvePlaceholders(
+                                                activeDoc.supplementContent,
+                                                globalPlaceholders || {}
+                                            )
+                                        )
+                                    )
+                                }} />
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 <div className="p-6 border-t border-white/10 space-y-4">

@@ -25,6 +25,8 @@ const UseUpsertLegalDocument = () => {
             updatedAt
             updatedBy
             placeholders
+            parentDocumentId
+            supplementOrder
           }
         }
       `, { input });

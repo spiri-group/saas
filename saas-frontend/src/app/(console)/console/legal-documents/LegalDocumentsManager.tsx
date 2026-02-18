@@ -41,6 +41,8 @@ import {
   LegalDocumentInput,
   DOCUMENT_TYPE_LABELS,
   DOCUMENT_TYPE_INFO,
+  MARKET_LABELS,
+  MARKET_OPTIONS,
 } from "./types";
 import { markdownToHtml } from "@/utils/markdownToHtml";
 import { resolvePlaceholders } from "@/utils/resolvePlaceholders";
@@ -58,6 +60,7 @@ export default function LegalDocumentsManager() {
   const [selectedDocument, setSelectedDocument] =
     useState<LegalDocument | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [marketFilter, setMarketFilter] = useState<string>("all");
 
   // Editor state
   const [editTitle, setEditTitle] = useState("");
@@ -99,17 +102,24 @@ export default function LegalDocumentsManager() {
   const { data: versions, isLoading: versionsLoading } =
     UseLegalDocumentVersions(selectedDocument?.id);
 
-  // Filter documents by search
+  // Filter documents by search and market
   const filteredDocuments = useMemo(() => {
-    if (!documents || !searchQuery.trim()) return documents;
-    const query = searchQuery.toLowerCase();
-    return documents.filter(
-      (doc) =>
-        doc.title.toLowerCase().includes(query) ||
-        doc.documentType.toLowerCase().includes(query) ||
-        doc.id.toLowerCase().includes(query)
-    );
-  }, [documents, searchQuery]);
+    if (!documents) return documents;
+    let filtered = documents;
+    if (marketFilter !== "all") {
+      filtered = filtered.filter((doc) => doc.market === marketFilter);
+    }
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (doc) =>
+          doc.title.toLowerCase().includes(query) ||
+          doc.documentType.toLowerCase().includes(query) ||
+          doc.id.toLowerCase().includes(query)
+      );
+    }
+    return filtered;
+  }, [documents, searchQuery, marketFilter]);
 
   // Keyboard shortcuts
   const handleKeyDown = useCallback(
@@ -219,6 +229,8 @@ export default function LegalDocumentsManager() {
         : undefined,
       changeSummary: changeSummary.trim(),
       placeholders: editPlaceholders,
+      parentDocumentId: selectedDocument.parentDocumentId,
+      supplementOrder: selectedDocument.supplementOrder,
     };
 
     try {
@@ -236,15 +248,18 @@ export default function LegalDocumentsManager() {
     id: string;
     documentType: string;
     title: string;
+    market?: string;
+    parentDocumentId?: string;
   }) => {
     const input: LegalDocumentInput = {
       id: formData.id,
       documentType: formData.documentType,
       title: formData.title,
       content: `# ${formData.title}\n\n**Effective Date:** [EFFECTIVE_DATE]\n\nContent goes here...`,
-      market: "global",
+      market: formData.market || "global",
       isPublished: false,
       changeSummary: "Initial document",
+      parentDocumentId: formData.parentDocumentId,
     };
 
     try {
@@ -342,8 +357,8 @@ export default function LegalDocumentsManager() {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="flex items-center px-6 py-3 border-b border-console">
+        {/* Search + Market Filter */}
+        <div className="flex items-center gap-3 px-6 py-3 border-b border-console">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-console-muted" />
             <Input
@@ -354,6 +369,17 @@ export default function LegalDocumentsManager() {
               data-testid="search-input"
             />
           </div>
+          <select
+            value={marketFilter}
+            onChange={(e) => setMarketFilter(e.target.value)}
+            className="h-9 px-3 bg-console-surface border border-console rounded-md text-console text-sm"
+            data-testid="market-filter-select"
+          >
+            <option value="all">All Markets</option>
+            {MARKET_OPTIONS.map((m) => (
+              <option key={m} value={m}>{MARKET_LABELS[m]}</option>
+            ))}
+          </select>
         </div>
 
         {/* Document list */}
@@ -413,7 +439,26 @@ export default function LegalDocumentsManager() {
                           >
                             {doc.isPublished ? "Published" : "Draft"}
                           </Badge>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/30"
+                          >
+                            {MARKET_LABELS[doc.market] || doc.market}
+                          </Badge>
+                          {doc.parentDocumentId && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/30"
+                            >
+                              Supplement
+                            </Badge>
+                          )}
                         </div>
+                        {doc.parentDocumentId && (
+                          <p className="text-[10px] text-console-muted mb-0.5">
+                            Supplement of: {DOCUMENT_TYPE_LABELS[doc.documentType] || doc.parentDocumentId}
+                          </p>
+                        )}
                         <div className="flex items-center space-x-3 text-xs text-console-muted">
                           <span>v{doc.version}</span>
                           <span className="flex items-center space-x-1">
@@ -490,6 +535,7 @@ export default function LegalDocumentsManager() {
           onSubmit={handleCreateDocument}
           isPending={upsertMutation.isPending}
           existingIds={documents?.map((d) => d.id) || []}
+          existingDocuments={documents || []}
         />
 
         {/* Delete Dialog */}
@@ -913,6 +959,7 @@ function CreateDocumentDialog({
   onSubmit,
   isPending,
   existingIds,
+  existingDocuments,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -920,27 +967,47 @@ function CreateDocumentDialog({
     id: string;
     documentType: string;
     title: string;
+    market?: string;
+    parentDocumentId?: string;
   }) => void;
   isPending: boolean;
   existingIds: string[];
+  existingDocuments: LegalDocument[];
 }) {
   const [title, setTitle] = useState("");
   const [documentType, setDocumentType] = useState("terms-of-service");
+  const [isSupplement, setIsSupplement] = useState(false);
+  const [supplementMarket, setSupplementMarket] = useState("AU");
+  const [parentDocumentId, setParentDocumentId] = useState("");
 
-  const id = documentType;
+  // Base documents that can be parents for supplements
+  const baseDocuments = existingDocuments.filter((d) => !d.parentDocumentId && d.market === "global");
+
+  const id = isSupplement ? `${parentDocumentId || documentType}-${supplementMarket}` : documentType;
   const isDuplicate = existingIds.includes(id);
   const docTypeInfo = DOCUMENT_TYPE_INFO[documentType];
+  const parentDoc = baseDocuments.find((d) => d.id === parentDocumentId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isDuplicate) return;
+
+    const defaultTitle = isSupplement
+      ? `${DOCUMENT_TYPE_LABELS[parentDoc?.documentType || documentType] || documentType} — ${MARKET_LABELS[supplementMarket]} Supplement`
+      : DOCUMENT_TYPE_LABELS[documentType] || documentType;
+
     onSubmit({
       id,
-      documentType,
-      title: title || DOCUMENT_TYPE_LABELS[documentType] || documentType,
+      documentType: isSupplement ? (parentDoc?.documentType || documentType) : documentType,
+      title: title || defaultTitle,
+      market: isSupplement ? supplementMarket : "global",
+      parentDocumentId: isSupplement ? (parentDocumentId || undefined) : undefined,
     });
     setTitle("");
     setDocumentType("terms-of-service");
+    setIsSupplement(false);
+    setSupplementMarket("AU");
+    setParentDocumentId("");
   };
 
   return (
@@ -951,32 +1018,103 @@ function CreateDocumentDialog({
             Create Legal Document
           </DialogTitle>
           <DialogDescription className="text-console-muted">
-            Add a new legal document to the platform.
+            Add a new legal document or country supplement.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-console-muted">
-              Document Type
-            </label>
-            <select
-              value={documentType}
-              onChange={(e) => setDocumentType(e.target.value)}
-              className="w-full h-9 px-3 bg-console-surface border border-console rounded-md text-console text-sm"
-              data-testid="create-document-type-select"
+          {/* Document type toggle */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsSupplement(false)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                !isSupplement
+                  ? "bg-console-primary/20 text-console-primary border border-console-primary/30"
+                  : "text-console-muted border border-console hover:bg-console-surface-hover"
+              }`}
+              data-testid="create-base-doc-btn"
             >
-              {Object.entries(DOCUMENT_TYPE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            {docTypeInfo && (
-              <p className="text-xs text-console-muted">
-                {docTypeInfo.purpose}
-              </p>
-            )}
+              Base Document
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSupplement(true);
+                if (baseDocuments.length > 0 && !parentDocumentId) {
+                  setParentDocumentId(baseDocuments[0].id);
+                }
+              }}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                isSupplement
+                  ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                  : "text-console-muted border border-console hover:bg-console-surface-hover"
+              }`}
+              data-testid="create-supplement-btn"
+            >
+              Country Supplement
+            </button>
           </div>
+
+          {isSupplement ? (
+            <>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-console-muted">
+                  Parent Document
+                </label>
+                <select
+                  value={parentDocumentId}
+                  onChange={(e) => setParentDocumentId(e.target.value)}
+                  className="w-full h-9 px-3 bg-console-surface border border-console rounded-md text-console text-sm"
+                  data-testid="create-parent-select"
+                >
+                  {baseDocuments.map((doc) => (
+                    <option key={doc.id} value={doc.id}>
+                      {doc.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-console-muted">
+                  Market
+                </label>
+                <select
+                  value={supplementMarket}
+                  onChange={(e) => setSupplementMarket(e.target.value)}
+                  className="w-full h-9 px-3 bg-console-surface border border-console rounded-md text-console text-sm"
+                  data-testid="create-market-select"
+                >
+                  {MARKET_OPTIONS.filter((m) => m !== "global").map((m) => (
+                    <option key={m} value={m}>{MARKET_LABELS[m]}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-console-muted">
+                Document Type
+              </label>
+              <select
+                value={documentType}
+                onChange={(e) => setDocumentType(e.target.value)}
+                className="w-full h-9 px-3 bg-console-surface border border-console rounded-md text-console text-sm"
+                data-testid="create-document-type-select"
+              >
+                {Object.entries(DOCUMENT_TYPE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              {docTypeInfo && (
+                <p className="text-xs text-console-muted">
+                  {docTypeInfo.purpose}
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-xs font-medium text-console-muted">
               Title (optional override)
@@ -984,7 +1122,11 @@ function CreateDocumentDialog({
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={DOCUMENT_TYPE_LABELS[documentType] || ""}
+              placeholder={
+                isSupplement
+                  ? `${DOCUMENT_TYPE_LABELS[parentDoc?.documentType || ""] || ""} — ${MARKET_LABELS[supplementMarket]} Supplement`
+                  : DOCUMENT_TYPE_LABELS[documentType] || ""
+              }
               className="bg-console-surface border-console text-console text-sm"
               data-testid="create-title-input"
             />

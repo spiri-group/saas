@@ -180,6 +180,8 @@ const resolvers = {
           updatedAt: now,
           updatedBy: context.userId || 'system',
           placeholders: input.placeholders ?? existingDocument?.placeholders,
+          parentDocumentId: input.parentDocumentId ?? existingDocument?.parentDocumentId,
+          supplementOrder: input.supplementOrder ?? existingDocument?.supplementOrder,
         };
 
         await context.dataSources.cosmos.upsert_record(
