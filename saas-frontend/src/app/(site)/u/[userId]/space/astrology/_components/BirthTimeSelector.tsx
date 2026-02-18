@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Clock, Sun, Sunset, Moon, HelpCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Panel } from '@/components/ui/panel';
 import { Label } from '@/components/ui/label';
 import { BirthTimePrecision, ApproximateTimeRange } from '../_hooks/useBirthChart';
 
@@ -122,16 +123,17 @@ export const BirthTimeSelector: React.FC<Props> = ({
       {/* Exact Time Input */}
       {precision === 'exact' && (
         <div className="space-y-2">
-          <Label className="text-slate-300">Birth Time</Label>
+          <Label dark>Birth Time</Label>
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-slate-400" />
-            <div className="flex items-center gap-1 bg-slate-800/50 border border-white/20 rounded-lg p-1">
+            <Panel dark className="flex items-center gap-1 border border-white/20 rounded-lg p-1">
               <Input
                 type="text"
                 value={hours}
                 onChange={(e) => handleHoursChange(e.target.value)}
                 onBlur={handleHoursBlur}
-                className="w-12 text-center bg-transparent border-0 text-white p-2"
+                dark
+                className="w-12 text-center bg-transparent border-0 p-2"
                 maxLength={2}
                 disabled={disabled}
                 data-testid="time-hours"
@@ -142,7 +144,8 @@ export const BirthTimeSelector: React.FC<Props> = ({
                 value={minutes}
                 onChange={(e) => handleMinutesChange(e.target.value)}
                 onBlur={handleMinutesBlur}
-                className="w-12 text-center bg-transparent border-0 text-white p-2"
+                dark
+                className="w-12 text-center bg-transparent border-0 p-2"
                 maxLength={2}
                 disabled={disabled}
                 data-testid="time-minutes"
@@ -175,7 +178,7 @@ export const BirthTimeSelector: React.FC<Props> = ({
                   PM
                 </button>
               </div>
-            </div>
+            </Panel>
           </div>
           <p className="text-xs text-slate-500">
             Check your birth certificate or ask a family member for the most accurate time.
@@ -186,7 +189,7 @@ export const BirthTimeSelector: React.FC<Props> = ({
       {/* Approximate Time Selection */}
       {precision === 'approximate' && (
         <div className="space-y-2">
-          <Label className="text-slate-300">Approximate Time of Day</Label>
+          <Label dark>Approximate Time of Day</Label>
           <div className="grid grid-cols-2 gap-2">
             {TIME_RANGES.map((range) => (
               <button
@@ -221,7 +224,7 @@ export const BirthTimeSelector: React.FC<Props> = ({
       {/* Unknown Time Info */}
       {precision === 'unknown' && (
         <div className="space-y-3">
-          <div className="flex items-start gap-2 p-3 bg-slate-800/50 border border-white/20 rounded-lg">
+          <Panel dark className="flex items-start gap-2 p-3 border border-white/20 rounded-lg">
             <HelpCircle className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-slate-300">
               <p className="font-medium mb-1">What you&apos;ll still get:</p>
@@ -232,7 +235,7 @@ export const BirthTimeSelector: React.FC<Props> = ({
                 <li>Aspects between planets</li>
               </ul>
             </div>
-          </div>
+          </Panel>
           <div className="flex items-start gap-2 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
             <Moon className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-orange-200/80">

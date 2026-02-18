@@ -156,7 +156,7 @@ const CrystalDetailPanel: React.FC<Props> = ({ crystal, userId, onClose }) => {
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-slate-900 border-white/20 text-white max-w-[95vw] w-full sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto p-0" data-testid="crystal-detail-panel">
+      <DialogContent className="max-w-[95vw] w-full sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto p-0" data-testid="crystal-detail-panel">
         {/* Header with Image */}
         <div className="relative">
           <div className="h-40 bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center">

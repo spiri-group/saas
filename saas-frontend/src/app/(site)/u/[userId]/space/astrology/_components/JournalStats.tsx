@@ -4,6 +4,7 @@ import { BarChart3, Moon, Smile, Star } from 'lucide-react';
 import { AstrologyJournalStats, getMoodInfo } from '../_hooks/useAstrologyJournal';
 import { getBodyInfo } from '../_hooks/useBirthChart';
 import { MoonPhase, getMoonPhaseInfo } from '../_hooks/useTransits';
+import { Panel } from '@/components/ui/panel';
 
 interface Props {
   stats: AstrologyJournalStats;
@@ -31,13 +32,13 @@ export const JournalStats: React.FC<Props> = ({ stats }) => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Entries */}
-        <div className="p-3 bg-slate-800/50 rounded-lg">
+        <Panel dark className="p-3 rounded-lg">
           <div className="text-2xl font-bold text-white">{stats.totalEntries}</div>
           <div className="text-xs text-slate-400">Total entries</div>
-        </div>
+        </Panel>
 
         {/* Top Moon Phases */}
-        <div className="p-3 bg-slate-800/50 rounded-lg">
+        <Panel dark className="p-3 rounded-lg">
           <div className="flex items-center gap-1 mb-1">
             <Moon className="w-3 h-3 text-indigo-400" />
             <span className="text-xs text-slate-400">Top moon phases</span>
@@ -59,10 +60,10 @@ export const JournalStats: React.FC<Props> = ({ stats }) => {
           ) : (
             <div className="text-sm text-slate-500">No data yet</div>
           )}
-        </div>
+        </Panel>
 
         {/* Top Moods */}
-        <div className="p-3 bg-slate-800/50 rounded-lg">
+        <Panel dark className="p-3 rounded-lg">
           <div className="flex items-center gap-1 mb-1">
             <Smile className="w-3 h-3 text-yellow-400" />
             <span className="text-xs text-slate-400">Common moods</span>
@@ -84,10 +85,10 @@ export const JournalStats: React.FC<Props> = ({ stats }) => {
           ) : (
             <div className="text-sm text-slate-500">No data yet</div>
           )}
-        </div>
+        </Panel>
 
         {/* Most Tagged Planets */}
-        <div className="p-3 bg-slate-800/50 rounded-lg">
+        <Panel dark className="p-3 rounded-lg">
           <div className="flex items-center gap-1 mb-1">
             <Star className="w-3 h-3 text-purple-400" />
             <span className="text-xs text-slate-400">Top planetary themes</span>
@@ -109,7 +110,7 @@ export const JournalStats: React.FC<Props> = ({ stats }) => {
           ) : (
             <div className="text-sm text-slate-500">No data yet</div>
           )}
-        </div>
+        </Panel>
       </div>
     </div>
   );

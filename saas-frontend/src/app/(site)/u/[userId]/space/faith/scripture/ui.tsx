@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { BookOpen, History, Plus, Clock, Bookmark, Sparkles, Heart, Cross, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import useScriptureReflections, { ScriptureReflection } from '../hooks/useScriptureReflections';
 import { ScriptureReflectionForm } from './components/ScriptureReflectionForm';
 import { ScriptureReflectionHistory } from './components/ScriptureReflectionHistory';
@@ -221,7 +221,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent className="bg-slate-900 border-white/20 text-white sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent dark={false} glass className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-emerald-400" />
@@ -234,12 +234,17 @@ const UI: React.FC<Props> = ({ userId }) => {
             existingEntry={editingEntry}
             onSuccess={handleFormSuccess}
           />
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
 
       {/* View Dialog */}
       <Dialog open={!!viewingEntry} onOpenChange={(open) => !open && setViewingEntry(null)}>
-        <DialogContent className="bg-slate-900 border-white/20 text-white sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent dark={false} glass className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="w-5 h-5 text-emerald-400" />
@@ -270,7 +275,7 @@ const UI: React.FC<Props> = ({ userId }) => {
               {viewingEntry.text && (
                 <div>
                   <h4 className="text-sm font-medium text-slate-400 mb-2">Scripture</h4>
-                  <blockquote className="text-white/90 border-l-2 border-emerald-500/50 pl-4 italic">
+                  <blockquote className="text-black/90 border-l-2 border-emerald-500/50 pl-4 italic">
                     &ldquo;{viewingEntry.text}&rdquo;
                   </blockquote>
                 </div>
@@ -280,7 +285,7 @@ const UI: React.FC<Props> = ({ userId }) => {
               {viewingEntry.whatSpokeToMe && (
                 <div>
                   <h4 className="text-sm font-medium text-slate-400 mb-2">What Spoke to You</h4>
-                  <p className="text-slate-300 whitespace-pre-wrap">{viewingEntry.whatSpokeToMe}</p>
+                  <p className="text-black/70 whitespace-pre-wrap">{viewingEntry.whatSpokeToMe}</p>
                 </div>
               )}
 
@@ -288,7 +293,7 @@ const UI: React.FC<Props> = ({ userId }) => {
               {viewingEntry.personalApplication && (
                 <div>
                   <h4 className="text-sm font-medium text-slate-400 mb-2">Personal Application</h4>
-                  <p className="text-slate-300 whitespace-pre-wrap">{viewingEntry.personalApplication}</p>
+                  <p className="text-black/70 whitespace-pre-wrap">{viewingEntry.personalApplication}</p>
                 </div>
               )}
 
@@ -298,7 +303,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                   <h4 className="text-sm font-medium text-slate-400 mb-2">Questions to Explore</h4>
                   <ul className="space-y-1">
                     {viewingEntry.questions.map((q, i) => (
-                      <li key={i} className="text-slate-300 text-sm flex items-start gap-2">
+                      <li key={i} className="text-black/70 text-sm flex items-start gap-2">
                         <span className="text-emerald-400">•</span>
                         {q}
                       </li>
@@ -313,7 +318,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                   <h4 className="text-sm font-medium text-slate-400 mb-2">Cross References</h4>
                   <div className="flex flex-wrap gap-2">
                     {viewingEntry.crossReferences.map((ref, i) => (
-                      <Badge key={i} variant="outline" className="bg-white/5 text-slate-300">
+                      <Badge key={i} variant="outline" className="bg-black/5 text-black/70">
                         {ref}
                       </Badge>
                     ))}
@@ -325,12 +330,12 @@ const UI: React.FC<Props> = ({ userId }) => {
               {viewingEntry.prayerResponse && (
                 <div>
                   <h4 className="text-sm font-medium text-slate-400 mb-2">Prayer Response</h4>
-                  <p className="text-slate-300 whitespace-pre-wrap italic">{viewingEntry.prayerResponse}</p>
+                  <p className="text-black/70 whitespace-pre-wrap italic">{viewingEntry.prayerResponse}</p>
                 </div>
               )}
 
               {/* Metadata */}
-              <div className="pt-4 border-t border-white/10 text-sm text-slate-500">
+              <div className="pt-4 border-t border-black/10 text-sm text-black/50">
                 Recorded {formatDistanceToNow(new Date(viewingEntry.createdAt), { addSuffix: true })}
               </div>
 
@@ -342,7 +347,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                     handleEdit(viewingEntry);
                   }}
                   variant="outline"
-                  className="flex-1 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10"
+                  className="flex-1 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10"
                 >
                   Edit Reflection
                 </Button>

@@ -1,5 +1,10 @@
 # Changelog
 
+## February 2026
+
+- Replaced legal documents version history modal with inline History tab (two-panel layout: version timeline + content preview)
+- Fixed dark mode text readability across legal documents admin console (prose text, metadata labels, font sizes)
+
 ## January 2025
 
 - Added personalized home feed for logged-in users showing video updates and daily oracle messages from followed practitioners and merchants

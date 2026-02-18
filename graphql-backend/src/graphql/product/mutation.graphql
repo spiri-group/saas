@@ -76,6 +76,7 @@ input ProductInput {
   refundRules: RefundRulesInput
   productType: String
   typeData: ProductTypeDataInput
+  spiritualInterests: [String]
 }
 
 input VariantInput {

@@ -8,6 +8,7 @@ import { Mail } from 'lucide-react';
 import SpiriLogo from '@/icons/spiri-logo';
 import { SignIn } from '@/components/ux/SignIn';
 
+import { gql } from '@/lib/services/gql';
 import OnboardingShell, { type OnboardingTheme } from './components/OnboardingShell';
 import MarketingPanel from './components/MarketingPanel';
 import StepIndicator from './components/StepIndicator';
@@ -37,8 +38,9 @@ type Branch = 'practitioner' | 'merchant' | null;
 
 // ── Theme & full-screen helpers ─────────────────────────────────────
 
-function themeForStep(step: Step, branch: Branch): OnboardingTheme {
-    if (step === 'basic' || step === 'plan') return 'neutral';
+function themeForStep(step: Step, branch: Branch, hasReligion?: boolean): OnboardingTheme {
+    if (step === 'basic') return hasReligion ? 'faith' : 'neutral';
+    if (step === 'plan') return 'neutral';
     if (step === 'consent') {
         // Consent theme matches the selected plan branch
         if (branch === 'merchant') return 'amber';
@@ -114,13 +116,38 @@ export default function SetupUI() {
     // ── Step handlers ───────────────────────────────────────────────
 
     const handleBasicBrowse = useCallback(async () => {
-        // Customer just wants to browse - redirect to home
-        if (session?.user?.id) {
-            window.location.href = `/u/${session.user.id}/space`;
-        } else {
+        if (!session?.user?.id) {
             window.location.href = '/';
+            return;
         }
-    }, []);
+
+        // Save basic details so requiresInput is set to false
+        const vals = form.getValues();
+        try {
+            await gql<{ update_user: { success: boolean } }>(
+                `mutation UpdateUser($customer: CustomerUpdateInput!) {
+                    update_user(customer: $customer) {
+                        success
+                    }
+                }`,
+                {
+                    customer: {
+                        id: session.user.id,
+                        firstname: vals.firstName,
+                        lastname: vals.lastName,
+                        ...(vals.religionId ? {
+                            religionId: vals.religionId,
+                            openToOtherExperiences: vals.openToOtherExperiences ?? true,
+                        } : {}),
+                    }
+                }
+            );
+        } catch (error) {
+            console.error('Failed to save basic details:', error);
+        }
+
+        window.location.href = `/u/${session.user.id}/space`;
+    }, [session, form]);
 
     const handleBasicSetupBusiness = useCallback(() => {
         setStep('plan');
@@ -269,7 +296,7 @@ export default function SetupUI() {
 
     // ── Theme & layout state ────────────────────────────────────────
 
-    const theme = themeForStep(step, branch);
+    const theme = themeForStep(step, branch, !!form.watch('religionId'));
     const fullScreen = isFullScreenStep(step);
     const labels = stepLabels(step, branch);
     const currentStepNum = stepNumber(step, branch);

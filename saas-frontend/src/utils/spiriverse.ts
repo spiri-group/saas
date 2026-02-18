@@ -3011,7 +3011,8 @@ export type product_type = {
     refundRules?: refund_rules_type,
     // Product type discriminator for crystal vs standard products
     productType?: product_type_discriminator,
-    typeData?: product_type_data
+    typeData?: product_type_data,
+    spiritualInterests?: string[]
 }
 
 export type variant_type = {

@@ -167,6 +167,32 @@ const resolvers = {
                 }
             };
         },
+        posSales: async (_: any, args: {
+            vendorId: string;
+            limit?: number;
+            offset?: number;
+        }, context: serverContext) => {
+            const limit = args.limit || 50;
+            const offset = args.offset || 0;
+
+            const sales = await context.dataSources.cosmos.run_query<order_type>("Main-Orders", {
+                query: `
+                    SELECT VALUE o FROM o
+                    JOIN l IN o.lines
+                    WHERE o.source = "POS"
+                    AND l.merchantId = @merchantId
+                    ORDER BY o.createdDate DESC
+                    OFFSET @offset LIMIT @limit
+                `,
+                parameters: [
+                    { name: "@merchantId", value: args.vendorId },
+                    { name: "@offset", value: offset },
+                    { name: "@limit", value: limit }
+                ]
+            }, true);
+
+            return sales;
+        },
         backorderedOrders: async (_: any, args: { vendorId: string }, context: serverContext) => {
             // Query for orders with backordered lines
             const orders = await context.dataSources.cosmos.run_query<order_type>("Main-Orders", {
@@ -1666,6 +1692,127 @@ const resolvers = {
                 orderId,
                 expiresAt: expiresAt.toISOString()
             };
+        },
+        create_pos_sale: async (_: any, args: {
+            merchantId: string;
+            input: {
+                customerEmail?: string;
+                lines: any[];
+                paymentMethod: string;
+                notes?: string;
+            };
+        }, context: serverContext) => {
+            if (context.userId == null) throw new Error("User must be authenticated to create a POS sale");
+
+            const { lines, paymentMethod, customerEmail, notes } = args.input;
+
+            if (!lines || lines.length === 0) {
+                throw new Error("At least one line item is required");
+            }
+
+            const validPaymentMethods = ["CASH", "EXTERNAL_TERMINAL"];
+            if (!validPaymentMethods.includes(paymentMethod)) {
+                throw new Error(`Invalid payment method. Must be one of: ${validPaymentMethods.join(", ")}`);
+            }
+
+            // Verify merchant exists
+            const merchant = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", args.merchantId, args.merchantId);
+            if (!merchant) {
+                throw new Error("Merchant not found");
+            }
+
+            // Build order lines with price and target info
+            const orderLines: any[] = lines.map((line: any) => {
+                const quantity = line.quantity || 1;
+                return {
+                    id: uuidv4(),
+                    forObject: line.forObject,
+                    variantId: line.variantId,
+                    descriptor: line.descriptor,
+                    merchantId: line.merchantId || args.merchantId,
+                    quantity,
+                    price_log: [
+                        {
+                            id: uuidv4(),
+                            datetime: DateTime.now().toISO(),
+                            type: "CHARGE",
+                            status: "SUCCESS",
+                            price: {
+                                ...line.price,
+                                quantity
+                            }
+                        }
+                    ],
+                    paid_status_log: [
+                        {
+                            datetime: DateTime.now().toISO(),
+                            status: "SUCCESS",
+                            label: "POS_SALE",
+                            triggeredBy: "MERCHANT"
+                        }
+                    ],
+                    refund_request_log: [],
+                    stripe: {},
+                    target: line.target
+                };
+            });
+
+            // Restore targets on lines (determines fee tier from listing type)
+            await restore_target_on_lines_async(orderLines, context.dataSources.cosmos);
+
+            // Calculate subtotal
+            const subtotal = orderLines.reduce((sum, line) => {
+                const price = line.price_log[0].price;
+                return sum + (price.amount * price.quantity);
+            }, 0);
+            const currency = orderLines[0]?.price_log[0]?.price?.currency || merchant.currency || "USD";
+
+            // Deduct inventory immediately (POS = already paid)
+            await deduct_pos_inventory(orderLines, context.dataSources.cosmos, context.userId);
+
+            // Build completed order
+            const orderId = uuidv4();
+            const order: any = {
+                id: orderId,
+                orderId,
+                docType: "ORDER",
+                code: await generate_order_no(customerEmail || `pos-${args.merchantId}`, context.dataSources.cosmos),
+                userId: context.userId,
+                customerEmail: customerEmail || null,
+                target: "PRODUCT-PURCHASE",
+                source: "POS",
+                digitalOnly: false,
+                lines: orderLines,
+                payments: [
+                    {
+                        id: uuidv4(),
+                        code: "POS",
+                        method_description: paymentMethod === "CASH" ? "Cash" : "External Terminal",
+                        date: DateTime.now().toISO(),
+                        currency,
+                        charge: {
+                            subtotal,
+                            tax: 0,
+                            paid: subtotal
+                        }
+                    }
+                ],
+                credits: [],
+                stripe: {},
+                paid_status: "PAID",
+                createdDate: DateTime.now().toISO(),
+                createdBy: context.userId,
+                ...(notes && { notes })
+            };
+
+            await context.dataSources.cosmos.add_record("Main-Orders", order, order.id, context.userId);
+
+            return {
+                code: "200",
+                success: true,
+                message: "POS sale recorded successfully",
+                order: await context.dataSources.cosmos.get_record("Main-Orders", order.id, order.id)
+            };
         }
     },
     Order: {
@@ -2330,6 +2477,65 @@ export const restore_target_on_line = async (line: orderLine_type, cosmosClient:
 export const restore_target_on_lines_async = async (lines: orderLine_type[], cosmosClient: serverContext["dataSources"]["cosmos"]) => {
     await Promise.all(lines.map(line => restore_target_on_line(line, cosmosClient)));
 }
+
+// Deduct inventory immediately for POS sales (payment already collected)
+const deduct_pos_inventory = async (
+    lines: orderLine_type[],
+    cosmos: serverContext["dataSources"]["cosmos"],
+    userId: string
+): Promise<void> => {
+    const containerName = "Main-Listing";
+    const now = new Date().toISOString();
+
+    for (const line of lines) {
+        if (!line.variantId || !line.merchantId) continue;
+
+        const variantInventoryId = `invv:${line.variantId}`;
+        let inventory: variant_inventory_type;
+        try {
+            inventory = await cosmos.get_record<variant_inventory_type>(
+                containerName, variantInventoryId, line.merchantId
+            );
+        } catch {
+            // No inventory record = inventory not tracked for this variant
+            continue;
+        }
+
+        if (!inventory || !inventory.track_inventory) continue;
+
+        const quantity = line.price_log?.[0]?.price?.quantity || line.quantity || 1;
+
+        if (inventory.qty_on_hand < quantity) {
+            throw new Error(`Insufficient stock for "${line.descriptor}". Available: ${inventory.qty_on_hand}, Requested: ${quantity}`);
+        }
+
+        const newQtyOnHand = inventory.qty_on_hand - quantity;
+
+        await cosmos.patch_record(containerName, variantInventoryId, line.merchantId, [
+            { op: "set", path: "/qty_on_hand", value: newQtyOnHand },
+            { op: "set", path: "/updated_at", value: now }
+        ], userId);
+
+        // Create transaction record
+        const transactionId = `invt:${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        await cosmos.add_record(containerName, {
+            id: transactionId,
+            docType: "transaction",
+            vendorId: line.merchantId,
+            product_id: inventory.product_id,
+            variant_id: line.variantId,
+            delta: -quantity,
+            qty_before: inventory.qty_on_hand,
+            qty_after: newQtyOnHand,
+            reason: "POS_SALE",
+            source: "POS",
+            reference_id: line.id,
+            notes: `POS sale: ${quantity} unit(s)`,
+            created_at: now,
+            created_by: userId
+        }, line.merchantId, userId);
+    }
+};
 
 // Commit inventory quantities when order is placed
 // Returns patch operations to mark order lines as backordered if applicable

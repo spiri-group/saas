@@ -217,7 +217,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                     value={reflection}
                     onChange={(e) => setReflection(e.target.value)}
                     placeholder="What stands out? What does this mean to you?"
-                    className="bg-slate-800 border-slate-700 min-h-[100px]"
+                    className="min-h-[100px]"
                     data-testid="reflection-input"
                   />
                 </div>
@@ -228,7 +228,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                     value={personalApplication}
                     onChange={(e) => setPersonalApplication(e.target.value)}
                     placeholder="One practical way to apply this..."
-                    className="bg-slate-800 border-slate-700 min-h-[60px]"
+                    className="min-h-[60px]"
                     data-testid="application-input"
                   />
                 </div>
@@ -239,7 +239,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                     value={prayerResponse}
                     onChange={(e) => setPrayerResponse(e.target.value)}
                     placeholder="A short prayer in response to this passage..."
-                    className="bg-slate-800 border-slate-700 min-h-[60px]"
+                    className="min-h-[60px]"
                     data-testid="prayer-response-input"
                   />
                 </div>

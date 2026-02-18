@@ -5,9 +5,10 @@ import { useSession } from 'next-auth/react';
 import { ShieldCheck, CheckCircle2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { markdownToHtml } from '@/utils/markdownToHtml';
+import { markdownToHtml, stripForConsent } from '@/utils/markdownToHtml';
 import { resolvePlaceholders } from '@/utils/resolvePlaceholders';
 import UseLegalPlaceholders from '@/hooks/UseLegalPlaceholders';
+import useUserMarket from '@/hooks/UseUserMarket';
 import useCheckOutstandingConsents from './hooks/UseCheckOutstandingConsents';
 import useRecordConsents from './hooks/UseRecordConsents';
 import SpiriLogo from '@/icons/spiri-logo';
@@ -15,8 +16,9 @@ import SpiriLogo from '@/icons/spiri-logo';
 const ConsentGuard = () => {
   const { data: session, status } = useSession();
   const isLoggedIn = status === 'authenticated' && !!session?.user;
+  const market = useUserMarket();
 
-  const { data: outstanding, isLoading } = useCheckOutstandingConsents('site', isLoggedIn);
+  const { data: outstanding, isLoading } = useCheckOutstandingConsents('site', isLoggedIn, market);
   const { data: globalPlaceholders } = UseLegalPlaceholders();
   const recordConsents = useRecordConsents();
 
@@ -74,6 +76,8 @@ const ConsentGuard = () => {
       version: doc.version,
       consentContext: 'site-modal',
       documentTitle: doc.title,
+      supplementDocumentId: doc.supplementDocumentId,
+      supplementVersion: doc.supplementVersion,
     }));
 
     try {
@@ -187,8 +191,16 @@ const ConsentGuard = () => {
                 data-testid={`consent-content-${activeDoc.documentType}`}
                 className="border rounded-lg p-4 overflow-y-auto text-sm text-gray-700 bg-gray-50 prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-indigo-600 prose-strong:text-gray-900 prose-li:text-gray-700 flex-1 min-h-0"
                 onClick={handleContentClick}
-                dangerouslySetInnerHTML={{ __html: markdownToHtml(resolvePlaceholders(activeDoc.content, globalPlaceholders || {}, activeDoc.placeholders)) }}
-              />
+              >
+                <div dangerouslySetInnerHTML={{ __html: markdownToHtml(stripForConsent(resolvePlaceholders(activeDoc.content, globalPlaceholders || {}, activeDoc.placeholders))) }} />
+                {activeDoc.supplementContent && (
+                  <>
+                    <hr className="my-6 border-gray-300" />
+                    <h4 className="text-sm font-semibold text-gray-800 mb-2">{activeDoc.supplementTitle || 'Country Supplement'}</h4>
+                    <div dangerouslySetInnerHTML={{ __html: markdownToHtml(stripForConsent(resolvePlaceholders(activeDoc.supplementContent, globalPlaceholders || {}))) }} />
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="p-6 border-t space-y-4">

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Wind, History, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MeditationForm, MeditationHistory, MeditationStats } from './components';
 import { useMeditations, useMeditationStats, MeditationJournalEntry } from './hooks';
 
@@ -78,7 +78,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent className="bg-slate-900 border-white/20 text-white sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wind className="w-5 h-5 text-teal-400" />
@@ -91,6 +91,11 @@ const UI: React.FC<Props> = ({ userId }) => {
             existingMeditation={editingMeditation}
             onSuccess={handleFormSuccess}
           />
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
     </div>

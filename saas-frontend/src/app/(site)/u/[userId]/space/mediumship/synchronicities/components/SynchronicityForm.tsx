@@ -107,7 +107,7 @@ export const SynchronicityForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="date"
             type="date"
             {...register('date', { required: true })}
-            className="bg-slate-800 border-slate-700"
+            dark
             data-testid="synchronicity-date"
           />
         </div>
@@ -118,7 +118,7 @@ export const SynchronicityForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="time"
             type="time"
             {...register('time')}
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
       </div>
@@ -129,7 +129,7 @@ export const SynchronicityForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="title"
           {...register('title', { required: true })}
           placeholder="Give this synchronicity a memorable title..."
-          className="bg-slate-800 border-slate-700"
+          dark
           data-testid="synchronicity-title"
         />
       </div>
@@ -140,7 +140,8 @@ export const SynchronicityForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="description"
           {...register('description', { required: true })}
           placeholder="Describe the synchronicity in detail..."
-          className="bg-slate-800 border-slate-700 min-h-[100px]"
+          dark
+          className="min-h-[100px]"
           data-testid="synchronicity-description"
         />
       </div>
@@ -152,7 +153,7 @@ export const SynchronicityForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="location"
             {...register('location')}
             placeholder="Where did it happen?"
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
 
@@ -162,7 +163,7 @@ export const SynchronicityForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="witnesses"
             {...register('witnesses')}
             placeholder="Anyone else present?"
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
       </div>
@@ -173,7 +174,8 @@ export const SynchronicityForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="possibleMeaning"
           {...register('possibleMeaning')}
           placeholder="Your initial interpretation..."
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark
+          className="min-h-[60px]"
         />
       </div>
 
@@ -183,7 +185,7 @@ export const SynchronicityForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="relatedTo"
           {...register('relatedTo')}
           placeholder="What area of life does this relate to?"
-          className="bg-slate-800 border-slate-700"
+          dark
         />
       </div>
 
@@ -194,7 +196,8 @@ export const SynchronicityForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="confirmedMeaning"
             {...register('confirmedMeaning')}
             placeholder="Once you understand what it meant..."
-            className="bg-slate-800 border-slate-700 min-h-[60px]"
+            dark
+          className="min-h-[60px]"
           />
         </div>
       )}
@@ -207,13 +210,13 @@ export const SynchronicityForm: React.FC<Props> = ({ userId, existingEntry, onSu
             value={newSymbolName}
             onChange={(e) => setNewSymbolName(e.target.value)}
             placeholder="Symbol name..."
-            className="bg-slate-800 border-slate-700"
+            dark
           />
           <Input
             value={newSymbolContext}
             onChange={(e) => setNewSymbolContext(e.target.value)}
             placeholder="Context..."
-            className="bg-slate-800 border-slate-700"
+            dark
           />
           <Button type="button" variant="outline" size="icon" onClick={addSymbol}>
             <Plus className="w-4 h-4" />
@@ -260,11 +263,12 @@ export const SynchronicityForm: React.FC<Props> = ({ userId, existingEntry, onSu
 
       <div className="flex items-center gap-2 pt-2">
         <Switch
+          dark
           id="recurringTheme"
           checked={watch('recurringTheme')}
           onCheckedChange={(checked) => setValue('recurringTheme', checked)}
         />
-        <Label htmlFor="recurringTheme" className="text-sm text-slate-400">
+        <Label htmlFor="recurringTheme" dark className="text-sm">
           Part of a recurring theme
         </Label>
       </div>

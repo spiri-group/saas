@@ -24,8 +24,9 @@ import AnalyticsTracker from './components/AnalyticsTracker';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.spiriverse.com'),
   title: 'SpiriVerse',
-  description: 'SpiriVerse',
+  description: 'SpiriVerse – A sacred digital marketplace connecting spiritual practitioners with seekers worldwide.',
 };
 
 export default async function SiteLayout({

@@ -122,18 +122,7 @@ const JournalEntries: React.FC<Props> = ({ userId }) => {
   }
 
   if (recentEntries.length === 0) {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-slate-400">Recent Journal Entries</h2>
-        </div>
-        <div className="p-6 rounded-xl bg-white/5 border border-white/10 text-center">
-          <BookOpen className="w-8 h-8 text-slate-500 mx-auto mb-3" />
-          <p className="text-slate-400 text-sm">No journal entries yet</p>
-          <p className="text-slate-500 text-xs mt-1">Use the quick actions above to start journaling</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

@@ -122,6 +122,7 @@ type Product {
   isLive: Boolean
   productType: ProductType
   typeData: ProductTypeData
+  spiritualInterests: [String]
 }
 
 # Crystal product filter input

@@ -13,6 +13,8 @@ export interface LegalDocument {
   updatedAt: string;
   updatedBy: string; // Staff member who last edited
   placeholders?: Record<string, string>;
+  parentDocumentId?: string; // For supplements: links to the base document
+  supplementOrder?: number; // Display order within supplements for a document type
 }
 
 export interface LegalDocumentVersion {
@@ -42,6 +44,8 @@ export interface LegalDocumentInput {
   effectiveDate?: string;
   changeSummary?: string;
   placeholders?: Record<string, string>;
+  parentDocumentId?: string;
+  supplementOrder?: number;
 }
 
 export const LEGAL_DOCUMENT_TYPES = [

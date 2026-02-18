@@ -14,7 +14,6 @@ import {
   ChevronLeft,
   Keyboard,
   History,
-  RotateCcw,
   Info,
   Settings2,
 } from "lucide-react";
@@ -40,18 +39,20 @@ import UseRestoreLegalDocumentVersion from "./hooks/UseRestoreLegalDocumentVersi
 import {
   LegalDocument,
   LegalDocumentInput,
-  LegalDocumentVersion,
   DOCUMENT_TYPE_LABELS,
   DOCUMENT_TYPE_INFO,
+  MARKET_LABELS,
+  MARKET_OPTIONS,
 } from "./types";
 import { markdownToHtml } from "@/utils/markdownToHtml";
 import { resolvePlaceholders } from "@/utils/resolvePlaceholders";
 import UseLegalPlaceholders from "@/hooks/UseLegalPlaceholders";
 import UseUpsertLegalPlaceholders from "./hooks/UseUpsertLegalPlaceholders";
 import PlaceholderEditor from "./PlaceholderEditor";
+import HistoryTab from "./HistoryTab";
 
-type ViewMode = "list" | "edit" | "version-preview";
-type EditorTab = "preview" | "edit";
+type ViewMode = "list" | "edit";
+type EditorTab = "preview" | "edit" | "history";
 
 export default function LegalDocumentsManager() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -59,6 +60,7 @@ export default function LegalDocumentsManager() {
   const [selectedDocument, setSelectedDocument] =
     useState<LegalDocument | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [marketFilter, setMarketFilter] = useState<string>("all");
 
   // Editor state
   const [editTitle, setEditTitle] = useState("");
@@ -76,15 +78,9 @@ export default function LegalDocumentsManager() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
   const [showChangeSummaryDialog, setShowChangeSummaryDialog] = useState(false);
-  const [showVersionHistory, setShowVersionHistory] = useState(false);
-  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [changeSummary, setChangeSummary] = useState("");
   const [documentToDelete, setDocumentToDelete] =
     useState<LegalDocument | null>(null);
-  const [selectedVersion, setSelectedVersion] =
-    useState<LegalDocumentVersion | null>(null);
-  const [versionToRestore, setVersionToRestore] =
-    useState<LegalDocumentVersion | null>(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const pendingAction = useRef<(() => void) | null>(null);
 
@@ -106,17 +102,24 @@ export default function LegalDocumentsManager() {
   const { data: versions, isLoading: versionsLoading } =
     UseLegalDocumentVersions(selectedDocument?.id);
 
-  // Filter documents by search
+  // Filter documents by search and market
   const filteredDocuments = useMemo(() => {
-    if (!documents || !searchQuery.trim()) return documents;
-    const query = searchQuery.toLowerCase();
-    return documents.filter(
-      (doc) =>
-        doc.title.toLowerCase().includes(query) ||
-        doc.documentType.toLowerCase().includes(query) ||
-        doc.id.toLowerCase().includes(query)
-    );
-  }, [documents, searchQuery]);
+    if (!documents) return documents;
+    let filtered = documents;
+    if (marketFilter !== "all") {
+      filtered = filtered.filter((doc) => doc.market === marketFilter);
+    }
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (doc) =>
+          doc.title.toLowerCase().includes(query) ||
+          doc.documentType.toLowerCase().includes(query) ||
+          doc.id.toLowerCase().includes(query)
+      );
+    }
+    return filtered;
+  }, [documents, searchQuery, marketFilter]);
 
   // Keyboard shortcuts
   const handleKeyDown = useCallback(
@@ -148,17 +151,14 @@ export default function LegalDocumentsManager() {
           break;
         case "escape":
           event.preventDefault();
-          if (viewMode === "version-preview") {
-            setViewMode("edit");
-            setSelectedVersion(null);
-          } else if (viewMode === "edit") {
+          if (viewMode === "edit") {
             guardUnsavedChanges(handleBackToList);
           }
           break;
         case "h":
           if (viewMode === "edit") {
             event.preventDefault();
-            setShowVersionHistory(true);
+            setEditorTab("history");
           }
           break;
         case "?":
@@ -179,7 +179,6 @@ export default function LegalDocumentsManager() {
     setEditEffectiveDate(doc.effectiveDate?.split("T")[0] || "");
     setEditPlaceholders(doc.placeholders || {});
     setHasUnsavedChanges(false);
-    setSelectedVersion(null);
     setEditorTab(forceTab ?? (doc.isPublished ? "preview" : "edit"));
     setViewMode("edit");
   };
@@ -187,9 +186,7 @@ export default function LegalDocumentsManager() {
   const handleBackToList = () => {
     setViewMode("list");
     setSelectedDocument(null);
-    setSelectedVersion(null);
     setHasUnsavedChanges(false);
-    setShowVersionHistory(false);
     setShowPlaceholderDialog(false);
   };
 
@@ -232,6 +229,8 @@ export default function LegalDocumentsManager() {
         : undefined,
       changeSummary: changeSummary.trim(),
       placeholders: editPlaceholders,
+      parentDocumentId: selectedDocument.parentDocumentId,
+      supplementOrder: selectedDocument.supplementOrder,
     };
 
     try {
@@ -249,15 +248,18 @@ export default function LegalDocumentsManager() {
     id: string;
     documentType: string;
     title: string;
+    market?: string;
+    parentDocumentId?: string;
   }) => {
     const input: LegalDocumentInput = {
       id: formData.id,
       documentType: formData.documentType,
       title: formData.title,
       content: `# ${formData.title}\n\n**Effective Date:** [EFFECTIVE_DATE]\n\nContent goes here...`,
-      market: "global",
+      market: formData.market || "global",
       isPublished: false,
       changeSummary: "Initial document",
+      parentDocumentId: formData.parentDocumentId,
     };
 
     try {
@@ -288,28 +290,14 @@ export default function LegalDocumentsManager() {
     setShowDeleteDialog(true);
   };
 
-  const handleViewVersion = (version: LegalDocumentVersion) => {
-    setSelectedVersion(version);
-    setShowVersionHistory(false);
-    setViewMode("version-preview");
-  };
-
-  const handleRestoreClick = (version: LegalDocumentVersion) => {
-    setVersionToRestore(version);
-    setShowRestoreConfirm(true);
-  };
-
-  const handleRestoreConfirm = async () => {
-    if (!selectedDocument || !versionToRestore) return;
+  const handleRestoreVersion = async (version: { id: string }) => {
+    if (!selectedDocument) return;
     try {
       const result = await restoreMutation.mutateAsync({
         documentId: selectedDocument.id,
-        versionId: versionToRestore.id,
+        versionId: version.id,
       });
       setSelectedDocument(result);
-      setShowRestoreConfirm(false);
-      setVersionToRestore(null);
-      setSelectedVersion(null);
       setHasUnsavedChanges(false);
       handleEditDocument(result);
     } catch {
@@ -369,8 +357,8 @@ export default function LegalDocumentsManager() {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="flex items-center px-6 py-3 border-b border-console">
+        {/* Search + Market Filter */}
+        <div className="flex items-center gap-3 px-6 py-3 border-b border-console">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-console-muted" />
             <Input
@@ -381,6 +369,17 @@ export default function LegalDocumentsManager() {
               data-testid="search-input"
             />
           </div>
+          <select
+            value={marketFilter}
+            onChange={(e) => setMarketFilter(e.target.value)}
+            className="h-9 px-3 bg-console-surface border border-console rounded-md text-console text-sm"
+            data-testid="market-filter-select"
+          >
+            <option value="all">All Markets</option>
+            {MARKET_OPTIONS.map((m) => (
+              <option key={m} value={m}>{MARKET_LABELS[m]}</option>
+            ))}
+          </select>
         </div>
 
         {/* Document list */}
@@ -440,7 +439,26 @@ export default function LegalDocumentsManager() {
                           >
                             {doc.isPublished ? "Published" : "Draft"}
                           </Badge>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/30"
+                          >
+                            {MARKET_LABELS[doc.market] || doc.market}
+                          </Badge>
+                          {doc.parentDocumentId && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/30"
+                            >
+                              Supplement
+                            </Badge>
+                          )}
                         </div>
+                        {doc.parentDocumentId && (
+                          <p className="text-[10px] text-console-muted mb-0.5">
+                            Supplement of: {DOCUMENT_TYPE_LABELS[doc.documentType] || doc.parentDocumentId}
+                          </p>
+                        )}
                         <div className="flex items-center space-x-3 text-xs text-console-muted">
                           <span>v{doc.version}</span>
                           <span className="flex items-center space-x-1">
@@ -462,7 +480,7 @@ export default function LegalDocumentsManager() {
                           </div>
                         )}
                         {doc.changeSummary && (
-                          <p className="text-[10px] text-console-muted/50 mt-0.5 truncate italic">
+                          <p className="text-xs text-console-muted mt-0.5 truncate italic">
                             Last change: {doc.changeSummary}
                           </p>
                         )}
@@ -517,6 +535,7 @@ export default function LegalDocumentsManager() {
           onSubmit={handleCreateDocument}
           isPending={upsertMutation.isPending}
           existingIds={documents?.map((d) => d.id) || []}
+          existingDocuments={documents || []}
         />
 
         {/* Delete Dialog */}
@@ -570,7 +589,7 @@ export default function LegalDocumentsManager() {
               {[
                 { key: "N", desc: "New document" },
                 { key: "Ctrl+S", desc: "Save (in editor)" },
-                { key: "H", desc: "Version history (in editor)" },
+                { key: "H", desc: "History tab (in editor)" },
                 { key: "Esc", desc: "Back to list / close" },
                 { key: "?", desc: "Show shortcuts" },
               ].map(({ key, desc }) => (
@@ -612,121 +631,6 @@ export default function LegalDocumentsManager() {
               description="Available in all documents. Use [KEY] in content."
               testIdPrefix="global-placeholders"
             />
-          </DialogContent>
-        </Dialog>
-      </div>
-    );
-  }
-
-  // Version preview mode
-  if (viewMode === "version-preview" && selectedDocument && selectedVersion) {
-    return (
-      <div
-        className="h-full flex flex-col overflow-hidden"
-        onKeyDown={handleKeyDown}
-        tabIndex={0}
-        data-testid="version-preview"
-      >
-        <div className="flex items-center justify-between px-6 py-3 border-b border-console">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => {
-                setViewMode("edit");
-                setSelectedVersion(null);
-                setShowVersionHistory(true);
-              }}
-              className="p-1.5 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-md transition-colors"
-              data-testid="back-to-history-btn"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h2 className="text-sm font-semibold text-console">
-                {selectedVersion.title}
-              </h2>
-              <p className="text-xs text-console-muted">
-                Version {selectedVersion.version} (read-only)
-              </p>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            onClick={() => handleRestoreClick(selectedVersion)}
-            className="bg-amber-600 hover:bg-amber-700"
-            data-testid="restore-version-btn"
-          >
-            <RotateCcw className="h-4 w-4 mr-1" />
-            Restore This Version
-          </Button>
-        </div>
-
-        {/* Version metadata bar */}
-        <div className="flex items-center space-x-4 px-6 py-2.5 border-b border-console bg-amber-500/5">
-          <div className="flex items-center space-x-2 text-xs">
-            <History className="h-3.5 w-3.5 text-amber-400" />
-            <span className="text-amber-400 font-medium">
-              Historical Version
-            </span>
-          </div>
-          <span className="text-xs text-console-muted">
-            Superseded on{" "}
-            {new Date(selectedVersion.supersededAt).toLocaleDateString(
-              undefined,
-              { year: "numeric", month: "short", day: "numeric" }
-            )}{" "}
-            by {selectedVersion.supersededBy}
-          </span>
-          <span className="text-xs text-console-muted italic">
-            &quot;{selectedVersion.changeSummary}&quot;
-          </span>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-4xl mx-auto">
-            <div
-              className="prose prose-invert prose-sm max-w-none
-                prose-headings:text-console prose-p:text-console-secondary
-                prose-a:text-console-primary prose-strong:text-console
-                prose-li:text-console-secondary prose-th:text-console
-                prose-td:text-console-secondary prose-table:border-console
-                prose-hr:border-console"
-              dangerouslySetInnerHTML={{
-                __html: markdownToHtml(resolvePlaceholders(selectedVersion.content, globalPlaceholders || {}, selectedVersion.placeholders)),
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Restore confirmation dialog */}
-        <Dialog open={showRestoreConfirm} onOpenChange={setShowRestoreConfirm}>
-          <DialogContent className="sm:max-w-md console-surface border-console">
-            <DialogHeader>
-              <DialogTitle className="text-console">
-                Restore Version {versionToRestore?.version}?
-              </DialogTitle>
-              <DialogDescription className="text-console-muted">
-                This will create a new version with the content from v
-                {versionToRestore?.version}. The current version will be
-                preserved in the history.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="flex space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowRestoreConfirm(false)}
-                className="border-console text-console"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleRestoreConfirm}
-                disabled={restoreMutation.isPending}
-                className="bg-amber-600 hover:bg-amber-700"
-                data-testid="confirm-restore-btn"
-              >
-                {restoreMutation.isPending ? "Restoring..." : "Restore"}
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -782,6 +686,10 @@ export default function LegalDocumentsManager() {
                   <Pencil className="h-3.5 w-3.5 mr-1.5" />
                   Edit
                 </TabsTrigger>
+                <TabsTrigger value="history" data-testid="history-tab">
+                  <History className="h-3.5 w-3.5 mr-1.5" />
+                  History
+                </TabsTrigger>
               </TabsList>
             </Tabs>
             <div className="flex items-center space-x-2">
@@ -792,14 +700,6 @@ export default function LegalDocumentsManager() {
                 data-testid="placeholder-settings-btn"
               >
                 <Settings2 className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setShowVersionHistory(true)}
-                className="p-2 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-lg transition-colors"
-                title="Version history (H)"
-                data-testid="version-history-btn"
-              >
-                <History className="h-4 w-4" />
               </button>
               <Button
                 size="sm"
@@ -815,7 +715,7 @@ export default function LegalDocumentsManager() {
           </div>
         </div>
 
-        {editorTab === "edit" ? (
+        {editorTab === "edit" && (
           <>
             {/* Metadata bar */}
             <div className="flex items-center space-x-4 px-6 py-3 border-b border-console bg-console-surface/50">
@@ -877,7 +777,7 @@ export default function LegalDocumentsManager() {
                 <span className="text-xs text-console-muted">
                   {docTypeInfo.purpose}
                 </span>
-                <span className="text-[1px] text-console-muted/30">|</span>
+                <span className="w-px h-3 bg-console-muted inline-block" />
                 <span className="text-xs text-console-secondary">
                   {docTypeInfo.marketNotes}
                 </span>
@@ -926,7 +826,9 @@ export default function LegalDocumentsManager() {
               />
             </div>
           </>
-        ) : (
+        )}
+
+        {editorTab === "preview" && (
           /* Preview tab - full width rendered content */
           <div
             className="flex-1 overflow-y-auto p-6"
@@ -934,16 +836,29 @@ export default function LegalDocumentsManager() {
           >
             <div
               className="prose prose-invert prose-sm max-w-none
-                prose-headings:text-console prose-p:text-console-secondary
+                prose-headings:text-console prose-p:text-console-secondary-foreground
                 prose-a:text-console-primary prose-strong:text-console
-                prose-li:text-console-secondary prose-th:text-console
-                prose-td:text-console-secondary prose-table:border-console
+                prose-li:text-console-secondary-foreground prose-th:text-console
+                prose-td:text-console-secondary-foreground prose-table:border-console
                 prose-hr:border-console"
               dangerouslySetInnerHTML={{
                 __html: markdownToHtml(resolvePlaceholders(editContent, globalPlaceholders || {}, editPlaceholders)),
               }}
             />
           </div>
+        )}
+
+        {editorTab === "history" && (
+          <HistoryTab
+            document={selectedDocument}
+            versions={versions}
+            versionsLoading={versionsLoading}
+            globalPlaceholders={globalPlaceholders || {}}
+            editPlaceholders={editPlaceholders}
+            editContent={editContent}
+            onRestore={handleRestoreVersion}
+            isRestoring={restoreMutation.isPending}
+          />
         )}
 
         {/* Change Summary Dialog */}
@@ -971,7 +886,7 @@ export default function LegalDocumentsManager() {
                 data-testid="change-summary-input"
               />
               {selectedDocument.changeSummary && (
-                <p className="text-[10px] text-console-muted/50">
+                <p className="text-xs text-console-muted">
                   Previous change: {selectedDocument.changeSummary}
                 </p>
               )}
@@ -993,186 +908,6 @@ export default function LegalDocumentsManager() {
                 data-testid="confirm-save-btn"
               >
                 {upsertMutation.isPending ? "Saving..." : "Save Changes"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Version History Dialog */}
-        <Dialog
-          open={showVersionHistory}
-          onOpenChange={setShowVersionHistory}
-        >
-          <DialogContent className="sm:max-w-2xl console-surface border-console max-h-[80vh] flex flex-col">
-            <DialogHeader>
-              <DialogTitle className="flex items-center space-x-2 text-console">
-                <History className="h-5 w-5 text-console-primary" />
-                <span>Version History</span>
-              </DialogTitle>
-              <DialogDescription className="text-console-muted">
-                {selectedDocument.title}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="flex-1 overflow-y-auto space-y-1 pr-1">
-              {/* Current version */}
-              <div className="p-3 rounded-lg bg-console-primary/10 border border-console-primary/20">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center space-x-2">
-                    <Badge className="bg-console-primary/20 text-console-primary border-console-primary/30 text-[10px]">
-                      v{selectedDocument.version}
-                    </Badge>
-                    <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">
-                      Current
-                    </Badge>
-                  </div>
-                  <span className="text-[10px] text-console-muted">
-                    {new Date(selectedDocument.updatedAt).toLocaleDateString(
-                      undefined,
-                      {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }
-                    )}
-                  </span>
-                </div>
-                <p className="text-xs text-console">
-                  {selectedDocument.title}
-                </p>
-                <div className="flex items-center space-x-3 mt-1">
-                  <span className="text-[10px] text-console-muted">
-                    by {selectedDocument.updatedBy}
-                  </span>
-                </div>
-                {selectedDocument.changeSummary && (
-                  <p className="text-[10px] text-console-muted/70 mt-1 italic">
-                    {selectedDocument.changeSummary}
-                  </p>
-                )}
-              </div>
-
-              {/* Historical versions */}
-              {versionsLoading && (
-                <div className="flex items-center justify-center py-6">
-                  <div className="animate-console-spin rounded-full h-5 w-5 border-2 border-console-primary border-t-transparent"></div>
-                  <span className="ml-2 text-console-muted text-xs">
-                    Loading versions...
-                  </span>
-                </div>
-              )}
-
-              {!versionsLoading && (!versions || versions.length === 0) && (
-                <div className="text-center py-6">
-                  <History className="h-8 w-8 text-console-muted/30 mx-auto mb-2" />
-                  <p className="text-xs text-console-muted/50">
-                    No previous versions
-                  </p>
-                </div>
-              )}
-
-              {versions?.map((version) => {
-                return (
-                  <div
-                    key={version.id}
-                    className="p-3 rounded-lg bg-console-surface hover:bg-console-surface-hover border border-console transition-colors group"
-                    data-testid={`version-entry-${version.id}`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center space-x-2">
-                        <Badge
-                          variant="secondary"
-                          className="bg-console-surface border-console text-console-muted text-[10px]"
-                        >
-                          v{version.version}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <button
-                          onClick={() => handleViewVersion(version)}
-                          className="px-2 py-1 text-[10px] text-console-muted hover:text-console hover:bg-console-surface-hover rounded transition-colors"
-                          data-testid={`view-version-${version.id}`}
-                        >
-                          <Eye className="h-3 w-3 inline mr-1" />
-                          View
-                        </button>
-                        <button
-                          onClick={() => handleRestoreClick(version)}
-                          className="px-2 py-1 text-[10px] text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded transition-colors"
-                          data-testid={`restore-version-${version.id}`}
-                        >
-                          <RotateCcw className="h-3 w-3 inline mr-1" />
-                          Restore
-                        </button>
-                        <span className="text-[10px] text-console-muted">
-                          {new Date(
-                            version.supersededAt
-                          ).toLocaleDateString(undefined, {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-console-secondary">
-                      {version.title}
-                    </p>
-                    <div className="flex items-center space-x-3 mt-1">
-                      <span className="text-[10px] text-console-muted">
-                        Replaced by {version.supersededBy}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-console-muted/70 mt-1 italic">
-                      {version.changeSummary}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowVersionHistory(false)}
-                className="border-console text-console"
-                data-testid="close-version-history-btn"
-              >
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Restore confirmation dialog (from history panel) */}
-        <Dialog open={showRestoreConfirm} onOpenChange={setShowRestoreConfirm}>
-          <DialogContent className="sm:max-w-md console-surface border-console">
-            <DialogHeader>
-              <DialogTitle className="text-console">
-                Restore Version {versionToRestore?.version}?
-              </DialogTitle>
-              <DialogDescription className="text-console-muted">
-                This will create a new version with the content from v
-                {versionToRestore?.version}. The current version will be
-                preserved in the history.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="flex space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowRestoreConfirm(false)}
-                className="border-console text-console"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleRestoreConfirm}
-                disabled={restoreMutation.isPending}
-                className="bg-amber-600 hover:bg-amber-700"
-                data-testid="confirm-restore-btn"
-              >
-                {restoreMutation.isPending ? "Restoring..." : "Restore"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1224,6 +959,7 @@ function CreateDocumentDialog({
   onSubmit,
   isPending,
   existingIds,
+  existingDocuments,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -1231,27 +967,47 @@ function CreateDocumentDialog({
     id: string;
     documentType: string;
     title: string;
+    market?: string;
+    parentDocumentId?: string;
   }) => void;
   isPending: boolean;
   existingIds: string[];
+  existingDocuments: LegalDocument[];
 }) {
   const [title, setTitle] = useState("");
   const [documentType, setDocumentType] = useState("terms-of-service");
+  const [isSupplement, setIsSupplement] = useState(false);
+  const [supplementMarket, setSupplementMarket] = useState("AU");
+  const [parentDocumentId, setParentDocumentId] = useState("");
 
-  const id = documentType;
+  // Base documents that can be parents for supplements
+  const baseDocuments = existingDocuments.filter((d) => !d.parentDocumentId && d.market === "global");
+
+  const id = isSupplement ? `${parentDocumentId || documentType}-${supplementMarket}` : documentType;
   const isDuplicate = existingIds.includes(id);
   const docTypeInfo = DOCUMENT_TYPE_INFO[documentType];
+  const parentDoc = baseDocuments.find((d) => d.id === parentDocumentId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isDuplicate) return;
+
+    const defaultTitle = isSupplement
+      ? `${DOCUMENT_TYPE_LABELS[parentDoc?.documentType || documentType] || documentType} — ${MARKET_LABELS[supplementMarket]} Supplement`
+      : DOCUMENT_TYPE_LABELS[documentType] || documentType;
+
     onSubmit({
       id,
-      documentType,
-      title: title || DOCUMENT_TYPE_LABELS[documentType] || documentType,
+      documentType: isSupplement ? (parentDoc?.documentType || documentType) : documentType,
+      title: title || defaultTitle,
+      market: isSupplement ? supplementMarket : "global",
+      parentDocumentId: isSupplement ? (parentDocumentId || undefined) : undefined,
     });
     setTitle("");
     setDocumentType("terms-of-service");
+    setIsSupplement(false);
+    setSupplementMarket("AU");
+    setParentDocumentId("");
   };
 
   return (
@@ -1262,32 +1018,103 @@ function CreateDocumentDialog({
             Create Legal Document
           </DialogTitle>
           <DialogDescription className="text-console-muted">
-            Add a new legal document to the platform.
+            Add a new legal document or country supplement.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-console-muted">
-              Document Type
-            </label>
-            <select
-              value={documentType}
-              onChange={(e) => setDocumentType(e.target.value)}
-              className="w-full h-9 px-3 bg-console-surface border border-console rounded-md text-console text-sm"
-              data-testid="create-document-type-select"
+          {/* Document type toggle */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsSupplement(false)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                !isSupplement
+                  ? "bg-console-primary/20 text-console-primary border border-console-primary/30"
+                  : "text-console-muted border border-console hover:bg-console-surface-hover"
+              }`}
+              data-testid="create-base-doc-btn"
             >
-              {Object.entries(DOCUMENT_TYPE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            {docTypeInfo && (
-              <p className="text-[10px] text-console-muted/60">
-                {docTypeInfo.purpose}
-              </p>
-            )}
+              Base Document
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSupplement(true);
+                if (baseDocuments.length > 0 && !parentDocumentId) {
+                  setParentDocumentId(baseDocuments[0].id);
+                }
+              }}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                isSupplement
+                  ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                  : "text-console-muted border border-console hover:bg-console-surface-hover"
+              }`}
+              data-testid="create-supplement-btn"
+            >
+              Country Supplement
+            </button>
           </div>
+
+          {isSupplement ? (
+            <>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-console-muted">
+                  Parent Document
+                </label>
+                <select
+                  value={parentDocumentId}
+                  onChange={(e) => setParentDocumentId(e.target.value)}
+                  className="w-full h-9 px-3 bg-console-surface border border-console rounded-md text-console text-sm"
+                  data-testid="create-parent-select"
+                >
+                  {baseDocuments.map((doc) => (
+                    <option key={doc.id} value={doc.id}>
+                      {doc.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-console-muted">
+                  Market
+                </label>
+                <select
+                  value={supplementMarket}
+                  onChange={(e) => setSupplementMarket(e.target.value)}
+                  className="w-full h-9 px-3 bg-console-surface border border-console rounded-md text-console text-sm"
+                  data-testid="create-market-select"
+                >
+                  {MARKET_OPTIONS.filter((m) => m !== "global").map((m) => (
+                    <option key={m} value={m}>{MARKET_LABELS[m]}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-console-muted">
+                Document Type
+              </label>
+              <select
+                value={documentType}
+                onChange={(e) => setDocumentType(e.target.value)}
+                className="w-full h-9 px-3 bg-console-surface border border-console rounded-md text-console text-sm"
+                data-testid="create-document-type-select"
+              >
+                {Object.entries(DOCUMENT_TYPE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              {docTypeInfo && (
+                <p className="text-xs text-console-muted">
+                  {docTypeInfo.purpose}
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-xs font-medium text-console-muted">
               Title (optional override)
@@ -1295,7 +1122,11 @@ function CreateDocumentDialog({
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={DOCUMENT_TYPE_LABELS[documentType] || ""}
+              placeholder={
+                isSupplement
+                  ? `${DOCUMENT_TYPE_LABELS[parentDoc?.documentType || ""] || ""} — ${MARKET_LABELS[supplementMarket]} Supplement`
+                  : DOCUMENT_TYPE_LABELS[documentType] || ""
+              }
               className="bg-console-surface border-console text-console text-sm"
               data-testid="create-title-input"
             />

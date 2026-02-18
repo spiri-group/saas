@@ -12,6 +12,8 @@ export interface LegalDocument {
   updatedAt: string;
   updatedBy: string;
   placeholders?: Record<string, string>;
+  parentDocumentId?: string;
+  supplementOrder?: number;
 }
 
 export interface LegalDocumentVersion {
@@ -40,7 +42,19 @@ export interface LegalDocumentInput {
   effectiveDate?: string;
   changeSummary?: string;
   placeholders?: Record<string, string>;
+  parentDocumentId?: string;
+  supplementOrder?: number;
 }
+
+export const MARKET_LABELS: Record<string, string> = {
+  global: 'Global',
+  AU: 'Australia',
+  UK: 'United Kingdom',
+  US: 'United States',
+  NZ: 'New Zealand',
+};
+
+export const MARKET_OPTIONS = ['global', 'AU', 'UK', 'US', 'NZ'] as const;
 
 export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   "terms-of-service": "Terms of Service",

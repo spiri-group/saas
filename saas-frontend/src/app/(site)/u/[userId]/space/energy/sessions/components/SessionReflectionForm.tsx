@@ -158,7 +158,7 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
             id="sessionDate"
             type="date"
             {...register('sessionDate', { required: true })}
-            className="bg-slate-800 border-slate-700"
+            dark
             data-testid="session-date"
           />
         </div>
@@ -171,7 +171,7 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
             min={5}
             max={480}
             {...register('duration', { valueAsNumber: true })}
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
       </div>
@@ -179,8 +179,8 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Modality</Label>
-          <Select value={modality} onValueChange={(v) => setModality(v as EnergyModality)}>
-            <SelectTrigger className="bg-slate-800 border-slate-700">
+          <Select dark value={modality} onValueChange={(v) => setModality(v as EnergyModality)}>
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -195,8 +195,8 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
 
         <div className="space-y-2">
           <Label>Your Role</Label>
-          <Select value={role} onValueChange={(v) => setRole(v as 'practitioner' | 'recipient' | 'self')}>
-            <SelectTrigger className="bg-slate-800 border-slate-700">
+          <Select dark value={role} onValueChange={(v) => setRole(v as 'practitioner' | 'recipient' | 'self')}>
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -219,7 +219,7 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
             id="practitionerName"
             {...register('practitionerName')}
             placeholder={role === 'practitioner' ? 'Enter client name' : 'Enter practitioner name'}
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
       )}
@@ -230,7 +230,7 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
           id="sessionType"
           {...register('sessionType')}
           placeholder="e.g., Chakra balancing, Trauma release, General healing"
-          className="bg-slate-800 border-slate-700"
+          dark
         />
       </div>
 
@@ -239,33 +239,36 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
         <Label className="text-base">Session Experience</Label>
 
         <div className="space-y-2">
-          <Label htmlFor="preSessionState" className="text-sm text-slate-400">Before the session</Label>
+          <Label htmlFor="preSessionState" dark className="text-sm">Before the session</Label>
           <Textarea
             id="preSessionState"
             {...register('preSessionState')}
             placeholder="How were you feeling before the session?"
-            className="bg-slate-800 border-slate-700 min-h-[60px]"
+            dark
+            className="min-h-[60px]"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="duringSession" className="text-sm text-slate-400">During the session</Label>
+          <Label htmlFor="duringSession" dark className="text-sm">During the session</Label>
           <Textarea
             id="duringSession"
             {...register('duringSession')}
             placeholder="What did you experience during the session?"
-            className="bg-slate-800 border-slate-700 min-h-[60px]"
+            dark
+            className="min-h-[60px]"
             data-testid="session-during"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="postSessionState" className="text-sm text-slate-400">After the session</Label>
+          <Label htmlFor="postSessionState" dark className="text-sm">After the session</Label>
           <Textarea
             id="postSessionState"
             {...register('postSessionState')}
             placeholder="How did you feel after the session?"
-            className="bg-slate-800 border-slate-700 min-h-[60px]"
+            dark
+            className="min-h-[60px]"
           />
         </div>
       </div>
@@ -299,7 +302,7 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
             value={customArea}
             onChange={(e) => setCustomArea(e.target.value)}
             placeholder="e.g., Heart chakra, Lower back, Crown"
-            className="bg-slate-800 border-slate-700"
+            dark
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomArea())}
           />
           <Button type="button" variant="outline" onClick={addCustomArea}>
@@ -333,7 +336,8 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
           id="messagesReceived"
           {...register('messagesReceived')}
           placeholder="Any messages, visions, or insights during the session"
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark
+          className="min-h-[60px]"
         />
       </div>
 
@@ -343,7 +347,8 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
           id="shiftsNoticed"
           {...register('shiftsNoticed')}
           placeholder="Any shifts in energy, emotions, or physical sensations"
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark
+          className="min-h-[60px]"
         />
       </div>
 
@@ -353,7 +358,8 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
           id="aftercare"
           {...register('aftercare')}
           placeholder="Recommended aftercare or integration practices"
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark
+          className="min-h-[60px]"
         />
       </div>
 
@@ -387,6 +393,7 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
           id="wouldRecommend"
           checked={wouldRecommend}
           onCheckedChange={(checked) => setWouldRecommend(checked as boolean)}
+          dark
         />
         <Label htmlFor="wouldRecommend" className="cursor-pointer">
           Would recommend this practitioner/session type
@@ -400,7 +407,7 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
             id="followUpDate"
             type="date"
             {...register('followUpDate')}
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
       </div>
@@ -411,7 +418,8 @@ export const SessionReflectionForm: React.FC<Props> = ({ userId, existingReflect
           id="personalNotes"
           {...register('personalNotes')}
           placeholder="Any additional private notes about this session"
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark
+          className="min-h-[60px]"
           data-testid="session-notes"
         />
       </div>

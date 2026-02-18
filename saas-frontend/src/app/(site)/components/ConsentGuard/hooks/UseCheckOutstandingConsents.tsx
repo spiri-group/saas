@@ -9,17 +9,21 @@ export type OutstandingConsent = {
   version: number;
   effectiveDate: string;
   placeholders?: Record<string, string>;
+  supplementContent?: string;
+  supplementDocumentId?: string;
+  supplementVersion?: number;
+  supplementTitle?: string;
 };
 
-const useCheckOutstandingConsents = (scope: string, enabled: boolean) => {
+const useCheckOutstandingConsents = (scope: string, enabled: boolean, market?: string | null) => {
   return useQuery({
-    queryKey: ['outstanding-consents', scope],
+    queryKey: ['outstanding-consents', scope, market],
     queryFn: async () => {
       const response = await gql<{
         checkOutstandingConsents: OutstandingConsent[];
       }>(`
-        query CheckOutstandingConsents($scope: String!) {
-          checkOutstandingConsents(scope: $scope) {
+        query CheckOutstandingConsents($scope: String!, $market: String) {
+          checkOutstandingConsents(scope: $scope, market: $market) {
             documentType
             documentId
             title
@@ -27,9 +31,13 @@ const useCheckOutstandingConsents = (scope: string, enabled: boolean) => {
             version
             effectiveDate
             placeholders
+            supplementContent
+            supplementDocumentId
+            supplementVersion
+            supplementTitle
           }
         }
-      `, { scope });
+      `, { scope, market: market || undefined });
       return response.checkOutstandingConsents;
     },
     enabled,

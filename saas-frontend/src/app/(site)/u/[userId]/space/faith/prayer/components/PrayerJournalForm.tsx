@@ -159,7 +159,6 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="date"
             type="date"
             {...register('date', { required: true })}
-            className="bg-slate-800 border-slate-700"
             data-testid="prayer-date"
           />
         </div>
@@ -170,15 +169,15 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             value={watch('prayerType')}
             onValueChange={(value) => setValue('prayerType', value as PrayerType)}
           >
-            <SelectTrigger className="bg-slate-800 border-slate-700" data-testid="prayer-type">
+            <SelectTrigger data-testid="prayer-type">
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
+            <SelectContent>
               {PRAYER_TYPES.map((type) => (
                 <SelectItem key={type.value} value={type.value}>
                   <div>
                     <div>{type.label}</div>
-                    <div className="text-xs text-slate-400">{type.description}</div>
+                    <div className="text-xs text-black/50">{type.description}</div>
                   </div>
                 </SelectItem>
               ))}
@@ -193,7 +192,6 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="title"
           {...register('title')}
           placeholder="Give this prayer a title..."
-          className="bg-slate-800 border-slate-700"
           data-testid="prayer-title"
         />
       </div>
@@ -205,7 +203,6 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="prayingFor"
             {...register('prayingFor')}
             placeholder="Who or what are you praying for?"
-            className="bg-slate-800 border-slate-700"
             data-testid="praying-for"
           />
         </div>
@@ -217,7 +214,7 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="content"
           {...register('content', { required: true })}
           placeholder="Write your prayer here..."
-          className="bg-slate-800 border-slate-700 min-h-[120px]"
+          className="min-h-[120px]"
           data-testid="prayer-content"
         />
       </div>
@@ -230,7 +227,6 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             value={newRequest}
             onChange={(e) => setNewRequest(e.target.value)}
             placeholder="Add a specific request..."
-            className="bg-slate-800 border-slate-700"
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addRequest())}
           />
           <Button type="button" variant="outline" size="icon" onClick={addRequest}>
@@ -240,12 +236,12 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
         {requests.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {requests.map((request, index) => (
-              <Badge key={index} variant="secondary" className="bg-indigo-500/20 text-indigo-300">
+              <Badge key={index} variant="secondary" className="bg-indigo-500/20 text-indigo-700">
                 {request}
                 <button
                   type="button"
                   onClick={() => removeRequest(index)}
-                  className="ml-1 hover:text-white"
+                  className="ml-1 hover:text-black"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -264,7 +260,6 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
               value={newGratitude}
               onChange={(e) => setNewGratitude(e.target.value)}
               placeholder="Add gratitude item..."
-              className="bg-slate-800 border-slate-700"
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addGratitude())}
             />
             <Button type="button" variant="outline" size="icon" onClick={addGratitude}>
@@ -274,12 +269,12 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
           {gratitude.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
               {gratitude.map((item, index) => (
-                <Badge key={index} variant="secondary" className="bg-green-500/20 text-green-300">
+                <Badge key={index} variant="secondary" className="bg-green-500/20 text-green-700">
                   {item}
                   <button
                     type="button"
                     onClick={() => removeGratitude(index)}
-                    className="ml-1 hover:text-white"
+                    className="ml-1 hover:text-black"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -298,7 +293,6 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="scriptureReference"
             {...register('scriptureReference')}
             placeholder="e.g., John 3:16"
-            className="bg-slate-800 border-slate-700"
             data-testid="scripture-reference"
           />
         </div>
@@ -309,10 +303,10 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             value={watch('status')}
             onValueChange={(value) => setValue('status', value as PrayerStatus)}
           >
-            <SelectTrigger className="bg-slate-800 border-slate-700" data-testid="prayer-status">
+            <SelectTrigger data-testid="prayer-status">
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
+            <SelectContent>
               {PRAYER_STATUS.map((status) => (
                 <SelectItem key={status.value} value={status.value}>
                   {status.label}
@@ -329,7 +323,7 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="scriptureText"
           {...register('scriptureText')}
           placeholder="Copy the verse text here..."
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          className="min-h-[60px]"
         />
       </div>
 
@@ -340,7 +334,6 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="feelingBefore"
             {...register('feelingBefore')}
             placeholder="Anxious, grateful, hopeful..."
-            className="bg-slate-800 border-slate-700"
           />
         </div>
 
@@ -350,7 +343,6 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             id="feelingAfter"
             {...register('feelingAfter')}
             placeholder="Peaceful, relieved, hopeful..."
-            className="bg-slate-800 border-slate-700"
           />
         </div>
       </div>
@@ -361,7 +353,7 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
           id="insights"
           {...register('insights')}
           placeholder="Any thoughts, impressions, or messages received during prayer..."
-          className="bg-slate-800 border-slate-700 min-h-[80px]"
+          className="min-h-[80px]"
           data-testid="prayer-insights"
         />
       </div>
@@ -374,7 +366,6 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             value={newTag}
             onChange={(e) => setNewTag(e.target.value)}
             placeholder="Add a tag..."
-            className="bg-slate-800 border-slate-700"
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
           />
           <Button type="button" variant="outline" size="icon" onClick={addTag}>
@@ -384,12 +375,12 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {tags.map((tag, index) => (
-              <Badge key={index} variant="outline" className="text-slate-300">
+              <Badge key={index} variant="outline" className="text-black/70">
                 #{tag}
                 <button
                   type="button"
                   onClick={() => removeTag(index)}
-                  className="ml-1 hover:text-white"
+                  className="ml-1 hover:text-black"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -406,7 +397,7 @@ export const PrayerJournalForm: React.FC<Props> = ({ userId, existingEntry, onSu
             checked={watch('isPrivate')}
             onCheckedChange={(checked) => setValue('isPrivate', checked)}
           />
-          <Label htmlFor="isPrivate" className="text-sm text-slate-400">
+          <Label htmlFor="isPrivate" className="text-sm">
             Keep private
           </Label>
         </div>

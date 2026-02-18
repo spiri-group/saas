@@ -240,7 +240,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
             {selectedAddress != null && (
                 <Dialog open={true} onOpenChange={() => setSelectedAddress(null)}>
-                    <DialogContent className="bg-slate-900 border-white/20 text-white">
+                    <DialogContent>
                         <DeliveryInstructionsForm
                             userId={userId}
                             addressId={selectedAddress.id}

@@ -113,7 +113,7 @@ const UI: React.FC<Props> = ({ userId, userEmail }) => {
 
             {/* Service Order Detail Dialog */}
             <Dialog open={selectedServiceOrder !== null} onOpenChange={(open) => !open && setSelectedServiceOrder(null)}>
-                <DialogContent className="bg-slate-900 border-white/20 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     {selectedServiceOrder && (
                         <ServiceOrderDetail
                             orderId={selectedServiceOrder.id}

@@ -168,7 +168,7 @@ const CrystalForm: React.FC<CrystalFormProps> = ({
 
         {/* Crystal Type Selector */}
         <div>
-          <Label className="text-slate-300">
+          <Label dark>
             Crystal Type
           </Label>
           <p className="text-xs text-slate-500 mb-2">
@@ -183,7 +183,7 @@ const CrystalForm: React.FC<CrystalFormProps> = ({
 
         {/* Name (manual entry/override) */}
         <div>
-          <Label htmlFor="name" className="text-slate-300">
+          <Label htmlFor="name" dark>
             Crystal Name <span className="text-red-400">*</span>
           </Label>
           <Input
@@ -191,7 +191,8 @@ const CrystalForm: React.FC<CrystalFormProps> = ({
             value={formState.name}
             onChange={(e) => setFormState(prev => ({ ...prev, name: e.target.value, crystalRefId: undefined }))}
             placeholder="e.g., Amethyst, Clear Quartz, Rose Quartz"
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="mt-1"
             data-testid="crystal-name-input"
           />
           {formState.crystalRefId && (
@@ -203,7 +204,7 @@ const CrystalForm: React.FC<CrystalFormProps> = ({
 
         {/* Nickname */}
         <div>
-          <Label htmlFor="nickname" className="text-slate-300">
+          <Label htmlFor="nickname" dark>
             Nickname (optional)
           </Label>
           <Input
@@ -211,19 +212,21 @@ const CrystalForm: React.FC<CrystalFormProps> = ({
             value={formState.nickname}
             onChange={(e) => setFormState(prev => ({ ...prev, nickname: e.target.value }))}
             placeholder="Give your crystal a personal name"
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="mt-1"
           />
         </div>
 
         {/* Color & Form Row */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label className="text-slate-300">Color</Label>
+            <Label dark>Color</Label>
             <Select
               value={formState.color || ''}
               onValueChange={(value) => setFormState(prev => ({ ...prev, color: value as CrystalColor }))}
+              dark
             >
-              <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white">
+              <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select color" />
               </SelectTrigger>
               <SelectContent>
@@ -237,12 +240,13 @@ const CrystalForm: React.FC<CrystalFormProps> = ({
           </div>
 
           <div>
-            <Label className="text-slate-300">Form</Label>
+            <Label dark>Form</Label>
             <Select
               value={formState.form || ''}
               onValueChange={(value) => setFormState(prev => ({ ...prev, form: value as CrystalFormType }))}
+              dark
             >
-              <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white">
+              <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select form" />
               </SelectTrigger>
               <SelectContent>
@@ -259,38 +263,41 @@ const CrystalForm: React.FC<CrystalFormProps> = ({
         {/* Size & Weight Row */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="size" className="text-slate-300">Size</Label>
+            <Label htmlFor="size" dark>Size</Label>
             <Input
               id="size"
               value={formState.size}
               onChange={(e) => setFormState(prev => ({ ...prev, size: e.target.value }))}
               placeholder="e.g., Small, 2 inches"
-              className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+              dark
+              className="mt-1"
             />
           </div>
 
           <div>
-            <Label htmlFor="weight" className="text-slate-300">Weight (grams)</Label>
+            <Label htmlFor="weight" dark>Weight (grams)</Label>
             <Input
               id="weight"
               type="number"
               value={formState.weight || ''}
               onChange={(e) => setFormState(prev => ({ ...prev, weight: e.target.value ? parseFloat(e.target.value) : undefined }))}
               placeholder="e.g., 50"
-              className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+              dark
+              className="mt-1"
             />
           </div>
         </div>
 
         {/* Origin */}
         <div>
-          <Label htmlFor="origin" className="text-slate-300">Origin</Label>
+          <Label htmlFor="origin" dark>Origin</Label>
           <Input
             id="origin"
             value={formState.origin}
             onChange={(e) => setFormState(prev => ({ ...prev, origin: e.target.value }))}
             placeholder="e.g., Brazil, Madagascar, Uruguay"
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="mt-1"
           />
         </div>
       </div>
@@ -304,19 +311,20 @@ const CrystalForm: React.FC<CrystalFormProps> = ({
 
         {/* Primary Purpose */}
         <div>
-          <Label htmlFor="purpose" className="text-slate-300">Primary Purpose</Label>
+          <Label htmlFor="purpose" dark>Primary Purpose</Label>
           <Input
             id="purpose"
             value={formState.primaryPurpose}
             onChange={(e) => setFormState(prev => ({ ...prev, primaryPurpose: e.target.value }))}
             placeholder="e.g., Protection, Love, Clarity, Grounding"
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="mt-1"
           />
         </div>
 
         {/* Chakras */}
         <div>
-          <Label className="text-slate-300 mb-2 block">Associated Chakras</Label>
+          <Label dark className="mb-2 block">Associated Chakras</Label>
           <div className="flex flex-wrap gap-2">
             {CHAKRAS.map((chakra) => (
               <button
@@ -341,25 +349,27 @@ const CrystalForm: React.FC<CrystalFormProps> = ({
 
         {/* Personal Meaning */}
         <div>
-          <Label htmlFor="meaning" className="text-slate-300">Personal Meaning</Label>
+          <Label htmlFor="meaning" dark>Personal Meaning</Label>
           <Textarea
             id="meaning"
             value={formState.personalMeaning}
             onChange={(e) => setFormState(prev => ({ ...prev, personalMeaning: e.target.value }))}
             placeholder="What does this crystal mean to you personally?"
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 min-h-[80px]"
+            dark
+            className="mt-1 min-h-[80px]"
           />
         </div>
 
         {/* Energy Notes */}
         <div>
-          <Label htmlFor="energy" className="text-slate-300">Energy Notes</Label>
+          <Label htmlFor="energy" dark>Energy Notes</Label>
           <Textarea
             id="energy"
             value={formState.energyNotes}
             onChange={(e) => setFormState(prev => ({ ...prev, energyNotes: e.target.value }))}
             placeholder="How does this crystal feel when you hold it?"
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 min-h-[80px]"
+            dark
+            className="mt-1 min-h-[80px]"
           />
         </div>
 
@@ -370,10 +380,11 @@ const CrystalForm: React.FC<CrystalFormProps> = ({
             checked={formState.specialBond}
             onCheckedChange={(checked) => setFormState(prev => ({ ...prev, specialBond: checked as boolean }))}
             className="border-pink-400/50 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
+            dark
           />
           <div className="flex items-center gap-2">
             <Heart className="w-4 h-4 text-pink-400" />
-            <Label htmlFor="specialBond" className="text-slate-300 cursor-pointer">
+            <Label htmlFor="specialBond" dark className="cursor-pointer">
               This crystal has a special bond with me
             </Label>
           </div>
@@ -386,12 +397,13 @@ const CrystalForm: React.FC<CrystalFormProps> = ({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label className="text-slate-300">Source</Label>
+            <Label dark>Source</Label>
             <Select
               value={formState.acquisitionSource || ''}
               onValueChange={(value) => setFormState(prev => ({ ...prev, acquisitionSource: value as CrystalAcquisitionSource }))}
+              dark
             >
-              <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white">
+              <SelectTrigger className="mt-1">
                 <SelectValue placeholder="How acquired?" />
               </SelectTrigger>
               <SelectContent>
@@ -405,48 +417,52 @@ const CrystalForm: React.FC<CrystalFormProps> = ({
           </div>
 
           <div>
-            <Label htmlFor="acquiredDate" className="text-slate-300">Date Acquired</Label>
+            <Label htmlFor="acquiredDate" dark>Date Acquired</Label>
             <Input
               id="acquiredDate"
               type="date"
               value={formState.acquiredDate}
               onChange={(e) => setFormState(prev => ({ ...prev, acquiredDate: e.target.value }))}
-              className="mt-1 bg-white/5 border-white/20 text-white"
+              dark
+              className="mt-1"
             />
           </div>
         </div>
 
         <div>
-          <Label htmlFor="acquiredFrom" className="text-slate-300">Acquired From</Label>
+          <Label htmlFor="acquiredFrom" dark>Acquired From</Label>
           <Input
             id="acquiredFrom"
             value={formState.acquiredFrom}
             onChange={(e) => setFormState(prev => ({ ...prev, acquiredFrom: e.target.value }))}
             placeholder="Shop name, person, event, etc."
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="mt-1"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="price" className="text-slate-300">Purchase Price</Label>
+            <Label htmlFor="price" dark>Purchase Price</Label>
             <Input
               id="price"
               type="number"
               value={formState.purchasePrice || ''}
               onChange={(e) => setFormState(prev => ({ ...prev, purchasePrice: e.target.value ? parseFloat(e.target.value) : undefined }))}
               placeholder="0.00"
-              className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+              dark
+              className="mt-1"
             />
           </div>
 
           <div>
-            <Label className="text-slate-300">Currency</Label>
+            <Label dark>Currency</Label>
             <Select
               value={formState.currency}
               onValueChange={(value) => setFormState(prev => ({ ...prev, currency: value }))}
+              dark
             >
-              <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white">
+              <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -461,13 +477,14 @@ const CrystalForm: React.FC<CrystalFormProps> = ({
         </div>
 
         <div>
-          <Label htmlFor="location" className="text-slate-300">Current Location</Label>
+          <Label htmlFor="location" dark>Current Location</Label>
           <Input
             id="location"
             value={formState.location}
             onChange={(e) => setFormState(prev => ({ ...prev, location: e.target.value }))}
             placeholder="Where is this crystal kept?"
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="mt-1"
           />
         </div>
       </div>

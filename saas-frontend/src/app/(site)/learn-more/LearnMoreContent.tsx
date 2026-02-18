@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import Image from "next/image"
@@ -12,6 +13,7 @@ import FacebookIcon from "@/icons/social/FacebookIcon"
 import { IconStyle } from "@/icons/shared/types"
 import SacredAnimatedBackground from "../components/Home/SacredAnimatedBackground"
 import { SerializedBlogPost } from "@/lib/blog/types"
+import TierSelector from "@/components/subscription/TierSelector"
 import {
   Store,
   Calendar,
@@ -95,12 +97,15 @@ interface LearnMoreContentProps {
 }
 
 export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
+  const [selectedTier, setSelectedTier] = useState<string>("")
+  const [billingInterval, setBillingInterval] = useState<"monthly" | "annual">("monthly")
+
   return (
-    <div className="relative min-h-screen bg-slate-950">
+    <main className="relative min-h-screen bg-slate-950">
       <SacredAnimatedBackground />
 
-      {/* Back to Home */}
-      <div className="fixed top-4 left-4 z-50">
+      {/* Breadcrumb Navigation */}
+      <nav aria-label="Breadcrumb" className="fixed top-4 left-4 z-50">
         <Link href="/">
           <Button
             variant="ghost"
@@ -110,10 +115,10 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
             Back to Home
           </Button>
         </Link>
-      </div>
+      </nav>
 
       {/* Hero Section */}
-      <section className="relative flex flex-col items-center justify-center min-h-screen px-4 pt-16">
+      <section id="hero" aria-labelledby="hero-heading" className="relative flex flex-col items-center justify-center min-h-screen px-4 pt-16">
         <motion.div
           className="flex flex-col items-center max-w-4xl w-full space-y-6 text-center"
           initial="initial"
@@ -125,6 +130,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
           </motion.div>
 
           <motion.h1
+            id="hero-heading"
             variants={fadeInUp}
             className="text-3xl md:text-5xl lg:text-6xl text-white font-light tracking-wide drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]"
           >
@@ -190,7 +196,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
       </section>
 
       {/* Mission Section */}
-      <section id="mission" className="relative py-20 md:py-32 px-4">
+      <section id="mission" aria-labelledby="mission-heading" className="relative py-20 md:py-32 px-4">
         <motion.div
           className="max-w-4xl mx-auto lg:max-w-none text-center space-y-8"
           initial={{ opacity: 0, y: 40 }}
@@ -198,7 +204,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8 }}
         >
-          <h2 className="text-2xl md:text-4xl text-white font-light tracking-wide">
+          <h2 id="mission-heading" className="text-2xl md:text-4xl text-white font-light tracking-wide">
             Our Mission
           </h2>
 
@@ -220,7 +226,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
       </section>
 
       {/* Benefits Section */}
-      <section className="relative py-20 md:py-32 px-4 bg-black/20">
+      <section id="benefits" aria-labelledby="benefits-heading" className="relative py-20 md:py-32 px-4 bg-black/20">
         <div className="max-w-6xl mx-auto">
           <motion.div
             className="text-center mb-12 md:mb-16"
@@ -229,7 +235,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="text-2xl md:text-4xl text-white font-light tracking-wide mb-4">
+            <h2 id="benefits-heading" className="text-2xl md:text-4xl text-white font-light tracking-wide mb-4">
               Everything You Need to Grow
             </h2>
             <p className="text-slate-300 text-lg font-light max-w-2xl mx-auto">
@@ -262,7 +268,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
       </section>
 
       {/* How It Works Section */}
-      <section className="relative py-20 md:py-32 px-4">
+      <section id="how-it-works" aria-labelledby="how-it-works-heading" className="relative py-20 md:py-32 px-4">
         <div className="max-w-5xl mx-auto">
           <motion.div
             className="text-center mb-12 md:mb-16"
@@ -271,7 +277,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="text-2xl md:text-4xl text-white font-light tracking-wide mb-4">
+            <h2 id="how-it-works-heading" className="text-2xl md:text-4xl text-white font-light tracking-wide mb-4">
               How It Works
             </h2>
             <p className="text-slate-300 text-lg font-light max-w-2xl mx-auto">
@@ -308,8 +314,8 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
         </div>
       </section>
 
-      {/* Blog/Resources Section */}
-      <section className="relative py-20 md:py-32 px-4 bg-black/20">
+      {/* Pricing Section */}
+      <section id="pricing" aria-labelledby="pricing-heading" className="relative py-20 md:py-32 px-4 bg-black/20">
         <div className="max-w-6xl mx-auto">
           <motion.div
             className="text-center mb-12 md:mb-16"
@@ -318,7 +324,69 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="text-2xl md:text-4xl text-white font-light tracking-wide mb-4">
+            <h2 id="pricing-heading" className="text-2xl md:text-4xl text-white font-light tracking-wide mb-4">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-slate-300 text-lg font-light max-w-2xl mx-auto">
+              Choose the plan that fits your practice. No hidden fees, cancel anytime.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <TierSelector
+              profileType="merchant"
+              selectedTier={selectedTier}
+              selectedInterval={billingInterval}
+              onTierChange={setSelectedTier}
+              onIntervalChange={setBillingInterval}
+            />
+          </motion.div>
+
+          <motion.div
+            className="flex flex-col sm:flex-row gap-4 pt-10 justify-center"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <Link href="/m/setup">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-900 font-medium px-8"
+              >
+                Get Started as a Merchant
+                <Store className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+            <Link href="/p/setup">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white font-medium px-8"
+              >
+                Get Started as a Practitioner
+                <Sparkles className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Blog/Resources Section */}
+      <section id="resources" aria-labelledby="resources-heading" className="relative py-20 md:py-32 px-4">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            className="text-center mb-12 md:mb-16"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 id="resources-heading" className="text-2xl md:text-4xl text-white font-light tracking-wide mb-4">
               Resources
             </h2>
             <p className="text-slate-300 text-lg font-light max-w-2xl mx-auto mb-6">
@@ -386,7 +454,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
       </section>
 
       {/* CTA Section */}
-      <section className="relative py-20 md:py-32 px-4">
+      <section id="get-started" aria-labelledby="cta-heading" className="relative py-20 md:py-32 px-4">
         <motion.div
           className="max-w-3xl mx-auto text-center space-y-8"
           initial={{ opacity: 0, y: 40 }}
@@ -394,7 +462,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8 }}
         >
-          <h2 className="text-3xl md:text-5xl text-white font-light tracking-wide">
+          <h2 id="cta-heading" className="text-3xl md:text-5xl text-white font-light tracking-wide">
             Ready to Share Your Gifts?
           </h2>
           <p className="text-slate-200 text-lg md:text-xl font-light max-w-xl mx-auto">
@@ -474,6 +542,6 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
           </div>
         </div>
       </footer>
-    </div>
+    </main>
   )
 }

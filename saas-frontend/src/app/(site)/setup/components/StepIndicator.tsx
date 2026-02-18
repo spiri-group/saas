@@ -15,6 +15,7 @@ const THEME_COLORS: Record<OnboardingTheme, string> = {
     purple: 'bg-purple-600',
     amber: 'bg-amber-500',
     neutral: 'bg-indigo-600',
+    faith: 'bg-indigo-600',
 };
 
 export default function StepIndicator({ currentStep, totalSteps, labels, theme = 'neutral' }: Props) {

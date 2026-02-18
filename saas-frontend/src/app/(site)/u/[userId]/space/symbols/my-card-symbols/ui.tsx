@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Panel } from '@/components/ui/panel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -251,7 +252,8 @@ const UI: React.FC<Props> = ({ userId }) => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search cards..."
-              className="pl-10 bg-slate-800/50 border-slate-700 focus:border-indigo-500/50"
+              dark
+              className="pl-10 focus:border-indigo-500/50"
             />
           </div>
         </div>
@@ -410,9 +412,9 @@ const UI: React.FC<Props> = ({ userId }) => {
         {/* Empty state for customized filter */}
         {!isLoading && filter === 'customized' && filteredCards.length === 0 && (
           <div className="text-center py-16">
-            <div className="inline-flex items-center justify-center p-4 bg-slate-800/50 rounded-2xl mb-4">
+            <Panel dark className="inline-flex items-center justify-center p-4 rounded-2xl mb-4">
               <LibraryBig className="w-10 h-10 text-slate-500" />
-            </div>
+            </Panel>
             <h2 className="text-xl font-light text-white mb-2">No Customized Cards Yet</h2>
             <p className="text-slate-400 max-w-md mx-auto mb-6">
               You haven&apos;t defined personal symbols for any cards yet. Click on any card to add your own meanings.
@@ -438,7 +440,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Edit Dialog */}
       <Dialog open={!!editingCard} onOpenChange={(open) => !open && setEditingCard(null)}>
-        <DialogContent data-testid="edit-card-dialog" className="bg-slate-900/95 backdrop-blur-xl border-indigo-500/20 text-white sm:max-w-lg">
+        <DialogContent data-testid="edit-card-dialog" className="border-indigo-500/20 sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <LibraryBig className="w-5 h-5 text-indigo-400" />
@@ -452,7 +454,7 @@ const UI: React.FC<Props> = ({ userId }) => {
           <div className="space-y-6 pt-4">
             {/* Default symbols reference */}
             {editingCard && MAJOR_ARCANA_DEFAULT_SYMBOLS[editingCard] && (
-              <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+              <Panel dark className="p-3 rounded-lg border border-slate-700">
                 <div className="text-xs text-slate-500 mb-2">Default Symbols (Reference)</div>
                 <div className="flex flex-wrap gap-1">
                   {MAJOR_ARCANA_DEFAULT_SYMBOLS[editingCard].map(symbol => (
@@ -471,27 +473,28 @@ const UI: React.FC<Props> = ({ userId }) => {
                   ))}
                 </div>
                 <p className="text-xs text-slate-500 mt-2">Click a symbol to add it to your list</p>
-              </div>
+              </Panel>
             )}
 
             {/* Personal symbols input */}
             <div className="space-y-2">
-              <Label htmlFor="personal-symbols" className="text-slate-300">Your Personal Symbols</Label>
+              <Label htmlFor="personal-symbols" dark>Your Personal Symbols</Label>
               <Textarea
                 id="personal-symbols"
                 data-testid="personal-symbols-input"
                 value={personalSymbols}
                 onChange={(e) => setPersonalSymbols(e.target.value)}
                 placeholder="Enter symbols separated by commas (e.g., wisdom, patience, inner strength)"
-                className="bg-slate-800 border-slate-700 min-h-[80px]"
+                dark
+                className="min-h-[80px]"
               />
               <p className="text-xs text-slate-500">Separate multiple symbols with commas</p>
             </div>
 
             {/* Use personal only toggle */}
-            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+            <Panel dark className="flex items-center justify-between p-3 rounded-lg border border-slate-700">
               <div>
-                <Label htmlFor="use-personal-only" className="text-slate-300">Use Only My Symbols</Label>
+                <Label htmlFor="use-personal-only" dark>Use Only My Symbols</Label>
                 <p className="text-xs text-slate-500 mt-0.5">
                   When enabled, default symbols will not be extracted for this card
                 </p>
@@ -501,19 +504,21 @@ const UI: React.FC<Props> = ({ userId }) => {
                 data-testid="use-personal-only-switch"
                 checked={usePersonalOnly}
                 onCheckedChange={setUsePersonalOnly}
+                dark
               />
-            </div>
+            </Panel>
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes" className="text-slate-300">Notes (Optional)</Label>
+              <Label htmlFor="notes" dark>Notes (Optional)</Label>
               <Textarea
                 id="notes"
                 data-testid="notes-input"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Why do these symbols resonate with you?"
-                className="bg-slate-800 border-slate-700 min-h-[60px]"
+                dark
+                className="min-h-[60px]"
               />
             </div>
 

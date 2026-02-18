@@ -8,20 +8,23 @@ import { ArrowLeft } from 'lucide-react';
 import { markdownToHtml } from '@/utils/markdownToHtml';
 import { resolvePlaceholders } from '@/utils/resolvePlaceholders';
 import UseLegalPlaceholders from '@/hooks/UseLegalPlaceholders';
+import useUserMarket from '@/hooks/UseUserMarket';
 
 type LegalDocumentResponse = {
   documentType: string;
   title: string;
   content: string;
+  market: string;
+  parentDocumentId?: string;
   placeholders?: Record<string, string>;
   version: number;
   effectiveDate: string;
   updatedAt: string;
 };
 
-const useLegalDocument = (documentType: string) => {
+const useLegalDocumentWithSupplement = (documentType: string, market: string | null) => {
   return useQuery({
-    queryKey: ['legal-document-public', documentType],
+    queryKey: ['legal-document-public', documentType, market],
     queryFn: async () => {
       const response = await gql<{
         legalDocuments: LegalDocumentResponse[];
@@ -31,6 +34,8 @@ const useLegalDocument = (documentType: string) => {
             documentType
             title
             content
+            market
+            parentDocumentId
             placeholders
             version
             effectiveDate
@@ -39,8 +44,17 @@ const useLegalDocument = (documentType: string) => {
         }
       `, { documentType });
 
-      // Return the first published document matching this type
-      return response.legalDocuments.find(d => d.documentType === documentType) ?? null;
+      const docs = response.legalDocuments;
+
+      // Find the base (global) document
+      const baseDoc = docs.find(d => d.market === 'global' && !d.parentDocumentId) ?? null;
+
+      // Find the market-specific supplement if market is available
+      const supplement = market
+        ? docs.find(d => d.parentDocumentId && d.market === market) ?? null
+        : null;
+
+      return { baseDoc, supplement };
     },
     enabled: !!documentType,
   });
@@ -49,8 +63,9 @@ const useLegalDocument = (documentType: string) => {
 export default function LegalDocumentPage() {
   const params = useParams();
   const documentType = params.documentType as string;
+  const market = useUserMarket();
 
-  const { data: document, isLoading, error } = useLegalDocument(documentType);
+  const { data, isLoading, error } = useLegalDocumentWithSupplement(documentType, market);
   const { data: globalPlaceholders } = UseLegalPlaceholders();
 
   if (isLoading) {
@@ -69,6 +84,8 @@ export default function LegalDocumentPage() {
     );
   }
 
+  const document = data?.baseDoc;
+
   if (error || !document) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-12 text-center">
@@ -83,6 +100,8 @@ export default function LegalDocumentPage() {
       </div>
     );
   }
+
+  const supplement = data?.supplement;
 
   const dateFormatOptions: Intl.DateTimeFormatOptions = {
     year: 'numeric',
@@ -119,6 +138,25 @@ export default function LegalDocumentPage() {
           __html: markdownToHtml(resolvePlaceholders(document.content, globalPlaceholders || {}, document.placeholders)),
         }}
       />
+
+      {supplement && (
+        <>
+          <hr className="my-10 border-gray-300" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2" data-testid="legal-supplement-title">
+            {supplement.title}
+          </h2>
+          <div className="text-sm text-gray-500 mb-6">
+            Version {supplement.version}
+          </div>
+          <div
+            className="prose prose-gray max-w-none"
+            data-testid="legal-supplement-content"
+            dangerouslySetInnerHTML={{
+              __html: markdownToHtml(resolvePlaceholders(supplement.content, globalPlaceholders || {}, supplement.placeholders)),
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }

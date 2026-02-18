@@ -117,7 +117,8 @@ export const JournalEntryForm: React.FC<Props> = ({
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Write about what you're feeling, noticing, or reflecting on..."
-          className="min-h-[200px] bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-purple-500"
+          dark
+          className="min-h-[200px] focus:border-purple-500"
           data-testid="journal-content-input"
         />
       </div>

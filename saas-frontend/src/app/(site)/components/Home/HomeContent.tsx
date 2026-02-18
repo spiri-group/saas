@@ -56,6 +56,63 @@ export default function HomeContent({ session: initialSession }: HomeContentProp
             Welcome back{session?.user?.name ? `, ${session.user.name}` : ''}
           </p>
 
+          {/* Learn More & Blog Links */}
+          <div className="flex items-center gap-3">
+            <Link href="/learn-more">
+              <Button
+                variant="outline"
+                className="border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20"
+              >
+                Learn More
+              </Button>
+            </Link>
+            <Link href="/blog">
+              <Button
+                variant="outline"
+                className="border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20"
+              >
+                Visit Blog
+              </Button>
+            </Link>
+          </div>
+
+          {/* Social Media Links */}
+          <div className="flex items-center justify-center gap-3 md:gap-6">
+            <a
+              href="https://www.tiktok.com/@spiriverse"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group transition-all hover:scale-110"
+              aria-label="Follow us on TikTok"
+            >
+              <div className="opacity-70 group-hover:opacity-100 transition-opacity">
+                <TikTokIcon mode={IconStyle.Fill} height={28} className="h-7 md:h-[40px]" />
+              </div>
+            </a>
+            <a
+              href="https://www.instagram.com/spiri_verse/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group transition-all hover:scale-110"
+              aria-label="Follow us on Instagram"
+            >
+              <div className="opacity-70 group-hover:opacity-100 transition-opacity">
+                <InstagramIcon mode={IconStyle.Fill} height={28} className="h-7 md:h-[40px]" />
+              </div>
+            </a>
+            <a
+              href="https://www.facebook.com/SpiriVerse"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group transition-all hover:scale-110"
+              aria-label="Follow us on Facebook"
+            >
+              <div className="opacity-70 group-hover:opacity-100 transition-opacity">
+                <FacebookIcon mode={IconStyle.Fill} height={28} className="h-7 md:h-[40px]" />
+              </div>
+            </a>
+          </div>
+
           {/* Search */}
           <div className="w-full max-w-2xl">
             <HomeSearch />
@@ -125,10 +182,10 @@ export default function HomeContent({ session: initialSession }: HomeContentProp
         {/* Tagline */}
         <div className="text-center space-y-2 md:space-y-4">
           <h1 className="text-2xl md:text-4xl text-white font-light tracking-wide drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
-            Your Bridge to Spiritual Living
+            Your Bridge to Spiritual &amp; Faith-Based Living
           </h1>
           <p className="text-base md:text-xl text-slate-200 font-light italic max-w-2xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
-            A sacred digital space connecting energy, faith, and creativity.
+            A sacred digital space connecting faith, wellness, and spiritual community.
           </p>
         </div>
 

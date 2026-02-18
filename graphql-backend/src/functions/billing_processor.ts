@@ -1,5 +1,3 @@
-import NodeCache from "node-cache";
-import { InvocationContext, Timer, app } from "@azure/functions";
 import { DateTime } from "luxon";
 import { v4 as uuidv4 } from "uuid";
 import { vendor_type, billing_record_status, subscription_tier, billing_status } from "../graphql/vendor/types";
@@ -7,11 +5,8 @@ import { CosmosDataSource } from "../utils/database";
 import { StripeDataSource } from "../services/stripe";
 import { AzureEmailDataSource } from "../services/azureEmail";
 import { LogManager } from "../utils/functions";
-import { vault } from "../services/vault";
 import { sender_details } from "../client/email_templates";
 import { getTierFeeKey } from "../graphql/subscription/featureGates";
-
-const myCache = new NodeCache();
 
 type FeeConfigEntry = { percent: number; fixed: number; currency: string };
 
@@ -150,37 +145,6 @@ export async function runBillingProcessor(
     }
 
     logger.logMessage('Billing processor completed at: ' + new Date().toISOString());
-}
-
-/**
- * Tier-Based Billing Processor
- *
- * Runs twice daily (7am UTC & 3pm UTC) with four passes:
- * 1. First-billing trigger: pendingFirstBilling vendors whose cumulative payouts >= threshold
- * 2. Due renewals: active subscriptions nearing expiry (within 3 days)
- * 3. Retries: failed payments with retry scheduled
- * 4. Pending downgrades: apply tier changes whose effective date has passed
- */
-export async function billingProcessor(myTimer: Timer, context: InvocationContext): Promise<void> {
-    const logger = new LogManager(context);
-    try {
-        const host = process.env.WEBSITE_HOSTNAME || 'localhost:7071';
-        const keyVault = new vault(host, logger, myCache);
-
-        const cosmos = new CosmosDataSource(logger, keyVault);
-        const stripe = new StripeDataSource(logger, keyVault);
-        const email = new AzureEmailDataSource(logger, keyVault);
-
-        await cosmos.init(host);
-        await stripe.init();
-        await email.init(host);
-        email.setDataSources({ cosmos });
-
-        await runBillingProcessor(cosmos, stripe, email, logger);
-    } catch (error) {
-        logger.error('Billing processor failed:', error);
-        throw error;
-    }
 }
 
 // ─── Pass 1: First Billing ──────────────────────────────────────
@@ -695,13 +659,3 @@ function capitalize(s: string): string {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// Register two timer functions for twice-daily billing
-app.timer('billingProcessorMorning', {
-    schedule: '0 0 7 * * *',  // 7am UTC
-    handler: billingProcessor,
-});
-
-app.timer('billingProcessorAfternoon', {
-    schedule: '0 0 15 * * *', // 3pm UTC
-    handler: billingProcessor,
-});

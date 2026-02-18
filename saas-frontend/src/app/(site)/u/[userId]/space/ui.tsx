@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import UseUserProfile from '@/hooks/user/UseUserProfile';
 import { SpiritualInterest } from '../onboarding/types';
 import useMediumshipStats from './mediumship/hooks/useMediumshipStats';
@@ -14,6 +15,7 @@ import ActivitySummary from './_components/ActivitySummary';
 import RecentActivity from './_components/RecentActivity';
 import UpcomingDates from './_components/UpcomingDates';
 import PractitionerFeed from './_components/PractitionerFeed';
+import { useVocab } from './_hooks/useVocab';
 
 interface Props {
   userId: string;
@@ -21,6 +23,7 @@ interface Props {
 
 const UI: React.FC<Props> = ({ userId }) => {
   const { data: user, isLoading: userLoading } = UseUserProfile(userId);
+  const { vocab } = useVocab(userId);
   const { data: stats, isLoading: statsLoading } = useMediumshipStats(userId);
   const { data: recentMessages, isLoading: messagesLoading } = useRecentSpiritMessages(userId, 5);
   const { data: recentSyncs, isLoading: syncsLoading } = useRecentSynchronicities(userId, 5);
@@ -45,8 +48,15 @@ const UI: React.FC<Props> = ({ userId }) => {
     );
   }
 
+  const dataLoading = statsLoading || messagesLoading || syncsLoading;
+  const hasActivity = !dataLoading && (
+    (stats && (stats.totalSpiritMessages > 0 || stats.totalSynchronicities > 0 || stats.daysActive > 0)) ||
+    (recentMessages && recentMessages.length > 0) ||
+    (recentSyncs && recentSyncs.length > 0)
+  );
+
   return (
-    <div className="min-h-screen-minus-nav p-6 max-w-6xl mx-auto">
+    <div className="min-h-screen-minus-nav p-6 flex flex-col">
       {/* Personalized Welcome Header */}
       <WelcomeHeader
         firstName={user?.firstname}
@@ -59,33 +69,38 @@ const UI: React.FC<Props> = ({ userId }) => {
         <SpiriReadingsBanner userId={userId} />
       )}
 
-      {/* Two-column layout: Feed (main) + Dashboard (sidebar) */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Main column - Social feed */}
-        <div className="flex-1 min-w-0 lg:max-w-2xl">
+      {/* Two-column layout: Feed (left) + Dashboard (right) */}
+      <div className="flex flex-col lg:flex-row gap-6 flex-1">
+        {/* Left column - Social feed */}
+        <div className="w-full lg:w-96 lg:flex-shrink-0">
           <PractitionerFeed />
         </div>
 
-        {/* Sidebar - Dashboard content */}
-        <div className="w-full lg:w-80 lg:flex-shrink-0 space-y-6">
+        {/* Right column - Dashboard content */}
+        <div className="flex-1 min-w-0 flex flex-col gap-6">
           {/* Quick Actions */}
           <QuickActions userId={userId} primaryInterest={primaryInterest} />
 
-          {/* Recent Journal Entries */}
+          {/* Warm nudge when the user hasn't started yet */}
+          {!dataLoading && !hasActivity && (
+            <div className="flex-1 p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-indigo-500/10 border border-purple-500/20 flex flex-col items-center justify-center text-center">
+              <Sparkles className="w-8 h-8 text-purple-400 mx-auto mb-3" />
+              <p className="text-white font-medium mb-1">{vocab('journey_starts_here')}</p>
+              <p className="text-sm text-slate-400">
+                {vocab('journey_nudge')}
+              </p>
+            </div>
+          )}
+
+          {/* These sections render only when they have data */}
           <JournalEntries userId={userId} />
-
-          {/* Activity Summary */}
           <ActivitySummary stats={stats} isLoading={statsLoading} />
-
-          {/* Recent Activity */}
           <RecentActivity
             userId={userId}
             spiritMessages={recentMessages}
             synchronicities={recentSyncs}
             isLoading={messagesLoading || syncsLoading}
           />
-
-          {/* Upcoming Dates - Only shows if there are dates */}
           <UpcomingDates stats={stats} isLoading={statsLoading} />
         </div>
       </div>

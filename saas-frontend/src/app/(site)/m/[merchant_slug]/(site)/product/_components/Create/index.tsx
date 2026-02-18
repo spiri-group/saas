@@ -21,11 +21,13 @@ import UseVendorLocations from "@/app/(site)/m/_hooks/UseVendorLocations";
 import useVendorRefundPolicies from "@/app/(site)/m/_components/Profile/Edit/RefundPolicies/_hooks/UseVendorRefundPolicies";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeftIcon, ChevronRightIcon, PackageIcon, TagIcon, ZapIcon, GaugeIcon, ArchiveIcon, CrownIcon, ShieldCheckIcon, Gem, MapPin, Palette } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, PackageIcon, TagIcon, ZapIcon, GaugeIcon, ArchiveIcon, CrownIcon, ShieldCheckIcon, Gem, MapPin, Palette, ChevronDownIcon, SparklesIcon } from "lucide-react";
 import { toast } from "sonner";
 import ComboBox from "@/components/ux/ComboBox";
 import CrystalTypeSelector from "./component/CrystalTypeSelector";
 import { CrystalReference } from "./hooks/UseCrystalReferences";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { SPIRITUAL_INTERESTS } from "@/app/(site)/u/[userId]/onboarding/types";
 
 type BLProps = {
     merchantId: string,
@@ -610,6 +612,65 @@ const CreateProduct : React.FC<Props> = (props) => {
                                                 </div>
                                             )}
                                         </div>
+
+                                        {/* Spiritual Practices (optional) */}
+                                        <FormField
+                                            name="spiritualInterests"
+                                            control={bl.form.control}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <Collapsible>
+                                                        <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group w-full" data-testid="spiritual-interests-trigger">
+                                                            <SparklesIcon className="h-3.5 w-3.5" />
+                                                            <span>Spiritual Practices</span>
+                                                            {field.value && field.value.length > 0 && (
+                                                                <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                                                                    {field.value.length}
+                                                                </span>
+                                                            )}
+                                                            <ChevronDownIcon className="h-3.5 w-3.5 ml-auto transition-transform group-data-[state=open]:rotate-180" />
+                                                        </CollapsibleTrigger>
+                                                        <CollapsibleContent>
+                                                            <div className="pt-2 pb-1">
+                                                                <p className="text-xs text-muted-foreground mb-3">
+                                                                    Optional &mdash; helps match this product with people on related spiritual journeys
+                                                                </p>
+                                                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                                                    {SPIRITUAL_INTERESTS.map((interest) => {
+                                                                        const isSelected = field.value?.includes(interest.key) ?? false;
+                                                                        return (
+                                                                            <label
+                                                                                key={interest.key}
+                                                                                className={cn(
+                                                                                    "flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer transition-colors",
+                                                                                    isSelected
+                                                                                        ? "border-primary bg-primary/10 text-foreground"
+                                                                                        : "border-border hover:border-primary/50 text-muted-foreground"
+                                                                                )}
+                                                                                data-testid={`spiritual-interest-${interest.key.toLowerCase()}`}
+                                                                            >
+                                                                                <Checkbox
+                                                                                    checked={isSelected}
+                                                                                    onCheckedChange={(checked) => {
+                                                                                        const current = field.value ?? [];
+                                                                                        if (checked) {
+                                                                                            field.onChange([...current, interest.key]);
+                                                                                        } else {
+                                                                                            field.onChange(current.filter((k: string) => k !== interest.key));
+                                                                                        }
+                                                                                    }}
+                                                                                />
+                                                                                <span>{interest.label}</span>
+                                                                            </label>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        </CollapsibleContent>
+                                                    </Collapsible>
+                                                </FormItem>
+                                            )}
+                                        />
 
                                         {/* Second row - Refund Settings */}
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

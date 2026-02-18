@@ -4,7 +4,7 @@ import { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { signOut } from 'next-auth/react'
 
-export type OnboardingTheme = 'neutral' | 'amber' | 'purple';
+export type OnboardingTheme = 'neutral' | 'faith' | 'amber' | 'purple';
 
 type Props = {
     isFullScreen: boolean;

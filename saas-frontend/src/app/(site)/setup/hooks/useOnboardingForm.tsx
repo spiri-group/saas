@@ -17,6 +17,8 @@ export const onboardingSchema = z.object({
     lastName: z.string().min(1, 'Last name is required'),
     email: z.string().email('Please enter a valid email'),
     country: z.string().min(2, 'Please select a country'),
+    religionId: z.string().optional(),
+    openToOtherExperiences: z.boolean().optional(),
 
     // Subscription (selected at plan step)
     subscription: z.object({
@@ -101,6 +103,8 @@ export function useOnboardingForm() {
             lastName: '',
             email: session?.user?.email || '',
             country: '',
+            religionId: undefined,
+            openToOtherExperiences: true,
             subscription: { tier: '', billingInterval: 'monthly' },
             merchant: undefined,
             practitioner: undefined,

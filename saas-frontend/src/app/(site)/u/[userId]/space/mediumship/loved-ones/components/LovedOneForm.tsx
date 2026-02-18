@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Panel } from '@/components/ui/panel';
 import {
   useCreateLovedOne,
   useUpdateLovedOne,
@@ -141,7 +142,7 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
             id="name"
             {...register('name', { required: true })}
             placeholder="Their name"
-            className="bg-slate-800 border-slate-700"
+            dark
             data-testid="loved-one-name"
           />
         </div>
@@ -152,7 +153,7 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
             id="relationship"
             {...register('relationship', { required: true })}
             placeholder="e.g., Grandmother, Friend"
-            className="bg-slate-800 border-slate-700"
+            dark
             list="relationships"
           />
           <datalist id="relationships">
@@ -170,7 +171,7 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
             id="nickname"
             {...register('nickname')}
             placeholder="Optional"
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
         <div className="space-y-2">
@@ -179,7 +180,7 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
             id="birthDate"
             type="date"
             {...register('birthDate')}
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
         <div className="space-y-2">
@@ -188,7 +189,7 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
             id="passingDate"
             type="date"
             {...register('passingDate')}
-            className="bg-slate-800 border-slate-700"
+            dark
           />
         </div>
       </div>
@@ -199,7 +200,8 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
           id="theirPersonality"
           {...register('theirPersonality')}
           placeholder="What were they like? How would you describe them?"
-          className="bg-slate-800 border-slate-700 min-h-[80px]"
+          dark
+          className="min-h-[80px]"
         />
       </div>
 
@@ -209,7 +211,8 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
           id="personalMemory"
           {...register('personalMemory')}
           placeholder="Share a cherished memory..."
-          className="bg-slate-800 border-slate-700 min-h-[80px]"
+          dark
+          className="min-h-[80px]"
         />
       </div>
 
@@ -221,7 +224,7 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
             value={newInterest}
             onChange={(e) => setNewInterest(e.target.value)}
             placeholder="Things you enjoyed together"
-            className="bg-slate-800 border-slate-700"
+            dark
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addInterest())}
           />
           <Button type="button" variant="outline" size="icon" onClick={addInterest}>
@@ -255,13 +258,13 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
             value={newSign}
             onChange={(e) => setNewSign(e.target.value)}
             placeholder="The sign (e.g., cardinals, butterflies)"
-            className="bg-slate-800 border-slate-700"
+            dark
           />
           <Input
             value={newSignReason}
             onChange={(e) => setNewSignReason(e.target.value)}
             placeholder="Why this sign?"
-            className="bg-slate-800 border-slate-700"
+            dark
           />
           <Button type="button" variant="outline" size="icon" onClick={addSign}>
             <Plus className="w-4 h-4" />
@@ -272,7 +275,7 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
             {commonSigns.map((sign) => {
               const explanation = signExplanations.find(se => se.sign === sign);
               return (
-                <div key={sign} className="flex items-start gap-2 p-2 bg-slate-800/50 rounded-lg">
+                <Panel dark key={sign} className="flex items-start gap-2 p-2 rounded-lg">
                   <div className="flex-1">
                     <Badge variant="outline" className="text-pink-400 border-pink-400/30 text-xs">
                       {sign}
@@ -288,7 +291,7 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
                   >
                     <X className="w-4 h-4" />
                   </button>
-                </div>
+                </Panel>
               );
             })}
           </div>
@@ -304,16 +307,17 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
             type="date"
             value={newDateValue}
             onChange={(e) => setNewDateValue(e.target.value)}
-            className="bg-slate-800 border-slate-700"
+            dark
           />
           <Input
             value={newDateOccasion}
             onChange={(e) => setNewDateOccasion(e.target.value)}
             placeholder="Occasion"
-            className="bg-slate-800 border-slate-700"
+            dark
           />
           <div className="flex items-center gap-1">
             <Switch
+              dark
               checked={newDateReminder}
               onCheckedChange={setNewDateReminder}
             />
@@ -326,7 +330,7 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
         {importantDates.length > 0 && (
           <div className="space-y-2 mt-2">
             {importantDates.map((date, index) => (
-              <div key={index} className="flex items-center gap-2 p-2 bg-slate-800/50 rounded-lg">
+              <Panel dark key={index} className="flex items-center gap-2 p-2 rounded-lg">
                 <div className="flex-1">
                   <span className="text-sm text-white">{date.occasion}</span>
                   <span className="text-xs text-slate-500 ml-2">
@@ -345,7 +349,7 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
                 >
                   <X className="w-4 h-4" />
                 </button>
-              </div>
+              </Panel>
             ))}
           </div>
         )}
@@ -357,7 +361,8 @@ export const LovedOneForm: React.FC<Props> = ({ userId, existingLovedOne, onSucc
           id="lessonsLearned"
           {...register('lessonsLearned')}
           placeholder="What did you learn from them?"
-          className="bg-slate-800 border-slate-700 min-h-[60px]"
+          dark
+          className="min-h-[60px]"
         />
       </div>
 

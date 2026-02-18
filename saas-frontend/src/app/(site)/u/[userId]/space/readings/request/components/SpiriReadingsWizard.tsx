@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Sparkles, ChevronRight, ChevronLeft, CreditCard, X, Plus, Check } from 'lucide-react';
 import StripePaymentMethodCollector from './StripePaymentMethodCollector';
+import { Panel } from '@/components/ui/panel';
 
 interface SpiriReadingsWizardProps {
     userId: string;
@@ -358,7 +359,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
             {/* ============================================ */}
             {step === 1 && (
                 <div className="space-y-4">
-                    <Label className="text-white font-medium">What type of reading would you like?</Label>
+                    <Label className="font-medium">What type of reading would you like?</Label>
 
                     <div className="grid grid-cols-2 gap-3">
                         <button
@@ -430,11 +431,11 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
             {step === 2 && category === 'TAROT' && (
                 <div className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="topic" className="text-white font-medium">
+                        <Label htmlFor="topic" className="font-medium">
                             What would you like guidance on? <span className="text-red-400">*</span>
                         </Label>
-                        <Select value={topic} onValueChange={(value) => setTopic(value as ReadingTopic)}>
-                            <SelectTrigger id="topic" data-testid="topic-select" className="bg-slate-900/80 border-slate-600 text-white">
+                        <Select dark value={topic} onValueChange={(value) => setTopic(value as ReadingTopic)}>
+                            <SelectTrigger id="topic" data-testid="topic-select">
                                 <SelectValue placeholder="Select a topic" />
                             </SelectTrigger>
                             <SelectContent>
@@ -452,13 +453,14 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                                 value={customTopic}
                                 onChange={(e) => setCustomTopic(e.target.value)}
                                 placeholder="Please describe what you'd like guidance on..."
-                                className="bg-slate-900/80 border-slate-600 text-white placeholder:text-slate-400 min-h-[80px]"
+                                dark
+                                className="min-h-[80px]"
                             />
                         )}
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="context" className="text-white font-medium">
+                        <Label htmlFor="context" className="font-medium">
                             Additional context <span className="text-slate-400">(optional)</span>
                         </Label>
                         <Textarea
@@ -467,7 +469,8 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                             value={context}
                             onChange={(e) => setContext(e.target.value)}
                             placeholder="Any background information that might help the reader understand your situation better..."
-                            className="bg-slate-900/80 border-slate-600 text-white placeholder:text-slate-400 min-h-[100px]"
+                            dark
+                            className="min-h-[100px]"
                         />
                     </div>
 
@@ -499,7 +502,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                 <div className="space-y-4">
                     {/* Focus Area */}
                     <div className="space-y-2">
-                        <Label className="text-white font-medium">
+                        <Label className="font-medium">
                             What would you like the astrologer to focus on? <span className="text-red-400">*</span>
                         </Label>
                         <div className="grid grid-cols-2 gap-2">
@@ -515,7 +518,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                                             : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
                                     }`}
                                 >
-                                    <p className="text-white font-medium">{opt.label}</p>
+                                    <p className="font-medium">{opt.label}</p>
                                     <p className="text-slate-400 text-xs mt-0.5">{opt.description}</p>
                                 </button>
                             ))}
@@ -525,9 +528,9 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                     {/* Planet picker for single_planet focus */}
                     {focusArea === 'single_planet' && (
                         <div className="space-y-2">
-                            <Label className="text-white font-medium">Which planet? <span className="text-red-400">*</span></Label>
-                            <Select value={specificPlanet} onValueChange={setSpecificPlanet}>
-                                <SelectTrigger data-testid="planet-select" className="bg-slate-900/80 border-slate-600 text-white">
+                            <Label className="font-medium">Which planet? <span className="text-red-400">*</span></Label>
+                            <Select dark value={specificPlanet} onValueChange={setSpecificPlanet}>
+                                <SelectTrigger data-testid="planet-select">
                                     <SelectValue placeholder="Select a planet" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -542,9 +545,9 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                     {/* Life area picker */}
                     {focusArea === 'life_area' && (
                         <div className="space-y-2">
-                            <Label className="text-white font-medium">Which life area? <span className="text-red-400">*</span></Label>
-                            <Select value={specificLifeArea} onValueChange={setSpecificLifeArea}>
-                                <SelectTrigger data-testid="life-area-select" className="bg-slate-900/80 border-slate-600 text-white">
+                            <Label className="font-medium">Which life area? <span className="text-red-400">*</span></Label>
+                            <Select dark value={specificLifeArea} onValueChange={setSpecificLifeArea}>
+                                <SelectTrigger data-testid="life-area-select">
                                     <SelectValue placeholder="Select a life area" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -558,7 +561,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
 
                     {/* Birth Data */}
                     <div className="space-y-2">
-                        <Label className="text-white font-medium">Your birth data <span className="text-red-400">*</span></Label>
+                        <Label className="font-medium">Your birth data <span className="text-red-400">*</span></Label>
 
                         {birthChartLoading ? (
                             <div className="flex items-center gap-2 text-slate-400 text-sm py-2">
@@ -566,7 +569,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                                 Checking your birth chart...
                             </div>
                         ) : hasBirthChart ? (
-                            <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700 space-y-1">
+                            <Panel dark className="p-3 rounded-lg border border-slate-700 space-y-1">
                                 <p className="text-green-400 text-xs font-medium flex items-center gap-1">
                                     <Check className="w-3 h-3" /> Pre-filled from your birth chart
                                 </p>
@@ -576,7 +579,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                                 {birthChart!.birthTime && (
                                     <p className="text-slate-400 text-xs">Birth time: {birthChart!.birthTime}</p>
                                 )}
-                            </div>
+                            </Panel>
                         ) : (
                             <div className="space-y-3">
                                 {/* Recommendation to use birth chart */}
@@ -604,19 +607,20 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                                     <p className="text-slate-400 text-xs">Or enter basic details below:</p>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <Label className="text-slate-300 text-xs">Birth date <span className="text-red-400">*</span></Label>
+                                            <Label dark className="text-xs">Birth date <span className="text-red-400">*</span></Label>
                                             <Input
                                                 type="date"
                                                 value={astroBirthDate}
                                                 onChange={(e) => setAstroBirthDate(e.target.value)}
                                                 data-testid="astro-birth-date"
-                                                className="bg-slate-900/80 border-slate-600 text-white text-sm"
+                                                dark
+                                                className="text-sm"
                                             />
                                         </div>
                                         <div>
-                                            <Label className="text-slate-300 text-xs">Birth time precision</Label>
-                                            <Select value={astroBirthTimePrecision} onValueChange={(v) => setAstroBirthTimePrecision(v as 'exact' | 'approximate' | 'unknown')}>
-                                                <SelectTrigger className="bg-slate-900/80 border-slate-600 text-white text-sm">
+                                            <Label dark className="text-xs">Birth time precision</Label>
+                                            <Select dark value={astroBirthTimePrecision} onValueChange={(v) => setAstroBirthTimePrecision(v as 'exact' | 'approximate' | 'unknown')}>
+                                                <SelectTrigger className="text-sm">
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -629,25 +633,27 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                                     </div>
                                     {astroBirthTimePrecision === 'exact' && (
                                         <div>
-                                            <Label className="text-slate-300 text-xs">Birth time</Label>
+                                            <Label dark className="text-xs">Birth time</Label>
                                             <Input
                                                 type="time"
                                                 value={astroBirthTime}
                                                 onChange={(e) => setAstroBirthTime(e.target.value)}
                                                 data-testid="astro-birth-time"
-                                                className="bg-slate-900/80 border-slate-600 text-white text-sm"
+                                                dark
+                                                className="text-sm"
                                             />
                                         </div>
                                     )}
                                     <div>
-                                        <Label className="text-slate-300 text-xs">Birth city &amp; country <span className="text-red-400">*</span></Label>
+                                        <Label dark className="text-xs">Birth city &amp; country <span className="text-red-400">*</span></Label>
                                         <Input
                                             type="text"
                                             value={astroBirthCity}
                                             onChange={(e) => setAstroBirthCity(e.target.value)}
                                             placeholder="e.g., Melbourne, Australia"
                                             data-testid="astro-birth-city"
-                                            className="bg-slate-900/80 border-slate-600 text-white text-sm placeholder:text-slate-500"
+                                            dark
+                                            className="text-sm"
                                         />
                                     </div>
                                 </div>
@@ -658,25 +664,26 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                     {/* Partner Birth Data (compatibility) */}
                     {focusArea === 'compatibility' && (
                         <div className="space-y-2">
-                            <Label className="text-white font-medium">
+                            <Label className="font-medium">
                                 Partner&apos;s birth data <span className="text-red-400">*</span>
                             </Label>
                             <div className="space-y-3 p-3 rounded-lg bg-slate-800/30 border border-purple-500/20">
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <Label className="text-slate-300 text-xs">Birth date <span className="text-red-400">*</span></Label>
+                                        <Label dark className="text-xs">Birth date <span className="text-red-400">*</span></Label>
                                         <Input
                                             type="date"
                                             value={partnerBirthDate}
                                             onChange={(e) => setPartnerBirthDate(e.target.value)}
                                             data-testid="partner-birth-date"
-                                            className="bg-slate-900/80 border-slate-600 text-white text-sm"
+                                            dark
+                                            className="text-sm"
                                         />
                                     </div>
                                     <div>
-                                        <Label className="text-slate-300 text-xs">Birth time precision</Label>
-                                        <Select value={partnerBirthTimePrecision} onValueChange={(v) => setPartnerBirthTimePrecision(v as 'exact' | 'approximate' | 'unknown')}>
-                                            <SelectTrigger className="bg-slate-900/80 border-slate-600 text-white text-sm">
+                                        <Label dark className="text-xs">Birth time precision</Label>
+                                        <Select dark value={partnerBirthTimePrecision} onValueChange={(v) => setPartnerBirthTimePrecision(v as 'exact' | 'approximate' | 'unknown')}>
+                                            <SelectTrigger className="text-sm">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -689,25 +696,27 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                                 </div>
                                 {partnerBirthTimePrecision === 'exact' && (
                                     <div>
-                                        <Label className="text-slate-300 text-xs">Birth time</Label>
+                                        <Label dark className="text-xs">Birth time</Label>
                                         <Input
                                             type="time"
                                             value={partnerBirthTime}
                                             onChange={(e) => setPartnerBirthTime(e.target.value)}
                                             data-testid="partner-birth-time"
-                                            className="bg-slate-900/80 border-slate-600 text-white text-sm"
+                                            dark
+                                            className="text-sm"
                                         />
                                     </div>
                                 )}
                                 <div>
-                                    <Label className="text-slate-300 text-xs">Birth city <span className="text-red-400">*</span></Label>
+                                    <Label dark className="text-xs">Birth city <span className="text-red-400">*</span></Label>
                                     <Input
                                         type="text"
                                         value={partnerBirthCity}
                                         onChange={(e) => setPartnerBirthCity(e.target.value)}
                                         placeholder="e.g., Sydney, Australia"
                                         data-testid="partner-birth-city"
-                                        className="bg-slate-900/80 border-slate-600 text-white text-sm placeholder:text-slate-500"
+                                        dark
+                                        className="text-sm"
                                     />
                                 </div>
                             </div>
@@ -716,7 +725,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
 
                     {/* Additional context */}
                     <div className="space-y-2">
-                        <Label className="text-white font-medium">
+                        <Label className="font-medium">
                             Specific question or context <span className="text-slate-400">(optional)</span>
                         </Label>
                         <Textarea
@@ -724,7 +733,8 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                             value={context}
                             onChange={(e) => setContext(e.target.value)}
                             placeholder="Any specific questions or areas you want the astrologer to address..."
-                            className="bg-slate-900/80 border-slate-600 text-white placeholder:text-slate-400 min-h-[80px]"
+                            dark
+                            className="min-h-[80px]"
                         />
                     </div>
 
@@ -755,7 +765,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
             {step === 3 && (
                 <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
                     <div className="space-y-3">
-                        <Label className="text-white font-medium">
+                        <Label className="font-medium">
                             {category === 'ASTROLOGY' ? 'Choose your reading tier' : 'Choose your spread'}
                         </Label>
                         <div className="grid gap-3">
@@ -794,7 +804,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                     {/* Payment Method Selection */}
                     {selectedConfig && (
                         <div className="space-y-3">
-                            <Label className="text-white font-medium">Payment Method</Label>
+                            <Label className="font-medium">Payment Method</Label>
 
                             {hasSavedCards && (
                                 <div className="space-y-2">

@@ -112,14 +112,15 @@ const CompanionForm: React.FC<CompanionFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-5" data-testid="companion-form">
       {/* Crystal Selection */}
       <div>
-        <Label className="text-slate-300">
+        <Label dark>
           Which crystal is with you? <span className="text-red-400">*</span>
         </Label>
         <Select
           value={customCrystal ? 'custom' : formState.crystalId || ''}
           onValueChange={handleCrystalSelect}
+          dark
         >
-          <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white">
+          <SelectTrigger className="mt-1">
             <SelectValue placeholder="Select a crystal" />
           </SelectTrigger>
           <SelectContent>
@@ -139,19 +140,21 @@ const CompanionForm: React.FC<CompanionFormProps> = ({
             value={formState.crystalName}
             onChange={(e) => setFormState(prev => ({ ...prev, crystalName: e.target.value }))}
             placeholder="Enter crystal name"
-            className="mt-2 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="mt-2"
           />
         )}
       </div>
 
       {/* Location */}
       <div>
-        <Label className="text-slate-300">Where is it?</Label>
+        <Label dark>Where is it?</Label>
         <Select
           value={formState.location || ''}
           onValueChange={(value) => setFormState(prev => ({ ...prev, location: value }))}
+          dark
         >
-          <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white">
+          <SelectTrigger className="mt-1">
             <SelectValue placeholder="Select location" />
           </SelectTrigger>
           <SelectContent>
@@ -166,25 +169,27 @@ const CompanionForm: React.FC<CompanionFormProps> = ({
 
       {/* Reason */}
       <div>
-        <Label htmlFor="reason" className="text-slate-300">Why this crystal today?</Label>
+        <Label htmlFor="reason" dark>Why this crystal today?</Label>
         <Textarea
           id="reason"
           value={formState.reason}
           onChange={(e) => setFormState(prev => ({ ...prev, reason: e.target.value }))}
           placeholder="What drew you to choose this crystal?"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 min-h-[80px]"
+          dark
+          className="mt-1 min-h-[80px]"
         />
       </div>
 
       {/* Intention */}
       <div>
-        <Label htmlFor="intention" className="text-slate-300">Your Intention</Label>
+        <Label htmlFor="intention" dark>Your Intention</Label>
         <Textarea
           id="intention"
           value={formState.intention}
           onChange={(e) => setFormState(prev => ({ ...prev, intention: e.target.value }))}
           placeholder="What do you hope to manifest or feel today?"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 min-h-[80px]"
+          dark
+          className="mt-1 min-h-[80px]"
         />
       </div>
 

@@ -7,6 +7,7 @@ import { Sparkles, Moon, Home, Send, Inbox, Wind, Gem, Star, Droplets, Grid3X3, 
 import UseUserProfile from "@/hooks/user/UseUserProfile";
 import { SpiritualInterest } from "@/app/(site)/u/[userId]/onboarding/types";
 import { useUnlockStatusForInterest } from "../_hooks/useUnlockStatus";
+import { useVocab } from "../_hooks/useVocab";
 import { SpiriReadingsWizard } from "../readings/request/components";
 // Form components for dialogs
 import { SynchronicityForm } from "../mediumship/synchronicities/components/SynchronicityForm";
@@ -23,6 +24,7 @@ const useBL = () => {
     const userId = params.userId as string;
     const { data: user } = UseUserProfile(userId);
     const mediumshipUnlocks = useUnlockStatusForInterest(userId, 'mediumship');
+    const { vocab } = useVocab(userId);
 
     // Get all user interests (primary + secondary)
     const userInterests = useMemo(() => {
@@ -156,7 +158,7 @@ const useBL = () => {
             if (mediumshipUnlocks.isUnlocked('mediumship:spirit-messages')) {
                 mediumshipNavOptions.push({
                     icon: <MessageCircle className="w-5 h-5" />,
-                    label: "Spirit Messages",
+                    label: vocab('spirit_messages'),
                     href: `/u/${userId}/space/mediumship/spirit-messages`
                 });
             }
@@ -177,11 +179,20 @@ const useBL = () => {
                 });
             }
 
-            navOptions.push({
-                icon: <Sparkles className="w-5 h-5" />,
-                label: "Mediumship",
-                navOptions: mediumshipNavOptions
-            });
+            // If only one child, link directly instead of showing a flyout
+            if (mediumshipNavOptions.length === 1) {
+                navOptions.push({
+                    icon: <Sparkles className="w-5 h-5" />,
+                    label: "Mediumship",
+                    href: mediumshipNavOptions[0].href
+                });
+            } else {
+                navOptions.push({
+                    icon: <Sparkles className="w-5 h-5" />,
+                    label: "Mediumship",
+                    navOptions: mediumshipNavOptions
+                });
+            }
 
             // Tarot section - shown for MEDIUMSHIP interest
             navOptions.push({
@@ -340,7 +351,7 @@ const useBL = () => {
         });
 
         return navOptions;
-    }, [userId, userInterests, mediumshipUnlocks]);
+    }, [userId, userInterests, mediumshipUnlocks, vocab]);
 
     const dialogMapping: Record<string, (onClose: () => void) => JSX.Element> = {
         "spiri-readings": (onClose: () => void) => (
@@ -362,7 +373,7 @@ const useBL = () => {
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <MessageCircle className="w-5 h-5 text-indigo-400" />
-                        Record Spirit Message
+                        {vocab('record_spirit_message')}
                     </DialogTitle>
                 </DialogHeader>
                 <SpiritMessageForm userId={userId} onSuccess={onClose} />
@@ -433,7 +444,7 @@ const PersonalSpaceSideNav: React.FC = () => {
     return (
         <SideNav
             aria-label="personal-space-side-nav"
-            className="mt-2 ml-2"
+            className="mt-2"
             navOptions={bl.options.get}
             renderDialog={bl.renderDialog}
         />

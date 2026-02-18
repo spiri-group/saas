@@ -1,0 +1,101 @@
+[
+  {
+    "id": "terms-of-service",
+    "title": "Terms of Service",
+    "version": 4,
+    "isPublished": true,
+    "market": "global",
+    "effectiveDate": "2026-02-17T00:00:00.000Z",
+    "updatedAt": "2026-02-18T10:11:02.691+00:00",
+    "updatedBy": "system",
+    "changeSummary": "add to 9.3 no refunds for fees on refunds from stripe or spiriVerse"
+  },
+  {
+    "id": "privacy-policy",
+    "title": "Privacy Policy",
+    "version": 2,
+    "isPublished": true,
+    "market": "global",
+    "effectiveDate": "2026-02-17T10:19:53.311Z",
+    "updatedAt": "2026-02-17T10:19:53.311Z",
+    "updatedBy": "migration-035",
+    "changeSummary": "Replaced all Vendor/Merchant/Practitioner terminology with Partner. Consolidated definitions in Section 3."
+  },
+  {
+    "id": "cookie-policy",
+    "title": "Cookie Policy",
+    "version": 2,
+    "isPublished": true,
+    "market": "global",
+    "effectiveDate": "2026-02-17T10:19:53.406Z",
+    "updatedAt": "2026-02-17T10:19:53.406Z",
+    "updatedBy": "migration-035",
+    "changeSummary": "Updated terminology: replaced practitioner references with partner."
+  },
+  {
+    "id": "merchant-terms",
+    "title": "Partner Terms of Service",
+    "version": 2,
+    "isPublished": true,
+    "market": "global",
+    "effectiveDate": "2026-02-17T10:19:53.491Z",
+    "updatedAt": "2026-02-17T10:19:53.491Z",
+    "updatedBy": "migration-035",
+    "changeSummary": "Ensured consistent Partner terminology throughout. Added Partner definition. Made platform fees explicitly non-refundable in all cases."
+  },
+  {
+    "id": "refund-policy",
+    "title": "Refund & Returns Policy",
+    "version": 2,
+    "isPublished": true,
+    "market": "global",
+    "effectiveDate": "2026-02-17T10:19:53.584Z",
+    "updatedAt": "2026-02-17T10:19:53.584Z",
+    "updatedBy": "migration-035",
+    "changeSummary": "Replaced all Merchant/Practitioner/Seller terminology with Partner. Added Partner definition. Replaced prescriptive cancellation tiers with partner-defined policies. Made platform fees explicitly non-refundable in all cases."
+  },
+  {
+    "id": "acceptable-use-policy",
+    "title": "Acceptable Use Policy",
+    "version": 2,
+    "isPublished": true,
+    "market": "global",
+    "effectiveDate": "2026-02-17T10:19:53.672Z",
+    "updatedAt": "2026-02-17T10:19:53.672Z",
+    "updatedBy": "migration-035",
+    "changeSummary": "Replaced all Vendor/Practitioner terminology with Partner. Added Partner definition."
+  },
+  {
+    "id": "spiritual-services-disclaimer",
+    "title": "Spiritual Services Disclaimer",
+    "version": 2,
+    "isPublished": true,
+    "market": "global",
+    "effectiveDate": "2026-02-17T10:19:53.761Z",
+    "updatedAt": "2026-02-17T10:19:53.761Z",
+    "updatedBy": "migration-035",
+    "changeSummary": "Replaced all Practitioner terminology with Partner. Added Partner definition."
+  },
+  {
+    "id": "payment-terms",
+    "title": "Payment & Fee Terms",
+    "version": 2,
+    "isPublished": true,
+    "market": "global",
+    "effectiveDate": "2026-02-17T10:19:53.850Z",
+    "updatedAt": "2026-02-17T10:19:53.850Z",
+    "updatedBy": "migration-035",
+    "changeSummary": "Replaced all Merchant terminology with Partner. Added Partner definition. Made platform fees (both Customer and Partner portions) non-refundable in all cases."
+  },
+  {
+    "id": "intellectual-property-policy",
+    "title": "Intellectual Property & DMCA Policy",
+    "version": 2,
+    "isPublished": true,
+    "market": "global",
+    "effectiveDate": "2026-02-17T10:19:53.936Z",
+    "updatedAt": "2026-02-17T10:19:53.936Z",
+    "updatedBy": "migration-035",
+    "changeSummary": "Replaced all Vendor/Merchant/Practitioner terminology with Partner. Added Partner definition. Renamed content sections."
+  }
+]

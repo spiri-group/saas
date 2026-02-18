@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { BookHeart, Plus, Heart, CheckCircle2, Clock, ChevronRight, Flame, Calendar, User, Sparkles, HandHeart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, formatDistanceToNow } from 'date-fns';
 import usePrayerJournalEntries, { PrayerJournalEntry } from '../hooks/usePrayerJournal';
 import { PrayerJournalForm } from './components/PrayerJournalForm';
@@ -313,7 +313,7 @@ const UI: React.FC<Props> = ({ userId }) => {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-indigo-500/20 text-white sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent dark={false} glass className="border-indigo-500/20 sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BookHeart className="w-5 h-5 text-indigo-400" />
@@ -326,12 +326,17 @@ const UI: React.FC<Props> = ({ userId }) => {
             existingEntry={editingEntry}
             onSuccess={handleFormSuccess}
           />
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2 opacity-70 hover:opacity-100">
+              Cancel
+            </Button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
 
       {/* Detail View Dialog */}
       <Dialog open={!!selectedEntry} onOpenChange={(open) => !open && setSelectedEntry(null)}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-indigo-500/20 text-white sm:max-w-lg">
+        <DialogContent dark={false} glass className="border-indigo-500/20 sm:max-w-lg">
           {selectedEntry && (
             <>
               <DialogHeader>
@@ -372,7 +377,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                 {/* Prayer content */}
                 {selectedEntry.content && (
                   <div className="p-4 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
-                    <p className="text-slate-300 text-sm italic leading-relaxed">{selectedEntry.content}</p>
+                    <p className="text-black/70 text-sm italic leading-relaxed">{selectedEntry.content}</p>
                   </div>
                 )}
 
@@ -398,7 +403,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                       <CheckCircle2 className="w-4 h-4" />
                       How God Answered
                     </div>
-                    <p className="text-slate-300 text-sm">{selectedEntry.answerDescription}</p>
+                    <p className="text-black/70 text-sm">{selectedEntry.answerDescription}</p>
                     {selectedEntry.answeredDate && (
                       <p className="text-green-400/60 text-xs mt-2">
                         Answered on {format(new Date(selectedEntry.answeredDate), 'MMMM d, yyyy')}
@@ -414,7 +419,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                       setSelectedEntry(null);
                       handleEdit(selectedEntry);
                     }}
-                    className="flex-1 border-slate-700 hover:bg-slate-800"
+                    className="flex-1 border-black/20 hover:bg-black/5"
                   >
                     Edit
                   </Button>

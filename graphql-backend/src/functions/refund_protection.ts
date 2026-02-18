@@ -1,6 +1,3 @@
-import NodeCache from "node-cache";
-import { InvocationContext, Timer, app } from "@azure/functions";
-import setup from "./stripe/0_dependencies";
 import { refund_record_type, order_type } from "../graphql/order/types";
 import { DateTime } from "luxon";
 import { sender_details } from "../client/email_templates";
@@ -9,8 +6,6 @@ import { CosmosDataSource } from "../utils/database";
 import { StripeDataSource } from "../services/stripe";
 import { AzureEmailDataSource } from "../services/azureEmail";
 import { LogManager } from "../utils/functions";
-
-const myCache = new NodeCache();
 
 /**
  * Extracted core logic for refund protection.
@@ -203,28 +198,3 @@ export async function runRefundProtection(
     logger.logMessage('Refund protection completed successfully');
 }
 
-/**
- * Auto-Refund Protection Timer Function
- *
- * Runs daily to protect customers from merchants who don't process refunds:
- *
- * 1. Auto-process refunds after 7-day inspection window (after return delivery)
- * 2. Refund label costs if merchant doesn't process within 30 days (safety net)
- */
-export async function refundProtection(myTimer: Timer, context: InvocationContext): Promise<void> {
-  try {
-    const { services, logger } = await setup(null as any, context, myCache);
-    const { cosmos, stripe, email } = services;
-
-    await runRefundProtection(cosmos, stripe, email, logger);
-  } catch (error) {
-    context.error('Refund protection cron job failed:', error);
-    throw error;
-  }
-}
-
-// Run daily at 2 AM UTC (cron: "0 0 2 * * *")
-app.timer("refundProtection", {
-  schedule: "0 0 2 * * *",
-  handler: refundProtection
-});

@@ -134,7 +134,7 @@ const CleansingForm: React.FC<CleansingFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-5" data-testid="cleansing-form">
       {/* Crystal Selection */}
       <div>
-        <Label className="text-slate-300 mb-2 block">
+        <Label dark className="mb-2 block">
           Which crystals did you cleanse? <span className="text-red-400">*</span>
         </Label>
 
@@ -153,6 +153,7 @@ const CleansingForm: React.FC<CleansingFormProps> = ({
                   checked={formState.crystalIds.includes(crystal.id)}
                   onCheckedChange={() => handleCrystalToggle(crystal)}
                   className="border-white/30"
+                  dark
                 />
                 <span className="text-slate-300 text-sm truncate">
                   {crystal.nickname || crystal.name}
@@ -166,7 +167,7 @@ const CleansingForm: React.FC<CleansingFormProps> = ({
           value={customCrystals}
           onChange={(e) => setCustomCrystals(e.target.value)}
           placeholder="Or enter crystal names (comma separated)"
-          className="bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+          dark
         />
         {formState.crystalNames.length > 0 && (
           <p className="text-xs text-slate-400 mt-1">
@@ -177,7 +178,7 @@ const CleansingForm: React.FC<CleansingFormProps> = ({
 
       {/* Cleansing Method */}
       <div>
-        <Label className="text-slate-300 flex items-center gap-2">
+        <Label dark className="flex items-center gap-2">
           <Droplets className="w-4 h-4 text-blue-400" />
           Cleansing Method
         </Label>
@@ -201,40 +202,43 @@ const CleansingForm: React.FC<CleansingFormProps> = ({
 
       {/* Method Details */}
       <div>
-        <Label htmlFor="methodDetails" className="text-slate-300">Method Details</Label>
+        <Label htmlFor="methodDetails" dark>Method Details</Label>
         <Input
           id="methodDetails"
           value={formState.methodDetails}
           onChange={(e) => setFormState(prev => ({ ...prev, methodDetails: e.target.value }))}
           placeholder="e.g., White sage, Full moon overnight"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+          dark
+          className="mt-1"
         />
       </div>
 
       {/* Duration & Moon Phase */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="duration" className="text-slate-300">Duration (minutes)</Label>
+          <Label htmlFor="duration" dark>Duration (minutes)</Label>
           <Input
             id="duration"
             type="number"
             value={formState.duration || ''}
             onChange={(e) => setFormState(prev => ({ ...prev, duration: e.target.value ? parseInt(e.target.value) : undefined }))}
             placeholder="e.g., 30"
-            className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="mt-1"
           />
         </div>
 
         <div>
-          <Label className="text-slate-300 flex items-center gap-1">
+          <Label dark className="flex items-center gap-1">
             <Moon className="w-3 h-3" />
             Moon Phase
           </Label>
           <Select
             value={formState.moonPhase || ''}
             onValueChange={(value) => setFormState(prev => ({ ...prev, moonPhase: value }))}
+            dark
           >
-            <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white">
+            <SelectTrigger className="mt-1">
               <SelectValue placeholder="Select phase" />
             </SelectTrigger>
             <SelectContent>
@@ -256,8 +260,9 @@ const CleansingForm: React.FC<CleansingFormProps> = ({
             checked={formState.didCharge}
             onCheckedChange={(checked) => setFormState(prev => ({ ...prev, didCharge: checked as boolean }))}
             className="border-yellow-400/50 data-[state=checked]:bg-yellow-500 data-[state=checked]:border-yellow-500"
+            dark
           />
-          <Label htmlFor="didCharge" className="text-white cursor-pointer flex items-center gap-2">
+          <Label htmlFor="didCharge" dark className="cursor-pointer flex items-center gap-2">
             <Zap className="w-4 h-4 text-yellow-400" />
             I also charged these crystals
           </Label>
@@ -266,12 +271,13 @@ const CleansingForm: React.FC<CleansingFormProps> = ({
         {formState.didCharge && (
           <div className="space-y-3 mt-3">
             <div>
-              <Label className="text-slate-300 text-sm">Charging Method</Label>
+              <Label dark className="text-sm">Charging Method</Label>
               <Select
                 value={formState.chargingMethod || ''}
                 onValueChange={(value) => setFormState(prev => ({ ...prev, chargingMethod: value as ChargingMethod }))}
+                dark
               >
-                <SelectTrigger className="mt-1 bg-white/5 border-white/20 text-white">
+                <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Select method" />
                 </SelectTrigger>
                 <SelectContent>
@@ -285,13 +291,14 @@ const CleansingForm: React.FC<CleansingFormProps> = ({
             </div>
 
             <div>
-              <Label htmlFor="chargingDetails" className="text-slate-300 text-sm">Charging Details</Label>
+              <Label htmlFor="chargingDetails" dark className="text-sm">Charging Details</Label>
               <Input
                 id="chargingDetails"
                 value={formState.chargingDetails}
                 onChange={(e) => setFormState(prev => ({ ...prev, chargingDetails: e.target.value }))}
                 placeholder="Any specific details about charging"
-                className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+                dark
+                className="mt-1"
               />
             </div>
           </div>
@@ -300,25 +307,27 @@ const CleansingForm: React.FC<CleansingFormProps> = ({
 
       {/* Intention */}
       <div>
-        <Label htmlFor="intention" className="text-slate-300">Intention</Label>
+        <Label htmlFor="intention" dark>Intention</Label>
         <Textarea
           id="intention"
           value={formState.intention}
           onChange={(e) => setFormState(prev => ({ ...prev, intention: e.target.value }))}
           placeholder="What intention did you set during cleansing?"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 min-h-[80px]"
+          dark
+          className="mt-1 min-h-[80px]"
         />
       </div>
 
       {/* Notes */}
       <div>
-        <Label htmlFor="cleansingNotes" className="text-slate-300">Notes</Label>
+        <Label htmlFor="cleansingNotes" dark>Notes</Label>
         <Textarea
           id="cleansingNotes"
           value={formState.notes}
           onChange={(e) => setFormState(prev => ({ ...prev, notes: e.target.value }))}
           placeholder="Any other observations or notes"
-          className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-slate-500 min-h-[60px]"
+          dark
+          className="mt-1 min-h-[60px]"
         />
       </div>
 

@@ -84,18 +84,7 @@ const RecentActivity: React.FC<Props> = ({
     .slice(0, 5);
 
   if (sortedItems.length === 0) {
-    return (
-      <div className="space-y-3">
-        <h2 className="text-sm font-medium text-slate-400">Recent Activity</h2>
-        <div data-testid="recent-activity-empty-state" className="p-6 rounded-xl bg-white/5 border border-white/10 text-center">
-          <Moon className="w-8 h-8 text-indigo-400 mx-auto mb-3" />
-          <p className="text-white font-medium mb-1">No Activity Yet</p>
-          <p className="text-sm text-slate-400">
-            Your recent spirit messages and synchronicities will appear here.
-          </p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const getIcon = (type: ActivityItem['type']) => {

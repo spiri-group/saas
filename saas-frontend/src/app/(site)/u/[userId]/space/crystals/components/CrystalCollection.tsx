@@ -56,7 +56,8 @@ const CrystalCollection: React.FC<CrystalCollectionProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search crystals..."
-            className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+            dark
+            className="pl-10"
             data-testid="crystal-search"
           />
         </div>
@@ -86,8 +87,9 @@ const CrystalCollection: React.FC<CrystalCollectionProps> = ({
             <Select
               value={colorFilter}
               onValueChange={(value) => setColorFilter(value as CrystalColor | 'all')}
+              dark
             >
-              <SelectTrigger className="bg-white/5 border-white/20 text-white">
+              <SelectTrigger>
                 <SelectValue placeholder="All colors" />
               </SelectTrigger>
               <SelectContent>
@@ -106,8 +108,9 @@ const CrystalCollection: React.FC<CrystalCollectionProps> = ({
             <Select
               value={formFilter}
               onValueChange={(value) => setFormFilter(value as CrystalForm | 'all')}
+              dark
             >
-              <SelectTrigger className="bg-white/5 border-white/20 text-white">
+              <SelectTrigger>
                 <SelectValue placeholder="All forms" />
               </SelectTrigger>
               <SelectContent>

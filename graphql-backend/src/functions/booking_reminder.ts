@@ -1,5 +1,3 @@
-import NodeCache from "node-cache";
-import { InvocationContext, Timer, app } from "@azure/functions";
 import { DateTime } from "luxon";
 import { sender_details } from "../client/email_templates";
 import { serviceBooking_type } from "../graphql/service/types";
@@ -8,10 +6,7 @@ import { vendor_type } from "../graphql/vendor/types";
 import { CosmosDataSource } from "../utils/database";
 import { AzureEmailDataSource } from "../services/azureEmail";
 import { LogManager } from "../utils/functions";
-import { vault } from "../services/vault";
 import { renderEmailTemplate } from "../graphql/email/utils";
-
-const myCache = new NodeCache();
 
 /**
  * Extracted core logic for booking reminders.
@@ -31,39 +26,6 @@ export async function runBookingReminder(
     await expireUnconfirmedBookings(cosmos, email, now, logger);
 
     logger.logMessage('Booking reminder completed successfully');
-}
-
-/**
- * Service Booking Reminder Email Scheduler
- *
- * Runs every 15 minutes to send reminder emails for upcoming scheduled service bookings:
- *
- * 1. 24-hour reminder: Sent 24-48 hours before session start
- * 2. 1-hour reminder: Sent 1-2 hours before session start
- *
- * Flow:
- * - Query confirmed bookings in the reminder windows
- * - Send reminder emails to both customer and practitioner
- * - Track remindersSent on the booking to avoid duplicates
- */
-export async function bookingReminder(myTimer: Timer, context: InvocationContext): Promise<void> {
-    try {
-        const host = process.env.WEBSITE_HOSTNAME || 'localhost:7071';
-        const logger = new LogManager(context);
-        const keyVault = new vault(host, logger, myCache);
-
-        const cosmos = new CosmosDataSource(logger, keyVault);
-        const email = new AzureEmailDataSource(logger, keyVault);
-
-        await cosmos.init(host);
-        await email.init(host);
-        email.setDataSources({ cosmos });
-
-        await runBookingReminder(cosmos, email, logger);
-    } catch (error) {
-        context.error('Booking reminder cron job failed:', error);
-        throw error;
-    }
 }
 
 /**
@@ -394,8 +356,3 @@ async function sendExpirationEmails(
     }
 }
 
-// Register the timer function to run every 15 minutes
-app.timer('bookingReminder', {
-    schedule: '0 */15 * * * *', // Every 15 minutes
-    handler: bookingReminder,
-});
