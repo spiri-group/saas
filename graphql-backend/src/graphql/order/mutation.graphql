@@ -10,6 +10,14 @@ type Mutation {
   refund_order(orderRef: RecordRefInput, lines: [OrderLineRefundInput]): CreateOrderResponse,
   generate_sales_tax(orderRef: RecordRefInput): GenerateTaxResponse
   create_order_checkout_link(merchantId: ID!, input: CreateOrderCheckoutLinkInput!): CreateOrderCheckoutLinkResponse!
+  create_pos_sale(merchantId: ID!, input: CreatePosSaleInput!): CreateOrderResponse!
+}
+
+input CreatePosSaleInput {
+  customerEmail: String
+  lines: [OrderLineInput!]!
+  paymentMethod: String!
+  notes: String
 }
 
 type CreateOrderResponse implements MutationResponseInterface {

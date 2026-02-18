@@ -5,7 +5,7 @@ import React, { JSX } from "react";
 import SideNav, { NavOption } from "@/components/ui/sidenav";
 import EditTeamMembers from "./Profile/Edit/TeamMembers";
 import EditCatalogueBanner from "./Profile/Edit/PromiseBanner";
-import { AlignLeftIcon, BoxIcon, Building2, FileTextIcon, HistoryIcon, NewspaperIcon, PaintbrushIcon, PhoneIcon, RefreshCwIcon, RotateCcwIcon, Share2Icon, StoreIcon, TruckIcon, Users2Icon, Package, AlertTriangle, ImageIcon, PiggyBank, CreditCardIcon, VideoIcon, Sparkles, MapPin, ShoppingCart, Calendar, LayoutDashboard, Mail, User, Wallet } from "lucide-react";
+import { AlignLeftIcon, BoxIcon, Building2, FileTextIcon, HistoryIcon, NewspaperIcon, PaintbrushIcon, PhoneIcon, RefreshCwIcon, RotateCcwIcon, Share2Icon, StoreIcon, TruckIcon, Users2Icon, Package, AlertTriangle, ImageIcon, PiggyBank, CreditCardIcon, VideoIcon, Sparkles, MapPin, ShoppingCart, Calendar, LayoutDashboard, Mail, User, Wallet, Monitor } from "lucide-react";
 import EditTourDetails from "../[merchant_slug]/(manage)/manage/tour/_components/Edit/TourDetails/EditTourDetails";
 import EditItinerary from "../[merchant_slug]/(manage)/manage/tour/_components/Edit/Itinerary";
 import CreateTour from "../[merchant_slug]/(manage)/manage/tour/_components/Create";
@@ -25,6 +25,7 @@ import SpiriAssistLogo from "@/icons/spiri-assist-logo";
 import { Session } from "next-auth";
 import { isNullOrUndefined } from "@/lib/functions";
 import { useTierFeatures } from "@/hooks/UseTierFeatures";
+import { VendorDocType } from "@/utils/spiriverse";
 import { UseInventoryOverview } from "../[merchant_slug]/(manage)/manage/inventory/_hooks/UseInventoryOverview";
 
 import MerchantTaxRegistrations from "./TaxRegistration";
@@ -53,6 +54,7 @@ const useBL = (props: BLProps) => {
     const { features } = useTierFeatures(merchantId);
     const inventoryOverview = UseInventoryOverview(merchantId, "default");
 
+    const isMerchant = merchant?.docType === VendorDocType.MERCHANT || !merchant?.docType;
     const canHostPractitioners = features.canHostPractitioners;
     const hasInventoryAutomation = features.hasInventoryAutomation;
     const canCreateTours = features.canCreateTours;
@@ -277,6 +279,12 @@ const useBL = (props: BLProps) => {
                     type: "divider",
                     label: "Orders"
                 },
+                ...(isMerchant ? [{
+                    icon: <Monitor className="w-5 h-5" />,
+                    label: "Point of Sale",
+                    href: `/m/${merchantSlug}/manage/pos`,
+                    testId: "nav-pos",
+                }] : []),
                 {
                     icon: <HistoryIcon className="w-5 h-5" />,
                     label: "Order History",

@@ -7,6 +7,7 @@ type Query {
     orderRefundPolicy(orderId: ID!): ProductReturnPolicy
     backorderedOrders(vendorId: ID!): [Order]
     orderCheckout(orderId: ID!): Order
+    posSales(vendorId: ID!, limit: Int, offset: Int): [Order]
 }
 
 type Order {
@@ -27,6 +28,7 @@ type Order {
   payments: [OrderPayment]
   paymentSummary: OrderPaymentSummary
   checkoutLinkExpiresAt: DateTime
+  source: String
 }
 
 type OrderDeliveryDetails {
