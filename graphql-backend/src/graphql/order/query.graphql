@@ -29,6 +29,38 @@ type Order {
   paymentSummary: OrderPaymentSummary
   checkoutLinkExpiresAt: DateTime
   source: String
+  voidedAt: DateTime
+  notes: String
+  posDiscount: PosDiscount
+  posTax: PosTax
+  posRefunds: [PosRefund]
+}
+
+type PosRefund {
+  id: ID!
+  date: DateTime!
+  amount: Float!
+  currency: String!
+  reason: String
+  lines: [PosRefundLine]
+}
+
+type PosRefundLine {
+  lineId: ID!
+  quantity: Float!
+}
+
+type PosDiscount {
+  type: String!
+  value: Float!
+  reason: String
+  amount: Float!
+}
+
+type PosTax {
+  rate: Float!
+  label: String!
+  amount: Float!
 }
 
 type OrderDeliveryDetails {

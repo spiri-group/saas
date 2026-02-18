@@ -43,8 +43,11 @@ export type order_type = {
     discount: number
     createdDate: string
     status?: string
+    source?: string
+    voidedAt?: string
+    voidedBy?: string
     checkoutLinkExpiresAt?: string
-} 
+}
 
 export type order_credit_type = {
     code: string,

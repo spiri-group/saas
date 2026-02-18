@@ -11,6 +11,7 @@ type Query {
     searchCrystalProducts(filters: CrystalProductFiltersInput, offset: Int, limit: Int): CrystalProductSearchResponse
     matchWishlistToProducts(userId: String!): WishlistMatchResponse
     crystalProductRecommendations(userId: String!, limit: Int): CrystalRecommendationsResponse
+    posProducts(vendorId: String!, search: String): [Product]
 }
 
 type ProductCategory {
@@ -107,6 +108,7 @@ type Product {
   id: String!
   name: String
   slug: String
+  category: String
   ref: RecordRef
   vendor: Vendor
   description: String
