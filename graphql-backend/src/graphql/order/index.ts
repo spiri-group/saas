@@ -1700,11 +1700,12 @@ const resolvers = {
                 lines: any[];
                 paymentMethod: string;
                 notes?: string;
+                discount?: { type: string; value: number; reason?: string };
             };
         }, context: serverContext) => {
             if (context.userId == null) throw new Error("User must be authenticated to create a POS sale");
 
-            const { lines, paymentMethod, customerEmail, notes } = args.input;
+            const { lines, paymentMethod, customerEmail, notes, discount } = args.input;
 
             if (!lines || lines.length === 0) {
                 throw new Error("At least one line item is required");
@@ -1724,10 +1725,11 @@ const resolvers = {
             // Build order lines with price and target info
             const orderLines: any[] = lines.map((line: any) => {
                 const quantity = line.quantity || 1;
+                const isCustomLine = !line.forObject;
                 return {
                     id: uuidv4(),
-                    forObject: line.forObject,
-                    variantId: line.variantId,
+                    forObject: line.forObject || null,
+                    variantId: line.variantId || null,
                     descriptor: line.descriptor,
                     merchantId: line.merchantId || args.merchantId,
                     quantity,
@@ -1753,12 +1755,15 @@ const resolvers = {
                     ],
                     refund_request_log: [],
                     stripe: {},
-                    target: line.target
+                    target: isCustomLine ? "CUSTOM-SALE" : line.target
                 };
             });
 
-            // Restore targets on lines (determines fee tier from listing type)
-            await restore_target_on_lines_async(orderLines, context.dataSources.cosmos);
+            // Only restore targets on product lines (custom lines have no forObject)
+            const productLines = orderLines.filter(l => l.forObject);
+            if (productLines.length > 0) {
+                await restore_target_on_lines_async(productLines, context.dataSources.cosmos);
+            }
 
             // Calculate subtotal
             const subtotal = orderLines.reduce((sum, line) => {
@@ -1767,7 +1772,41 @@ const resolvers = {
             }, 0);
             const currency = orderLines[0]?.price_log[0]?.price?.currency || merchant.currency || "USD";
 
-            // Deduct inventory immediately (POS = already paid)
+            // Calculate discount
+            let discountAmount = 0;
+            let posDiscount: any = null;
+            if (discount) {
+                if (discount.type === "PERCENTAGE") {
+                    discountAmount = Math.round(subtotal * (discount.value / 100));
+                } else if (discount.type === "FIXED") {
+                    discountAmount = Math.min(discount.value, subtotal);
+                }
+                posDiscount = {
+                    type: discount.type,
+                    value: discount.value,
+                    reason: discount.reason || null,
+                    amount: discountAmount
+                };
+            }
+            const totalPaid = subtotal - discountAmount;
+
+            // Calculate tax based on merchant country (GST-inclusive pricing)
+            const POS_TAX_RATES: Record<string, { rate: number; label: string }> = {
+                AU: { rate: 0.10, label: 'GST' },
+                NZ: { rate: 0.15, label: 'GST' },
+                GB: { rate: 0.20, label: 'VAT' },
+            };
+            const merchantCountry = (merchant.country || '').toUpperCase();
+            const taxConfig = POS_TAX_RATES[merchantCountry] || null;
+            // GST-inclusive: tax = totalPaid * rate / (1 + rate)
+            const taxAmount = taxConfig ? Math.round(totalPaid * taxConfig.rate / (1 + taxConfig.rate)) : 0;
+            const posTax = taxConfig ? {
+                rate: taxConfig.rate,
+                label: taxConfig.label,
+                amount: taxAmount
+            } : null;
+
+            // Deduct inventory immediately (POS = already paid) — only for product lines
             await deduct_pos_inventory(orderLines, context.dataSources.cosmos, context.userId);
 
             // Build completed order
@@ -1792,8 +1831,8 @@ const resolvers = {
                         currency,
                         charge: {
                             subtotal,
-                            tax: 0,
-                            paid: subtotal
+                            tax: taxAmount,
+                            paid: totalPaid
                         }
                     }
                 ],
@@ -1802,15 +1841,227 @@ const resolvers = {
                 paid_status: "PAID",
                 createdDate: DateTime.now().toISO(),
                 createdBy: context.userId,
-                ...(notes && { notes })
+                ...(notes && { notes }),
+                ...(posDiscount && { posDiscount }),
+                ...(posTax && { posTax })
             };
 
             await context.dataSources.cosmos.add_record("Main-Orders", order, order.id, context.userId);
+
+            // Send email receipt if customer email provided
+            if (customerEmail) {
+                try {
+                    const receiptHtml = buildPosReceiptHtml(order, merchant.name, currency, posTax);
+                    await context.dataSources.email.sendRawHtmlEmail(
+                        "noreply@spiriverse.com",
+                        customerEmail,
+                        `Receipt from ${merchant.name} - #${order.code}`,
+                        receiptHtml
+                    );
+                } catch (emailError) {
+                    // Don't fail the sale if email fails — log and continue
+                    context.logger?.logMessage?.(`POS receipt email failed for order ${order.code}: ${emailError}`);
+                }
+            }
 
             return {
                 code: "200",
                 success: true,
                 message: "POS sale recorded successfully",
+                order: await context.dataSources.cosmos.get_record("Main-Orders", order.id, order.id)
+            };
+        },
+        void_pos_sale: async (_: any, args: { orderId: string }, context: serverContext) => {
+            if (context.userId == null) throw new Error("User must be authenticated to void a sale");
+
+            // Find the order
+            const orders = await context.dataSources.cosmos.run_query<order_type>("Main-Orders", {
+                query: `SELECT * FROM c WHERE c.id = @orderId`,
+                parameters: [{ name: "@orderId", value: args.orderId }]
+            }, true);
+
+            if (!orders || orders.length === 0) {
+                throw new Error("Order not found");
+            }
+
+            const order = orders[0];
+
+            if (order.source !== "POS") {
+                throw new Error("Only POS sales can be voided from this endpoint");
+            }
+
+            if ((order as any).voidedAt) {
+                throw new Error("This sale has already been voided");
+            }
+
+            // Restore inventory for each line
+            await restore_pos_inventory(order.lines, context.dataSources.cosmos, context.userId);
+
+            // Mark order as voided
+            await context.dataSources.cosmos.patch_record("Main-Orders", order.id, order.id, [
+                { op: "set", path: "/voidedAt", value: DateTime.now().toISO() },
+                { op: "set", path: "/voidedBy", value: context.userId }
+            ], context.userId);
+
+            return {
+                code: "200",
+                success: true,
+                message: "POS sale voided and inventory restored",
+                order: await context.dataSources.cosmos.get_record("Main-Orders", order.id, order.id)
+            };
+        },
+        refund_pos_sale: async (_: any, args: {
+            input: {
+                orderId: string;
+                lines: { lineId: string; quantity: number }[];
+                reason?: string;
+            };
+        }, context: serverContext) => {
+            if (context.userId == null) throw new Error("User must be authenticated to refund a POS sale");
+
+            const { orderId, lines: refundLines, reason } = args.input;
+
+            // Find the order
+            const orders = await context.dataSources.cosmos.run_query<any>("Main-Orders", {
+                query: `SELECT * FROM c WHERE c.id = @orderId`,
+                parameters: [{ name: "@orderId", value: orderId }]
+            }, true);
+
+            if (!orders || orders.length === 0) {
+                throw new Error("Order not found");
+            }
+
+            const order = orders[0];
+
+            if (order.source !== "POS") {
+                throw new Error("Only POS sales can be refunded from this endpoint");
+            }
+
+            if (order.voidedAt) {
+                throw new Error("Cannot refund a voided sale");
+            }
+
+            // Build refund patches and restore inventory
+            const patchOps: PatchOperation[] = [];
+            let totalRefundAmount = 0;
+            const currency = order.lines?.[0]?.price_log?.[0]?.price?.currency || "USD";
+
+            for (const refundLine of refundLines) {
+                const lineIndex = order.lines.findIndex((l: any) => l.id === refundLine.lineId);
+                if (lineIndex === -1) {
+                    throw new Error(`Order line ${refundLine.lineId} not found`);
+                }
+
+                const orderLine = order.lines[lineIndex];
+                const originalQty = orderLine.price_log?.[0]?.price?.quantity || orderLine.quantity || 1;
+                const alreadyRefunded = orderLine.refund_quantity || 0;
+                const maxRefundable = originalQty - alreadyRefunded;
+
+                if (refundLine.quantity <= 0 || refundLine.quantity > maxRefundable) {
+                    throw new Error(`Invalid refund quantity for "${orderLine.descriptor}". Max refundable: ${maxRefundable}`);
+                }
+
+                const unitPrice = orderLine.price_log?.[0]?.price?.amount || 0;
+                const lineRefundAmount = unitPrice * refundLine.quantity;
+                totalRefundAmount += lineRefundAmount;
+
+                // Update line with refund info
+                const newRefundQty = alreadyRefunded + refundLine.quantity;
+                const isFullLineRefund = newRefundQty >= originalQty;
+
+                patchOps.push(
+                    { op: "set", path: `/lines/${lineIndex}/refund_quantity`, value: newRefundQty },
+                    { op: "set", path: `/lines/${lineIndex}/refund_status`, value: isFullLineRefund ? "FULL_REFUND" : "PARTIAL_REFUND" }
+                );
+            }
+
+            // Apply discount proportionally to refund if order had a discount
+            let refundDiscountAmount = 0;
+            if (order.posDiscount && order.posDiscount.amount > 0) {
+                const grossSubtotal = order.payments?.[0]?.charge?.subtotal || 0;
+                if (grossSubtotal > 0) {
+                    const discountRatio = order.posDiscount.amount / grossSubtotal;
+                    refundDiscountAmount = Math.round(totalRefundAmount * discountRatio);
+                }
+            }
+            const netRefundAmount = totalRefundAmount - refundDiscountAmount;
+
+            // Restore inventory for refunded items
+            for (const refundLine of refundLines) {
+                const orderLine = order.lines.find((l: any) => l.id === refundLine.lineId);
+                if (!orderLine?.variantId || !orderLine?.merchantId) continue;
+
+                const variantInventoryId = `invv:${orderLine.variantId}`;
+                let inventory: variant_inventory_type;
+                try {
+                    inventory = await context.dataSources.cosmos.get_record<variant_inventory_type>(
+                        "Main-Listing", variantInventoryId, orderLine.merchantId
+                    );
+                } catch { continue; }
+
+                if (!inventory || !inventory.track_inventory) continue;
+
+                const newQtyOnHand = inventory.qty_on_hand + refundLine.quantity;
+                await context.dataSources.cosmos.patch_record("Main-Listing", variantInventoryId, orderLine.merchantId, [
+                    { op: "set", path: "/qty_on_hand", value: newQtyOnHand },
+                    { op: "set", path: "/updated_at", value: DateTime.now().toISO() }
+                ], context.userId);
+
+                // Transaction record for refund
+                const transactionId = `invt:${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                await context.dataSources.cosmos.add_record("Main-Listing", {
+                    id: transactionId,
+                    docType: "transaction",
+                    vendorId: orderLine.merchantId,
+                    product_id: inventory.product_id,
+                    variant_id: orderLine.variantId,
+                    delta: refundLine.quantity,
+                    qty_before: inventory.qty_on_hand,
+                    qty_after: newQtyOnHand,
+                    reason: "POS_REFUND",
+                    source: "POS",
+                    reference_id: orderLine.id,
+                    notes: `POS refund: restored ${refundLine.quantity} unit(s)${reason ? ` - ${reason}` : ''}`,
+                    created_at: DateTime.now().toISO(),
+                    created_by: context.userId
+                }, orderLine.merchantId, context.userId);
+            }
+
+            // Check if all lines are fully refunded
+            const allLinesFullyRefunded = order.lines.every((line: any) => {
+                const refundLine = refundLines.find(r => r.lineId === line.id);
+                const originalQty = line.price_log?.[0]?.price?.quantity || line.quantity || 1;
+                const existingRefund = line.refund_quantity || 0;
+                const newRefund = refundLine ? refundLine.quantity : 0;
+                return (existingRefund + newRefund) >= originalQty;
+            });
+
+            // Add refund record to order
+            const refundRecord = {
+                id: uuidv4(),
+                date: DateTime.now().toISO(),
+                amount: netRefundAmount,
+                currency,
+                reason: reason || null,
+                refundedBy: context.userId,
+                lines: refundLines.map(rl => ({
+                    lineId: rl.lineId,
+                    quantity: rl.quantity,
+                }))
+            };
+
+            const existingRefunds = order.posRefunds || [];
+            patchOps.push(
+                { op: "set", path: "/posRefunds", value: [...existingRefunds, refundRecord] },
+                { op: "set", path: "/paid_status", value: allLinesFullyRefunded ? "FULL_REFUND" : "PARTIAL_REFUND" }
+            );
+
+            await context.dataSources.cosmos.patch_record("Main-Orders", order.id, order.id, patchOps, context.userId);
+
+            return {
+                code: "200",
+                success: true,
+                message: `Refund of ${netRefundAmount} recorded. Inventory restored.`,
                 order: await context.dataSources.cosmos.get_record("Main-Orders", order.id, order.id)
             };
         }
@@ -1858,8 +2109,11 @@ const resolvers = {
             }
         },
         paid_status: (parent: order_type, _args: any, _: serverContext, _info: any) => {
+            // Check if order is voided (POS void)
+            if ((parent as any).voidedAt) return "VOIDED";
+
             const lines_with_payment = parent.lines.filter(x => x.paid_status_log != undefined && x.paid_status_log.length > 0);
-            
+
             if (lines_with_payment.length == 0) return "AWAITING_PAYMENT"
             if (lines_with_payment.some(x => x.paid_status_log[0].label == "AWAITING_PAYMENT")) {
                 return "AWAITING_PAYMENT"
@@ -2535,6 +2789,141 @@ const deduct_pos_inventory = async (
             created_by: userId
         }, line.merchantId, userId);
     }
+};
+
+// Restore inventory when a POS sale is voided
+const restore_pos_inventory = async (
+    lines: orderLine_type[],
+    cosmos: serverContext["dataSources"]["cosmos"],
+    userId: string
+): Promise<void> => {
+    const containerName = "Main-Listing";
+    const now = new Date().toISOString();
+
+    for (const line of lines) {
+        if (!line.variantId || !line.merchantId) continue;
+
+        const variantInventoryId = `invv:${line.variantId}`;
+        let inventory: variant_inventory_type;
+        try {
+            inventory = await cosmos.get_record<variant_inventory_type>(
+                containerName, variantInventoryId, line.merchantId
+            );
+        } catch {
+            continue;
+        }
+
+        if (!inventory || !inventory.track_inventory) continue;
+
+        const quantity = line.price_log?.[0]?.price?.quantity || line.quantity || 1;
+        const newQtyOnHand = inventory.qty_on_hand + quantity;
+
+        await cosmos.patch_record(containerName, variantInventoryId, line.merchantId, [
+            { op: "set", path: "/qty_on_hand", value: newQtyOnHand },
+            { op: "set", path: "/updated_at", value: now }
+        ], userId);
+
+        const transactionId = `invt:${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        await cosmos.add_record(containerName, {
+            id: transactionId,
+            docType: "transaction",
+            vendorId: line.merchantId,
+            product_id: inventory.product_id,
+            variant_id: line.variantId,
+            delta: quantity,
+            qty_before: inventory.qty_on_hand,
+            qty_after: newQtyOnHand,
+            reason: "POS_VOID",
+            source: "POS",
+            reference_id: line.id,
+            notes: `POS sale voided: restored ${quantity} unit(s)`,
+            created_at: now,
+            created_by: userId
+        }, line.merchantId, userId);
+    }
+};
+
+// Build HTML email receipt for POS sales
+const buildPosReceiptHtml = (order: any, merchantName: string, currency: string, posTax?: { rate: number; label: string; amount: number } | null): string => {
+    const saleDate = new Date(order.createdDate);
+    const dateStr = saleDate.toLocaleDateString('en-AU', {
+        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+    });
+    const timeStr = saleDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const payment = order.payments?.[0];
+    const subtotal = payment?.charge?.subtotal ?? 0;
+    const totalPaid = payment?.charge?.paid ?? 0;
+    const paymentMethod = payment?.method_description ?? 'Unknown';
+
+    const formatAmount = (amount: number) => {
+        return new Intl.NumberFormat('en-AU', { style: 'currency', currency }).format(amount / 100);
+    };
+
+    const lineItemsHtml = order.lines.map((line: any) => {
+        const price = line.price_log[0].price;
+        const lineTotal = price.amount * price.quantity;
+        return `
+            <tr>
+                <td style="padding:8px 0;border-bottom:1px solid #eee;color:#333">${line.descriptor}</td>
+                <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:center;color:#666">${price.quantity}</td>
+                <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;color:#333">${formatAmount(lineTotal)}</td>
+            </tr>`;
+    }).join('');
+
+    const discountHtml = order.posDiscount ? `
+        <tr>
+            <td colspan="2" style="padding:6px 0;color:#666">Discount${order.posDiscount.reason ? ` (${order.posDiscount.reason})` : ''}</td>
+            <td style="padding:6px 0;text-align:right;color:#dc2626">-${formatAmount(order.posDiscount.amount)}</td>
+        </tr>` : '';
+
+    return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+<div style="max-width:500px;margin:20px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+    <div style="background:#7c3aed;padding:24px;text-align:center">
+        <h1 style="margin:0;color:#fff;font-size:20px">${merchantName}</h1>
+        <p style="margin:4px 0 0;color:rgba(255,255,255,0.8);font-size:13px">Receipt</p>
+    </div>
+    <div style="padding:24px">
+        <div style="text-align:center;margin-bottom:20px">
+            <p style="margin:0;color:#666;font-size:13px">${dateStr} at ${timeStr}</p>
+            <p style="margin:4px 0 0;color:#999;font-size:12px">Order #${order.code}</p>
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">
+            <thead>
+                <tr>
+                    <th style="padding:8px 0;border-bottom:2px solid #eee;text-align:left;font-size:12px;color:#999;text-transform:uppercase">Item</th>
+                    <th style="padding:8px 0;border-bottom:2px solid #eee;text-align:center;font-size:12px;color:#999;text-transform:uppercase">Qty</th>
+                    <th style="padding:8px 0;border-bottom:2px solid #eee;text-align:right;font-size:12px;color:#999;text-transform:uppercase">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${lineItemsHtml}
+                ${subtotal !== totalPaid ? `
+                <tr>
+                    <td colspan="2" style="padding:8px 0;font-weight:600;color:#333">Subtotal</td>
+                    <td style="padding:8px 0;text-align:right;color:#333">${formatAmount(subtotal)}</td>
+                </tr>
+                ${discountHtml}` : ''}
+            </tbody>
+        </table>
+        <div style="background:#f9fafb;border-radius:6px;padding:16px;margin:16px 0">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:16px;font-weight:700;color:#111">Total</span>
+                <span style="font-size:18px;font-weight:700;color:#7c3aed">${formatAmount(totalPaid)}</span>
+            </div>
+            <p style="margin:8px 0 0;font-size:12px;color:#666;text-align:center">Paid by ${paymentMethod}</p>
+            ${posTax && posTax.amount > 0 ? `<p style="margin:6px 0 0;font-size:11px;color:#999;text-align:center">Includes ${posTax.label} of ${formatAmount(posTax.amount)}</p>` : ''}
+        </div>
+        <div style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #eee">
+            <p style="margin:0;color:#999;font-size:12px">Thank you for your purchase!</p>
+            <p style="margin:4px 0 0;color:#ccc;font-size:11px">Powered by SpiriVerse</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>`;
 };
 
 // Commit inventory quantities when order is placed

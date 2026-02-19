@@ -28,10 +28,10 @@ const PosProductCard = ({ product, onAddToCart }: Props) => {
       data-testid={`pos-product-${product.id}`}
       onClick={() => !isOutOfStock && onAddToCart(product, variant)}
       disabled={isOutOfStock}
-      className={`group relative flex flex-col rounded-lg border transition-all text-left w-full
+      className={`group relative flex flex-col rounded-lg border transition-all text-left w-full touch-manipulation
         ${isOutOfStock
           ? 'border-slate-700/50 bg-slate-800/30 opacity-60 cursor-not-allowed'
-          : 'border-slate-700 bg-slate-800 hover:border-purple-500/50 hover:bg-slate-800/80 hover:shadow-lg hover:shadow-purple-500/5 cursor-pointer'
+          : 'border-slate-700 bg-slate-800 hover:border-purple-500/50 active:border-purple-500 active:scale-[0.97] cursor-pointer'
         }`}
     >
       {/* Image */}
@@ -40,7 +40,7 @@ const PosProductCard = ({ product, onAddToCart }: Props) => {
           <img
             src={image}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+            className="h-full w-full object-cover"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-slate-600">
@@ -57,25 +57,25 @@ const PosProductCard = ({ product, onAddToCart }: Props) => {
           </div>
         )}
         {isLowStock && (
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-1.5 left-1.5">
             <span className="flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
               <AlertTriangle className="h-3 w-3" /> {qtyAvailable} left
             </span>
           </div>
         )}
 
-        {/* Quick add overlay */}
+        {/* Always-visible add button */}
         {!isOutOfStock && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 group-hover:bg-black/30 group-hover:opacity-100 transition-all">
-            <div className="rounded-full bg-purple-600 p-2 shadow-lg transform scale-75 group-hover:scale-100 transition-transform">
-              <Plus className="h-5 w-5 text-white" />
+          <div className="absolute bottom-1.5 right-1.5">
+            <div className="rounded-full bg-purple-600 p-1.5 shadow-lg group-active:bg-purple-700 transition-colors">
+              <Plus className="h-4 w-4 text-white" />
             </div>
           </div>
         )}
       </div>
 
       {/* Info */}
-      <div className="flex flex-1 flex-col gap-1 p-3">
+      <div className="flex flex-1 flex-col gap-0.5 p-2.5">
         <h3 className="text-sm font-medium text-white leading-tight line-clamp-2">
           {product.name}
         </h3>

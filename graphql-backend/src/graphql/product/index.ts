@@ -816,6 +816,48 @@ const resolvers = {
                 chakraAnalysis,
                 collectionSize: collection.length,
             };
+        },
+        posProducts: async (_: any, args: { vendorId: string; search?: string }, { dataSources }: serverContext) => {
+            const containerName = "Main-Listing";
+
+            // Query 1: All live products for this vendor
+            let productWhere = `c.vendorId = @vendorId AND c.type = 'PRODUCT' AND c.isLive = true AND c.status = 'ACTIVE'`;
+            const params: { name: string; value: any }[] = [
+                { name: "@vendorId", value: args.vendorId }
+            ];
+            if (args.search) {
+                productWhere += ` AND CONTAINS(LOWER(c.name), @search)`;
+                params.push({ name: "@search", value: args.search.toLowerCase() });
+            }
+            const products = await dataSources.cosmos.run_query<product_type>(containerName, {
+                query: `SELECT * FROM c WHERE ${productWhere} ORDER BY c.name ASC`,
+                parameters: params
+            }, true);
+
+            // Query 2: All inventory records for this vendor (single batch)
+            const inventoryRecords = await dataSources.cosmos.run_query<variant_inventory_type>(containerName, {
+                query: `SELECT * FROM c WHERE c.vendorId = @vendorId AND c.docType = 'variant'`,
+                parameters: [{ name: "@vendorId", value: args.vendorId }]
+            }, true);
+
+            // Build lookup map: variantId → inventory
+            const inventoryMap = new Map<string, variant_inventory_type>();
+            for (const inv of inventoryRecords) {
+                inventoryMap.set(inv.variant_id, inv);
+            }
+
+            // Merge inventory into product variants
+            for (const product of products) {
+                if (product.variants) {
+                    for (const variant of product.variants) {
+                        (variant as any).inventory = inventoryMap.get(variant.id) || null;
+                        // Set vendorId on variant so field resolvers work if queried
+                        (variant as any).vendorId = args.vendorId;
+                    }
+                }
+            }
+
+            return products;
         }
     },
     Mutation: {

@@ -8,14 +8,19 @@ type CreatePosSaleInput = {
   lines: {
     id: string;
     merchantId: string;
-    forObject: { id: string; partition: string[] };
-    variantId: string;
+    forObject?: { id: string; partition: string[] };
+    variantId?: string;
     descriptor: string;
     quantity: number;
     price: { amount: number; currency: string };
   }[];
   paymentMethod: string;
   notes?: string;
+  discount?: {
+    type: string;
+    value: number;
+    reason?: string;
+  };
 };
 
 type PosOrderLine = {
@@ -42,6 +47,17 @@ export type PosOrderResponse = {
       date: string;
       charge: { subtotal: number; tax: number; paid: number };
     }[];
+    posDiscount?: {
+      type: string;
+      value: number;
+      reason?: string;
+      amount: number;
+    };
+    posTax?: {
+      rate: number;
+      label: string;
+      amount: number;
+    };
     createdDate: string;
   };
 };
@@ -77,6 +93,17 @@ export const UseCreatePosSale = (merchantId: string) => {
                 date
                 charge { subtotal tax paid }
               }
+              posDiscount {
+                type
+                value
+                reason
+                amount
+              }
+              posTax {
+                rate
+                label
+                amount
+              }
               createdDate
             }
           }
@@ -91,6 +118,7 @@ export const UseCreatePosSale = (merchantId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pos-products', merchantId] });
+      queryClient.invalidateQueries({ queryKey: ['pos-recent-sales', merchantId] });
       queryClient.invalidateQueries({ queryKey: ['inventory-overview', merchantId] });
       queryClient.invalidateQueries({ queryKey: ['inventory-items', merchantId] });
     },

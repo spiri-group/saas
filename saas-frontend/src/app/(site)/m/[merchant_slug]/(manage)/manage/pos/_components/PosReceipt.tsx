@@ -4,27 +4,62 @@ import { useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer, Plus, CheckCircle, Banknote, CreditCard } from "lucide-react";
-import { PosOrderResponse } from "../_hooks/UseCreatePosSale";
 import { formatCurrency } from "@/components/ux/CurrencySpan";
+
+export type ReceiptOrder = {
+  id: string;
+  code: string;
+  customerEmail?: string;
+  lines: {
+    id: string;
+    descriptor: string;
+    quantity: number;
+    price: { amount: number; currency: string };
+  }[];
+  payments: {
+    code: string;
+    method_description: string;
+    date: string;
+    charge: { subtotal: number; tax: number; paid: number };
+  }[];
+  posDiscount?: {
+    type: string;
+    value: number;
+    reason?: string;
+    amount: number;
+  };
+  posTax?: {
+    rate: number;
+    label: string;
+    amount: number;
+  };
+  createdDate: string;
+};
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onNewSale: () => void;
-  order: PosOrderResponse['order'] | null;
+  order: ReceiptOrder | null;
   merchantName: string;
+  merchantAddress?: string | null;
 };
 
-const PosReceipt = ({ open, onClose, onNewSale, order, merchantName }: Props) => {
+const PosReceipt = ({ open, onClose, onNewSale, order, merchantName, merchantAddress }: Props) => {
   const receiptRef = useRef<HTMLDivElement>(null);
 
   if (!order) return null;
 
   const payment = order.payments?.[0];
+  const subtotal = payment?.charge?.subtotal ?? 0;
   const total = payment?.charge?.paid ?? 0;
   const currency = order.lines?.[0]?.price?.currency ?? 'USD';
   const paymentMethodLabel = payment?.method_description ?? 'Unknown';
   const isCash = payment?.code === 'POS' && paymentMethodLabel === 'Cash';
+  const tax = payment?.charge?.tax ?? 0;
+  const hasDiscount = order.posDiscount && order.posDiscount.amount > 0;
+  const hasTax = order.posTax && order.posTax.amount > 0;
+  const taxLabel = order.posTax?.label || 'Tax';
   const saleDate = new Date(order.createdDate);
 
   const handlePrint = () => {
@@ -51,6 +86,7 @@ const PosReceipt = ({ open, onClose, onNewSale, order, merchantName }: Props) =>
             }
             .receipt-header { text-align: center; margin-bottom: 12px; }
             .receipt-header h1 { font-size: 16px; margin-bottom: 2px; }
+            .receipt-header .address { font-size: 10px; color: #666; margin-bottom: 4px; }
             .receipt-header .date { font-size: 11px; color: #666; }
             .receipt-divider { border-top: 1px dashed #999; margin: 8px 0; }
             .receipt-line { display: flex; justify-content: space-between; padding: 2px 0; }
@@ -89,6 +125,9 @@ const PosReceipt = ({ open, onClose, onNewSale, order, merchantName }: Props) =>
           <div ref={receiptRef} style={{ display: 'none' }}>
             <div className="receipt-header">
               <h1>{merchantName}</h1>
+              {merchantAddress && (
+                <div className="address">{merchantAddress}</div>
+              )}
               <div className="date">
                 {saleDate.toLocaleDateString()} {saleDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
@@ -110,10 +149,27 @@ const PosReceipt = ({ open, onClose, onNewSale, order, merchantName }: Props) =>
               </div>
             ))}
             <div className="receipt-divider" />
+            {hasDiscount && (
+              <>
+                <div className="receipt-line" style={{ fontSize: '11px' }}>
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(subtotal, currency)}</span>
+                </div>
+                <div className="receipt-line" style={{ fontSize: '11px' }}>
+                  <span>Discount{order.posDiscount!.reason ? ` (${order.posDiscount!.reason})` : ''}</span>
+                  <span>-{formatCurrency(order.posDiscount!.amount, currency)}</span>
+                </div>
+              </>
+            )}
             <div className="receipt-line receipt-total">
               <span>TOTAL</span>
               <span>{formatCurrency(total, currency)}</span>
             </div>
+            {hasTax && (
+              <div style={{ textAlign: 'center', fontSize: '10px', color: '#666', marginTop: '4px' }}>
+                Includes {taxLabel} of {formatCurrency(order.posTax!.amount, currency)}
+              </div>
+            )}
             <div className="receipt-payment">
               Paid by: {paymentMethodLabel}
             </div>
@@ -131,7 +187,10 @@ const PosReceipt = ({ open, onClose, onNewSale, order, merchantName }: Props) =>
           {/* Visual receipt */}
           <div className="text-center mb-3">
             <h3 className="font-bold text-lg">{merchantName}</h3>
-            <p className="text-gray-500 text-xs">
+            {merchantAddress && (
+              <p className="text-gray-400 text-[11px] mt-0.5">{merchantAddress}</p>
+            )}
+            <p className="text-gray-500 text-xs mt-1">
               {saleDate.toLocaleDateString('en-AU', {
                 weekday: 'short',
                 year: 'numeric',
@@ -166,6 +225,20 @@ const PosReceipt = ({ open, onClose, onNewSale, order, merchantName }: Props) =>
 
           <div className="border-t border-dashed border-gray-300 my-3" />
 
+          {/* Subtotal + Discount */}
+          {hasDiscount && (
+            <div className="space-y-1 mb-2 px-1">
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Subtotal</span>
+                <span className="tabular-nums">{formatCurrency(subtotal, currency)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-green-600">
+                <span>Discount{order.posDiscount!.reason ? ` (${order.posDiscount!.reason})` : ''}</span>
+                <span className="tabular-nums">-{formatCurrency(order.posDiscount!.amount, currency)}</span>
+              </div>
+            </div>
+          )}
+
           {/* Total */}
           <div className="flex justify-between px-1">
             <span className="text-base font-bold">Total</span>
@@ -173,6 +246,13 @@ const PosReceipt = ({ open, onClose, onNewSale, order, merchantName }: Props) =>
               {formatCurrency(total, currency)}
             </span>
           </div>
+
+          {/* Tax info */}
+          {hasTax && (
+            <p className="text-center text-xs text-gray-500 mt-1.5" data-testid="pos-receipt-tax">
+              Includes {taxLabel} of {formatCurrency(order.posTax!.amount, currency)}
+            </p>
+          )}
 
           {/* Payment info */}
           <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-gray-500">

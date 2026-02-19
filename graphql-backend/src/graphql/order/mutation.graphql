@@ -11,6 +11,19 @@ type Mutation {
   generate_sales_tax(orderRef: RecordRefInput): GenerateTaxResponse
   create_order_checkout_link(merchantId: ID!, input: CreateOrderCheckoutLinkInput!): CreateOrderCheckoutLinkResponse!
   create_pos_sale(merchantId: ID!, input: CreatePosSaleInput!): CreateOrderResponse!
+  void_pos_sale(orderId: ID!): CreateOrderResponse!
+  refund_pos_sale(input: RefundPosSaleInput!): CreateOrderResponse!
+}
+
+input RefundPosSaleInput {
+  orderId: ID!
+  lines: [PosRefundLineInput!]!
+  reason: String
+}
+
+input PosRefundLineInput {
+  lineId: ID!
+  quantity: Float!
 }
 
 input CreatePosSaleInput {
@@ -18,6 +31,13 @@ input CreatePosSaleInput {
   lines: [OrderLineInput!]!
   paymentMethod: String!
   notes: String
+  discount: PosDiscountInput
+}
+
+input PosDiscountInput {
+  type: String!
+  value: Float!
+  reason: String
 }
 
 type CreateOrderResponse implements MutationResponseInterface {
