@@ -134,7 +134,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
             variants={fadeInUp}
             className="text-3xl md:text-5xl lg:text-6xl text-white font-light tracking-wide drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]"
           >
-            Your Bridge to Spiritual Living
+            Your Bridge to Personal Growth
           </motion.h1>
 
           <motion.p

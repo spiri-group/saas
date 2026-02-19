@@ -137,7 +137,7 @@ export default function ComingSoonPage() {
           transition={{ delay: 0.3, duration: 0.6 }}
           className="text-2xl md:text-4xl font-bold text-white mb-8"
         >
-          Your Bridge to Spiritual Living
+          Your Bridge to Personal Growth
         </motion.h1>
 
         {/* Social Media Links */}
