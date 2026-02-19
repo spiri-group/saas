@@ -320,7 +320,8 @@ jobs:
               <p style="color:#94a3b8;font-size:12px;margin:0">${footerNote} Preview uses the <strong>dev</strong> backend.</p>
             </div>`;
 
-            const payload = {
+            // --- Email payload ---
+            const emailPayload = {
               senderAddress: 'noreply@spiriverse.com',
               recipients: {
                 to: [
@@ -330,8 +331,58 @@ jobs:
               },
               content: { subject, html },
             };
+            fs.writeFileSync('/tmp/email-payload.json', JSON.stringify(emailPayload));
 
-            fs.writeFileSync('/tmp/email-payload.json', JSON.stringify(payload));
+            // --- Teams webhook payload ---
+            let teamsBody;
+            if (isPr) {
+              const prNum = context.issue.number;
+              const prTitle = context.payload.pull_request.title;
+              const prUrl = context.payload.pull_request.html_url;
+              const isUpdate = context.payload.action === 'synchronize';
+              teamsBody = `**${isUpdate ? '🔄 Preview Updated' : '🚀 Preview Deployed'}** — [PR #${prNum}: ${prTitle}](${prUrl})\n\n` +
+                `**By:** ${actor}\n` +
+                `**Preview:** [${previewUrl}](${previewUrl})\n` +
+                `**Commit:** \`${context.sha.substring(0, 7)}\`\n\n` +
+                `_Preview uses the **dev** backend. Cleaned up when the PR is closed._`;
+            } else {
+              const branch = '${{ inputs.branch }}';
+              const ttl = '${{ steps.config.outputs.ttl_days }}';
+              teamsBody = `**🚀 Manual Preview Deployed**\n\n` +
+                `**Branch:** \`${branch}\`\n` +
+                `**By:** ${actor}\n` +
+                `**Preview:** [${previewUrl}](${previewUrl})\n` +
+                `**TTL:** ${ttl} day(s)\n\n` +
+                `_Preview uses the **dev** backend. Auto-expires after ${ttl} day(s)._`;
+            }
+
+            const teamsPayload = {
+              type: 'message',
+              attachments: [{
+                contentType: 'application/vnd.microsoft.card.adaptive',
+                contentUrl: null,
+                content: {
+                  '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+                  type: 'AdaptiveCard',
+                  version: '1.4',
+                  body: [
+                    {
+                      type: 'TextBlock',
+                      text: teamsBody,
+                      wrap: true,
+                    }
+                  ],
+                  actions: [
+                    {
+                      type: 'Action.OpenUrl',
+                      title: 'Open Preview',
+                      url: previewUrl,
+                    }
+                  ]
+                }
+              }]
+            };
+            fs.writeFileSync('/tmp/teams-payload.json', JSON.stringify(teamsPayload));
 
       - name: Send notification email
         continue-on-error: true
@@ -342,3 +393,11 @@ jobs:
             --resource "https://communication.azure.com" \
             --headers "Content-Type=application/json" \
             --body @/tmp/email-payload.json
+
+      - name: Send Teams notification
+        continue-on-error: true
+        run: |
+          curl -sS -X POST \
+            -H "Content-Type: application/json" \
+            -d @/tmp/teams-payload.json \
+            "${{ secrets.TEAMS_PREVIEW_WEBHOOK_URL }}"
