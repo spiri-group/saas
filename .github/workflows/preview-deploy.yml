@@ -154,11 +154,15 @@ jobs:
           # Check if the preview app already exists
           EXISTS=$(az containerapp show --name "$APP_NAME" --resource-group "${{ env.RESOURCE_GROUP }}" --query "name" -o tsv 2>/dev/null || echo "")
 
-          # Get managed identity resource ID for ACR pull
+          # Get managed identity resource ID and client ID
           IDENTITY_ID=$(az identity show \
             --name "id-spiriverse-container-dev-002" \
             --resource-group "${{ env.RESOURCE_GROUP }}" \
             --query id -o tsv)
+          IDENTITY_CLIENT_ID=$(az identity show \
+            --name "id-spiriverse-container-dev-002" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --query clientId -o tsv)
 
           if [ -z "$EXISTS" ]; then
             echo "Creating preview Container App: ${APP_NAME}"
@@ -177,6 +181,8 @@ jobs:
               --registry-server "${{ env.ACR_NAME }}.azurecr.io" \
               --registry-identity "$IDENTITY_ID" \
               --env-vars \
+                AZURE_CLIENT_ID="$IDENTITY_CLIENT_ID" \
+                EnvInformation="appNameShort=spv&name=dev&index=002" \
                 AUTH_SECRET="${{ steps.secrets.outputs.NEXTAUTH_SECRET }}" \
                 AUTH_URL="https://${APP_NAME}.${{ steps.cae.outputs.default_domain }}" \
                 AUTH_AZURE_ACCESS_KEY="${{ steps.secrets.outputs.AUTH_AZURE_ACCESS_KEY }}" \
@@ -192,6 +198,8 @@ jobs:
               --resource-group "${{ env.RESOURCE_GROUP }}" \
               --image "$IMAGE_TAG" \
               --set-env-vars \
+                AZURE_CLIENT_ID="$IDENTITY_CLIENT_ID" \
+                EnvInformation="appNameShort=spv&name=dev&index=002" \
                 AUTH_SECRET="${{ steps.secrets.outputs.NEXTAUTH_SECRET }}" \
                 AUTH_URL="https://${APP_NAME}.${{ steps.cae.outputs.default_domain }}" \
                 AUTH_AZURE_ACCESS_KEY="${{ steps.secrets.outputs.AUTH_AZURE_ACCESS_KEY }}" \
