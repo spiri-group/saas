@@ -176,6 +176,14 @@ jobs:
               --user-assigned "$IDENTITY_ID" \
               --registry-server "${{ env.ACR_NAME }}.azurecr.io" \
               --registry-identity "$IDENTITY_ID" \
+              --env-vars \
+                AUTH_SECRET="${{ steps.secrets.outputs.NEXTAUTH_SECRET }}" \
+                AUTH_URL="https://${APP_NAME}.${{ steps.cae.outputs.default_domain }}" \
+                AUTH_AZURE_ACCESS_KEY="${{ steps.secrets.outputs.AUTH_AZURE_ACCESS_KEY }}" \
+                CONSOLE_AZURE_AD_TENANT_ID="${{ steps.secrets.outputs.CONSOLE_AD_TENANT_ID }}" \
+                CONSOLE_AZURE_AD_CLIENT_ID="${{ steps.secrets.outputs.CONSOLE_AD_CLIENT_ID }}" \
+                CONSOLE_AZURE_AD_CLIENT_SECRET="${{ steps.secrets.outputs.CONSOLE_AD_CLIENT_SECRET }}" \
+                CONSOLE_NEXTAUTH_SECRET="${{ steps.secrets.outputs.CONSOLE_NEXTAUTH_SECRET }}" \
               --tags preview=true ttl-days="$TTL_DAYS"
           else
             echo "Updating preview Container App: ${APP_NAME}"
@@ -183,6 +191,14 @@ jobs:
               --name "$APP_NAME" \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
               --image "$IMAGE_TAG" \
+              --set-env-vars \
+                AUTH_SECRET="${{ steps.secrets.outputs.NEXTAUTH_SECRET }}" \
+                AUTH_URL="https://${APP_NAME}.${{ steps.cae.outputs.default_domain }}" \
+                AUTH_AZURE_ACCESS_KEY="${{ steps.secrets.outputs.AUTH_AZURE_ACCESS_KEY }}" \
+                CONSOLE_AZURE_AD_TENANT_ID="${{ steps.secrets.outputs.CONSOLE_AD_TENANT_ID }}" \
+                CONSOLE_AZURE_AD_CLIENT_ID="${{ steps.secrets.outputs.CONSOLE_AD_CLIENT_ID }}" \
+                CONSOLE_AZURE_AD_CLIENT_SECRET="${{ steps.secrets.outputs.CONSOLE_AD_CLIENT_SECRET }}" \
+                CONSOLE_NEXTAUTH_SECRET="${{ steps.secrets.outputs.CONSOLE_NEXTAUTH_SECRET }}" \
               --tags preview=true ttl-days="$TTL_DAYS"
           fi
 
