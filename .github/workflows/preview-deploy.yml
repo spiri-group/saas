@@ -1,10 +1,23 @@
-name: Deploy PR Preview
+name: Deploy Preview
 
 on:
   pull_request:
     types: [ opened, synchronize, reopened ]
     paths:
       - 'saas-frontend/**'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy'
+        required: true
+        default: 'develop'
+        type: string
+      ttl_days:
+        description: 'Auto-delete after N days'
+        required: true
+        default: '3'
+        type: choice
+        options: ['1', '3', '7']
 
 permissions:
   contents: read
@@ -25,8 +38,28 @@ jobs:
     environment: DEV
 
     steps:
+      - name: Setup preview config
+        id: config
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            PR_NUM=${{ github.event.pull_request.number }}
+            echo "app_name=ca-spiriverse-pr-${PR_NUM}" >> "$GITHUB_OUTPUT"
+            echo "image_tag=pr-${PR_NUM}" >> "$GITHUB_OUTPUT"
+            echo "is_pr=true" >> "$GITHUB_OUTPUT"
+            echo "ttl_days=14" >> "$GITHUB_OUTPUT"
+          else
+            BRANCH="${{ inputs.branch }}"
+            SANITIZED=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-15)
+            echo "app_name=ca-spiriverse-br-${SANITIZED}" >> "$GITHUB_OUTPUT"
+            echo "image_tag=br-${SANITIZED}" >> "$GITHUB_OUTPUT"
+            echo "is_pr=false" >> "$GITHUB_OUTPUT"
+            echo "ttl_days=${{ inputs.ttl_days }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || '' }}
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -46,11 +79,32 @@ jobs:
           STRIPE_PK=$(az keyvault secret show --vault-name "$KV_NAME" --name "stripe-pk" --query value -o tsv)
           GOOGLE_KEY=$(az keyvault secret show --vault-name "$KV_NAME" --name "google-key" --query value -o tsv)
 
+          # Auth secrets needed at build time for NextAuth page data collection
+          NEXTAUTH_SECRET=$(az keyvault secret show --vault-name "$KV_NAME" --name "authjs-secret" --query value -o tsv)
+          AUTH_AZURE_ACCESS_KEY=$(az keyvault secret show --vault-name "$KV_NAME" --name "storage-key" --query value -o tsv)
+          CONSOLE_AD_TENANT_ID=$(az keyvault secret show --vault-name "$KV_NAME" --name "console-azure-ad-tenant-id" --query value -o tsv)
+          CONSOLE_AD_CLIENT_ID=$(az keyvault secret show --vault-name "$KV_NAME" --name "console-azure-ad-client-id" --query value -o tsv)
+          CONSOLE_AD_CLIENT_SECRET=$(az keyvault secret show --vault-name "$KV_NAME" --name "console-azure-ad-client-secret" --query value -o tsv)
+          CONSOLE_NEXTAUTH_SECRET=$(az keyvault secret show --vault-name "$KV_NAME" --name "console-nextauth-secret" --query value -o tsv)
+
           echo "SERVER_ENDPOINT=https://${FUNC_NAME}.azurewebsites.net/api" >> "$GITHUB_OUTPUT"
           echo "SERVER_ENDPOINT_CODE=${FUNC_KEY}" >> "$GITHUB_OUTPUT"
           echo "STRIPE_PK=${STRIPE_PK}" >> "$GITHUB_OUTPUT"
           echo "GOOGLE_KEY=${GOOGLE_KEY}" >> "$GITHUB_OUTPUT"
           echo "STORAGE_ACCOUNT=stspvappdev002" >> "$GITHUB_OUTPUT"
+
+          echo "::add-mask::${NEXTAUTH_SECRET}"
+          echo "::add-mask::${AUTH_AZURE_ACCESS_KEY}"
+          echo "::add-mask::${CONSOLE_AD_TENANT_ID}"
+          echo "::add-mask::${CONSOLE_AD_CLIENT_ID}"
+          echo "::add-mask::${CONSOLE_AD_CLIENT_SECRET}"
+          echo "::add-mask::${CONSOLE_NEXTAUTH_SECRET}"
+          echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}" >> "$GITHUB_OUTPUT"
+          echo "AUTH_AZURE_ACCESS_KEY=${AUTH_AZURE_ACCESS_KEY}" >> "$GITHUB_OUTPUT"
+          echo "CONSOLE_AD_TENANT_ID=${CONSOLE_AD_TENANT_ID}" >> "$GITHUB_OUTPUT"
+          echo "CONSOLE_AD_CLIENT_ID=${CONSOLE_AD_CLIENT_ID}" >> "$GITHUB_OUTPUT"
+          echo "CONSOLE_AD_CLIENT_SECRET=${CONSOLE_AD_CLIENT_SECRET}" >> "$GITHUB_OUTPUT"
+          echo "CONSOLE_NEXTAUTH_SECRET=${CONSOLE_NEXTAUTH_SECRET}" >> "$GITHUB_OUTPUT"
 
       - name: Login to ACR
         run: az acr login --name ${{ env.ACR_NAME }}
@@ -67,9 +121,9 @@ jobs:
       - name: Build and push preview image
         working-directory: saas-frontend
         run: |
-          PR_NUM=${{ github.event.pull_request.number }}
-          IMAGE_TAG="${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:pr-${PR_NUM}"
-          PREVIEW_FQDN="ca-spiriverse-pr-${PR_NUM}.${{ steps.cae.outputs.default_domain }}"
+          APP_NAME="${{ steps.config.outputs.app_name }}"
+          IMAGE_TAG="${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.config.outputs.image_tag }}"
+          PREVIEW_FQDN="${APP_NAME}.${{ steps.cae.outputs.default_domain }}"
 
           docker build \
             --build-arg NEXT_PUBLIC_server_endpoint="${{ steps.secrets.outputs.SERVER_ENDPOINT }}" \
@@ -79,6 +133,12 @@ jobs:
             --build-arg NEXT_PUBLIC_STORAGE_ACCOUNT="${{ steps.secrets.outputs.STORAGE_ACCOUNT }}" \
             --build-arg NEXT_PUBLIC_graphql_proxy="https://${PREVIEW_FQDN}/api/graphql" \
             --build-arg NEXT_PUBLIC_site_address="https://${PREVIEW_FQDN}" \
+            --build-arg NEXTAUTH_SECRET="${{ steps.secrets.outputs.NEXTAUTH_SECRET }}" \
+            --build-arg AUTH_AZURE_ACCESS_KEY="${{ steps.secrets.outputs.AUTH_AZURE_ACCESS_KEY }}" \
+            --build-arg CONSOLE_AZURE_AD_TENANT_ID="${{ steps.secrets.outputs.CONSOLE_AD_TENANT_ID }}" \
+            --build-arg CONSOLE_AZURE_AD_CLIENT_ID="${{ steps.secrets.outputs.CONSOLE_AD_CLIENT_ID }}" \
+            --build-arg CONSOLE_AZURE_AD_CLIENT_SECRET="${{ steps.secrets.outputs.CONSOLE_AD_CLIENT_SECRET }}" \
+            --build-arg CONSOLE_NEXTAUTH_SECRET="${{ steps.secrets.outputs.CONSOLE_NEXTAUTH_SECRET }}" \
             -t "$IMAGE_TAG" \
             .
 
@@ -87,9 +147,9 @@ jobs:
       - name: Create or update preview Container App
         id: preview
         run: |
-          PR_NUM=${{ github.event.pull_request.number }}
-          APP_NAME="ca-spiriverse-pr-${PR_NUM}"
-          IMAGE_TAG="${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:pr-${PR_NUM}"
+          APP_NAME="${{ steps.config.outputs.app_name }}"
+          IMAGE_TAG="${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.config.outputs.image_tag }}"
+          TTL_DAYS="${{ steps.config.outputs.ttl_days }}"
 
           # Check if the preview app already exists
           EXISTS=$(az containerapp show --name "$APP_NAME" --resource-group "${{ env.RESOURCE_GROUP }}" --query "name" -o tsv 2>/dev/null || echo "")
@@ -115,19 +175,22 @@ jobs:
               --memory 0.5Gi \
               --user-assigned "$IDENTITY_ID" \
               --registry-server "${{ env.ACR_NAME }}.azurecr.io" \
-              --registry-identity "$IDENTITY_ID"
+              --registry-identity "$IDENTITY_ID" \
+              --tags preview=true ttl-days="$TTL_DAYS"
           else
             echo "Updating preview Container App: ${APP_NAME}"
             az containerapp update \
               --name "$APP_NAME" \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --image "$IMAGE_TAG"
+              --image "$IMAGE_TAG" \
+              --tags preview=true ttl-days="$TTL_DAYS"
           fi
 
           FQDN=$(az containerapp show --name "$APP_NAME" --resource-group "${{ env.RESOURCE_GROUP }}" --query "properties.configuration.ingress.fqdn" -o tsv)
           echo "preview_url=https://${FQDN}" >> "$GITHUB_OUTPUT"
 
       - name: Comment on PR
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
@@ -168,3 +231,90 @@ jobs:
                 body,
               });
             }
+
+      - name: Build notification email
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+            const previewUrl = '${{ steps.preview.outputs.preview_url }}';
+            const isPr = '${{ steps.config.outputs.is_pr }}' === 'true';
+            const actor = context.actor;
+
+            let heading, subject, detailsHtml, footerNote;
+
+            if (isPr) {
+              const prNum = context.issue.number;
+              const prTitle = esc(context.payload.pull_request.title);
+              const prUrl = context.payload.pull_request.html_url;
+              const isUpdate = context.payload.action === 'synchronize';
+
+              const { data: commits } = await github.rest.pulls.listCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNum,
+              });
+
+              const commitHtml = commits
+                .slice(-15)
+                .map(c => {
+                  const hash = c.sha.substring(0, 7);
+                  const msg = esc(c.commit.message.split('\n')[0]);
+                  return `<li style="margin:4px 0"><code style="background:#f1f5f9;padding:2px 6px;border-radius:3px;font-size:12px">${hash}</code> ${msg}</li>`;
+                })
+                .join('');
+
+              heading = isUpdate ? 'Preview Updated' : 'Preview Deployment Ready';
+              subject = `${isUpdate ? 'Updated' : 'New Preview'}: PR #${prNum} \u2014 ${context.payload.pull_request.title}`;
+              detailsHtml = `
+                <p style="color:#334155">PR <a href="${prUrl}" style="color:#7c3aed;font-weight:600">#${prNum} &mdash; ${prTitle}</a> by <strong>${esc(actor)}</strong></p>
+                <h3 style="color:#334155;border-bottom:1px solid #e2e8f0;padding-bottom:8px;margin-top:32px">Changes to test</h3>
+                <ul style="color:#475569;line-height:1.8;padding-left:20px">${commitHtml}</ul>`;
+              footerNote = 'This preview will be cleaned up when the PR is closed.';
+            } else {
+              const branch = '${{ inputs.branch }}';
+              const ttl = '${{ steps.config.outputs.ttl_days }}';
+              heading = 'Manual Preview Deployed';
+              subject = `Preview: ${branch} branch`;
+              detailsHtml = `
+                <p style="color:#334155">Branch <code style="background:#f1f5f9;padding:2px 8px;border-radius:4px">${esc(branch)}</code> deployed by <strong>${esc(actor)}</strong></p>
+                <p style="color:#64748b;font-size:13px;margin-top:8px">This environment will auto-expire after ${ttl} day(s).</p>`;
+              footerNote = `This preview will be automatically cleaned up after ${ttl} day(s).`;
+            }
+
+            const html = `<div style="font-family:-apple-system,Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px">
+              <div style="border-bottom:3px solid #7c3aed;padding-bottom:16px;margin-bottom:24px">
+                <h2 style="color:#7c3aed;margin:0">${heading}</h2>
+              </div>
+              ${detailsHtml}
+              <div style="text-align:center;margin:24px 0">
+                <a href="${previewUrl}" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Open Preview Site</a>
+              </div>
+              <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
+              <p style="color:#94a3b8;font-size:12px;margin:0">${footerNote} Preview uses the <strong>dev</strong> backend.</p>
+            </div>`;
+
+            const payload = {
+              senderAddress: 'noreply@spiriverse.com',
+              recipients: {
+                to: [
+                  { address: 'violen.lestat@spirigroup.com', displayName: 'Violen Lestat' },
+                  { address: 'travis.sansome@spirigroup.com', displayName: 'Travis Sansome' },
+                ],
+              },
+              content: { subject, html },
+            };
+
+            fs.writeFileSync('/tmp/email-payload.json', JSON.stringify(payload));
+
+      - name: Send notification email
+        continue-on-error: true
+        run: |
+          ACS_ENDPOINT="https://acs-spiriverse-server-dev-002.australia.communication.azure.com"
+          az rest --method POST \
+            --url "${ACS_ENDPOINT}/emails:send?api-version=2023-03-31" \
+            --resource "https://communication.azure.com" \
+            --headers "Content-Type=application/json" \
+            --body @/tmp/email-payload.json
