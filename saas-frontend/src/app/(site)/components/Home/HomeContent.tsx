@@ -182,7 +182,7 @@ export default function HomeContent({ session: initialSession }: HomeContentProp
         {/* Tagline */}
         <div className="text-center space-y-2 md:space-y-4">
           <h1 className="text-2xl md:text-4xl text-white font-light tracking-wide drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
-            Your Bridge to Spiritual &amp; Faith-Based Living
+            Your Bridge to Personal Growth
           </h1>
           <p className="text-base md:text-xl text-slate-200 font-light italic max-w-2xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
             A sacred digital space connecting faith, wellness, and spiritual community.

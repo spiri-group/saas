@@ -20,7 +20,7 @@ export default function ShareDialog() {
       try {
         await navigator.share({
           title: "SpiriVerse - Coming February 2026",
-          text: "Check out SpiriVerse - Your Bridge to Spiritual Living!",
+          text: "Check out SpiriVerse - Your Bridge to Personal Growth!",
           url: pageUrl,
         });
       } catch (err) {
@@ -53,7 +53,7 @@ export default function ShareDialog() {
               ? handleMobileShare
               : () => {
                   window.location.href = `sms:?body=${encodeURIComponent(
-                    `Check out SpiriVerse - Your Bridge to Spiritual Living! ${pageUrl}`
+                    `Check out SpiriVerse - Your Bridge to Personal Growth! ${pageUrl}`
                   )}`;
                 }
           }
