@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
   FileText,
   Plus,
@@ -103,6 +103,42 @@ export default function LegalDocumentsManager() {
   const { data: versions, isLoading: versionsLoading } =
     UseLegalDocumentVersions(selectedDocument?.id);
 
+  // Track seen document versions in localStorage
+  const SEEN_KEY = "legal-docs-seen-versions";
+  const [seenVersions, setSeenVersions] = useState<Record<string, number>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(SEEN_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  });
+  const seenInitialized = useRef(false);
+
+  // On first load with documents, seed localStorage if empty (so nothing highlights on first visit)
+  if (documents && !seenInitialized.current) {
+    seenInitialized.current = true;
+    if (Object.keys(seenVersions).length === 0) {
+      const initial: Record<string, number> = {};
+      for (const doc of documents) {
+        initial[doc.id] = doc.version;
+      }
+      localStorage.setItem(SEEN_KEY, JSON.stringify(initial));
+      setSeenVersions(initial);
+    }
+  }
+
+  const markDocSeen = (docId: string, version: number) => {
+    setSeenVersions((prev) => {
+      const next = { ...prev, [docId]: version };
+      localStorage.setItem(SEEN_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const isDocUpdated = (docId: string, version: number) => {
+    return seenVersions[docId] !== undefined && version > seenVersions[docId];
+  };
+
   // Filter to base documents only (no supplements) + search
   const filteredDocuments = useMemo(() => {
     if (!documents) return documents;
@@ -169,6 +205,7 @@ export default function LegalDocumentsManager() {
   );
 
   const handleEditDocument = (doc: LegalDocument, forceTab?: EditorTab) => {
+    markDocSeen(doc.id, doc.version);
     setSelectedDocument(doc);
     setEditTitle(doc.title);
     setEditContent(doc.content);
@@ -397,104 +434,99 @@ export default function LegalDocumentsManager() {
             </div>
           )}
 
-          <div className="grid gap-3">
+          <div className="flex flex-wrap gap-4">
             {filteredDocuments?.map((doc) => {
               const docTypeInfo = DOCUMENT_TYPE_INFO[doc.documentType];
               const supplementCount = documents?.filter(
                 (d) => d.parentDocumentId === doc.id
               ).length || 0;
+              const hasUpdate = isDocUpdated(doc.id, doc.version);
               return (
                 <Card
                   key={doc.id}
-                  className="console-surface border-console hover:border-console-primary/30 transition-colors cursor-pointer"
+                  className={`group console-surface border-console hover:border-console-primary/30 transition-colors cursor-pointer w-[280px] flex-shrink-0 ${hasUpdate ? "ring-1 ring-blue-500/40" : ""}`}
                   data-testid={`document-card-${doc.id}`}
+                  onClick={() => handleEditDocument(doc)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div
-                        className="flex-1 min-w-0 cursor-pointer"
-                        onClick={() => handleEditDocument(doc)}
-                      >
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="text-sm font-medium text-console truncate">
-                            {doc.title}
-                          </h3>
+                  <CardContent className="p-5 flex flex-col h-full">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={doc.isPublished ? "default" : "secondary"}
+                          className={`text-xs ${
+                            doc.isPublished
+                              ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                              : "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                          }`}
+                        >
+                          {doc.isPublished ? "Published" : "Draft"}
+                        </Badge>
+                        {hasUpdate && (
                           <Badge
-                            variant={doc.isPublished ? "default" : "secondary"}
-                            className={`text-[10px] ${
-                              doc.isPublished
-                                ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                                : "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                            }`}
+                            variant="outline"
+                            className="text-xs bg-blue-500/15 text-blue-400 border-blue-500/30"
+                            data-testid={`updated-badge-${doc.id}`}
                           >
-                            {doc.isPublished ? "Published" : "Draft"}
+                            Updated
                           </Badge>
-                          {supplementCount > 0 && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/30"
-                              data-testid={`supplement-count-${doc.id}`}
-                            >
-                              {supplementCount} supplement{supplementCount !== 1 ? "s" : ""}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-3 text-xs text-console-muted">
-                          <span>v{doc.version}</span>
-                          <span className="flex items-center space-x-1">
-                            <Clock className="h-3 w-3" />
-                            <span>
-                              {new Date(doc.updatedAt).toLocaleDateString()}
-                            </span>
-                          </span>
-                          <span>by {doc.updatedBy}</span>
-                        </div>
-                        {docTypeInfo && (
-                          <div className="flex items-center space-x-2 mt-1.5">
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-console-primary/10 text-console-primary">
-                              {docTypeInfo.usedIn}
-                            </span>
-                            <span className="text-xs text-console-muted">
-                              {docTypeInfo.purpose}
-                            </span>
-                          </div>
                         )}
                       </div>
-                      <div className="flex items-center space-x-1 ml-3">
+                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEditDocument(doc, "preview");
                           }}
-                          className="p-1.5 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-md transition-colors"
+                          className="p-1 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-md transition-colors"
                           title="Preview"
                           data-testid={`preview-btn-${doc.id}`}
                         >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditDocument(doc, "edit");
-                          }}
-                          className="p-1.5 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-md transition-colors"
-                          title="Edit"
-                          data-testid={`edit-btn-${doc.id}`}
-                        >
-                          <Pencil className="h-4 w-4" />
+                          <Eye className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             confirmDelete(doc);
                           }}
-                          className="p-1.5 text-console-muted hover:text-red-400 hover:bg-console-surface-hover rounded-md transition-colors"
+                          className="p-1 text-console-muted hover:text-red-400 hover:bg-console-surface-hover rounded-md transition-colors"
                           title="Delete"
                           data-testid={`delete-btn-${doc.id}`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
+                    </div>
+                    <h3 className="text-base font-semibold text-console mb-1">
+                      {doc.title}
+                    </h3>
+                    {docTypeInfo && (
+                      <p className="text-sm text-console-muted mb-3 line-clamp-2">
+                        {docTypeInfo.purpose}
+                      </p>
+                    )}
+                    <div className="mt-auto flex items-center flex-wrap gap-2">
+                      {supplementCount > 0 && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-purple-500/10 text-purple-400 border-purple-500/30"
+                          data-testid={`supplement-count-${doc.id}`}
+                        >
+                          {supplementCount} supplement{supplementCount !== 1 ? "s" : ""}
+                        </Badge>
+                      )}
+                      {docTypeInfo && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-console-primary/10 text-console-primary border-console-primary/20"
+                        >
+                          {docTypeInfo.usedIn}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2 text-xs text-console-muted mt-3 pt-3 border-t border-console">
+                      <span>v{doc.version}</span>
+                      <span className="text-console-muted/40">·</span>
+                      <span>{new Date(doc.updatedAt).toLocaleDateString()}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -851,23 +883,14 @@ export default function LegalDocumentsManager() {
         )}
 
         {editorTab === "preview" && (
-          /* Preview tab - full width rendered content */
-          <div
-            className="flex-1 overflow-y-auto p-6"
-            data-testid="editor-preview-content"
-          >
-            <div
-              className="prose prose-invert prose-sm max-w-none
-                prose-headings:text-console prose-p:text-console-secondary-foreground
-                prose-a:text-console-primary prose-strong:text-console
-                prose-li:text-console-secondary-foreground prose-th:text-console
-                prose-td:text-console-secondary-foreground prose-table:border-console
-                prose-hr:border-console"
-              dangerouslySetInnerHTML={{
-                __html: markdownToHtml(resolvePlaceholders(editContent, globalPlaceholders || {}, editPlaceholders)),
-              }}
-            />
-          </div>
+          <PreviewWithToc
+            editContent={editContent}
+            globalPlaceholders={globalPlaceholders || {}}
+            editPlaceholders={editPlaceholders}
+            selectedDocument={selectedDocument}
+            documents={documents}
+            onEditSupplement={(supplement) => handleEditDocument(supplement, "edit")}
+          />
         )}
 
         {editorTab === "history" && (
@@ -889,87 +912,81 @@ export default function LegalDocumentsManager() {
               const supplements = documents?.filter(
                 (d) => d.parentDocumentId === selectedDocument.id
               ) || [];
-              if (supplements.length === 0) {
-                return (
-                  <div className="text-center py-12">
-                    <Globe className="h-12 w-12 text-console-muted mx-auto mb-4" />
-                    <p className="text-console-muted text-sm">
-                      No country supplements for this document
-                    </p>
-                    <Button
-                      onClick={() => setShowCreateDialog(true)}
-                      size="sm"
-                      className="mt-4 bg-console-primary hover:bg-console-primary/90"
-                      data-testid="create-supplement-from-tab-btn"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Supplement
-                    </Button>
-                  </div>
-                );
-              }
               return (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-console-muted">
-                      {supplements.length} supplement{supplements.length !== 1 ? "s" : ""}
-                    </p>
+                    <div>
+                      <h3 className="text-sm font-medium text-console">Country Supplements</h3>
+                      <p className="text-xs text-console-muted mt-0.5">
+                        Manage country-specific additions. Preview tab shows all supplements inline.
+                      </p>
+                    </div>
                     <Button
                       onClick={() => setShowCreateDialog(true)}
                       size="sm"
-                      variant="outline"
-                      className="border-console text-console"
+                      className="bg-console-primary hover:bg-console-primary/90"
                       data-testid="add-supplement-btn"
                     >
                       <Plus className="h-4 w-4 mr-1" />
                       Add Supplement
                     </Button>
                   </div>
-                  <div className="grid gap-3">
-                    {supplements.map((supplement) => (
-                      <Card
-                        key={supplement.id}
-                        className="console-surface border-console hover:border-console-primary/30 transition-colors cursor-pointer"
-                        data-testid={`supplement-card-${supplement.id}`}
-                        onClick={() => handleEditDocument(supplement)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/30"
-                              >
-                                {MARKET_LABELS[supplement.market] || supplement.market}
-                              </Badge>
-                              <h3 className="text-sm font-medium text-console">
-                                {supplement.title}
-                              </h3>
-                              <Badge
-                                variant={supplement.isPublished ? "default" : "secondary"}
-                                className={`text-[10px] ${
-                                  supplement.isPublished
-                                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                                    : "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                                }`}
-                              >
-                                {supplement.isPublished ? "Published" : "Draft"}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center space-x-3 text-xs text-console-muted">
-                              <span>v{supplement.version}</span>
-                              <span className="flex items-center space-x-1">
-                                <Clock className="h-3 w-3" />
-                                <span>
-                                  {new Date(supplement.updatedAt).toLocaleDateString()}
-                                </span>
-                              </span>
-                            </div>
+                  {supplements.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Globe className="h-10 w-10 text-console-muted mx-auto mb-3" />
+                      <p className="text-sm text-console-muted">
+                        No country supplements yet
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-2">
+                      {supplements.map((supplement) => (
+                        <div
+                          key={supplement.id}
+                          className="flex items-center justify-between px-4 py-3 rounded-lg border border-console hover:border-console-primary/30 transition-colors"
+                          data-testid={`supplement-card-${supplement.id}`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <Badge
+                              variant="outline"
+                              className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/30"
+                            >
+                              {MARKET_LABELS[supplement.market] || supplement.market}
+                            </Badge>
+                            <Badge
+                              variant={supplement.isPublished ? "default" : "secondary"}
+                              className={`text-xs ${
+                                supplement.isPublished
+                                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                  : "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                              }`}
+                            >
+                              {supplement.isPublished ? "Published" : "Draft"}
+                            </Badge>
+                            <span className="text-xs text-console-muted">
+                              v{supplement.version} · {new Date(supplement.updatedAt).toLocaleDateString()}
+                            </span>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                          <div className="flex items-center space-x-1">
+                            <button
+                              onClick={() => handleEditDocument(supplement, "edit")}
+                              className="px-2.5 py-1 text-xs text-console-primary hover:bg-console-surface-hover rounded-md transition-colors"
+                              data-testid={`edit-supplement-btn-${supplement.id}`}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => confirmDelete(supplement)}
+                              className="p-1 text-console-muted hover:text-red-400 hover:bg-console-surface-hover rounded-md transition-colors"
+                              data-testid={`delete-supplement-btn-${supplement.id}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -1065,6 +1082,294 @@ export default function LegalDocumentsManager() {
   }
 
   return null;
+}
+
+// Preview with table of contents sidebar and reading progress
+function PreviewWithToc({
+  editContent,
+  globalPlaceholders,
+  editPlaceholders,
+  selectedDocument,
+  documents,
+  onEditSupplement,
+}: {
+  editContent: string;
+  globalPlaceholders: Record<string, string>;
+  editPlaceholders: Record<string, string>;
+  selectedDocument: LegalDocument;
+  documents: LegalDocument[] | undefined;
+  onEditSupplement: (doc: LegalDocument) => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
+
+  // Parse headings from markdown
+  const headings = useMemo(() => {
+    const result: { level: number; text: string; id: string }[] = [];
+    for (const line of editContent.split("\n")) {
+      const match = line.match(/^(#{1,3})\s+(.+)/);
+      if (!match) continue;
+      const level = match[1].length;
+      const text = match[2]
+        .replace(/\*\*/g, "")
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .trim();
+      const id = text
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+      result.push({ level, text, id });
+    }
+
+    // Add supplement sections
+    if (!selectedDocument.parentDocumentId) {
+      const supplements =
+        documents?.filter(
+          (d) => d.parentDocumentId === selectedDocument.id && d.content
+        ) || [];
+      for (const s of supplements) {
+        const label = MARKET_LABELS[s.market] || s.market;
+        result.push({
+          level: 1,
+          text: `${label} Supplement`,
+          id: `supplement-${s.id}`,
+        });
+      }
+    }
+
+    return result;
+  }, [editContent, selectedDocument, documents]);
+
+  // Add IDs to rendered HTML headings and wrap sections for progressive highlight
+  const renderedHtml = useMemo(() => {
+    const resolved = resolvePlaceholders(
+      editContent,
+      globalPlaceholders,
+      editPlaceholders
+    );
+    let html = markdownToHtml(resolved);
+    // Add IDs to headings
+    html = html.replace(
+      /<(h[1-3])>([\s\S]*?)<\/h[1-3]>/g,
+      (_match, tag, content) => {
+        const text = content.replace(/<[^>]+>/g, "");
+        const id = text
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+        return `<${tag} id="${id}">${content}</${tag}>`;
+      }
+    );
+    // Wrap content between headings in section divs for highlight effect
+    const parts = html.split(/(?=<h[1-3]\s)/);
+    html = parts
+      .map((part, i) => {
+        if (!part.trim()) return "";
+        const idMatch = part.match(/<h[1-3]\s[^>]*id="([^"]*)"[^>]*>/);
+        const sectionId = idMatch ? idMatch[1] : `intro-${i}`;
+        return `<div class="doc-section" data-section="${sectionId}">${part}</div>`;
+      })
+      .join("");
+    return html;
+  }, [editContent, globalPlaceholders, editPlaceholders]);
+
+  // Scroll tracking: progress bar + active heading + section highlight
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const maxScroll = scrollHeight - clientHeight;
+      setScrollProgress(maxScroll > 0 ? scrollTop / maxScroll : 0);
+
+      // Find active heading
+      const headingEls = el.querySelectorAll("h1[id], h2[id], h3[id]");
+      let active: string | null = null;
+      for (const heading of headingEls) {
+        const rect = heading.getBoundingClientRect();
+        const containerRect = el.getBoundingClientRect();
+        if (rect.top - containerRect.top <= 80) {
+          active = heading.id;
+        }
+      }
+      setActiveHeadingId(active);
+
+      // Progressive section highlight
+      el.querySelectorAll(".doc-section").forEach((section) => {
+        section.classList.remove("section-reading");
+      });
+      if (active) {
+        const activeSection = el.querySelector(
+          `.doc-section[data-section="${CSS.escape(active)}"]`
+        );
+        if (activeSection) {
+          activeSection.classList.add("section-reading");
+        }
+      }
+    };
+
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, [renderedHtml]);
+
+  const scrollToHeading = (id: string) => {
+    const el = scrollRef.current?.querySelector(`#${CSS.escape(id)}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const supplements = !selectedDocument.parentDocumentId
+    ? documents?.filter(
+        (d) => d.parentDocumentId === selectedDocument.id && d.content
+      ) || []
+    : [];
+
+  const wordCount = editContent.split(/\s+/).length;
+  const readMins = Math.max(1, Math.ceil(wordCount / 200));
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0" data-testid="editor-preview-content">
+      <style>{`
+        .doc-section {
+          border-left: 2px solid transparent;
+          padding-left: 0.75rem;
+          margin-left: -0.75rem;
+          transition: border-color 0.3s ease, background-color 0.3s ease;
+          border-radius: 0 0.25rem 0.25rem 0;
+        }
+        .doc-section.section-reading {
+          border-left-color: var(--console-primary, rgb(99, 102, 241));
+          background-color: rgba(99, 102, 241, 0.03);
+        }
+      `}</style>
+      {/* Progress bar */}
+      <div className="h-0.5 bg-console-surface flex-shrink-0">
+        <div
+          className="h-full bg-console-primary transition-all duration-150"
+          style={{ width: `${Math.round(scrollProgress * 100)}%` }}
+        />
+      </div>
+
+      <div className="flex-1 flex min-h-0">
+        {/* TOC sidebar */}
+        {headings.length > 0 && (
+          <div className="w-56 flex-shrink-0 border-r border-console overflow-y-auto p-4" data-testid="preview-toc">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] font-medium text-console-muted uppercase tracking-wider">
+                Contents
+              </span>
+              <span className="text-[10px] text-console-muted">
+                ~{readMins} min read
+              </span>
+            </div>
+            <nav className="space-y-0.5">
+              {(() => {
+                const activeIdx = headings.findIndex(
+                  (x) => x.id === activeHeadingId
+                );
+                return headings.map((h, i) => {
+                  const isActive = activeHeadingId === h.id;
+                  const isRead = activeIdx >= 0 && i < activeIdx;
+                  return (
+                    <button
+                      key={`${h.id}-${i}`}
+                      onClick={() => scrollToHeading(h.id)}
+                      className={`block w-full text-left text-xs py-1 px-1.5 rounded-sm transition-all duration-200 truncate ${
+                        h.level === 1 ? "font-medium" : ""
+                      } ${
+                        h.level === 2 ? "pl-4" : ""
+                      } ${
+                        h.level === 3 ? "pl-7" : ""
+                      } ${
+                        isActive
+                          ? "text-console-primary bg-console-primary/10 border-l-2 border-console-primary"
+                          : isRead
+                          ? "text-console-primary/50 border-l-2 border-console-primary/25"
+                          : "text-console-muted hover:text-console border-l-2 border-transparent"
+                      }`}
+                      title={h.text}
+                    >
+                      {h.text}
+                    </button>
+                  );
+                });
+              })()}
+            </nav>
+          </div>
+        )}
+
+        {/* Content */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6">
+          <div
+            className="prose prose-invert prose-sm max-w-none
+              prose-headings:text-console prose-p:text-console-secondary-foreground
+              prose-a:text-console-primary prose-strong:text-console
+              prose-li:text-console-secondary-foreground prose-th:text-console
+              prose-td:text-console-secondary-foreground prose-table:border-console
+              prose-hr:border-console prose-headings:scroll-mt-4"
+            dangerouslySetInnerHTML={{ __html: renderedHtml }}
+          />
+
+          {supplements.map((supplement) => (
+            <div
+              key={supplement.id}
+              id={`supplement-${supplement.id}`}
+              className="mt-8"
+              data-testid={`preview-supplement-${supplement.id}`}
+            >
+              <div className="flex items-center gap-3 mb-4 pb-3 border-b border-console">
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/30"
+                >
+                  {MARKET_LABELS[supplement.market] || supplement.market}
+                </Badge>
+                <span className="text-sm font-medium text-console-muted">
+                  Country Supplement
+                </span>
+                {!supplement.isPublished && (
+                  <Badge
+                    variant="secondary"
+                    className="text-xs bg-amber-500/20 text-amber-400 border-amber-500/30"
+                  >
+                    Draft
+                  </Badge>
+                )}
+                <button
+                  onClick={() => onEditSupplement(supplement)}
+                  className="ml-auto text-xs text-console-primary hover:underline"
+                  data-testid={`edit-supplement-${supplement.id}`}
+                >
+                  Edit
+                </button>
+              </div>
+              <div
+                className="prose prose-invert prose-sm max-w-none
+                  prose-headings:text-console prose-p:text-console-secondary-foreground
+                  prose-a:text-console-primary prose-strong:text-console
+                  prose-li:text-console-secondary-foreground prose-th:text-console
+                  prose-td:text-console-secondary-foreground prose-table:border-console
+                  prose-hr:border-console"
+                dangerouslySetInnerHTML={{
+                  __html: markdownToHtml(
+                    resolvePlaceholders(
+                      supplement.content,
+                      globalPlaceholders,
+                      supplement.placeholders || {}
+                    )
+                  ),
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // Create document dialog
