@@ -113,3 +113,53 @@ jobs:
             --name "${{ env.CONTAINER_APP_NAME }}" \
             --resource-group "${{ env.RESOURCE_GROUP }}" \
             --image "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+
+      - name: Notify Teams
+        if: success()
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          TEAMS_WEBHOOK: ${{ secrets.TEAMS_DEPLOY_WEBHOOK_URL }}
+        with:
+          script: |
+            const commits = context.payload.commits || [];
+            const changes = commits
+              .map(c => c.message.split('\n')[0])
+              .filter(m => !m.startsWith('Merge') && !m.startsWith('Co-Authored'))
+              .slice(-5)
+              .map(m => `- ${m}`)
+              .join('\n');
+
+            const body = `**🟢 Production Deploy — spiriverse.com**\n\n` +
+              (changes ? `**What changed:**\n${changes}\n\n` : '') +
+              `**Pushed by:** ${context.actor}`;
+
+            const payload = {
+              type: 'message',
+              attachments: [{
+                contentType: 'application/vnd.microsoft.card.adaptive',
+                contentUrl: null,
+                content: {
+                  '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+                  type: 'AdaptiveCard',
+                  version: '1.4',
+                  body: [{ type: 'TextBlock', text: body, wrap: true }],
+                  actions: [{
+                    type: 'Action.OpenUrl',
+                    title: 'Open spiriverse.com',
+                    url: 'https://www.spiriverse.com',
+                  }],
+                },
+              }],
+            };
+
+            const webhook = process.env.TEAMS_WEBHOOK;
+            if (webhook) {
+              await fetch(webhook, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+            } else {
+              core.warning('TEAMS_DEPLOY_WEBHOOK_URL secret not set — skipping notification');
+            }

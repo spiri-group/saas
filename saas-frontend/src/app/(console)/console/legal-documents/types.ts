@@ -66,6 +66,7 @@ export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   "spiritual-services-disclaimer": "Spiritual Services Disclaimer",
   "payment-terms": "Payment & Fee Terms",
   "intellectual-property-policy": "Intellectual Property & DMCA Policy",
+  "subscription-terms": "Subscription Terms",
 };
 
 export const DOCUMENT_TYPE_INFO: Record<string, { purpose: string; marketNotes: string; usedIn: string }> = {
@@ -113,5 +114,10 @@ export const DOCUMENT_TYPE_INFO: Record<string, { purpose: string; marketNotes: 
     purpose: "DMCA/copyright takedown procedures and IP protection",
     marketNotes: "US DMCA (s.8) | UK CDPA 1988 (s.9) | AU Copyright Act 1968 (s.10)",
     usedIn: "Merchant onboarding",
+  },
+  "subscription-terms": {
+    purpose: "Terms for Awaken, Manifest & Transcend subscription plans",
+    marketNotes: "Applies uniformly across AU, UK, and US",
+    usedIn: "Subscription signup",
   },
 };

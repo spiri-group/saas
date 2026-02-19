@@ -12,10 +12,12 @@ import {
   Clock,
   Save,
   ChevronLeft,
+  ChevronRight,
   Keyboard,
   History,
   Info,
   Settings2,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,7 +54,7 @@ import PlaceholderEditor from "./PlaceholderEditor";
 import HistoryTab from "./HistoryTab";
 
 type ViewMode = "list" | "edit";
-type EditorTab = "preview" | "edit" | "history";
+type EditorTab = "preview" | "edit" | "history" | "supplements";
 
 export default function LegalDocumentsManager() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -60,7 +62,6 @@ export default function LegalDocumentsManager() {
   const [selectedDocument, setSelectedDocument] =
     useState<LegalDocument | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [marketFilter, setMarketFilter] = useState<string>("all");
 
   // Editor state
   const [editTitle, setEditTitle] = useState("");
@@ -102,13 +103,10 @@ export default function LegalDocumentsManager() {
   const { data: versions, isLoading: versionsLoading } =
     UseLegalDocumentVersions(selectedDocument?.id);
 
-  // Filter documents by search and market
+  // Filter to base documents only (no supplements) + search
   const filteredDocuments = useMemo(() => {
     if (!documents) return documents;
-    let filtered = documents;
-    if (marketFilter !== "all") {
-      filtered = filtered.filter((doc) => doc.market === marketFilter);
-    }
+    let filtered = documents.filter((doc) => !doc.parentDocumentId);
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -119,7 +117,7 @@ export default function LegalDocumentsManager() {
       );
     }
     return filtered;
-  }, [documents, searchQuery, marketFilter]);
+  }, [documents, searchQuery]);
 
   // Keyboard shortcuts
   const handleKeyDown = useCallback(
@@ -357,7 +355,7 @@ export default function LegalDocumentsManager() {
           </div>
         </div>
 
-        {/* Search + Market Filter */}
+        {/* Search */}
         <div className="flex items-center gap-3 px-6 py-3 border-b border-console">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-console-muted" />
@@ -369,17 +367,6 @@ export default function LegalDocumentsManager() {
               data-testid="search-input"
             />
           </div>
-          <select
-            value={marketFilter}
-            onChange={(e) => setMarketFilter(e.target.value)}
-            className="h-9 px-3 bg-console-surface border border-console rounded-md text-console text-sm"
-            data-testid="market-filter-select"
-          >
-            <option value="all">All Markets</option>
-            {MARKET_OPTIONS.map((m) => (
-              <option key={m} value={m}>{MARKET_LABELS[m]}</option>
-            ))}
-          </select>
         </div>
 
         {/* Document list */}
@@ -413,6 +400,9 @@ export default function LegalDocumentsManager() {
           <div className="grid gap-3">
             {filteredDocuments?.map((doc) => {
               const docTypeInfo = DOCUMENT_TYPE_INFO[doc.documentType];
+              const supplementCount = documents?.filter(
+                (d) => d.parentDocumentId === doc.id
+              ).length || 0;
               return (
                 <Card
                   key={doc.id}
@@ -439,26 +429,16 @@ export default function LegalDocumentsManager() {
                           >
                             {doc.isPublished ? "Published" : "Draft"}
                           </Badge>
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/30"
-                          >
-                            {MARKET_LABELS[doc.market] || doc.market}
-                          </Badge>
-                          {doc.parentDocumentId && (
+                          {supplementCount > 0 && (
                             <Badge
                               variant="outline"
                               className="text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/30"
+                              data-testid={`supplement-count-${doc.id}`}
                             >
-                              Supplement
+                              {supplementCount} supplement{supplementCount !== 1 ? "s" : ""}
                             </Badge>
                           )}
                         </div>
-                        {doc.parentDocumentId && (
-                          <p className="text-[10px] text-console-muted mb-0.5">
-                            Supplement of: {DOCUMENT_TYPE_LABELS[doc.documentType] || doc.parentDocumentId}
-                          </p>
-                        )}
                         <div className="flex items-center space-x-3 text-xs text-console-muted">
                           <span>v{doc.version}</span>
                           <span className="flex items-center space-x-1">
@@ -475,14 +455,9 @@ export default function LegalDocumentsManager() {
                               {docTypeInfo.usedIn}
                             </span>
                             <span className="text-xs text-console-muted">
-                              {docTypeInfo.marketNotes}
+                              {docTypeInfo.purpose}
                             </span>
                           </div>
-                        )}
-                        {doc.changeSummary && (
-                          <p className="text-xs text-console-muted mt-0.5 truncate italic">
-                            Last change: {doc.changeSummary}
-                          </p>
                         )}
                       </div>
                       <div className="flex items-center space-x-1 ml-3">
@@ -652,13 +627,50 @@ export default function LegalDocumentsManager() {
         <div className="flex items-center justify-between px-6 py-3 border-b border-console">
           <div className="flex items-center space-x-3">
             <button
-              onClick={() => guardUnsavedChanges(handleBackToList)}
+              onClick={() => {
+                if (selectedDocument.parentDocumentId) {
+                  // Navigate back to parent's Supplements tab
+                  const parentDoc = documents?.find(
+                    (d) => d.id === selectedDocument.parentDocumentId
+                  );
+                  if (parentDoc) {
+                    guardUnsavedChanges(() => {
+                      handleEditDocument(parentDoc, "supplements");
+                    });
+                    return;
+                  }
+                }
+                guardUnsavedChanges(handleBackToList);
+              }}
               className="p-1.5 text-console-muted hover:text-console hover:bg-console-surface-hover rounded-md transition-colors"
               data-testid="back-to-list-btn"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
             <div>
+              {selectedDocument.parentDocumentId ? (
+                <div className="flex items-center space-x-1.5 mb-0.5" data-testid="supplement-breadcrumb">
+                  <button
+                    onClick={() => {
+                      const parentDoc = documents?.find(
+                        (d) => d.id === selectedDocument.parentDocumentId
+                      );
+                      if (parentDoc) {
+                        guardUnsavedChanges(() => {
+                          handleEditDocument(parentDoc, "supplements");
+                        });
+                      }
+                    }}
+                    className="text-xs text-console-primary hover:underline"
+                  >
+                    {documents?.find((d) => d.id === selectedDocument.parentDocumentId)?.title || "Parent Document"}
+                  </button>
+                  <ChevronRight className="h-3 w-3 text-console-muted" />
+                  <span className="text-xs text-console-muted">
+                    {MARKET_LABELS[selectedDocument.market] || selectedDocument.market} Supplement
+                  </span>
+                </div>
+              ) : null}
               <h2 className="text-sm font-semibold text-console">
                 {editTitle || "Untitled"}
               </h2>
@@ -690,6 +702,12 @@ export default function LegalDocumentsManager() {
                   <History className="h-3.5 w-3.5 mr-1.5" />
                   History
                 </TabsTrigger>
+                {!selectedDocument.parentDocumentId && (
+                  <TabsTrigger value="supplements" data-testid="supplements-tab">
+                    <Globe className="h-3.5 w-3.5 mr-1.5" />
+                    Supplements
+                  </TabsTrigger>
+                )}
               </TabsList>
             </Tabs>
             <div className="flex items-center space-x-2">
@@ -777,10 +795,14 @@ export default function LegalDocumentsManager() {
                 <span className="text-xs text-console-muted">
                   {docTypeInfo.purpose}
                 </span>
-                <span className="w-px h-3 bg-console-muted inline-block" />
-                <span className="text-xs text-console-secondary">
-                  {docTypeInfo.marketNotes}
-                </span>
+                {docTypeInfo.marketNotes && (
+                  <>
+                    <span className="w-px h-3 bg-console-muted/50 inline-block" />
+                    <span className="text-[10px] text-console-muted/60">
+                      {docTypeInfo.marketNotes}
+                    </span>
+                  </>
+                )}
               </div>
             )}
 
@@ -861,6 +883,99 @@ export default function LegalDocumentsManager() {
           />
         )}
 
+        {editorTab === "supplements" && !selectedDocument.parentDocumentId && (
+          <div className="flex-1 overflow-y-auto p-6" data-testid="supplements-tab-content">
+            {(() => {
+              const supplements = documents?.filter(
+                (d) => d.parentDocumentId === selectedDocument.id
+              ) || [];
+              if (supplements.length === 0) {
+                return (
+                  <div className="text-center py-12">
+                    <Globe className="h-12 w-12 text-console-muted mx-auto mb-4" />
+                    <p className="text-console-muted text-sm">
+                      No country supplements for this document
+                    </p>
+                    <Button
+                      onClick={() => setShowCreateDialog(true)}
+                      size="sm"
+                      className="mt-4 bg-console-primary hover:bg-console-primary/90"
+                      data-testid="create-supplement-from-tab-btn"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Supplement
+                    </Button>
+                  </div>
+                );
+              }
+              return (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-console-muted">
+                      {supplements.length} supplement{supplements.length !== 1 ? "s" : ""}
+                    </p>
+                    <Button
+                      onClick={() => setShowCreateDialog(true)}
+                      size="sm"
+                      variant="outline"
+                      className="border-console text-console"
+                      data-testid="add-supplement-btn"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Supplement
+                    </Button>
+                  </div>
+                  <div className="grid gap-3">
+                    {supplements.map((supplement) => (
+                      <Card
+                        key={supplement.id}
+                        className="console-surface border-console hover:border-console-primary/30 transition-colors cursor-pointer"
+                        data-testid={`supplement-card-${supplement.id}`}
+                        onClick={() => handleEditDocument(supplement)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/30"
+                              >
+                                {MARKET_LABELS[supplement.market] || supplement.market}
+                              </Badge>
+                              <h3 className="text-sm font-medium text-console">
+                                {supplement.title}
+                              </h3>
+                              <Badge
+                                variant={supplement.isPublished ? "default" : "secondary"}
+                                className={`text-[10px] ${
+                                  supplement.isPublished
+                                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                    : "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                                }`}
+                              >
+                                {supplement.isPublished ? "Published" : "Draft"}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center space-x-3 text-xs text-console-muted">
+                              <span>v{supplement.version}</span>
+                              <span className="flex items-center space-x-1">
+                                <Clock className="h-3 w-3" />
+                                <span>
+                                  {new Date(supplement.updatedAt).toLocaleDateString()}
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         {/* Change Summary Dialog */}
         <Dialog
           open={showChangeSummaryDialog}
@@ -880,7 +995,7 @@ export default function LegalDocumentsManager() {
               <Textarea
                 value={changeSummary}
                 onChange={(e) => setChangeSummary(e.target.value)}
-                placeholder="e.g., Updated privacy policy for new analytics tracking, Added CCPA section for California compliance..."
+                placeholder="e.g., Updated wording in section 3, Added refund timeframe for AU customers..."
                 className="bg-console-surface border-console text-console text-sm min-h-[100px]"
                 autoFocus
                 data-testid="change-summary-input"

@@ -46,6 +46,7 @@ import { migration as migration035 } from "./035_rebrand_legal_docs_to_partner";
 import { migration as migration036 } from "./036_standardize_refund_language";
 import { migration as migration037 } from "./037_genericize_base_documents";
 import { migration as migration038 } from "./038_seed_country_supplements";
+import { migration as migration039 } from "./039_seed_subscription_terms";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -87,4 +88,5 @@ export const migrations: Migration[] = [
     migration036,
     migration037,
     migration038,
+    migration039,
 ];
