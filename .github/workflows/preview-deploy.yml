@@ -340,20 +340,28 @@ jobs:
               const prTitle = context.payload.pull_request.title;
               const prUrl = context.payload.pull_request.html_url;
               const isUpdate = context.payload.action === 'synchronize';
+
+              const { data: commits } = await github.rest.pulls.listCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNum,
+              });
+
+              const recentCommits = commits
+                .slice(-3)
+                .map(c => `- \`${c.sha.substring(0, 7)}\` ${c.commit.message.split('\n')[0]}`)
+                .join('\n');
+
               teamsBody = `**${isUpdate ? '🔄 Preview Updated' : '🚀 Preview Deployed'}** — [PR #${prNum}: ${prTitle}](${prUrl})\n\n` +
-                `**By:** ${actor}\n` +
-                `**Preview:** [${previewUrl}](${previewUrl})\n` +
-                `**Commit:** \`${context.sha.substring(0, 7)}\`\n\n` +
-                `_Preview uses the **dev** backend. Cleaned up when the PR is closed._`;
+                `**By:** ${actor}\n\n` +
+                `**Recent changes:**\n${recentCommits}`;
             } else {
               const branch = '${{ inputs.branch }}';
               const ttl = '${{ steps.config.outputs.ttl_days }}';
               teamsBody = `**🚀 Manual Preview Deployed**\n\n` +
                 `**Branch:** \`${branch}\`\n` +
                 `**By:** ${actor}\n` +
-                `**Preview:** [${previewUrl}](${previewUrl})\n` +
-                `**TTL:** ${ttl} day(s)\n\n` +
-                `_Preview uses the **dev** backend. Auto-expires after ${ttl} day(s)._`;
+                `**TTL:** ${ttl} day(s)`;
             }
 
             const teamsPayload = {
