@@ -8,7 +8,7 @@ const CONSENT_TABLE = 'UserConsents';
 const SCOPE_DOCUMENT_TYPES: Record<string, string[]> = {
   site: ['terms-of-service', 'privacy-policy'],
   checkout: ['refund-policy', 'payment-terms'],
-  'merchant-onboarding': ['merchant-terms', 'acceptable-use-policy', 'intellectual-property-policy'],
+  'merchant-onboarding': ['merchant-terms', 'acceptable-use-policy', 'intellectual-property-policy', 'subscription-terms'],
   'service-checkout': ['spiritual-services-disclaimer'],
 };
 
