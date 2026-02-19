@@ -2,17 +2,10 @@ name: Deploy Frontend (Container Apps)
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
     paths:
       - 'saas-frontend/**'
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        default: 'DEV'
-        type: choice
-        options: [ DEV, PROD ]
 
 permissions:
   contents: read
@@ -20,18 +13,16 @@ permissions:
 
 env:
   NODE_VERSION: 20.19.0
-  ENV_NAME: ${{ github.ref_name == 'main' && 'prd' || 'dev' }}
-  ENV_SUFFIX: "002"
-  ACR_NAME: ${{ github.ref_name == 'main' && 'crspvprd002' || 'crspvdev002' }}
-  CONTAINER_APP_NAME: ${{ github.ref_name == 'main' && 'ca-spiriverse-app-prd-002' || 'ca-spiriverse-app-dev-002' }}
-  RESOURCE_GROUP: ${{ github.ref_name == 'main' && 'rg-spiriverse-app-prd-002' || 'rg-spiriverse-app-dev-002' }}
+  ACR_NAME: crspvprd002
+  CONTAINER_APP_NAME: ca-spiriverse-app-prd-002
+  RESOURCE_GROUP: rg-spiriverse-app-prd-002
   IMAGE_NAME: spiriverse-frontend
 
 jobs:
   build-and-deploy:
     name: Build & Deploy Frontend
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || (github.ref_name == 'main' && 'PROD' || 'DEV') }}
+    environment: PROD
 
     steps:
       - name: Checkout code
@@ -47,9 +38,9 @@ jobs:
       - name: Fetch secrets from Key Vault
         id: secrets
         run: |
-          KV_NAME="kv-spv-server-${{ env.ENV_NAME }}-${{ env.ENV_SUFFIX }}"
-          FUNC_NAME="func-spiriverse-server-${{ env.ENV_NAME }}-${{ env.ENV_SUFFIX }}"
-          RG_SERVER="rg-spiriverse-server-${{ env.ENV_NAME }}-${{ env.ENV_SUFFIX }}"
+          KV_NAME="kv-spv-server-prd-002"
+          FUNC_NAME="func-spiriverse-server-prd-002"
+          RG_SERVER="rg-spiriverse-server-prd-002"
 
           # Fetch Function App key for API endpoint
           FUNC_KEY=$(az functionapp keys list --name "$FUNC_NAME" --resource-group "$RG_SERVER" --query "functionKeys.client" -o tsv)
@@ -57,21 +48,6 @@ jobs:
           # Fetch Key Vault secrets
           STRIPE_PK=$(az keyvault secret show --vault-name "$KV_NAME" --name "stripe-pk" --query value -o tsv)
           GOOGLE_KEY=$(az keyvault secret show --vault-name "$KV_NAME" --name "google-key" --query value -o tsv)
-
-          # Determine public URLs
-          if [ "${{ env.ENV_NAME }}" = "prd" ]; then
-            SITE_ADDRESS="https://www.spiriverse.com"
-            GRAPHQL_PROXY="https://www.spiriverse.com/api/graphql"
-          else
-            CA_FQDN=$(az containerapp show --name "${{ env.CONTAINER_APP_NAME }}" --resource-group "${{ env.RESOURCE_GROUP }}" --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "")
-            if [ -z "$CA_FQDN" ]; then
-              # Fallback: construct from CAE default domain
-              DEFAULT_DOMAIN=$(az containerapp env show --name "cae-spiriverse-app-${{ env.ENV_NAME }}-${{ env.ENV_SUFFIX }}" --resource-group "${{ env.RESOURCE_GROUP }}" --query "properties.defaultDomain" -o tsv 2>/dev/null || echo "")
-              CA_FQDN="${{ env.CONTAINER_APP_NAME }}.${DEFAULT_DOMAIN}"
-            fi
-            SITE_ADDRESS="https://${CA_FQDN}"
-            GRAPHQL_PROXY="https://${CA_FQDN}/api/graphql"
-          fi
 
           # Fetch auth secrets needed at build time
           NEXTAUTH_SECRET=$(az keyvault secret show --vault-name "$KV_NAME" --name "authjs-secret" --query value -o tsv)
@@ -85,9 +61,7 @@ jobs:
           echo "SERVER_ENDPOINT_CODE=${FUNC_KEY}" >> "$GITHUB_OUTPUT"
           echo "STRIPE_PK=${STRIPE_PK}" >> "$GITHUB_OUTPUT"
           echo "GOOGLE_KEY=${GOOGLE_KEY}" >> "$GITHUB_OUTPUT"
-          echo "STORAGE_ACCOUNT=stspvapp${{ env.ENV_NAME }}${{ env.ENV_SUFFIX }}" >> "$GITHUB_OUTPUT"
-          echo "GRAPHQL_PROXY=${GRAPHQL_PROXY}" >> "$GITHUB_OUTPUT"
-          echo "SITE_ADDRESS=${SITE_ADDRESS}" >> "$GITHUB_OUTPUT"
+          echo "STORAGE_ACCOUNT=stspvappprd002" >> "$GITHUB_OUTPUT"
 
           # Mask and output auth secrets
           echo "::add-mask::${NEXTAUTH_SECRET}"
@@ -116,8 +90,8 @@ jobs:
             --build-arg NEXT_PUBLIC_stripe_token="${{ steps.secrets.outputs.STRIPE_PK }}" \
             --build-arg NEXT_PUBLIC_GOOGLE_KEY="${{ steps.secrets.outputs.GOOGLE_KEY }}" \
             --build-arg NEXT_PUBLIC_STORAGE_ACCOUNT="${{ steps.secrets.outputs.STORAGE_ACCOUNT }}" \
-            --build-arg NEXT_PUBLIC_graphql_proxy="${{ steps.secrets.outputs.GRAPHQL_PROXY }}" \
-            --build-arg NEXT_PUBLIC_site_address="${{ steps.secrets.outputs.SITE_ADDRESS }}" \
+            --build-arg NEXT_PUBLIC_graphql_proxy="https://www.spiriverse.com/api/graphql" \
+            --build-arg NEXT_PUBLIC_site_address="https://www.spiriverse.com" \
             --build-arg NEXTAUTH_SECRET="${{ steps.secrets.outputs.NEXTAUTH_SECRET }}" \
             --build-arg AUTH_AZURE_ACCESS_KEY="${{ steps.secrets.outputs.AUTH_AZURE_ACCESS_KEY }}" \
             --build-arg CONSOLE_AZURE_AD_TENANT_ID="${{ steps.secrets.outputs.CONSOLE_AD_TENANT_ID }}" \
