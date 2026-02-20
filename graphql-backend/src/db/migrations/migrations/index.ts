@@ -53,6 +53,10 @@ import { migration as migration042 } from "./042_seed_payment_link_email_templat
 import { migration as migration043 } from "./043_add_live_assist_feature_gate";
 import { migration as migration044 } from "./044_create_live_session_containers";
 import { migration as migration045 } from "./045_seed_live_assist_email_templates";
+import { migration as migration046 } from "./046_illuminate_spiri_assist";
+import { migration as migration047 } from "./047_add_expo_mode_feature_gate";
+import { migration as migration048 } from "./048_create_expo_mode_container";
+import { migration as migration049 } from "./049_seed_expo_mode_email_templates";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -101,4 +105,8 @@ export const migrations: Migration[] = [
     migration043,
     migration044,
     migration045,
+    migration046,
+    migration047,
+    migration048,
+    migration049,
 ];

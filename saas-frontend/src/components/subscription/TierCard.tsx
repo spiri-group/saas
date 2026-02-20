@@ -18,7 +18,7 @@ const TIER_BULLETS: Record<string, string[]> = {
     illuminate: [
         'Everything in Awaken, plus:',
         'Send payment links via email',
-        'Collect payments at expos and events',
+        'Expo Mode for fairs and markets',
         'Live Assist for streaming shows',
         'Include services or custom amounts',
         'Track payment status in real time',

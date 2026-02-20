@@ -15,6 +15,7 @@ export type TierFeatures = {
     hasBackorders: boolean;
     hasPaymentLinks: boolean;
     hasLiveAssist: boolean;
+    hasExpoMode: boolean;
 };
 
 export type SubscriptionTierDefinition = {
@@ -53,6 +54,7 @@ export const useSubscriptionTiers = (profileType?: string) => {
                             hasBackorders
                             hasPaymentLinks
                             hasLiveAssist
+                            hasExpoMode
                         }
                         monthlyPrice
                         annualPrice

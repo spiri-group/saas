@@ -12,6 +12,7 @@ export type TierFeatures = {
     hasBackorders: boolean;
     hasPaymentLinks: boolean;
     hasLiveAssist: boolean;
+    hasExpoMode: boolean;
 };
 
 const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
@@ -27,6 +28,7 @@ const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
         hasBackorders: false,
         hasPaymentLinks: false,
         hasLiveAssist: false,
+        hasExpoMode: false,
     },
     illuminate: {
         canCreateMerchantProfile: false,
@@ -36,10 +38,11 @@ const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
         hasShippingAutomation: false,
         canCreateEvents: false,
         canCreateTours: false,
-        hasSpiriAssist: false,
+        hasSpiriAssist: true,
         hasBackorders: false,
         hasPaymentLinks: true,
         hasLiveAssist: true,
+        hasExpoMode: true,
     },
     manifest: {
         canCreateMerchantProfile: true,
@@ -53,6 +56,7 @@ const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
         hasBackorders: false,
         hasPaymentLinks: true,
         hasLiveAssist: true,
+        hasExpoMode: true,
     },
     transcend: {
         canCreateMerchantProfile: true,
@@ -66,6 +70,7 @@ const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
         hasBackorders: true,
         hasPaymentLinks: true,
         hasLiveAssist: true,
+        hasExpoMode: true,
     },
 };
 

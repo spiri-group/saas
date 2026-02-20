@@ -43,6 +43,7 @@ type TierFeatures {
   hasBackorders: Boolean!
   hasPaymentLinks: Boolean!
   hasLiveAssist: Boolean!
+  hasExpoMode: Boolean!
 }
 
 type BillingRecord {

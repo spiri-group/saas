@@ -50,6 +50,7 @@ import EditPractitionerOracleMessage from "./Profile/Edit/OracleMessage";
 import EditPractitionerPinnedTestimonials from "./Profile/Edit/PinnedTestimonials";
 import MerchantEventsComponent from "../../m/_components/Events";
 import MerchantGalleryComponent from "../../m/_components/Gallery";
+import SpiriAssistLogo from "@/icons/spiri-assist-logo";
 import { Session } from "next-auth";
 import { isNullOrUndefined } from "@/lib/functions";
 import withProtection from "@/components/ux/HOC/withProtection";
@@ -173,6 +174,18 @@ const useBL = (props: BLProps) => {
             icon: <Radio className="w-5 h-5" />,
             href: `/p/${practitionerSlug}/manage/live-assist`,
             testId: "nav-live-assist"
+        },
+        {
+            label: "Expo Mode",
+            icon: <Store className="w-5 h-5" />,
+            href: `/p/${practitionerSlug}/manage/expo-mode`,
+            testId: "nav-expo-mode"
+        },
+        {
+            icon: <div className="flex items-center justify-center"><SpiriAssistLogo height={20} /></div>,
+            label: "SpiriAssist",
+            testId: "nav-spiri-assist",
+            href: `/p/${practitionerSlug}/manage/spiri-assist`,
         },
         {
             label: "Profile",

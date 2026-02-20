@@ -15,6 +15,7 @@ const DEFAULT_FEATURES: TierFeatures = {
     hasBackorders: false,
     hasPaymentLinks: false,
     hasLiveAssist: false,
+    hasExpoMode: false,
 };
 
 export type TierFeaturesResult = {

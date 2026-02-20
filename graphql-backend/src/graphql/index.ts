@@ -38,6 +38,7 @@ import {resolvers as ConsentResolvers} from "./consent"
 import {resolvers as SubscriptionResolvers} from "./subscription"
 import {resolvers as PaymentLinkResolvers} from "./paymentLink"
 import {resolvers as LiveAssistResolvers} from "./liveAssist"
+import {resolvers as ExpoModeResolvers} from "./expoMode"
 
 import {mergeDeep, getAllFilesWithExtension} from "../utils/functions"
 
@@ -83,7 +84,8 @@ const resolvers = mergeDeep(
   ConsentResolvers,
   SubscriptionResolvers,
   PaymentLinkResolvers,
-  LiveAssistResolvers
+  LiveAssistResolvers,
+  ExpoModeResolvers
 )
 
 let typeDefs: string[] = ScalarTypeDefs
