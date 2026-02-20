@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Send } from 'lucide-react';
 import { useCreatePaymentLink, CreatePaymentLinkInput } from '@/app/(site)/p/[practitioner_slug]/(manage)/manage/payment-links/_hooks/UseCreatePaymentLink';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 type ItemEntry = {
     id: string;
@@ -35,7 +35,6 @@ const EXPIRATION_OPTIONS = [
 
 export default function CreatePaymentLinkDialog({ open, onOpenChange, vendors }: Props) {
     const createMutation = useCreatePaymentLink();
-    const { toast } = useToast();
 
     const defaultVendorId = vendors[0]?.id || '';
     const defaultCurrency = vendors[0]?.currency || 'AUD';
@@ -67,15 +66,15 @@ export default function CreatePaymentLinkDialog({ open, onOpenChange, vendors }:
 
     const handleSubmit = async () => {
         if (!customerEmail.trim()) {
-            toast({ title: 'Customer email is required', variant: 'destructive' });
+            toast.error('Customer email is required');
             return;
         }
         if (items.some(i => !i.amount || i.amount <= 0)) {
-            toast({ title: 'All items must have an amount greater than zero', variant: 'destructive' });
+            toast.error('All items must have an amount greater than zero');
             return;
         }
         if (items.some(i => i.itemType === 'CUSTOM' && !i.customDescription.trim())) {
-            toast({ title: 'Custom items must have a description', variant: 'destructive' });
+            toast.error('Custom items must have a description');
             return;
         }
 
@@ -104,14 +103,14 @@ export default function CreatePaymentLinkDialog({ open, onOpenChange, vendors }:
                     await navigator.clipboard.writeText(result.paymentUrl).catch(() => {});
                     description += ' — link copied to clipboard';
                 }
-                toast({ title: 'Payment link sent!', description });
+                toast.success(description ? `Payment link sent! ${description}` : 'Payment link sent!');
                 onOpenChange(false);
                 resetForm();
             } else {
-                toast({ title: result.message || 'Failed to create payment link', variant: 'destructive' });
+                toast.error(result.message || 'Failed to create payment link');
             }
         } catch (err: any) {
-            toast({ title: err.message || 'Failed to create payment link', variant: 'destructive' });
+            toast.error(err.message || 'Failed to create payment link');
         }
     };
 

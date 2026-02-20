@@ -40,7 +40,7 @@ import {
     useLogExpoSale
 } from './_hooks/UseExpoMutations';
 import PageQRCode from '@/components/ux/PageQRCode';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 type Props = {
     session: Session;
@@ -63,7 +63,6 @@ function formatTimeAgo(iso: string): string {
 }
 
 export default function ExpoDashboardUI({ session, practitionerId, slug, expoId }: Props) {
-    const { toast } = useToast();
     const { data: expo, isLoading: expoLoading } = useExpo(expoId, practitionerId);
     const { data: items } = useExpoItems(expoId);
     const { data: sales } = useExpoSales(expoId);
@@ -125,7 +124,7 @@ export default function ExpoDashboardUI({ session, practitionerId, slug, expoId 
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(shareUrl);
-        toast({ title: 'Link copied!', description: shareUrl });
+        toast.success('Link copied!');
     };
 
     const handleAddItem = async () => {
@@ -168,7 +167,7 @@ export default function ExpoDashboardUI({ session, practitionerId, slug, expoId 
             setShowLogSale(false);
             setSaleItems([]);
             setSaleCustomerName('');
-            toast({ title: 'Sale logged!' });
+            toast.success('Sale logged!');
         } catch {
             // Error handled by mutation
         }
@@ -177,7 +176,7 @@ export default function ExpoDashboardUI({ session, practitionerId, slug, expoId 
     const handleGoLive = async () => {
         try {
             await goLiveMutation.mutateAsync({ expoId, vendorId: practitionerId });
-            toast({ title: 'Expo is live!' });
+            toast.success('Expo is live!');
         } catch {
             // Error handled
         }

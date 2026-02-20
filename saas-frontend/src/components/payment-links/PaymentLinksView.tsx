@@ -9,7 +9,7 @@ import { usePaymentLinks, PaymentLink } from '@/app/(site)/p/[practitioner_slug]
 import { useCancelPaymentLink } from '@/app/(site)/p/[practitioner_slug]/(manage)/manage/payment-links/_hooks/UseCancelPaymentLink';
 import { useResendPaymentLink } from '@/app/(site)/p/[practitioner_slug]/(manage)/manage/payment-links/_hooks/UseResendPaymentLink';
 import CreatePaymentLinkDialog from './CreatePaymentLinkDialog';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const STATUS_FILTERS = ['All', 'SENT', 'VIEWED', 'PAID', 'EXPIRED', 'CANCELLED'] as const;
 
@@ -53,7 +53,6 @@ export default function PaymentLinksView({ vendors, hasPaymentLinks, upgradeUrl 
     const [statusFilter, setStatusFilter] = useState<string>('All');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
-    const { toast } = useToast();
 
     const queryStatus = statusFilter === 'All' ? undefined : statusFilter;
     const { data: links, isLoading } = usePaymentLinks(queryStatus);
@@ -63,25 +62,25 @@ export default function PaymentLinksView({ vendors, hasPaymentLinks, upgradeUrl 
     const handleCopyUrl = (linkId: string) => {
         const url = `${window.location.origin}/pay/${linkId}`;
         navigator.clipboard.writeText(url);
-        toast({ title: 'Link copied to clipboard' });
+        toast.success('Link copied to clipboard');
     };
 
     const handleCancel = async (linkId: string) => {
         try {
             await cancelMutation.mutateAsync(linkId);
-            toast({ title: 'Payment link cancelled' });
+            toast.success('Payment link cancelled');
             setCancelConfirmId(null);
         } catch (err: any) {
-            toast({ title: err.message || 'Failed to cancel', variant: 'destructive' });
+            toast.error(err.message || 'Failed to cancel');
         }
     };
 
     const handleResend = async (linkId: string) => {
         try {
             await resendMutation.mutateAsync({ linkId, resetExpiration: true });
-            toast({ title: 'Payment link resent' });
+            toast.success('Payment link resent');
         } catch (err: any) {
-            toast({ title: err.message || 'Failed to resend', variant: 'destructive' });
+            toast.error(err.message || 'Failed to resend');
         }
     };
 

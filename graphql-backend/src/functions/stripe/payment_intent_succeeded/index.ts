@@ -39,7 +39,7 @@ async function handlePaymentLinkPayment(
     const linkId = metadata.paymentLinkId!;
 
     // 1. Fetch the payment link (cross-partition query since we don't know createdBy)
-    const results = await cosmos.run_query<paymentLink_type>("Main-PaymentLinks", {
+    const results = await cosmos.run_query("Main-PaymentLinks", {
         query: "SELECT * FROM c WHERE c.id = @id",
         parameters: [{ name: "@id", value: linkId }],
     }, true);
@@ -67,7 +67,7 @@ async function handlePaymentLinkPayment(
     const bookingIds: string[] = [];
 
     for (const [vendorId, vendorAmount] of Object.entries(vendorBreakdown)) {
-        const vendor = await cosmos.get_record<vendor_type>("Main-Vendor", vendorId, vendorId);
+        const vendor = await cosmos.get_record("Main-Vendor", vendorId, vendorId) as vendor_type | null;
         if (!vendor?.stripe?.accountId) {
             logger.logMessage(`Vendor ${vendorId} has no Stripe account — skipping transfer`);
             continue;
@@ -172,7 +172,7 @@ async function handlePaymentLinkPayment(
     const uniqueVendorIds = [...new Set(link.items.map(i => i.vendorId))];
     for (const vendorId of uniqueVendorIds) {
         try {
-            const vendor = await cosmos.get_record<vendor_type>("Main-Vendor", vendorId, vendorId);
+            const vendor = await cosmos.get_record("Main-Vendor", vendorId, vendorId) as vendor_type | null;
             const vendorEmail = vendor?.contact?.internal?.email;
             if (!vendorEmail) continue;
 

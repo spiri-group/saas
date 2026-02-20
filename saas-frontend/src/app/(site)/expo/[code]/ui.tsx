@@ -9,8 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger
-} from '@/components/ui/sheet';
+    Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger
+} from '@/components/ui/drawer';
 import {
     Store, ShoppingCart, Plus, Minus, CheckCircle, AlertCircle, Pause,
     ShieldCheck, Sparkles, X
@@ -511,8 +511,8 @@ export default function ExpoCustomerUI({ code }: Props) {
             {cartCount > 0 && (
                 <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/95 backdrop-blur border-t border-slate-800">
                     <div className="max-w-2xl mx-auto">
-                        <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-                            <SheetTrigger asChild>
+                        <Drawer open={cartOpen} onOpenChange={setCartOpen}>
+                            <DrawerTrigger asChild>
                                 <Button
                                     className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 text-base"
                                     data-testid="view-cart-btn"
@@ -520,11 +520,11 @@ export default function ExpoCustomerUI({ code }: Props) {
                                     <ShoppingCart className="h-5 w-5 mr-2" />
                                     View Cart ({cartCount}) &middot; {formatAmount(cartTotal)}
                                 </Button>
-                            </SheetTrigger>
-                            <SheetContent side="bottom" className="bg-slate-900 border-slate-700 max-h-[80vh]" data-testid="cart-sheet">
-                                <SheetHeader>
-                                    <SheetTitle className="text-white">Your Cart</SheetTitle>
-                                </SheetHeader>
+                            </DrawerTrigger>
+                            <DrawerContent dark className="max-h-[80vh]" data-testid="cart-sheet">
+                                <DrawerHeader>
+                                    <DrawerTitle className="text-white">Your Cart</DrawerTitle>
+                                </DrawerHeader>
                                 <div className="mt-4 space-y-3 overflow-y-auto max-h-[40vh]">
                                     {cart.map(item => (
                                         <div key={item.itemId} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg" data-testid={`cart-item-${item.itemId}`}>
@@ -581,8 +581,8 @@ export default function ExpoCustomerUI({ code }: Props) {
                                         </p>
                                     )}
                                 </div>
-                            </SheetContent>
-                        </Sheet>
+                            </DrawerContent>
+                        </Drawer>
                     </div>
                 </div>
             )}
