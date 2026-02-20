@@ -15,6 +15,15 @@ const isTestEmail = (email: string) =>
 const isTestPhone = (phone: string) =>
     process.env.NODE_ENV !== 'production' && phone.replace(/\s/g, '').startsWith('+61400000');
 
+// Demo accounts - no real inboxes, OTP bypass handled in auth.ts
+const DEMO_EMAILS = [
+    "awaken@spirigroup.com",
+    "illuminate@spirigroup.com",
+    "manifest@spirigroup.com",
+    "transcend@spirigroup.com",
+];
+const isDemoEmail = (email: string) => DEMO_EMAILS.includes(email.toLowerCase());
+
 export const generateOTP = async (subject: string) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = new Date(new Date().getTime() + 3 * 60000); // Current time + 3 minutes
@@ -100,6 +109,12 @@ export const sendOTP = async (to: string, otp: string, strategy: 'email' | 'phon
                    (strategy === 'phone' && isTestPhone(to));
     if (isTest) {
         console.log(`[OTP] Skipping OTP send to test user: ${to}`);
+        return true;
+    }
+
+    // Skip sending OTP to demo accounts (no real inboxes)
+    if (strategy === 'email' && isDemoEmail(to)) {
+        console.log(`[OTP] Skipping OTP send to demo account: ${to}`);
         return true;
     }
 

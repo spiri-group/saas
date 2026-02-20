@@ -85,6 +85,13 @@ export const useVendorSubscription = (vendorId: string) => {
                             canHostPractitioners
                             hasInventoryAutomation
                             hasShippingAutomation
+                            canCreateEvents
+                            canCreateTours
+                            hasSpiriAssist
+                            hasBackorders
+                            hasPaymentLinks
+                            hasLiveAssist
+                            hasExpoMode
                         }
                         discountPercent
                         waived
