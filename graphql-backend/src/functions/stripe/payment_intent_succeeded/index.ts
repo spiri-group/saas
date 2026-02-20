@@ -183,7 +183,7 @@ async function handlePaymentLinkPayment(
 
             const vendorEmailContent = await renderEmailTemplate({ cosmos } as any, "payment-link-paid-vendor", {
                 "vendor.name": vendor?.name || "Vendor",
-                "vendor.contactName": vendor?.contact?.internal?.name || vendor?.name || "there",
+                "vendor.contactName": vendor?.name || "there",
                 "customer.email": link.customerEmail,
                 "payment.amount": amountDisplay,
                 "payment.description": description,
