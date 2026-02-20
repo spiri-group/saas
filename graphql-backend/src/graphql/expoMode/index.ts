@@ -484,8 +484,8 @@ const resolvers = {
             const vendor = await context.dataSources.cosmos.get_record<vendor_type>(
                 "Main-Vendor", args.vendorId, args.vendorId
             );
-            if (vendor?.email) {
-                await sendExpoEmail(context, "expo-summary", vendor.email, {
+            if (vendor?.contact?.internal?.email) {
+                await sendExpoEmail(context, "expo-summary", vendor.contact.internal.email, {
                     "expo.name": expo.expoName,
                     "expo.totalSales": String(expo.totalSales || 0),
                     "expo.totalRevenue": formatAmount(expo.totalRevenue || 0, vendor.currency || "AUD"),

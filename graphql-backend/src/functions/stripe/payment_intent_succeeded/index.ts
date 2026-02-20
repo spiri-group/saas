@@ -224,7 +224,7 @@ async function handleExpoSalePayment(
     logger.logMessage(`Expo sale ${saleId} marked as PAID`);
 
     // 2. Fetch the sale for item details
-    const sale = await cosmos.get_record<expoSale_type>(EXPO_MODE_CONTAINER, saleId, expoId);
+    const sale = await cosmos.get_record(EXPO_MODE_CONTAINER, saleId, expoId) as expoSale_type | null;
     if (!sale) {
         logger.logMessage(`Expo sale ${saleId} not found after patch`);
         return;
@@ -232,7 +232,7 @@ async function handleExpoSalePayment(
 
     // 3. Decrement inventory for each item
     for (const saleItem of sale.items) {
-        const item = await cosmos.get_record<expoItem_type>(EXPO_MODE_CONTAINER, saleItem.itemId, expoId);
+        const item = await cosmos.get_record(EXPO_MODE_CONTAINER, saleItem.itemId, expoId) as expoItem_type | null;
         if (!item || item.docType !== "expo-item") continue;
 
         await cosmos.patch_record(EXPO_MODE_CONTAINER, saleItem.itemId, expoId, [
@@ -250,7 +250,7 @@ async function handleExpoSalePayment(
     }
 
     // 4. Update expo stats
-    const expo = await cosmos.get_record<expo_type>(EXPO_MODE_CONTAINER, expoId, vendorId);
+    const expo = await cosmos.get_record(EXPO_MODE_CONTAINER, expoId, vendorId) as expo_type | null;
     if (expo) {
         const totalItemsSoldInSale = sale.items.reduce((sum: number, i: any) => sum + i.quantity, 0);
         await cosmos.patch_record(EXPO_MODE_CONTAINER, expoId, vendorId, [
@@ -261,7 +261,7 @@ async function handleExpoSalePayment(
         ], "STRIPE");
 
         // Broadcast updated expo
-        const updatedExpo = await cosmos.get_record<expo_type>(EXPO_MODE_CONTAINER, expoId, vendorId);
+        const updatedExpo = await cosmos.get_record(EXPO_MODE_CONTAINER, expoId, vendorId) as expo_type | null;
         if (updatedExpo) {
             signalR.addDataMessage("expo", updatedExpo, {
                 group: `expo-${expoId}`,
@@ -277,7 +277,7 @@ async function handleExpoSalePayment(
     });
 
     // 6. Send emails
-    const vendor = await cosmos.get_record<vendor_type>("Main-Vendor", vendorId, vendorId);
+    const vendor = await cosmos.get_record("Main-Vendor", vendorId, vendorId) as vendor_type | null;
     const formatAmt = (amt: number, cur: string) => `$${(amt / 100).toFixed(2)} ${cur.toUpperCase()}`;
     const itemsStr = sale.items.map((i: any) =>
         `${i.quantity}x ${i.itemName} — ${formatAmt(i.lineTotal.amount, i.lineTotal.currency)}`
@@ -305,7 +305,8 @@ async function handleExpoSalePayment(
     }
 
     // Vendor notification
-    if (vendor?.email) {
+    const vendorEmail = vendor?.contact?.internal?.email;
+    if (vendorEmail) {
         try {
             const emailContent = await renderEmailTemplate({ cosmos } as any, "expo-sale-vendor-notification", {
                 "expo.name": expo?.expoName || "Expo",
@@ -315,7 +316,7 @@ async function handleExpoSalePayment(
             });
             if (emailContent) {
                 await services.email.sendRawHtmlEmail(
-                    sender_details.from, vendor.email, emailContent.subject, emailContent.html
+                    sender_details.from, vendorEmail, emailContent.subject, emailContent.html
                 );
             }
         } catch (err) {
