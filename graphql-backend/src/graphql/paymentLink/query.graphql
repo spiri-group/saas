@@ -1,0 +1,47 @@
+type Query {
+    paymentLinks(linkStatus: String): [PaymentLink!]!
+    paymentLinkCheckout(linkId: ID!): PaymentLinkCheckout
+}
+
+type PaymentLink {
+    id: ID!
+    createdBy: String!
+    customerEmail: String!
+    customerName: String
+    items: [PaymentLinkItem!]!
+    totalAmount: CurrencyAmount!
+    linkStatus: String!
+    expiresAt: String!
+    expirationHours: Int!
+    sentAt: String!
+    viewedAt: String
+    paidAt: String
+    bookingIds: [String]
+    createdDate: String!
+    modifiedDate: String
+}
+
+type PaymentLinkItem {
+    id: ID!
+    vendorId: String!
+    vendorName: String!
+    itemType: String!
+    customDescription: String
+    sourceId: String
+    sourceName: String
+    amount: CurrencyAmount!
+}
+
+type PaymentLinkCheckout {
+    id: ID!
+    customerEmail: String!
+    customerName: String
+    items: [PaymentLinkItem!]!
+    totalAmount: CurrencyAmount!
+    linkStatus: String!
+    expiresAt: String!
+    viewedAt: String
+    paidAt: String
+    stripePaymentIntentSecret: String
+    vendorNames: [String!]!
+}

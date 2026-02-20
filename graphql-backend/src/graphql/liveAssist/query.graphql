@@ -1,0 +1,84 @@
+type Query {
+    liveSessions(vendorId: ID!): [LiveSession!]!
+    liveSession(sessionId: ID!, vendorId: ID!): LiveSession
+    liveQueue(sessionId: ID!): [LiveQueueEntry!]!
+    liveSessionByCode(code: String!): LiveSessionPublic
+    liveQueuePosition(entryId: ID!, sessionId: ID!): LiveQueuePositionResult
+}
+
+type LiveRecommendation {
+    message: String!
+    recommendedServiceId: String
+    recommendedServiceName: String
+    recommendedProductId: String
+    recommendedProductName: String
+    recommendedProductVendorId: String
+}
+
+type LiveSession {
+    id: ID!
+    vendorId: String!
+    code: String!
+    sessionTitle: String
+    sessionStatus: String!
+    pricingMode: String!
+    customPrice: CurrencyAmount
+    serviceId: String
+    serviceName: String
+    servicePrice: CurrencyAmount
+    defaultCta: LiveRecommendation
+    totalJoined: Int!
+    totalCompleted: Int!
+    totalRevenue: Int!
+    startedAt: String!
+    pausedAt: String
+    endedAt: String
+    createdDate: String!
+}
+
+type LiveSessionPublic {
+    id: ID!
+    vendorId: String!
+    vendorName: String!
+    vendorLogo: String
+    code: String!
+    sessionTitle: String
+    sessionStatus: String!
+    pricingMode: String!
+    price: CurrencyAmount!
+    serviceName: String
+    queueCount: Int!
+}
+
+type LiveQueueEntry {
+    id: ID!
+    sessionId: String!
+    vendorId: String!
+    customerName: String!
+    customerEmail: String!
+    question: String!
+    photoUrl: String
+    audioUrl: String
+    readingAudioUrl: String
+    spreadPhotoUrl: String
+    recommendation: LiveRecommendation
+    practitionerNote: String
+    entryStatus: String!
+    priority: Float!
+    position: Int!
+    amount: CurrencyAmount!
+    joinedAt: String!
+    startedAt: String
+    completedAt: String
+    skippedAt: String
+    releasedAt: String
+    createdDate: String!
+}
+
+type LiveQueuePositionResult {
+    entryId: String!
+    entryStatus: String!
+    position: Int!
+    totalWaiting: Int!
+    sessionStatus: String!
+}

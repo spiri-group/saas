@@ -748,8 +748,25 @@ const resolvers = {
                 plans: subscription?.plans || []
             }
 
+            // Validate same country if user already has a practitioner profile (required for payment link transfers)
+            const existingUser = await context.dataSources.cosmos.get_record<user_type>("Main-User", context.userId, context.userId);
+            if (existingUser?.vendors?.length > 0) {
+                for (const existingVendorRef of existingUser.vendors) {
+                    const existingVendor = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", (existingVendorRef as any).id, (existingVendorRef as any).id);
+                    if (existingVendor?.stripe?.accountId) {
+                        const existingAccount = await context.dataSources.stripe.callApi("GET", `accounts/${existingVendor.stripe.accountId}`);
+                        if (existingAccount.data.country && existingAccount.data.country !== vendorCountry) {
+                            throw new GraphQLError(
+                                `New merchant must be in the same country as your existing profile (${existingVendor.name} is in ${existingAccount.data.country}). This is required for payment transfers.`,
+                                { extensions: { code: "REGION_MISMATCH" } }
+                            );
+                        }
+                    }
+                }
+            }
+
             await context.dataSources.cosmos.add_record("Main-Vendor", vendorInput, vendorInput.id, context.userId)
-            
+
             // create the vendor as a customer in stripe - so they can be put on their subscription
             var createStripeMerchantAsCustomerAccountResp = await context.dataSources.stripe.callApi(HTTPMethod.post, "customers", {
                 "email": vendorInput.contact.public.email,
@@ -950,11 +967,28 @@ const resolvers = {
                 }
             };
 
+            // Validate same country if user already has a merchant profile (required for payment link transfers)
+            const practitionerCountry = input.country || 'AU';
+            const existingPractUser = await context.dataSources.cosmos.get_record<user_type>("Main-User", context.userId, context.userId);
+            if (existingPractUser?.vendors?.length > 0) {
+                for (const existingVendorRef of existingPractUser.vendors) {
+                    const existingVendor = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", (existingVendorRef as any).id, (existingVendorRef as any).id);
+                    if (existingVendor?.stripe?.accountId) {
+                        const existingAccount = await context.dataSources.stripe.callApi("GET", `accounts/${existingVendor.stripe.accountId}`);
+                        if (existingAccount.data.country && existingAccount.data.country !== practitionerCountry) {
+                            throw new GraphQLError(
+                                `New practitioner must be in the same country as your existing profile (${existingVendor.name} is in ${existingAccount.data.country}). This is required for payment transfers.`,
+                                { extensions: { code: "REGION_MISMATCH" } }
+                            );
+                        }
+                    }
+                }
+            }
+
             // Save to database
             await context.dataSources.cosmos.add_record("Main-Vendor", practitioner, practitionerId, context.userId);
 
             // Create a Stripe Customer for the practitioner (for subscription billing)
-            const practitionerCountry = input.country || 'AU';
             const createStripeCustomerResp = await context.dataSources.stripe.callApi(HTTPMethod.post, "customers", {
                 "email": input.email,
                 "name": input.name,

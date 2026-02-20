@@ -2,6 +2,7 @@
 
 const TIER_DESCRIPTIONS: Record<string, string> = {
     awaken: 'Get discovered and start earning',
+    illuminate: 'Send payment links and collect payments from clients',
     manifest: 'Start selling alongside your services',
     transcend: 'Remove the limits and grow your way',
 };
@@ -14,9 +15,19 @@ const TIER_BULLETS: Record<string, string[]> = {
         'Reach globally via SpiriReadings',
         'Build a following with video',
     ],
-    manifest: [
+    illuminate: [
         'Everything in Awaken, plus:',
+        'Send payment links via email',
+        'Collect payments at expos and events',
+        'Live Assist for streaming shows',
+        'Include services or custom amounts',
+        'Track payment status in real time',
+    ],
+    manifest: [
+        'Everything in Illuminate, plus:',
         'Open your online shop with up to 10 products',
+        'Payment links with products and services',
+        'Live Assist for streaming shows',
         'Run and sell ticketed events',
         'Stock stays in sync automatically',
         'Paranormal and spiritual investigations with SpiriAssist',

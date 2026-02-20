@@ -41,6 +41,8 @@ type TierFeatures {
   canCreateTours: Boolean!
   hasSpiriAssist: Boolean!
   hasBackorders: Boolean!
+  hasPaymentLinks: Boolean!
+  hasLiveAssist: Boolean!
 }
 
 type BillingRecord {

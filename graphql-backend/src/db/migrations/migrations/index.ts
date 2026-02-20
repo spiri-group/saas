@@ -47,6 +47,12 @@ import { migration as migration036 } from "./036_standardize_refund_language";
 import { migration as migration037 } from "./037_genericize_base_documents";
 import { migration as migration038 } from "./038_seed_country_supplements";
 import { migration as migration039 } from "./039_seed_subscription_terms";
+import { migration as migration040 } from "./040_add_illuminate_tier";
+import { migration as migration041 } from "./041_create_payment_links_container";
+import { migration as migration042 } from "./042_seed_payment_link_email_templates";
+import { migration as migration043 } from "./043_add_live_assist_feature_gate";
+import { migration as migration044 } from "./044_create_live_session_containers";
+import { migration as migration045 } from "./045_seed_live_assist_email_templates";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -89,4 +95,10 @@ export const migrations: Migration[] = [
     migration037,
     migration038,
     migration039,
+    migration040,
+    migration041,
+    migration042,
+    migration043,
+    migration044,
+    migration045,
 ];

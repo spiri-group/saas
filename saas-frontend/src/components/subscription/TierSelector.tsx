@@ -32,8 +32,8 @@ export default function TierSelector({
         return null;
     }
 
-    // Auto-select for practitioner (only Awaken available)
-    if (profileType === 'practitioner' && tiers.length === 1 && !selectedTier) {
+    // Auto-select first practitioner tier if none selected
+    if (profileType === 'practitioner' && tiers.length >= 1 && !selectedTier) {
         onTierChange(tiers[0].tier);
     }
 
@@ -83,7 +83,7 @@ export default function TierSelector({
                         selected={selectedTier === tier.tier}
                         onSelect={onTierChange}
                         badge={tier.tier === 'manifest' ? 'Most Popular' : undefined}
-                        disabled={profileType === 'practitioner' && tier.tier !== 'awaken'}
+                        disabled={profileType === 'practitioner' && tier.tier !== 'awaken' && tier.tier !== 'illuminate'}
                     />
                 ))}
             </div>

@@ -13,6 +13,8 @@ const DEFAULT_FEATURES: TierFeatures = {
     canCreateTours: false,
     hasSpiriAssist: false,
     hasBackorders: false,
+    hasPaymentLinks: false,
+    hasLiveAssist: false,
 };
 
 export type TierFeaturesResult = {

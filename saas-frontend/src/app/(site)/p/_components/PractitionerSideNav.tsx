@@ -30,7 +30,9 @@ import {
     Plus,
     Settings,
     Wallet,
-    ImageIcon
+    ImageIcon,
+    Receipt,
+    Radio
 } from "lucide-react";
 import { VendorDocType } from "@/utils/spiriverse";
 import CreateReading from "../../m/[merchant_slug]/(manage)/manage/services/_components/CreateReading";
@@ -159,6 +161,18 @@ const useBL = (props: BLProps) => {
                     className: "w-[1000px] max-w-[95vw] h-[850px]"
                 }
             ],
+        },
+        {
+            label: "Payment Links",
+            icon: <Receipt className="w-5 h-5" />,
+            href: `/p/${practitionerSlug}/manage/payment-links`,
+            testId: "nav-payment-links"
+        },
+        {
+            label: "Live Assist",
+            icon: <Radio className="w-5 h-5" />,
+            href: `/p/${practitionerSlug}/manage/live-assist`,
+            testId: "nav-live-assist"
         },
         {
             label: "Profile",

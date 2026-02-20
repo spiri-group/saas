@@ -13,6 +13,8 @@ export type TierFeatures = {
     canCreateTours: boolean;
     hasSpiriAssist: boolean;
     hasBackorders: boolean;
+    hasPaymentLinks: boolean;
+    hasLiveAssist: boolean;
 };
 
 export type SubscriptionTierDefinition = {
@@ -49,6 +51,8 @@ export const useSubscriptionTiers = (profileType?: string) => {
                             canCreateTours
                             hasSpiriAssist
                             hasBackorders
+                            hasPaymentLinks
+                            hasLiveAssist
                         }
                         monthlyPrice
                         annualPrice

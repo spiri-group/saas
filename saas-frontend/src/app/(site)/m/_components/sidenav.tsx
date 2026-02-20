@@ -5,7 +5,7 @@ import React, { JSX } from "react";
 import SideNav, { NavOption } from "@/components/ui/sidenav";
 import EditTeamMembers from "./Profile/Edit/TeamMembers";
 import EditCatalogueBanner from "./Profile/Edit/PromiseBanner";
-import { AlignLeftIcon, BoxIcon, Building2, FileTextIcon, HistoryIcon, NewspaperIcon, PaintbrushIcon, PhoneIcon, RefreshCwIcon, RotateCcwIcon, Share2Icon, StoreIcon, TruckIcon, Users2Icon, Package, AlertTriangle, ImageIcon, PiggyBank, CreditCardIcon, VideoIcon, Sparkles, MapPin, ShoppingCart, Calendar, LayoutDashboard, Mail, User, Wallet, Monitor } from "lucide-react";
+import { AlignLeftIcon, BoxIcon, Building2, FileTextIcon, HistoryIcon, NewspaperIcon, PaintbrushIcon, PhoneIcon, RefreshCwIcon, RotateCcwIcon, Share2Icon, StoreIcon, TruckIcon, Users2Icon, Package, AlertTriangle, ImageIcon, PiggyBank, CreditCardIcon, VideoIcon, Sparkles, MapPin, ShoppingCart, Calendar, LayoutDashboard, Mail, User, Wallet, Monitor, Receipt } from "lucide-react";
 import EditTourDetails from "../[merchant_slug]/(manage)/manage/tour/_components/Edit/TourDetails/EditTourDetails";
 import EditItinerary from "../[merchant_slug]/(manage)/manage/tour/_components/Edit/Itinerary";
 import CreateTour from "../[merchant_slug]/(manage)/manage/tour/_components/Create";
@@ -267,6 +267,15 @@ const useBL = (props: BLProps) => {
                     dialogId: "Merchant Gallery"
                 }
             ]
+        },
+        {
+            icon: <Receipt className="w-5 h-5" />,
+            label: "Payment Links",
+            href: `/m/${merchantSlug}/manage/payment-links`,
+            testId: "nav-payment-links",
+            disabled: !features.hasPaymentLinks,
+            disabledReason: "Send payment links and collect payments",
+            requiredTier: "manifest",
         },
         {
             icon: <Package className="w-5 h-5" />,

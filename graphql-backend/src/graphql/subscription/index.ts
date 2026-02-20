@@ -20,7 +20,7 @@ import {
     TierFeatures,
 } from "./featureGates";
 
-const VALID_TIERS: subscription_tier[] = ["awaken", "manifest", "transcend"];
+const VALID_TIERS: subscription_tier[] = ["awaken", "illuminate", "manifest", "transcend"];
 const VALID_INTERVALS: billing_interval[] = [billing_interval.monthly, billing_interval.annual];
 
 async function loadFeeConfig(context: serverContext): Promise<Record<string, any> | null> {
