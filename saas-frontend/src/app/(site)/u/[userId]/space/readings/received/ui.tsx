@@ -504,6 +504,7 @@ const UI: React.FC<Props> = ({ userId }) => {
             disabled={!interactive}
             onClick={() => interactive && setReviewRating(star)}
             className={`${interactive ? 'cursor-pointer hover:scale-110 transition-transform' : 'cursor-default'}`}
+            {...(interactive ? { 'data-testid': `review-star-${star}` } : {})}
           >
             <Star
               className={`w-6 h-6 ${
@@ -545,6 +546,7 @@ const UI: React.FC<Props> = ({ userId }) => {
               return (
                 <button
                   key={filter}
+                  data-testid={`filter-tab-${filter.replace('_', '-')}`}
                   onClick={() => setActiveFilter(filter)}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                     isActive
@@ -898,6 +900,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                         placeholder="What&apos;s most important to know?"
                         dark
                         maxLength={100}
+                        data-testid="review-headline-input"
                       />
                     </div>
 
@@ -910,6 +913,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                         dark
                         className="min-h-[80px]"
                         maxLength={500}
+                        data-testid="review-text-input"
                       />
                     </div>
 
@@ -922,6 +926,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                         reviewMutation.isPending
                       }
                       className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                      data-testid="submit-review-btn"
                     >
                       {reviewMutation.isPending ? (
                         <>
@@ -949,6 +954,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                       onClick={handleStartReview}
                       variant="outline"
                       className="w-full border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                      data-testid="leave-review-btn"
                     >
                       <Star className="w-4 h-4 mr-2" />
                       Leave a Review

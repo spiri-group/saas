@@ -351,7 +351,7 @@ const useBL = (props: BLProps) => {
             href: `/m/${merchantSlug}/manage/spiri-assist`,
             disabled: !hasSpiriAssist,
             disabledReason: "Paranormal investigations with SpiriAssist",
-            requiredTier: "manifest",
+            requiredTier: "illuminate",
         },
     ]
 

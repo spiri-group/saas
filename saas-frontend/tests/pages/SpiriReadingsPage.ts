@@ -33,21 +33,23 @@ export class SpiriReadingsPage {
   }
 
   async waitForPageLoad() {
-    await expect(this.page.locator('h1:has-text("SpiriReadings")')).toBeVisible({ timeout: 10000 });
-    // Wait for either empty state or requests to load
-    const emptyState = this.page.locator('text=No reading requests available');
-    const requestBank = this.page.locator('[data-testid="request-bank"]');
-    const claimedList = this.page.locator('[data-testid="claimed-requests"]');
-    await expect(emptyState.or(requestBank).or(claimedList)).toBeVisible({ timeout: 15000 });
+    // Wait for tab buttons to be visible (they're always rendered)
+    await expect(this.page.locator('[data-testid="tab-request-bank"]')).toBeVisible({ timeout: 10000 });
+    await expect(this.page.locator('[data-testid="tab-my-claims"]')).toBeVisible({ timeout: 10000 });
+    // Wait for content to load (either empty state, loading spinner disappears, or requests appear)
+    const emptyState = this.page.locator('[data-testid="empty-request-bank"]');
+    const requests = this.page.locator('[data-testid^="available-request-"]').first();
+    const searchInput = this.page.locator('[data-testid="request-bank-search"]');
+    await expect(emptyState.or(requests).or(searchInput)).toBeVisible({ timeout: 15000 });
   }
 
   // Tab navigation
   async clickRequestBankTab() {
-    await this.page.locator('button:has-text("Request Bank")').click();
+    await this.page.locator('[data-testid="tab-request-bank"]').click();
   }
 
   async clickMyClaimsTab() {
-    await this.page.locator('button:has-text("My Claims")').click();
+    await this.page.locator('[data-testid="tab-my-claims"]').click();
   }
 
   // Request Bank interactions
@@ -207,10 +209,15 @@ export class SpiriReadingsPage {
 
   // Empty states
   async isRequestBankEmpty(): Promise<boolean> {
-    return await this.page.locator('text=No reading requests available').isVisible();
+    return await this.page.locator('[data-testid="empty-request-bank"]').isVisible();
   }
 
   async isClaimedListEmpty(): Promise<boolean> {
-    return await this.page.locator('text=No claimed requests').isVisible();
+    return await this.page.locator('[data-testid="empty-claimed-requests"]').isVisible();
+  }
+
+  // Navigate directly to a practitioner's readings page
+  async gotoPractitioner(slug: string) {
+    await this.page.goto(`/p/${slug}/manage/readings`);
   }
 }

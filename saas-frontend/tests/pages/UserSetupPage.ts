@@ -1,31 +1,26 @@
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
  * User Setup Page Object Model
- * Handles the /u/[userId]/setup page where users complete their profile
+ * Handles the unified /setup page (BasicDetailsStep) where users complete their profile
+ *
+ * New flow (2026):
+ *   BasicDetailsStep → "Start Your Journey" (browse) or "Set Up a Business" (merchant/practitioner)
+ *   Fields: firstName, lastName, email (auto-filled), country (auto-detected), religion (optional)
  */
 export class UserSetupPage extends BasePage {
-  // Selectors
   private readonly selectors = {
-    // Form fields - note: email is displayed as text in the header, not an input field
-    firstNameInput: 'input[name="firstname"]',
-    lastNameInput: 'input[name="lastname"]',
-    phoneNumberInput: 'input[aria-label="Phone number"]',
-    addressInput: 'input[placeholder="Enter your address"]',
-    religionPicker: 'button[aria-label="religion-picker"]',
-
-    // Security question
-    securityQuestionInput: 'input[placeholder="e.g., What was the name of your first pet?"]',
-    securityAnswerInput: 'input[placeholder="Your answer"]',
+    // Form fields
+    firstNameInput: '[data-testid="setup-first-name"]',
+    lastNameInput: '[data-testid="setup-last-name"]',
+    emailInput: '[data-testid="setup-email"]',
+    countryCombobox: '[data-testid="setup-country"]',
+    religionPicker: '[data-testid="setup-religion-picker"]',
 
     // Buttons
-    startBrowsingButton: 'button:has-text("Start Browsing SpiriVerse")',
-    continueAsMerchantButton: 'button:has-text("Continue as Merchant")',
-
-    // Layout
-    welcomeText: 'text=Welcome to Your Spiritual Journey',
-    setupHeading: 'h2:has-text("Get Started")',
+    startBrowsingButton: '[data-testid="setup-basic-browse-btn"]',
+    setupBusinessButton: '[data-testid="setup-basic-setup-btn"]',
   };
 
   constructor(page: Page) {
@@ -33,208 +28,71 @@ export class UserSetupPage extends BasePage {
   }
 
   /**
-   * Navigate to user setup page
+   * Navigate to setup page
    */
-  async navigateToSetup(userId: string) {
-    await this.goto(`/u/${userId}/setup`);
+  async navigateToSetup() {
+    await this.goto('/setup');
   }
 
   /**
-   * Check if we're on the setup page
+   * Wait for the basic details form to be visible
    */
-  async isOnSetupPage(): Promise<boolean> {
-    try {
-      await this.page.waitForSelector(this.selectors.setupHeading, { timeout: 5000 });
-      return true;
-    } catch {
-      return false;
-    }
+  async waitForForm() {
+    await expect(this.page.locator(this.selectors.firstNameInput)).toBeVisible({ timeout: 10000 });
   }
 
   /**
-   * Fill in user profile information
+   * Fill in basic user profile information
    */
   async fillUserProfile(data: {
     firstName: string;
     lastName: string;
-    phone: string;
-    address: string;
-    religion?: boolean; // Optional - whether to select religion
-    securityQuestion: string;
-    securityAnswer: string;
   }) {
-    // Wait for form to be fully loaded and ready
-    // Wait for first name input to be visible
-    const firstNameInput = this.page.locator(this.selectors.firstNameInput);
-    await firstNameInput.waitFor({ state: 'visible', timeout: 10000 });
-
-    // Small delay to ensure form animations complete
+    await this.waitForForm();
     await this.page.waitForTimeout(500);
 
-    // Use click + fill for text inputs to ensure they're cleared first
-    await this.page.click(this.selectors.firstNameInput);
-    await this.page.fill(this.selectors.firstNameInput, ''); // Clear first
-    await this.page.fill(this.selectors.firstNameInput, data.firstName);
+    await this.page.locator(this.selectors.firstNameInput).click();
+    await this.page.locator(this.selectors.firstNameInput).fill('');
+    await this.page.locator(this.selectors.firstNameInput).fill(data.firstName);
 
-    await this.page.click(this.selectors.lastNameInput);
-    await this.page.fill(this.selectors.lastNameInput, ''); // Clear first
-    await this.page.fill(this.selectors.lastNameInput, data.lastName);
+    await this.page.locator(this.selectors.lastNameInput).click();
+    await this.page.locator(this.selectors.lastNameInput).fill('');
+    await this.page.locator(this.selectors.lastNameInput).fill(data.lastName);
 
-    // Phone input - clear and type
-    await this.page.click(this.selectors.phoneNumberInput);
-    await this.page.fill(this.selectors.phoneNumberInput, ''); // Clear first
-    await this.page.keyboard.type(data.phone);
-
-    // Small delay to ensure all fields are filled
-    await this.page.waitForTimeout(200);
-
-    // Address input is autocomplete - type and select from dropdown
-    await this.page.click(this.selectors.addressInput);
-    await this.page.keyboard.type(data.address);
-
-    // Wait for autocomplete suggestions to appear
-    // The component uses a custom dropdown with role="listbox" and role="option"
-    try {
-      // Wait for the listbox to appear
-      await this.page.waitForSelector('[role="listbox"]', { timeout: 5000 });
-
-      // Wait for at least one option to be available
-      await this.page.waitForSelector('[role="option"]', { timeout: 5000 });
-
-      // Small delay to ensure dropdown is fully rendered and first item is active
-      await this.page.waitForTimeout(300);
-    } catch {
-      // If autocomplete doesn't appear, just continue
-      await this.page.waitForTimeout(1000);
-    }
-
-    // Select the first suggestion (it should already be active/highlighted)
-    // The component sets activeIndex to 0 when results appear (line 114 in AddressInput.tsx)
-    await this.page.keyboard.press('Enter');
-
-    // Wait for address to be set
-    await this.page.waitForTimeout(500);
-
-    // Optionally select religion (if requested)
-    if (data.religion) {
-      const religionButton = this.page.locator(this.selectors.religionPicker);
-      await religionButton.waitFor({ state: 'visible', timeout: 5000 });
-      await religionButton.click();
-      await this.page.waitForTimeout(500);
-
-      // Wait for loading to complete (the dialog shows "Loading religions..." while fetching)
-      const loadingText = this.page.locator('text=Loading religions');
-      await loadingText.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
-
-      // Now wait for the religion tree to appear
-      await this.page.waitForSelector('[data-testid="religion-tree"]', { timeout: 15000 });
-      // Select first religion option
-      await this.page.locator('[role="treeitem"]').first().click();
-      await this.page.waitForTimeout(500);
-    }
-
-    // Fill security question and answer
-    await this.page.fill(this.selectors.securityQuestionInput, data.securityQuestion);
-    await this.page.fill(this.selectors.securityAnswerInput, data.securityAnswer);
-
-    // Wait for form to stabilize
-    await this.page.waitForTimeout(500);
+    // Email and country are auto-filled from session/geolocation
+    await this.page.waitForTimeout(300);
   }
 
   /**
-   * Click "Start browsing SpiriVerse" button (completes setup as regular user)
+   * Click "Start Your Journey" button (completes setup as regular user)
    */
   async startBrowsing() {
     const button = this.page.locator(this.selectors.startBrowsingButton);
-
-    // Ensure button is enabled and not in loading state
-    await button.waitFor({ state: 'visible', timeout: 5000 });
-
-    // Wait for button to be enabled and not busy
-    await button.waitFor({ state: 'attached', timeout: 5000 });
-    await this.page.waitForTimeout(500); // Small delay for any pending state updates
-
-    // Click the button
+    await expect(button).toBeVisible({ timeout: 5000 });
+    await this.page.waitForTimeout(300);
     await button.click();
 
-    // Wait for redirect to home page (longer timeout for slow server actions)
-    await this.page.waitForURL('/', { timeout: 30000 });
+    // Wait for redirect to personal space
+    await this.page.waitForURL(/\/u\/.*\/space/, { timeout: 30000 });
   }
 
   /**
-   * Click "Continue as a Merchant" button (proceeds to merchant setup)
+   * Click "Set Up a Business" button (proceeds to plan selection)
    */
-  async continueAsMerchant() {
-    const button = this.page.locator(this.selectors.continueAsMerchantButton);
-
-    // Ensure button is enabled and not in loading state
-    await button.waitFor({ state: 'visible', timeout: 5000 });
-
-    // Wait for button to be enabled and not busy
-    await button.waitFor({ state: 'attached', timeout: 5000 });
-    await this.page.waitForTimeout(500); // Small delay for any pending state updates
-
-    // Click the button
+  async setupBusiness() {
+    const button = this.page.locator(this.selectors.setupBusinessButton);
+    await expect(button).toBeVisible({ timeout: 5000 });
+    await this.page.waitForTimeout(300);
     await button.click();
 
-    // Wait for redirect to merchant setup (longer timeout for slow server actions)
-    await this.page.waitForURL('/m/setup', { timeout: 30000 });
+    // Wait for plan step to appear
+    await expect(this.page.locator('[data-testid="choose-plan-step"]')).toBeVisible({ timeout: 10000 });
   }
 
   /**
-   * Complete full user signup flow (become a regular user)
+   * Check if start browsing button is visible
    */
-  async completeUserSignup(userData: {
-    firstName: string;
-    lastName: string;
-    phone: string;
-    address: string;
-    securityQuestion: string;
-    securityAnswer: string;
-  }) {
-    await this.fillUserProfile(userData);
-    await this.startBrowsing();
-  }
-
-  /**
-   * Complete user profile and proceed to merchant signup
-   */
-  async completeUserProfileAndBecomeMerchant(userData: {
-    firstName: string;
-    lastName: string;
-    phone: string;
-    address: string;
-    securityQuestion: string;
-    securityAnswer: string;
-  }) {
-    await this.fillUserProfile(userData);
-    await this.continueAsMerchant();
-  }
-
-  /**
-   * Check if start browsing button is enabled
-   */
-  async isStartBrowsingEnabled(): Promise<boolean> {
-    const button = this.page.locator(this.selectors.startBrowsingButton);
-    return !(await button.isDisabled());
-  }
-
-  /**
-   * Check if continue as merchant button is enabled
-   */
-  async isContinueAsMerchantEnabled(): Promise<boolean> {
-    const button = this.page.locator(this.selectors.continueAsMerchantButton);
-    return !(await button.isDisabled());
-  }
-
-  /**
-   * Verify form validation (buttons should be disabled if form is pristine/invalid)
-   */
-  async verifyFormValidation() {
-    // Buttons should be disabled initially
-    const startBrowsingDisabled = !(await this.isStartBrowsingEnabled());
-    const merchantDisabled = !(await this.isContinueAsMerchantEnabled());
-
-    return startBrowsingDisabled && merchantDisabled;
+  async isStartBrowsingVisible(): Promise<boolean> {
+    return await this.page.locator(this.selectors.startBrowsingButton).isVisible();
   }
 }

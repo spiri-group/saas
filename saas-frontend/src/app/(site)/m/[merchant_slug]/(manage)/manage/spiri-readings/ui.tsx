@@ -264,6 +264,7 @@ export default function UI({ merchantId }: UIProps) {
         <div className="grid grid-cols-2 gap-2 mb-6">
           <button
             onClick={() => setActiveTab('available')}
+            data-testid="tab-request-bank"
             data-state={activeTab === 'available' ? 'active' : 'inactive'}
             className={cn(
               'flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all',
@@ -282,6 +283,7 @@ export default function UI({ merchantId }: UIProps) {
           </button>
           <button
             onClick={() => setActiveTab('claimed')}
+            data-testid="tab-my-claims"
             data-state={activeTab === 'claimed' ? 'active' : 'inactive'}
             className={cn(
               'flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all',
@@ -380,7 +382,7 @@ export default function UI({ merchantId }: UIProps) {
                 <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
               </div>
             ) : !availableRequests || availableRequests.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
+              <div className="text-center py-12 text-slate-500" data-testid="empty-request-bank">
                 <Inbox className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p className="text-lg">No reading requests available</p>
                 <p className="text-sm">Check back soon for new requests!</p>
@@ -479,7 +481,7 @@ export default function UI({ merchantId }: UIProps) {
                 <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
               </div>
             ) : !claimedRequests || claimedRequests.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
+              <div className="text-center py-12 text-slate-500" data-testid="empty-claimed-requests">
                 <ListChecks className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p className="text-lg">No claimed requests</p>
                 <p className="text-sm">Claim a request from the Request Bank to get started!</p>

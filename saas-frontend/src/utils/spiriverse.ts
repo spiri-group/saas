@@ -810,6 +810,10 @@ export interface OutstandingConsent {
   content: string;
   version: number;
   effectiveDate: string;
+  supplementContent?: string;
+  supplementDocumentId?: string;
+  supplementVersion?: number;
+  supplementTitle?: string;
 }
 
 export interface RecordConsentInput {
@@ -818,6 +822,8 @@ export interface RecordConsentInput {
   version: number;
   consentContext: string;
   documentTitle: string;
+  supplementDocumentId?: string;
+  supplementVersion?: number;
 }
 
 
@@ -1486,6 +1492,99 @@ export type vendor_event_update_type = {
 //#endregion
 
 
+export const EXPO_MODE_CONTAINER = "Main-ExpoMode";
+export const DOC_TYPE_EXPO = "expo";
+export const DOC_TYPE_EXPO_ITEM = "expo-item";
+export const DOC_TYPE_EXPO_SALE = "expo-sale";
+
+export type ExpoStatus = "SETUP" | "LIVE" | "PAUSED" | "ENDED";
+export type ExpoItemSource = "SERVICE" | "AD_HOC";
+export type ExpoSaleChannel = "QR" | "WALK_UP";
+export type ExpoSalePaymentMethod = "STRIPE" | "CASH" | "OTHER";
+export type ExpoSaleStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
+
+export type expo_type = {
+    id: string;
+    partitionKey: string;          // = vendorId
+    docType: "expo";
+    vendorId: string;
+    code: string;                  // 8-char shareable code (URL: /expo/{code})
+    expoName: string;
+    expoStatus: ExpoStatus;
+    // Stats (denormalized)
+    totalSales: number;
+    totalRevenue: number;          // cents
+    totalItemsSold: number;
+    totalCustomers: number;
+    // Timestamps
+    createdAt: string;
+    goLiveAt?: string;
+    pausedAt?: string;
+    endedAt?: string;
+    modifiedDate?: string;
+};
+
+export type expoItem_type = {
+    id: string;
+    partitionKey: string;          // = expoId
+    docType: "expo-item";
+    expoId: string;
+    vendorId: string;              // denormalized
+    // Source
+    itemSource: ExpoItemSource;
+    serviceId?: string;            // if SERVICE
+    serviceName?: string;          // denormalized
+    // Details
+    itemName: string;
+    itemDescription?: string;
+    itemImage?: string;
+    price: currency_amount_type;
+    // Inventory
+    trackInventory: boolean;       // false for services (unlimited/capped)
+    quantityBrought?: number;      // how many brought to expo
+    quantitySold: number;
+    // Display
+    sortOrder: number;
+    isActive: boolean;             // toggleable mid-expo
+    createdAt: string;
+    modifiedDate?: string;
+};
+
+export type expoSaleItem_type = {
+    itemId: string;
+    itemName: string;
+    quantity: number;
+    unitPrice: currency_amount_type;
+    lineTotal: currency_amount_type;
+};
+
+export type expoSale_type = {
+    id: string;
+    partitionKey: string;          // = expoId
+    docType: "expo-sale";
+    expoId: string;
+    vendorId: string;              // denormalized
+    // Customer (optional for walk-ups)
+    customerName?: string;
+    customerEmail?: string;
+    // Sale
+    saleChannel: ExpoSaleChannel;
+    paymentMethod: ExpoSalePaymentMethod;
+    items: expoSaleItem_type[];
+    subtotal: currency_amount_type;
+    saleStatus: ExpoSaleStatus;
+    saleNumber: number;            // sequential within expo
+    // Stripe (QR sales only)
+    stripePaymentIntentId?: string;
+    stripePaymentIntentSecret?: string;
+    // Timestamps
+    createdAt: string;
+    paidAt?: string;
+    modifiedDate?: string;
+};
+
+
+
 
 
 // Workflow status for featuring requests
@@ -1915,6 +2014,8 @@ export interface LegalDocument {
   updatedAt: string;
   updatedBy: string; // Staff member who last edited
   placeholders?: Record<string, string>;
+  parentDocumentId?: string; // For supplements: links to the base document
+  supplementOrder?: number; // Display order within supplements for a document type
 }
 
 export interface LegalDocumentVersion {
@@ -1944,6 +2045,8 @@ export interface LegalDocumentInput {
   effectiveDate?: string;
   changeSummary?: string;
   placeholders?: Record<string, string>;
+  parentDocumentId?: string;
+  supplementOrder?: number;
 }
 
 export const LEGAL_DOCUMENT_TYPES = [
@@ -2039,6 +2142,86 @@ export type listingSchedule_type = {
 }
 
 //#endregion
+
+
+export type LiveSessionStatus = "ACTIVE" | "PAUSED" | "ENDED";
+export type QueueEntryStatus = "WAITING" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED" | "RELEASED";
+
+export const LIVE_ASSIST_CONTAINER = "Main-LiveAssist";
+export const DOC_TYPE_SESSION = "live-session";
+export const DOC_TYPE_QUEUE_ENTRY = "live-queue-entry";
+
+export type live_recommendation_type = {
+    message: string;                        // "Book a deeper 1:1 session with me"
+    recommendedServiceId?: string;          // practitioner's own service
+    recommendedServiceName?: string;        // denormalized for display
+    recommendedProductId?: string;          // any merchant's product
+    recommendedProductName?: string;        // denormalized for display
+    recommendedProductVendorId?: string;    // product's vendor (may differ from session vendor)
+};
+
+export type liveSession_type = {
+    id: string;
+    partitionKey: string;           // = vendorId (generic partition key)
+    docType: "live-session";
+    vendorId: string;
+    code: string;                   // 8-char shareable code (URL: /live/{code})
+    sessionTitle?: string;          // optional title shown to viewers
+    sessionStatus: LiveSessionStatus;
+    // Pricing
+    pricingMode: "CUSTOM" | "SERVICE";
+    customPrice?: currency_amount_type;    // when CUSTOM
+    serviceId?: string;                     // when SERVICE — link to existing service
+    serviceName?: string;
+    servicePrice?: currency_amount_type;
+    // Default CTA — auto-applied to all readings unless overridden
+    defaultCta?: live_recommendation_type;
+    // Stats
+    totalJoined: number;
+    totalCompleted: number;
+    totalRevenue: number;           // cents
+    // Timestamps
+    startedAt: string;
+    pausedAt?: string;
+    endedAt?: string;
+    createdDate: string;
+    modifiedDate?: string;
+};
+
+export type liveQueueEntry_type = {
+    id: string;
+    partitionKey: string;           // = sessionId (generic partition key)
+    docType: "live-queue-entry";
+    sessionId: string;
+    vendorId: string;               // denormalized for Stripe lookups
+    // Customer
+    customerName: string;
+    customerEmail: string;
+    question: string;
+    photoUrl?: string;              // base64 data URI for MVP
+    audioUrl?: string;              // base64 data URI - customer voice question
+    readingAudioUrl?: string;       // base64 data URI - practitioner recorded reading
+    spreadPhotoUrl?: string;        // base64 data URI - practitioner's card spread photo
+    // Post-reading recommendation (overrides session defaultCta if set)
+    recommendation?: live_recommendation_type;
+    practitionerNote?: string;      // personal note to customer
+    // Queue
+    entryStatus: QueueEntryStatus;
+    priority: number;               // Date.now() — FIFO ordering
+    position: number;               // initial position at join time
+    // Payment
+    amount: currency_amount_type;
+    stripePaymentIntentId: string;
+    stripePaymentIntentSecret: string;
+    // Timestamps
+    joinedAt: string;
+    startedAt?: string;             // when practitioner starts reading
+    completedAt?: string;
+    skippedAt?: string;
+    releasedAt?: string;
+    createdDate: string;
+};
+
 //#region LiveStream
 
 
@@ -2404,8 +2587,11 @@ export type order_type = {
     discount: number
     createdDate: string
     status?: string
+    source?: string
+    voidedAt?: string
+    voidedBy?: string
     checkoutLinkExpiresAt?: string
-} 
+}
 
 export type order_credit_type = {
     code: string,
@@ -2713,6 +2899,45 @@ export type refund_record_type = {
 }
 
 //#endregion
+
+
+export type PaymentLinkStatus = "SENT" | "VIEWED" | "PAID" | "EXPIRED" | "CANCELLED";
+
+export type paymentLinkItem_type = {
+    id: string;
+    vendorId: string;
+    vendorName: string;
+    itemType: "CUSTOM" | "SERVICE" | "PRODUCT";
+    // CUSTOM
+    customDescription?: string;
+    // SERVICE / PRODUCT
+    sourceId?: string;
+    sourceName?: string;
+    // All types
+    amount: currency_amount_type;
+};
+
+export type paymentLink_type = {
+    id: string;
+    createdBy: string;                 // userId (partition key)
+    customerEmail: string;
+    customerName?: string;
+    items: paymentLinkItem_type[];
+    totalAmount: currency_amount_type;
+    linkStatus: PaymentLinkStatus;     // NOT "status" per CLAUDE.md
+    expiresAt: string;
+    expirationHours: number;           // 24, 48, 168, 720
+    sentAt: string;
+    viewedAt?: string;
+    paidAt?: string;
+    stripePaymentIntentId?: string;
+    stripePaymentIntentSecret?: string;
+    bookingIds?: string[];
+    createdDate: string;
+    modifiedDate?: string;
+    modifiedBy?: string;
+};
+
 // ============================================
 // Personal Space Types - Main Export File
 // ============================================
@@ -3230,8 +3455,85 @@ export type questionMode_type = {
 //#endregion
 
 
-// Spread types available for reading requests
-export type spread_type = 'SINGLE' | 'THREE_CARD' | 'FIVE_CARD';
+// ============================================
+// Reading Categories
+// ============================================
+
+// Top-level category for reading requests
+export type reading_request_category = 'TAROT' | 'ASTROLOGY';
+
+// ============================================
+// Spread Types
+// ============================================
+
+// Tarot spread types
+export type tarot_spread_type = 'SINGLE' | 'THREE_CARD' | 'FIVE_CARD';
+
+// Astrology reading tiers
+export type astrology_spread_type = 'ASTRO_SNAPSHOT' | 'ASTRO_FOCUS' | 'ASTRO_DEEP_DIVE';
+
+// Combined spread type (backward-compatible)
+export type spread_type = tarot_spread_type | astrology_spread_type;
+
+// ============================================
+// Astrology Focus Areas
+// ============================================
+
+export type astrology_focus_area =
+  | 'birth_chart'       // "What stands out in my chart?"
+  | 'transit'           // "What's happening for me right now?"
+  | 'compatibility'     // "How compatible are we?" (requires partner data)
+  | 'solar_return'      // "What does my year ahead look like?"
+  | 'single_planet'     // "Tell me about my Venus/Mars/Saturn"
+  | 'life_area';        // "Career/Love/Purpose in my chart"
+
+// ============================================
+// Astrology Birth Data (for reading requests)
+// ============================================
+
+export interface reading_birth_data_type {
+  birthDate: string;                          // ISO date "1990-03-15"
+  birthTimePrecision: 'exact' | 'approximate' | 'unknown';
+  birthTime?: string;                         // "14:30" if exact
+  birthTimeApproximate?: 'morning' | 'afternoon' | 'evening' | 'night';
+  birthLocation: {
+    city: string;
+    country: string;
+    countryCode: string;
+    latitude: number;
+    longitude: number;
+    timezone: string;
+  };
+}
+
+// Astrology-specific request data
+export interface astrology_request_data_type {
+  focusArea: astrology_focus_area;
+  birthData: reading_birth_data_type;
+  partnerBirthData?: reading_birth_data_type;  // For compatibility readings
+  specificPlanet?: string;                      // For single_planet focus (e.g., "venus", "saturn")
+  specificLifeArea?: string;                    // For life_area focus (e.g., "career", "love")
+}
+
+// ============================================
+// Astrology Fulfillment Data
+// ============================================
+
+// An aspect highlighted by the practitioner in their reading
+export interface highlighted_aspect_type {
+  planet1: string;
+  planet2: string;
+  aspect: string;         // e.g., "conjunction", "square", "trine"
+  interpretation: string;
+}
+
+// Astrology-specific fulfillment data
+export interface astrology_fulfillment_type {
+  interpretation: string;                      // Main written interpretation
+  highlightedAspects?: highlighted_aspect_type[];
+  chartImageUrl?: string;                      // Chart screenshot/export
+  practitionerRecommendation?: string;         // Upsell: "I'd recommend exploring X further"
+}
 
 // Status of a reading request
 export type reading_request_status =
@@ -3242,18 +3544,25 @@ export type reading_request_status =
   | 'CANCELLED'        // User cancelled (refund if paid)
   | 'EXPIRED';         // Not claimed within time limit
 
+// ============================================
+// Spread Configurations
+// ============================================
+
 // Spread type configuration with pricing
 export interface spread_config {
   type: spread_type;
+  category: reading_request_category;
   label: string;
-  cardCount: number;
-  price: number; // In cents
+  cardCount: number;  // For tarot; 0 for astrology
+  price: number;      // In cents
   description: string;
 }
 
-export const SPREAD_CONFIGS: spread_config[] = [
+// Tarot spread configs
+export const TAROT_SPREAD_CONFIGS: spread_config[] = [
   {
     type: 'SINGLE',
+    category: 'TAROT',
     label: 'Single Card',
     cardCount: 1,
     price: 500, // $5.00
@@ -3261,6 +3570,7 @@ export const SPREAD_CONFIGS: spread_config[] = [
   },
   {
     type: 'THREE_CARD',
+    category: 'TAROT',
     label: 'Three Card',
     cardCount: 3,
     price: 1200, // $12.00
@@ -3268,11 +3578,46 @@ export const SPREAD_CONFIGS: spread_config[] = [
   },
   {
     type: 'FIVE_CARD',
+    category: 'TAROT',
     label: 'Five Card',
     cardCount: 5,
     price: 2000, // $20.00
     description: 'Deeper exploration with multiple perspectives'
   }
+];
+
+// Astrology spread configs
+export const ASTROLOGY_SPREAD_CONFIGS: spread_config[] = [
+  {
+    type: 'ASTRO_SNAPSHOT',
+    category: 'ASTROLOGY',
+    label: 'Chart Snapshot',
+    cardCount: 0,
+    price: 800, // $8.00
+    description: '1-2 key highlights from your chart or current transits'
+  },
+  {
+    type: 'ASTRO_FOCUS',
+    category: 'ASTROLOGY',
+    label: 'Focused Reading',
+    cardCount: 0,
+    price: 1500, // $15.00
+    description: 'Deep dive on one area: a planet, house, transit, or quick compatibility'
+  },
+  {
+    type: 'ASTRO_DEEP_DIVE',
+    category: 'ASTROLOGY',
+    label: 'Full Reading',
+    cardCount: 0,
+    price: 2500, // $25.00
+    description: 'Comprehensive birth chart, transit forecast, or full synastry analysis'
+  }
+];
+
+// All spread configs combined (backward-compatible)
+export const SPREAD_CONFIGS: spread_config[] = [
+  ...TAROT_SPREAD_CONFIGS,
+  ...ASTROLOGY_SPREAD_CONFIGS,
 ];
 
 // Card in a fulfilled reading
@@ -3306,9 +3651,13 @@ export interface reading_request_type {
   userName?: string;
 
   // Request details
+  readingCategory: reading_request_category; // 'TAROT' or 'ASTROLOGY'
   spreadType: spread_type;
   topic: string; // What they want guidance on
   context?: string; // Additional context (optional)
+
+  // Astrology-specific request data (only for ASTROLOGY category)
+  astrologyData?: astrology_request_data_type;
 
   // Pricing
   price: number; // In cents
@@ -3326,10 +3675,14 @@ export interface reading_request_type {
   claimedAt?: string;
   claimDeadline?: string; // Shotclock - reader must fulfill by this time
 
-  // Reading result (when fulfilled)
+  // Tarot reading result (when fulfilled) — backward-compatible
   photoUrl?: string;
   cards?: reading_card_type[];
   overallMessage?: string; // Reader's overall message/summary
+
+  // Astrology reading result (when fulfilled)
+  astrologyFulfillment?: astrology_fulfillment_type;
+
   fulfilledAt?: string;
 
   // User's review of the reading
@@ -3358,10 +3711,13 @@ export interface reading_request_stripe_type {
 // Input types
 export interface create_reading_request_input {
   userId: string;
+  readingCategory?: reading_request_category; // Defaults to 'TAROT' for backward compatibility
   spreadType: spread_type;
   topic: string;
   context?: string;
   paymentMethodId?: string; // If provided, use existing saved card instead of creating setup intent
+  // Astrology-specific input
+  astrologyData?: astrology_request_data_type;
 }
 
 export interface claim_reading_request_input {
@@ -3369,12 +3725,23 @@ export interface claim_reading_request_input {
   readerId: string; // Merchant claiming it
 }
 
+// Tarot fulfillment input (backward-compatible)
 export interface fulfill_reading_request_input {
   requestId: string;
   readerId: string;
   photoUrl: string;
   cards: reading_card_type[];
   overallMessage?: string;
+}
+
+// Astrology fulfillment input
+export interface fulfill_astrology_reading_request_input {
+  requestId: string;
+  readerId: string;
+  interpretation: string;
+  highlightedAspects?: highlighted_aspect_type[];
+  chartImageUrl?: string;
+  practitionerRecommendation?: string;
 }
 
 // Response types
@@ -4108,6 +4475,14 @@ export type oracle_message_type = {
     expiresAt: string
 }
 
+export type video_update_type = {
+    id: string,
+    media: media_type,
+    coverPhoto?: media_type,
+    caption?: string | null,
+    postedAt: string
+}
+
 export type practitioner_profile_type = {
     // Identity
     pronouns?: string,
@@ -4270,6 +4645,7 @@ export type vendor_type = {
     customers: customer_type[],
     descriptions: merchant_description_type[],
     videos?: video_type[],
+    videoUpdates?: video_update_type[],
     videoSettings?: {
         autoplay: boolean,
         autoplayDelay: number // in seconds
@@ -4348,7 +4724,7 @@ export type plan_type =  {
   name: string
 }
 
-export type subscription_tier = 'awaken' | 'manifest' | 'transcend'
+export type subscription_tier = 'awaken' | 'illuminate' | 'manifest' | 'transcend'
 
 export type billing_status = 'pendingFirstBilling' | 'active' | 'suspended' | 'cancelled'
 
