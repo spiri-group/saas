@@ -22,6 +22,10 @@ const useBL = () => {
     // Get merchantId from URL query param, or generate one if missing (backward compatibility)
     const merchantId = searchParams.get('merchantId') || uuid();
 
+    // Pre-selected tier/interval from upgrade flow
+    const preselectedTier = searchParams.get('tier') || undefined;
+    const preselectedInterval = (searchParams.get('interval') === 'annual' ? 'annual' : searchParams.get('interval') === 'monthly' ? 'monthly' : undefined) as 'monthly' | 'annual' | undefined;
+
     const [checkingSetupIntent, setCheckingSetupIntent] = useState(false);
     const setupIntent = {
         id: searchParams.has("setup_intent") ? searchParams.get("setup_intent") : null,
@@ -58,6 +62,8 @@ const useBL = () => {
         data: {
             setupIntent: setupIntent,
             merchantId: merchantId,
+            preselectedTier,
+            preselectedInterval,
             userReligion: userProfile.data?.religion ? {
                 id: userProfile.data.religion.id,
                 label: userProfile.data.religion.name
@@ -231,6 +237,8 @@ const UI: React.FC = () => {
                         merchantId={bl.data.merchantId}
                         animated={mounted}
                         initialReligion={bl.data.userReligion}
+                        preselectedTier={bl.data.preselectedTier}
+                        preselectedInterval={bl.data.preselectedInterval}
                     />
                 </div>
             </div>
