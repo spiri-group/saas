@@ -50,6 +50,8 @@ import EditPractitionerOracleMessage from "./Profile/Edit/OracleMessage";
 import EditPractitionerPinnedTestimonials from "./Profile/Edit/PinnedTestimonials";
 import MerchantEventsComponent from "../../m/_components/Events";
 import MerchantGalleryComponent from "../../m/_components/Gallery";
+import MerchantBankingComponent from "../../m/_components/Banking";
+import MerchantCardsComponent from "../../m/_components/Cards";
 import SpiriAssistLogo from "@/icons/spiri-assist-logo";
 import { Session } from "next-auth";
 import { isNullOrUndefined } from "@/lib/functions";
@@ -252,7 +254,7 @@ const useBL = (props: BLProps) => {
                     icon: <ImageIcon className="w-5 h-5" />,
                     label: "Gallery",
                     dialogId: "Practitioner Gallery",
-                    className: "w-[1000px] max-w-[95vw] h-[850px]"
+                    className: "w-[1050px] max-w-[95vw] h-[850px]"
                 },
                 {
                     icon: <Link className="w-5 h-5" />,
@@ -341,6 +343,9 @@ const useBL = (props: BLProps) => {
             "Edit Audio Intro": () => <EditPractitionerAudioIntro practitionerId={practitionerId} />,
             "Edit Oracle Message": () => <EditPractitionerOracleMessage practitionerId={practitionerId} />,
             "Edit Pinned Reviews": () => <EditPractitionerPinnedTestimonials practitionerId={practitionerId} />,
+            // Payment dialogs (opened via CustomEvent from subscription page)
+            "Bank Accounts": () => <MerchantBankingComponent merchantId={practitionerId} />,
+            "Payment Cards": () => <MerchantCardsComponent merchantId={practitionerId} />,
         }
         : {};
 

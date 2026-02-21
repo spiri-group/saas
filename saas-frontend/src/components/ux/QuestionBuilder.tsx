@@ -181,7 +181,7 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
         if (!question || !question.options) return;
 
         const newOption: QuestionOption = {
-            id: `opt_${Date.now()}`,
+            id: `opt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
             label: `Option ${question.options.length + 1}`,
         };
 
