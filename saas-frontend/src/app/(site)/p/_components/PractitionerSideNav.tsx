@@ -57,6 +57,9 @@ import { Session } from "next-auth";
 import { isNullOrUndefined } from "@/lib/functions";
 import withProtection from "@/components/ux/HOC/withProtection";
 import HasPractitionerAccess from "../_hooks/HasPractitionerAccess";
+import { useTierFeatures } from "@/hooks/UseTierFeatures";
+import ShopUpgradeDialog from "@/components/subscription/ShopUpgradeDialog";
+import FeatureUpgradeDialog from "@/components/subscription/FeatureUpgradeDialog";
 
 // Helper to get user's merchants from session
 const getUserMerchants = (session: Session) => {
@@ -76,6 +79,8 @@ const useBL = (props: BLProps) => {
     const practitionerSlug = props.practitionerSlug;
 
     const practitioner = props.session.user.vendors.find(v => v.id === practitionerId);
+    const { features, tier } = useTierFeatures(practitionerId);
+    const canCreateMerchant = features.canCreateMerchantProfile;
 
     const options: NavOption[] = [
         {
@@ -168,26 +173,34 @@ const useBL = (props: BLProps) => {
         {
             label: "Payment Links",
             icon: <Receipt className="w-5 h-5" />,
-            href: `/p/${practitionerSlug}/manage/payment-links`,
-            testId: "nav-payment-links"
+            testId: "nav-payment-links",
+            ...(features.hasPaymentLinks
+                ? { href: `/p/${practitionerSlug}/manage/payment-links` }
+                : { dialogId: "Upgrade Payment Links" }),
         },
         {
             label: "Live Assist",
             icon: <Radio className="w-5 h-5" />,
-            href: `/p/${practitionerSlug}/manage/live-assist`,
-            testId: "nav-live-assist"
+            testId: "nav-live-assist",
+            ...(features.hasLiveAssist
+                ? { href: `/p/${practitionerSlug}/manage/live-assist` }
+                : { dialogId: "Upgrade Live Assist" }),
         },
         {
             label: "Expo Mode",
             icon: <Store className="w-5 h-5" />,
-            href: `/p/${practitionerSlug}/manage/expo-mode`,
-            testId: "nav-expo-mode"
+            testId: "nav-expo-mode",
+            ...(features.hasExpoMode
+                ? { href: `/p/${practitionerSlug}/manage/expo-mode` }
+                : { dialogId: "Upgrade Expo Mode" }),
         },
         {
             icon: <div className="flex items-center justify-center"><SpiriAssistLogo height={20} /></div>,
             label: "SpiriAssist",
             testId: "nav-spiri-assist",
-            href: `/p/${practitionerSlug}/manage/spiri-assist`,
+            ...(features.hasSpiriAssist
+                ? { href: `/p/${practitionerSlug}/manage/spiri-assist` }
+                : { dialogId: "Upgrade SpiriAssist" }),
         },
         {
             label: "Profile",
@@ -294,7 +307,9 @@ const useBL = (props: BLProps) => {
                 {
                     icon: <Plus className="w-5 h-5" />,
                     label: "Open New Shop",
-                    href: "/m/setup",
+                    ...(canCreateMerchant
+                        ? { href: "/m/setup" }
+                        : { dialogId: "Shop Upgrade" }),
                     testId: "open-new-shop-btn"
                 },
                 // Dynamically add user's existing merchants
@@ -346,6 +361,13 @@ const useBL = (props: BLProps) => {
             // Payment dialogs (opened via CustomEvent from subscription page)
             "Bank Accounts": () => <MerchantBankingComponent merchantId={practitionerId} />,
             "Payment Cards": () => <MerchantCardsComponent merchantId={practitionerId} />,
+            // Shop upgrade dialog for Awaken/Illuminate tiers
+            "Shop Upgrade": (onClose) => <ShopUpgradeDialog vendorId={practitionerId} currentTier={tier || 'awaken'} onClose={onClose} />,
+            // Feature upgrade dialogs for gated nav items
+            "Upgrade Payment Links": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Payment Links" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Send payment links via email", "Collect payments at expos and events", "Track payment status and history"]} />,
+            "Upgrade Live Assist": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Live Assist" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Go live on any platform", "Collect requests and payments in real-time", "Track revenue and session stats"]} />,
+            "Upgrade Expo Mode": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Expo Mode" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Create popup shops with QR codes", "Take payments at expos and markets", "Track inventory in real-time"]} />,
+            "Upgrade SpiriAssist": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="SpiriAssist" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Browse and apply to paranormal cases", "Submit proposals with your own pricing", "Manage investigations end-to-end"]} />,
         }
         : {};
 
