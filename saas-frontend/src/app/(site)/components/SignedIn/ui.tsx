@@ -347,12 +347,8 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
     const currency = tierDef?.currency || 'USD';
 
     const formatPrice = (cents: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-        }).format(cents / 100);
+        const amount = cents / 100;
+        return amount % 1 === 0 ? `$${amount}` : `$${amount.toFixed(2)}`;
     };
 
     const isPurple = config.accentColor === 'purple';
@@ -433,6 +429,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                     <span className="text-muted-foreground text-sm">
                                         /{billingInterval === 'monthly' ? 'mo' : 'yr'}
                                     </span>
+                                    <p className="text-[11px] text-muted-foreground/60 mt-1">AUD, plus applicable taxes</p>
                                 </div>
                             ) : null}
                         </div>
