@@ -289,7 +289,6 @@ const TIER_OUTCOMES: Record<string, string[]> = {
         'Showcase work in a gallery',
     ],
     illuminate: [
-        'Everything in Awaken, plus:',
         'Send payment links',
         'Go live and earn in real-time',
         'Sell at expos and markets',
@@ -300,7 +299,6 @@ const TIER_OUTCOMES: Record<string, string[]> = {
         'Integrated checkout',
     ],
     transcend: [
-        'Everything in Manifest, plus:',
         'Unlimited products',
         'Host practitioners',
         'Automated shipping',
@@ -454,14 +452,8 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                             </div>
                                             <div className="space-y-2">
                                                 {(TIER_OUTCOMES[tier.tier] || []).map((outcome, i) => (
-                                                    <p key={i} className={`text-sm leading-relaxed ${
-                                                        i === 0 && outcome.endsWith(':')
-                                                            ? 'text-muted-foreground/80 font-medium'
-                                                            : 'text-muted-foreground'
-                                                    }`}>
-                                                        {!outcome.endsWith(':') && (
-                                                            <span className={`inline-block mr-1.5 ${isPurple ? 'text-purple-400/70' : 'text-amber-400/70'}`}>&#x2022;</span>
-                                                        )}
+                                                    <p key={i} className="text-sm leading-relaxed text-muted-foreground">
+                                                        <span className={`inline-block mr-1.5 ${isPurple ? 'text-purple-400/70' : 'text-amber-400/70'}`}>&#x2022;</span>
                                                         {outcome}
                                                     </p>
                                                 ))}
