@@ -8,7 +8,6 @@ import SpiriLogo from '@/icons/spiri-logo';
 import Providers from '@/lib/providers';
 import SignedIn from './components/SignedIn';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
 import CartIcon from './components/Catalogue/components/ShoppingCart/Nav';
 import SearchBar from './components/SearchBar';
 import Notifications from '@/components/notifications';
@@ -29,13 +28,11 @@ export const metadata: Metadata = {
   description: 'SpiriVerse – A sacred digital marketplace connecting spiritual practitioners with seekers worldwide.',
 };
 
-export default async function SiteLayout({
+export default function SiteLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-
   return (
     <div className={classNames(inter.className, 'flex flex-col min-h-screen')}>
       <Providers>
@@ -52,10 +49,7 @@ export default async function SiteLayout({
               <ConditionalNavItems>
                 <SearchBar className="flex-grow mx-6" />
                 <div className="flex flex-row items-center space-x-2">
-                { session != null && session.user != null &&
-                  <CartIcon
-                    />
-                }
+                <CartIcon />
                 <SignedIn/>
                 </div>
               </ConditionalNavItems>

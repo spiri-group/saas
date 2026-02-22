@@ -9,9 +9,11 @@ import useEventDispatcher from "@/components/utils/Events/UseEventDispatcher";
 import UseEventListener from "@/components/utils/Events/UseEventListener";
 import { motion, useAnimation } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
 const Nav: React.FC = () => {
     const [mounted, setMounted] = useState(false);
+    const { data: session } = useSession();
     const { totalItems } = useUnifiedCart();
     const toggleCartVisibility = useEventDispatcher(TOGGLE_DETAILED_CART);
     const controls = useAnimation();
@@ -28,7 +30,7 @@ const Nav: React.FC = () => {
         });
     });
 
-    if (!mounted) return null;
+    if (!mounted || !session?.user) return null;
 
     return (
         <>
