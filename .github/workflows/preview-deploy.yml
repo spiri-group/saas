@@ -193,10 +193,12 @@ jobs:
               --tags preview=true ttl-days="$TTL_DAYS"
           else
             echo "Updating preview Container App: ${APP_NAME}"
+            SHORT_SHA="${GITHUB_SHA::7}"
             az containerapp update \
               --name "$APP_NAME" \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
               --image "$IMAGE_TAG" \
+              --revision-suffix "sha-${SHORT_SHA}" \
               --set-env-vars \
                 AZURE_CLIENT_ID="$IDENTITY_CLIENT_ID" \
                 EnvInformation="appNameShort=spv&name=dev&index=002" \
