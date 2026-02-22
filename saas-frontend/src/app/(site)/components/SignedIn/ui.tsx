@@ -423,7 +423,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                         variant="ghost"
                                         data-testid={`get-started-tier-${tier.tier}`}
                                         onClick={() => setSelectedTier(tier.tier)}
-                                        className={`relative rounded-xl border-2 p-5 h-auto text-left transition-colors ${
+                                        className={`relative rounded-xl border-2 p-5 h-auto w-full items-start justify-start text-left transition-colors ${
                                             isSelected
                                                 ? isPurple
                                                     ? 'border-purple-500 bg-purple-500/10 hover:bg-purple-500/10'
@@ -431,7 +431,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                                 : 'border-white/10 hover:border-white/20 hover:bg-transparent'
                                         }`}
                                     >
-                                        <div className="space-y-3">
+                                        <div className="space-y-3 w-full">
                                             <div className="flex items-baseline justify-between gap-2 flex-nowrap">
                                                 <p className={`text-base font-semibold whitespace-nowrap ${
                                                     isSelected
