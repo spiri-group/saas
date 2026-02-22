@@ -268,6 +268,7 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                 <GetStartedDialog
                     type={showGetStarted}
                     onClose={() => setShowGetStarted(null)}
+                    onSwitchType={(t) => setShowGetStarted(t)}
                     onContinue={(tier, interval) => {
                         setShowGetStarted(null);
                         if (showGetStarted === 'merchant') {
@@ -328,12 +329,14 @@ type GetStartedDialogProps = {
     type: 'merchant' | 'practitioner';
     onClose: () => void;
     onContinue: (tier: string, interval: 'monthly' | 'annual') => void;
+    onSwitchType: (type: 'merchant' | 'practitioner') => void;
 };
 
 const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
     type,
     onClose,
     onContinue,
+    onSwitchType,
 }) => {
     const config = DIALOG_CONFIG[type];
     const Icon = config.icon;
@@ -465,6 +468,32 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                     {/* Currency note */}
                     {!tiersLoading && price != null && (
                         <p className="text-[11px] text-muted-foreground/60 text-center">{currency}, taxes included</p>
+                    )}
+
+                    {/* Cross-sell notes */}
+                    {type === 'practitioner' && (
+                        <Button
+                            variant="ghost"
+                            onClick={() => onSwitchType('merchant')}
+                            className="flex items-center gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 h-auto w-full justify-start text-left hover:bg-amber-500/10"
+                        >
+                            <Store className="h-5 w-5 text-amber-400 shrink-0" />
+                            <p className="text-sm text-white/80">
+                                Also thinking of opening a shop? Our shop tiers include a practitioner account.
+                            </p>
+                        </Button>
+                    )}
+                    {type === 'merchant' && (
+                        <Button
+                            variant="ghost"
+                            onClick={() => onSwitchType('practitioner')}
+                            className="flex items-center gap-3 rounded-lg border border-purple-500/20 bg-purple-500/5 px-4 py-3 h-auto w-full justify-start text-left hover:bg-purple-500/10"
+                        >
+                            <Sparkles className="h-5 w-5 text-purple-400 shrink-0" />
+                            <p className="text-sm text-white/80">
+                                Both plans include a practitioner account. Just need to practise? View practitioner plans.
+                            </p>
+                        </Button>
                     )}
 
                     {/* Actions */}
