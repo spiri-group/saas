@@ -383,30 +383,30 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                         className="flex rounded-lg border p-1"
                         data-testid="get-started-interval-toggle"
                     >
-                        <button
-                            type="button"
+                        <Button
+                            variant="ghost"
                             data-testid="get-started-monthly-btn"
                             onClick={() => setBillingInterval('monthly')}
-                            className={`flex-1 rounded-md px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer ${
+                            className={`flex-1 ${
                                 billingInterval === 'monthly'
-                                    ? isPurple ? 'bg-purple-600 text-white' : 'bg-amber-600 text-white'
-                                    : 'text-muted-foreground hover:text-foreground'
+                                    ? isPurple ? 'bg-purple-600 text-white hover:bg-purple-600 hover:text-white' : 'bg-amber-600 text-white hover:bg-amber-600 hover:text-white'
+                                    : 'text-muted-foreground'
                             }`}
                         >
                             Monthly
-                        </button>
-                        <button
-                            type="button"
+                        </Button>
+                        <Button
+                            variant="ghost"
                             data-testid="get-started-annual-btn"
                             onClick={() => setBillingInterval('annual')}
-                            className={`flex-1 rounded-md px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer ${
+                            className={`flex-1 ${
                                 billingInterval === 'annual'
-                                    ? isPurple ? 'bg-purple-600 text-white' : 'bg-amber-600 text-white'
-                                    : 'text-muted-foreground hover:text-foreground'
+                                    ? isPurple ? 'bg-purple-600 text-white hover:bg-purple-600 hover:text-white' : 'bg-amber-600 text-white hover:bg-amber-600 hover:text-white'
+                                    : 'text-muted-foreground'
                             }`}
                         >
                             Annual
-                        </button>
+                        </Button>
                     </div>
 
                     {/* Tier cards */}
@@ -421,17 +421,17 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                 const isSelected = tier.tier === selectedTier;
                                 const tierPrice = billingInterval === 'monthly' ? tier.monthlyPrice : tier.annualPrice;
                                 return (
-                                    <button
+                                    <Button
                                         key={tier.tier}
-                                        type="button"
+                                        variant="ghost"
                                         data-testid={`get-started-tier-${tier.tier}`}
                                         onClick={() => setSelectedTier(tier.tier)}
-                                        className={`relative rounded-xl border-2 p-5 text-left transition-all cursor-pointer ${
+                                        className={`relative rounded-xl border-2 p-5 h-auto text-left transition-all ${
                                             isSelected
                                                 ? isPurple
-                                                    ? 'border-purple-500 bg-purple-500/10'
-                                                    : 'border-amber-500 bg-amber-500/10'
-                                                : 'border-white/10 hover:border-white/20'
+                                                    ? 'border-purple-500 bg-purple-500/10 hover:bg-purple-500/10'
+                                                    : 'border-amber-500 bg-amber-500/10 hover:bg-amber-500/10'
+                                                : 'border-white/10 hover:border-white/20 hover:bg-transparent'
                                         }`}
                                     >
                                         <div className="space-y-3">
@@ -459,7 +459,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                                 ))}
                                             </div>
                                         </div>
-                                    </button>
+                                    </Button>
                                 );
                             })}
                         </div>
@@ -472,27 +472,28 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
 
                     {/* Actions */}
                     <div className="flex gap-3">
-                        <button
-                            type="button"
+                        <Button
+                            variant="outline"
+                            size="lg"
                             data-testid="get-started-cancel-btn"
                             onClick={onClose}
-                            className="flex-1 rounded-lg border px-5 py-3 text-sm font-medium text-muted-foreground hover:bg-muted cursor-pointer"
+                            className="flex-1"
                         >
                             Not Now
-                        </button>
-                        <button
-                            type="button"
+                        </Button>
+                        <Button
+                            size="lg"
                             data-testid="get-started-continue-btn"
                             onClick={() => onContinue(selectedTier, billingInterval)}
                             disabled={tiersLoading}
-                            className={`flex-1 rounded-lg px-5 py-3 text-sm font-medium text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                            className={`flex-1 text-white ${
                                 isPurple
                                     ? 'bg-purple-600 hover:bg-purple-700'
                                     : 'bg-amber-600 hover:bg-amber-700'
                             }`}
                         >
                             Get Started
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </DialogContent>
