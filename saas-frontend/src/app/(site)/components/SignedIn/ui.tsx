@@ -284,26 +284,26 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
 
 const TIER_OUTCOMES: Record<string, string[]> = {
     awaken: [
-        'Share your practice with seekers worldwide',
-        'Book readings, healings & coaching sessions',
-        'Showcase your work through a rich gallery',
+        'Share your practice globally',
+        'Book readings & sessions',
+        'Showcase work in a gallery',
     ],
     illuminate: [
         'Everything in Awaken, plus:',
-        'Get paid from anywhere with payment links',
+        'Send payment links',
         'Go live and earn in real-time',
         'Sell at expos and markets',
     ],
     manifest: [
-        'Reach customers through your own storefront',
-        'Manage products, orders & fulfilment',
-        'Accept payments with integrated checkout',
+        'Your own online storefront',
+        'Manage products & orders',
+        'Integrated checkout',
     ],
     transcend: [
         'Everything in Manifest, plus:',
-        'Sell unlimited products',
-        'Host practitioners in your shop',
-        'Automate shipping & backorders',
+        'Unlimited products',
+        'Host practitioners',
+        'Automated shipping',
     ],
 };
 
