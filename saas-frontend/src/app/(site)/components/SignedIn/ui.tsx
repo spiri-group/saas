@@ -27,7 +27,6 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
     const queryClient = useQueryClient();
     const [showProfileDialog, setShowProfileDialog] = useState(false);
     const [showGetStarted, setShowGetStarted] = useState<'merchant' | 'practitioner' | null>(null);
-    const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
     const [menuOpen, setMenuOpen] = useState(false);
 
     const initials = getInitials(email);
@@ -181,7 +180,6 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                                     setShowProfileDialog(true);
                                                 } else {
                                                     setMenuOpen(false);
-                                                    setBillingInterval('monthly');
                                                     setShowGetStarted('merchant');
                                                 }
                                             }}
@@ -199,7 +197,6 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                                     setShowProfileDialog(true);
                                                 } else {
                                                     setMenuOpen(false);
-                                                    setBillingInterval('monthly');
                                                     setShowGetStarted('practitioner');
                                                 }
                                             }}
@@ -270,15 +267,13 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
             {showGetStarted && (
                 <GetStartedDialog
                     type={showGetStarted}
-                    billingInterval={billingInterval}
-                    onBillingIntervalChange={setBillingInterval}
                     onClose={() => setShowGetStarted(null)}
-                    onContinue={(interval) => {
+                    onContinue={(tier, interval) => {
                         setShowGetStarted(null);
                         if (showGetStarted === 'merchant') {
-                            router.push(`/m/setup?tier=manifest&interval=${interval}`);
+                            router.push(`/m/setup?tier=${tier}&interval=${interval}`);
                         } else {
-                            router.push(`/p/setup?tier=awaken&interval=${interval}`);
+                            router.push(`/p/setup?tier=${tier}&interval=${interval}`);
                         }
                     }}
                 />
@@ -287,75 +282,61 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
     );
 };
 
-const MERCHANT_CONFIG = {
-    tier: 'manifest',
-    tierName: 'Manifest',
-    profileType: 'merchant',
-    icon: Store,
-    title: 'Open Your Shop',
-    subtitle: 'Start selling on SpiriVerse with the Manifest plan',
-    accentColor: 'amber',
-    benefits: [
-        'List and sell products on your own storefront',
-        'Accept payments with integrated checkout',
-        'Manage orders, fulfilment and inventory',
-        'Customise your shop branding and appearance',
-    ],
-} as const;
-
-const PRACTITIONER_CONFIG = {
-    tier: 'awaken',
-    tierName: 'Awaken',
-    profileType: 'practitioner',
-    icon: Sparkles,
-    title: 'Start Your Practice',
-    subtitle: 'Share your gifts with the world on the Awaken plan',
-    accentColor: 'purple',
-    benefits: [
-        'Create your professional practitioner profile',
-        'Offer readings, healings and coaching sessions',
-        'Build your gallery and showcase your work',
-        'Connect with seekers around the world',
-    ],
+const DIALOG_CONFIG = {
+    practitioner: {
+        icon: Sparkles,
+        title: 'Start Your Practice',
+        subtitle: 'Choose the plan that fits your practice',
+        profileType: 'practitioner',
+        tiers: ['awaken', 'illuminate'],
+        defaultTier: 'awaken',
+    },
+    merchant: {
+        icon: Store,
+        title: 'Open Your Shop',
+        subtitle: 'Choose the plan that fits your business',
+        profileType: 'merchant',
+        tiers: ['manifest', 'transcend'],
+        defaultTier: 'manifest',
+    },
 } as const;
 
 type GetStartedDialogProps = {
     type: 'merchant' | 'practitioner';
-    billingInterval: 'monthly' | 'annual';
-    onBillingIntervalChange: (interval: 'monthly' | 'annual') => void;
     onClose: () => void;
-    onContinue: (interval: 'monthly' | 'annual') => void;
+    onContinue: (tier: string, interval: 'monthly' | 'annual') => void;
 };
 
 const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
     type,
-    billingInterval,
-    onBillingIntervalChange,
     onClose,
     onContinue,
 }) => {
-    const config = type === 'merchant' ? MERCHANT_CONFIG : PRACTITIONER_CONFIG;
+    const config = DIALOG_CONFIG[type];
     const Icon = config.icon;
+    const isPurple = type === 'practitioner';
+    const [selectedTier, setSelectedTier] = useState<string>(config.defaultTier);
+    const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
     const { data: tiers, isLoading: tiersLoading } = useSubscriptionTiers(config.profileType);
 
-    const tierDef = tiers?.find(t => t.tier === config.tier);
-    const price = tierDef
+    const availableTiers = tiers?.filter(t => (config.tiers as readonly string[]).includes(t.tier)) || [];
+
+    const selectedTierDef = availableTiers.find(t => t.tier === selectedTier);
+    const price = selectedTierDef
         ? billingInterval === 'monthly'
-            ? tierDef.monthlyPrice
-            : tierDef.annualPrice
+            ? selectedTierDef.monthlyPrice
+            : selectedTierDef.annualPrice
         : null;
-    const currency = tierDef?.currency || 'USD';
+    const currency = selectedTierDef?.currency || 'USD';
 
     const formatPrice = (cents: number) => {
         const amount = cents / 100;
         return amount % 1 === 0 ? `$${amount}` : `$${amount.toFixed(2)}`;
     };
 
-    const isPurple = config.accentColor === 'purple';
-
     return (
         <Dialog open onOpenChange={() => onClose()}>
-            <DialogContent data-testid="get-started-dialog" className="sm:max-w-md rounded-2xl p-0 overflow-hidden">
+            <DialogContent data-testid="get-started-dialog" className="sm:max-w-lg rounded-2xl p-0 overflow-hidden">
                 {/* Header */}
                 <div className={`px-6 pt-6 pb-4 ${isPurple ? 'bg-purple-500/10' : 'bg-amber-500/10'}`}>
                     <DialogHeader>
@@ -374,66 +355,90 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                 </div>
 
                 <div className="px-6 pb-6 pt-4 space-y-5">
-                    {/* Benefits */}
-                    <div data-testid="get-started-benefits" className="space-y-2.5">
-                        {config.benefits.map((benefit, i) => (
-                            <div key={i} className="flex items-start gap-2.5 text-sm">
-                                <Sparkles className={`h-3.5 w-3.5 mt-0.5 flex-shrink-0 ${isPurple ? 'text-purple-400' : 'text-amber-400'}`} />
-                                <span className="text-muted-foreground">{benefit}</span>
-                            </div>
-                        ))}
-                    </div>
-
                     {/* Billing toggle */}
-                    <div>
-                        <div
-                            className="flex rounded-lg border p-1"
-                            data-testid="get-started-interval-toggle"
+                    <div
+                        className="flex rounded-lg border p-1"
+                        data-testid="get-started-interval-toggle"
+                    >
+                        <button
+                            type="button"
+                            data-testid="get-started-monthly-btn"
+                            onClick={() => setBillingInterval('monthly')}
+                            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                                billingInterval === 'monthly'
+                                    ? isPurple ? 'bg-purple-600 text-white' : 'bg-amber-600 text-white'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            }`}
                         >
-                            <button
-                                type="button"
-                                data-testid="get-started-monthly-btn"
-                                onClick={() => onBillingIntervalChange('monthly')}
-                                className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                                    billingInterval === 'monthly'
-                                        ? isPurple ? 'bg-purple-600 text-white' : 'bg-amber-600 text-white'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                            >
-                                Monthly
-                            </button>
-                            <button
-                                type="button"
-                                data-testid="get-started-annual-btn"
-                                onClick={() => onBillingIntervalChange('annual')}
-                                className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                                    billingInterval === 'annual'
-                                        ? isPurple ? 'bg-purple-600 text-white' : 'bg-amber-600 text-white'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                            >
-                                Annual
-                            </button>
-                        </div>
-
-                        {/* Price */}
-                        <div className="mt-3 text-center" data-testid="get-started-price">
-                            {tiersLoading ? (
-                                <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                                    <LoaderIcon className="h-4 w-4 animate-spin" />
-                                    <span className="text-sm">Loading pricing...</span>
-                                </div>
-                            ) : price != null ? (
-                                <div>
-                                    <span className="text-2xl font-bold">{formatPrice(price)}</span>
-                                    <span className="text-muted-foreground text-sm">
-                                        /{billingInterval === 'monthly' ? 'mo' : 'yr'}
-                                    </span>
-                                    <p className="text-[11px] text-muted-foreground/60 mt-1">{currency}, taxes included</p>
-                                </div>
-                            ) : null}
-                        </div>
+                            Monthly
+                        </button>
+                        <button
+                            type="button"
+                            data-testid="get-started-annual-btn"
+                            onClick={() => setBillingInterval('annual')}
+                            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                                billingInterval === 'annual'
+                                    ? isPurple ? 'bg-purple-600 text-white' : 'bg-amber-600 text-white'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                        >
+                            Annual
+                        </button>
                     </div>
+
+                    {/* Tier cards */}
+                    {tiersLoading ? (
+                        <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                            <LoaderIcon className="h-4 w-4 animate-spin" />
+                            <span className="text-sm">Loading plans...</span>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-3" data-testid="get-started-tier-cards">
+                            {availableTiers.map((tier) => {
+                                const isSelected = tier.tier === selectedTier;
+                                const tierPrice = billingInterval === 'monthly' ? tier.monthlyPrice : tier.annualPrice;
+                                return (
+                                    <button
+                                        key={tier.tier}
+                                        type="button"
+                                        data-testid={`get-started-tier-${tier.tier}`}
+                                        onClick={() => setSelectedTier(tier.tier)}
+                                        className={`relative rounded-xl border-2 p-4 text-left transition-all ${
+                                            isSelected
+                                                ? isPurple
+                                                    ? 'border-purple-500 bg-purple-500/10'
+                                                    : 'border-amber-500 bg-amber-500/10'
+                                                : 'border-white/10 hover:border-white/20'
+                                        }`}
+                                    >
+                                        <div className="space-y-2">
+                                            <p className={`text-sm font-semibold ${
+                                                isSelected
+                                                    ? isPurple ? 'text-purple-300' : 'text-amber-300'
+                                                    : 'text-white/90'
+                                            }`}>
+                                                {tier.name}
+                                            </p>
+                                            <div>
+                                                <span className="text-xl font-bold">{formatPrice(tierPrice)}</span>
+                                                <span className="text-muted-foreground text-xs">
+                                                    /{billingInterval === 'monthly' ? 'mo' : 'yr'}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                                {tier.description}
+                                            </p>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Currency note */}
+                    {!tiersLoading && price != null && (
+                        <p className="text-[11px] text-muted-foreground/60 text-center">{currency}, taxes included</p>
+                    )}
 
                     {/* Actions */}
                     <div className="flex gap-3">
@@ -448,7 +453,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                         <button
                             type="button"
                             data-testid="get-started-continue-btn"
-                            onClick={() => onContinue(billingInterval)}
+                            onClick={() => onContinue(selectedTier, billingInterval)}
                             disabled={tiersLoading}
                             className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                                 isPurple
