@@ -359,25 +359,22 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
 
     return (
         <Dialog open onOpenChange={() => onClose()}>
-            <DialogContent data-testid="get-started-dialog" className="sm:max-w-2xl rounded-2xl p-0 overflow-hidden">
-                {/* Header */}
-                <div className={`px-8 pt-8 pb-5 ${isPurple ? 'bg-purple-500/10' : 'bg-amber-500/10'}`}>
-                    <DialogHeader>
-                        <div className="flex items-center gap-4">
-                            <div className={`rounded-full p-3.5 ${isPurple ? 'bg-purple-500/20' : 'bg-amber-500/20'}`}>
-                                <Icon className={`h-8 w-8 ${isPurple ? 'text-purple-400' : 'text-amber-400'}`} />
-                            </div>
-                            <div>
-                                <DialogTitle data-testid="get-started-title" className="text-2xl font-bold">{config.title}</DialogTitle>
-                                <DialogDescription className="text-base text-muted-foreground mt-0.5">
-                                    {config.subtitle}
-                                </DialogDescription>
-                            </div>
+            <DialogContent data-testid="get-started-dialog" className="sm:max-w-2xl">
+                <DialogHeader>
+                    <div className="flex items-center gap-4">
+                        <div className={`rounded-full p-3 ${isPurple ? 'bg-purple-500/20' : 'bg-amber-500/20'}`}>
+                            <Icon className={`h-7 w-7 ${isPurple ? 'text-purple-400' : 'text-amber-400'}`} />
                         </div>
-                    </DialogHeader>
-                </div>
+                        <div>
+                            <DialogTitle data-testid="get-started-title" className="text-xl font-bold">{config.title}</DialogTitle>
+                            <DialogDescription className="text-sm text-muted-foreground mt-0.5">
+                                {config.subtitle}
+                            </DialogDescription>
+                        </div>
+                    </div>
+                </DialogHeader>
 
-                <div className="px-8 pb-8 pt-5 space-y-6">
+                <div className="space-y-5">
                     {/* Billing toggle */}
                     <div
                         className="flex rounded-lg border p-1"
