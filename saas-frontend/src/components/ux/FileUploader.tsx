@@ -343,7 +343,7 @@ const FileUploader : React.FC<FileUploaderParams> = ({includePreview= true, ...p
                 console.error("FileUploader upload error:", error)
                 setUploadingActive(false);
                 setHasError(true);
-                setErrorMessage("Upload failed - check console for details");
+                setErrorMessage("Upload failed. Please try again or use a different file.");
             }
         }
     };
@@ -440,12 +440,12 @@ const FileUploader : React.FC<FileUploaderParams> = ({includePreview= true, ...p
                         await handleDrop(event.target.files)
                     }
                 }} />
-                <label id="label-file-upload" className={classNames("flex justify-center items-center h-full w-full", dragActive ? "bg-white" : "")} htmlFor={`input-file-upload-${props.id}`}>
+                <label id="label-file-upload" className={classNames("flex justify-center items-center h-full w-full", dragActive ? "bg-slate-700/50" : "")} htmlFor={`input-file-upload-${props.id}`}>
                 <div className="cursor-pointer h-full flex flex-col items-center justify-center space-y-2 w-full rounded-xl">
                 {
                     uploadingActive ? (
                         <div className={classNames("flex items-center justify-center", props.imageClassName)}>
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-orange-600" />
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-purple-500" />
                         </div>
                     ) :
                     hasError &&
@@ -453,7 +453,7 @@ const FileUploader : React.FC<FileUploaderParams> = ({includePreview= true, ...p
                         {
                             errorMessage != null ? 
                             (
-                                <span className="text-red-800">{errorMessage}</span>
+                                <span className="text-red-400">{errorMessage}</span>
                             ) :
                             (
                                <FileWarningIcon />

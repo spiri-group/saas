@@ -21,6 +21,7 @@ import CalendarDropdown from "@/components/ux/CalendarDropdown";
 import RichTextInput from "@/components/ux/RichTextInput";
 import { ThumbnailSchema } from "@/shared/schemas/thumbnail";
 import { omit } from "@/lib/functions";
+import { toast } from "sonner";
 
 // Schema that matches VendorEventLocationInput GraphQL type
 const VendorEventLocationSchema = z.object({
@@ -148,7 +149,7 @@ const EventForm: React.FC<Props> = ({ merchantId, event, eventId, onSuccess, onD
             }
             
             const eventData = {
-                ...omit(data, ["event.landscapeImage.image.media.url", "startDate", "endDate"]),
+                ...omit(data, ["landscapeImage.image.media.url", "startDate", "endDate"]),
                 startAt: startDateTime.toISO(),
                 endAt: endDateTime ? endDateTime.toISO() : undefined,
             };
@@ -169,6 +170,7 @@ const EventForm: React.FC<Props> = ({ merchantId, event, eventId, onSuccess, onD
             onSuccess();
         } catch (error) {
             console.error("Failed to save event:", error);
+            toast.error("Failed to save event. Please try again.");
         } finally {
             setIsSubmitClicked(false); // Reset after submission
         }

@@ -389,9 +389,7 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
 
                             <div>
                                 <h2 className="text-lg font-semibold text-slate-800 mb-3">About This Service</h2>
-                                <p className="text-slate-600 whitespace-pre-line" data-testid="service-description">
-                                    {service.description}
-                                </p>
+                                <div className="text-slate-600 whitespace-pre-line" data-testid="service-description" dangerouslySetInnerHTML={{ __html: service.description }} />
                             </div>
 
                             {service.deliveryMode === "ASYNC" && service.turnaroundDays && (

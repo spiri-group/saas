@@ -41,6 +41,8 @@ type BLProps = {
         id: string;
         label: string;
     };
+    preselectedTier?: string;
+    preselectedInterval?: 'monthly' | 'annual';
 }
 
 // List of countries with their codes and names
@@ -174,8 +176,8 @@ const useBL = (props: BLProps) => {
             },
             merchantTypeIds: [],
             subscription: {
-                tier: '',
-                billingInterval: 'monthly' as const
+                tier: props.preselectedTier || '',
+                billingInterval: props.preselectedInterval || 'monthly' as const
             }
         },
         mode: 'onBlur',
@@ -268,6 +270,8 @@ type Props = BLProps & {
         id: string;
         label: string;
     };
+    preselectedTier?: string;
+    preselectedInterval?: 'monthly' | 'annual';
 }
 
 // Child component to render tier selector for merchants
@@ -875,20 +879,38 @@ const CaptureProfile: React.FC<Props> = (props) => {
                             )}
                         />
 
-                    {/* Step 1: Continue to pricing button */}
+                    {/* Step 1: Continue button */}
                     <div className="flex gap-3">
                         <Button
                             type="button"
+                            disabled={isSubmitting}
                             className="mt-4 w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                            data-testid="capture-profile-continue-btn"
                             onClick={async () => {
                                 // Validate step 1 fields
                                 const isValid = await bl.form.trigger(['name', 'email', 'merchantTypeIds', 'religion', 'country', 'state', 'slug']);
                                 if (isValid) {
-                                    setStep(2);
+                                    if (props.preselectedTier) {
+                                        // Tier already chosen via upgrade flow — skip step 2, submit directly
+                                        bl.form.handleSubmit(async (values) => {
+                                            setIsSubmitting(true);
+                                            try {
+                                                const slug = await bl.save(values);
+                                                setCreatedVendorSlug(slug);
+                                                setStep(3);
+                                            } finally {
+                                                setIsSubmitting(false);
+                                            }
+                                        })();
+                                    } else {
+                                        setStep(2);
+                                    }
                                 }
                             }}
                         >
-                            Continue to Pricing
+                            {props.preselectedTier
+                                ? (isSubmitting ? 'Creating your shop...' : 'Continue')
+                                : 'Continue to Pricing'}
                         </Button>
                     </div>
                     </>)}

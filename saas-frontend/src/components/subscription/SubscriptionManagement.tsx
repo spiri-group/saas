@@ -80,8 +80,8 @@ export default function SubscriptionManagement({ vendorId, profileType }: Subscr
         ? Math.min(100, (subscription.cumulativePayouts / subscription.subscriptionCostThreshold) * 100)
         : null;
 
-    const canUpgrade = profileType === 'merchant' && tier !== 'transcend';
-    const canDowngrade = profileType === 'merchant' && tier === 'transcend';
+    const canUpgrade = tier !== 'transcend';
+    const canDowngrade = tier === 'transcend';
 
     const handleCancelDowngrade = async () => {
         try {

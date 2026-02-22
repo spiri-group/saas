@@ -60,8 +60,8 @@ const handler : StripeHandler = async (event, logger, services ) => {
         logger.logMessage(`Found reading request ${readingRequest.id} for user ${readingRequestMetadata.userId}`);
 
         // Save the payment method ID to the reading request and update status to AWAITING_CLAIM
-        // Note: Reading requests use the document ID as partition key (not userId)
-        await cosmos.patch_record("Main-PersonalSpace", readingRequest.id, readingRequest.id, [
+        // Main-PersonalSpace partition key is /userId
+        await cosmos.patch_record("Main-PersonalSpace", readingRequest.id, readingRequest.userId, [
             { op: "set", path: "/stripe/paymentMethodId", value: payment_method },
             { op: "set", path: "/requestStatus", value: "AWAITING_CLAIM" }
         ], "STRIPE");

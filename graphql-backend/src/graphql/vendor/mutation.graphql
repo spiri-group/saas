@@ -379,6 +379,9 @@ input CreatePractitionerInput {
 
   # Optional fields
   pronouns: String
+  yearsExperience: Int
+  spiritualJourney: String
+  approach: String
   logo: MediaInput
   thumbnail: MediaInput
   banner: MediaInput

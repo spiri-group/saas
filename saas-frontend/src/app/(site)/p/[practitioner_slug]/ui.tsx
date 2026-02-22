@@ -1225,6 +1225,7 @@ export default function PractitionerProfileContent({
                                     </Button>
                                     <Button
                                         variant="outline"
+                                        className="border-slate-300 text-slate-700 bg-white hover:bg-slate-50"
                                         onClick={() => setMessageDialogOpen(true)}
                                         data-testid="send-message-btn"
                                     >
@@ -1314,7 +1315,7 @@ export default function PractitionerProfileContent({
                                                         <div className="flex-1 min-w-0">
                                                             <h4 className="font-medium text-slate-900 truncate">{service.name}</h4>
                                                             {service.description && (
-                                                                <p className="text-sm text-slate-600 line-clamp-2 mt-1">{service.description}</p>
+                                                                <div className="text-sm text-slate-600 line-clamp-2 mt-1" dangerouslySetInnerHTML={{ __html: service.description }} />
                                                             )}
                                                             <div className="flex items-center gap-3 mt-2">
                                                                 {service.pricing?.fixedPrice && (

@@ -10,7 +10,7 @@ export default function ChatToggleButton({
   className?: string;
 }) {
   return (
-    <Button variant="link" className={`text-sm ${className}`} onClick={onClick}>
+    <Button variant="link" className={`text-sm text-purple-600 hover:text-purple-800 ${className}`} onClick={onClick}>
       {label}
     </Button>
   );

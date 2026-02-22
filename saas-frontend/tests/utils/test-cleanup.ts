@@ -639,3 +639,38 @@ export async function queryTestEntities(auth: string) {
  * Export alias for gqlDirect as executeGraphQL for clearer naming in tests
  */
 export { gqlDirect as executeGraphQL };
+
+/**
+ * Mark a reading request as paid (simulates setup_intent.succeeded webhook).
+ * In local test environments, Stripe webhooks may not reach the backend,
+ * so we call the markReadingRequestPaid mutation directly.
+ */
+export async function markReadingRequestPaid(
+  requestId: string,
+  cookies: string
+): Promise<boolean> {
+  try {
+    const result = await gqlDirect<{
+      markReadingRequestPaid: {
+        success: boolean;
+        message: string;
+      };
+    }>(
+      `mutation MarkReadingRequestPaid($requestId: ID!) {
+        markReadingRequestPaid(requestId: $requestId) {
+          success
+          message
+        }
+      }`,
+      { requestId },
+      cookies
+    );
+
+    const response = result.markReadingRequestPaid;
+    console.log(`[ReadingRequest] markPaid: ${response.success ? '✓' : '✗'} ${response.message}`);
+    return response.success;
+  } catch (error) {
+    console.error('[ReadingRequest] Failed to mark reading request as paid:', error);
+    return false;
+  }
+}

@@ -1,0 +1,35 @@
+type Mutation {
+    createPaymentLink(input: CreatePaymentLinkInput!): CreatePaymentLinkResponse!
+    cancelPaymentLink(linkId: ID!): PaymentLinkMutationResponse!
+    resendPaymentLink(linkId: ID!, resetExpiration: Boolean): PaymentLinkMutationResponse!
+}
+
+input CreatePaymentLinkInput {
+    customerEmail: String!
+    customerName: String
+    items: [PaymentLinkItemInput!]!
+    expirationHours: Int
+}
+
+input PaymentLinkItemInput {
+    vendorId: String!
+    itemType: String!
+    customDescription: String
+    sourceId: String
+    amount: CurrencyAmountInput!
+}
+
+type CreatePaymentLinkResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    paymentLink: PaymentLink
+    paymentUrl: String
+}
+
+type PaymentLinkMutationResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    paymentLink: PaymentLink
+}
