@@ -429,7 +429,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                     <span className="text-muted-foreground text-sm">
                                         /{billingInterval === 'monthly' ? 'mo' : 'yr'}
                                     </span>
-                                    <p className="text-[11px] text-muted-foreground/60 mt-1">AUD, taxes included</p>
+                                    <p className="text-[11px] text-muted-foreground/60 mt-1">{currency}, taxes included</p>
                                 </div>
                             ) : null}
                         </div>
