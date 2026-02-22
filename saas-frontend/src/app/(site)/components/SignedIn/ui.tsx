@@ -387,7 +387,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                             type="button"
                             data-testid="get-started-monthly-btn"
                             onClick={() => setBillingInterval('monthly')}
-                            className={`flex-1 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${
+                            className={`flex-1 rounded-md px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer ${
                                 billingInterval === 'monthly'
                                     ? isPurple ? 'bg-purple-600 text-white' : 'bg-amber-600 text-white'
                                     : 'text-muted-foreground hover:text-foreground'
@@ -399,7 +399,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                             type="button"
                             data-testid="get-started-annual-btn"
                             onClick={() => setBillingInterval('annual')}
-                            className={`flex-1 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${
+                            className={`flex-1 rounded-md px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer ${
                                 billingInterval === 'annual'
                                     ? isPurple ? 'bg-purple-600 text-white' : 'bg-amber-600 text-white'
                                     : 'text-muted-foreground hover:text-foreground'
@@ -426,7 +426,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                         type="button"
                                         data-testid={`get-started-tier-${tier.tier}`}
                                         onClick={() => setSelectedTier(tier.tier)}
-                                        className={`relative rounded-xl border-2 p-5 text-left transition-all ${
+                                        className={`relative rounded-xl border-2 p-5 text-left transition-all cursor-pointer ${
                                             isSelected
                                                 ? isPurple
                                                     ? 'border-purple-500 bg-purple-500/10'
@@ -476,7 +476,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                             type="button"
                             data-testid="get-started-cancel-btn"
                             onClick={onClose}
-                            className="flex-1 rounded-lg border px-5 py-3 text-sm font-medium text-muted-foreground hover:bg-muted"
+                            className="flex-1 rounded-lg border px-5 py-3 text-sm font-medium text-muted-foreground hover:bg-muted cursor-pointer"
                         >
                             Not Now
                         </button>
@@ -485,7 +485,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                             data-testid="get-started-continue-btn"
                             onClick={() => onContinue(selectedTier, billingInterval)}
                             disabled={tiersLoading}
-                            className={`flex-1 rounded-lg px-5 py-3 text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                            className={`flex-1 rounded-lg px-5 py-3 text-sm font-medium text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
                                 isPurple
                                     ? 'bg-purple-600 hover:bg-purple-700'
                                     : 'bg-amber-600 hover:bg-amber-700'
