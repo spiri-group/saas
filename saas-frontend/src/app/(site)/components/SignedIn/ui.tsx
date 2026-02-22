@@ -282,6 +282,31 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
     );
 };
 
+const TIER_OUTCOMES: Record<string, string[]> = {
+    awaken: [
+        'Share your practice with seekers worldwide',
+        'Book readings, healings & coaching sessions',
+        'Showcase your work through a rich gallery',
+    ],
+    illuminate: [
+        'Everything in Awaken, plus:',
+        'Get paid from anywhere with payment links',
+        'Go live and earn in real-time',
+        'Sell at expos and markets',
+    ],
+    manifest: [
+        'Reach customers through your own storefront',
+        'Manage products, orders & fulfilment',
+        'Accept payments with integrated checkout',
+    ],
+    transcend: [
+        'Everything in Manifest, plus:',
+        'Sell unlimited products',
+        'Host practitioners in your shop',
+        'Automate shipping & backorders',
+    ],
+};
+
 const DIALOG_CONFIG = {
     practitioner: {
         icon: Sparkles,
@@ -411,23 +436,36 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                                 : 'border-white/10 hover:border-white/20'
                                         }`}
                                     >
-                                        <div className="space-y-2">
-                                            <p className={`text-sm font-semibold ${
-                                                isSelected
-                                                    ? isPurple ? 'text-purple-300' : 'text-amber-300'
-                                                    : 'text-white/90'
-                                            }`}>
-                                                {tier.name}
-                                            </p>
-                                            <div>
-                                                <span className="text-xl font-bold">{formatPrice(tierPrice)}</span>
-                                                <span className="text-muted-foreground text-xs">
-                                                    /{billingInterval === 'monthly' ? 'mo' : 'yr'}
-                                                </span>
+                                        <div className="space-y-2.5">
+                                            <div className="flex items-baseline justify-between">
+                                                <p className={`text-sm font-semibold ${
+                                                    isSelected
+                                                        ? isPurple ? 'text-purple-300' : 'text-amber-300'
+                                                        : 'text-white/90'
+                                                }`}>
+                                                    {tier.name}
+                                                </p>
+                                                <div>
+                                                    <span className="text-lg font-bold">{formatPrice(tierPrice)}</span>
+                                                    <span className="text-muted-foreground text-xs">
+                                                        /{billingInterval === 'monthly' ? 'mo' : 'yr'}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                                {tier.description}
-                                            </p>
+                                            <div className="space-y-1.5">
+                                                {(TIER_OUTCOMES[tier.tier] || []).map((outcome, i) => (
+                                                    <p key={i} className={`text-xs leading-relaxed ${
+                                                        i === 0 && outcome.endsWith(':')
+                                                            ? 'text-muted-foreground/80 font-medium'
+                                                            : 'text-muted-foreground'
+                                                    }`}>
+                                                        {!outcome.endsWith(':') && (
+                                                            <span className={`inline-block mr-1.5 ${isPurple ? 'text-purple-400/70' : 'text-amber-400/70'}`}>&#x2022;</span>
+                                                        )}
+                                                        {outcome}
+                                                    </p>
+                                                ))}
+                                            </div>
                                         </div>
                                     </button>
                                 );
