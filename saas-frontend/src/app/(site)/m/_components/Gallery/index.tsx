@@ -171,7 +171,7 @@ const MerchantGallery: React.FC<Props> = ({
     // Show loading state if vendor storage data is still loading
     if (vendorStorageQuery.isLoading) {
         return (
-            <div className="flex items-center justify-center h-[800px] w-full max-w-[960px]">
+            <div className="flex items-center justify-center h-full w-full">
                 <div className="text-center">
                     <Spinner className="mx-auto mb-4" />
                     <p className="text-muted-foreground">Loading gallery...</p>
@@ -181,7 +181,7 @@ const MerchantGallery: React.FC<Props> = ({
     }
 
     return (
-        <div className="flex flex-col space-y-6 h-[800px] w-full max-w-[960px]">
+        <div className="flex flex-col space-y-6 h-full w-full">
             <div className="flex justify-between items-center flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold">Gallery Management</h2>

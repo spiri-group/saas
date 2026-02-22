@@ -113,6 +113,7 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                 action: {
                     type: action_type,
                     dialog: navOption.dialogId,
+                    dialogClassName: navOption.className,
                     href: navOption.href
                 }
             }
@@ -413,6 +414,7 @@ const RootControllerNode: React.FC<{
     const router = useRouter();
     const [activePath, setActivePath] = useState<string[]>([]);
     const [showDialog, setShowDialog] = useState<string | null>(null);
+    const [dialogClassName, setDialogClassName] = useState<string | undefined>(undefined);
     const [commandLocation, setCommandLocation] = useState<"internal" | "external">("internal");
 
     useEffect(() => {
@@ -421,6 +423,7 @@ const RootControllerNode: React.FC<{
                 const { action, path } = e.detail;
                 if (action.type == "dialog") {
                     setShowDialog(action.dialog);
+                    setDialogClassName(action.dialogClassName);
                     // we also need to dispatch an event to close any navs
                     setActivePath([]);
                 } else if (action.type == "link") {
@@ -446,6 +449,7 @@ const RootControllerNode: React.FC<{
                 const { action, path } = e.detail;
                 if (action.type == "dialog") {
                     setShowDialog(action.dialog);
+                    setDialogClassName(action.dialogClassName);
                     // we also need to dispatch an event to close any navs
                     setActivePath([]);
                 } else if (action.type == "link") {
@@ -475,6 +479,7 @@ const RootControllerNode: React.FC<{
         };
         const handleCloseDialog = () => {
             setShowDialog(null);
+            setDialogClassName(undefined);
         };
         document.addEventListener("mousedown", handleClickOutside);
         window.addEventListener("close-dialog", handleCloseDialog);
@@ -497,9 +502,9 @@ const RootControllerNode: React.FC<{
                 commandLocation={commandLocation} />
             <Dialog
                 open={showDialog != null}
-                onOpenChange={() => setShowDialog(null)}>
+                onOpenChange={() => { setShowDialog(null); setDialogClassName(undefined); }}>
                 <DialogContent
-                    className="sm:max-w-xl max-h-[90vh] overflow-y-auto"
+                    className={cn("max-h-[90vh] overflow-y-auto", dialogClassName || "sm:max-w-xl")}
                     onPointerDownOutside={(e) => e.preventDefault()}
                     onEscapeKeyDown={(e) => e.preventDefault()}>
                     <VisuallyHidden>
