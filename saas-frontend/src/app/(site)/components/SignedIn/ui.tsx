@@ -361,17 +361,17 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
 
     return (
         <Dialog open onOpenChange={() => onClose()}>
-            <DialogContent data-testid="get-started-dialog" className="sm:max-w-lg rounded-2xl p-0 overflow-hidden">
+            <DialogContent data-testid="get-started-dialog" className="sm:max-w-2xl rounded-2xl p-0 overflow-hidden">
                 {/* Header */}
-                <div className={`px-6 pt-6 pb-4 ${isPurple ? 'bg-purple-500/10' : 'bg-amber-500/10'}`}>
+                <div className={`px-8 pt-8 pb-5 ${isPurple ? 'bg-purple-500/10' : 'bg-amber-500/10'}`}>
                     <DialogHeader>
-                        <div className="flex items-center gap-3">
-                            <div className={`rounded-full p-3 ${isPurple ? 'bg-purple-500/20' : 'bg-amber-500/20'}`}>
-                                <Icon className={`h-7 w-7 ${isPurple ? 'text-purple-400' : 'text-amber-400'}`} />
+                        <div className="flex items-center gap-4">
+                            <div className={`rounded-full p-3.5 ${isPurple ? 'bg-purple-500/20' : 'bg-amber-500/20'}`}>
+                                <Icon className={`h-8 w-8 ${isPurple ? 'text-purple-400' : 'text-amber-400'}`} />
                             </div>
                             <div>
-                                <DialogTitle data-testid="get-started-title" className="text-xl font-bold">{config.title}</DialogTitle>
-                                <DialogDescription className="text-sm text-muted-foreground mt-0.5">
+                                <DialogTitle data-testid="get-started-title" className="text-2xl font-bold">{config.title}</DialogTitle>
+                                <DialogDescription className="text-base text-muted-foreground mt-0.5">
                                     {config.subtitle}
                                 </DialogDescription>
                             </div>
@@ -379,7 +379,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                     </DialogHeader>
                 </div>
 
-                <div className="px-6 pb-6 pt-4 space-y-5">
+                <div className="px-8 pb-8 pt-5 space-y-6">
                     {/* Billing toggle */}
                     <div
                         className="flex rounded-lg border p-1"
@@ -389,7 +389,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                             type="button"
                             data-testid="get-started-monthly-btn"
                             onClick={() => setBillingInterval('monthly')}
-                            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                            className={`flex-1 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${
                                 billingInterval === 'monthly'
                                     ? isPurple ? 'bg-purple-600 text-white' : 'bg-amber-600 text-white'
                                     : 'text-muted-foreground hover:text-foreground'
@@ -401,7 +401,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                             type="button"
                             data-testid="get-started-annual-btn"
                             onClick={() => setBillingInterval('annual')}
-                            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                            className={`flex-1 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${
                                 billingInterval === 'annual'
                                     ? isPurple ? 'bg-purple-600 text-white' : 'bg-amber-600 text-white'
                                     : 'text-muted-foreground hover:text-foreground'
@@ -418,7 +418,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                             <span className="text-sm">Loading plans...</span>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-3" data-testid="get-started-tier-cards">
+                        <div className="grid grid-cols-2 gap-4" data-testid="get-started-tier-cards">
                             {availableTiers.map((tier) => {
                                 const isSelected = tier.tier === selectedTier;
                                 const tierPrice = billingInterval === 'monthly' ? tier.monthlyPrice : tier.annualPrice;
@@ -428,7 +428,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                         type="button"
                                         data-testid={`get-started-tier-${tier.tier}`}
                                         onClick={() => setSelectedTier(tier.tier)}
-                                        className={`relative rounded-xl border-2 p-4 text-left transition-all ${
+                                        className={`relative rounded-xl border-2 p-5 text-left transition-all ${
                                             isSelected
                                                 ? isPurple
                                                     ? 'border-purple-500 bg-purple-500/10'
@@ -436,9 +436,9 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                                 : 'border-white/10 hover:border-white/20'
                                         }`}
                                     >
-                                        <div className="space-y-2.5">
+                                        <div className="space-y-3">
                                             <div className="flex items-baseline justify-between">
-                                                <p className={`text-sm font-semibold ${
+                                                <p className={`text-base font-semibold ${
                                                     isSelected
                                                         ? isPurple ? 'text-purple-300' : 'text-amber-300'
                                                         : 'text-white/90'
@@ -446,15 +446,15 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                                     {tier.name}
                                                 </p>
                                                 <div>
-                                                    <span className="text-lg font-bold">{formatPrice(tierPrice)}</span>
-                                                    <span className="text-muted-foreground text-xs">
+                                                    <span className="text-xl font-bold">{formatPrice(tierPrice)}</span>
+                                                    <span className="text-muted-foreground text-sm">
                                                         /{billingInterval === 'monthly' ? 'mo' : 'yr'}
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="space-y-1.5">
+                                            <div className="space-y-2">
                                                 {(TIER_OUTCOMES[tier.tier] || []).map((outcome, i) => (
-                                                    <p key={i} className={`text-xs leading-relaxed ${
+                                                    <p key={i} className={`text-sm leading-relaxed ${
                                                         i === 0 && outcome.endsWith(':')
                                                             ? 'text-muted-foreground/80 font-medium'
                                                             : 'text-muted-foreground'
@@ -484,7 +484,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                             type="button"
                             data-testid="get-started-cancel-btn"
                             onClick={onClose}
-                            className="flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted"
+                            className="flex-1 rounded-lg border px-5 py-3 text-sm font-medium text-muted-foreground hover:bg-muted"
                         >
                             Not Now
                         </button>
@@ -493,7 +493,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                             data-testid="get-started-continue-btn"
                             onClick={() => onContinue(selectedTier, billingInterval)}
                             disabled={tiersLoading}
-                            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                            className={`flex-1 rounded-lg px-5 py-3 text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                                 isPurple
                                     ? 'bg-purple-600 hover:bg-purple-700'
                                     : 'bg-amber-600 hover:bg-amber-700'
