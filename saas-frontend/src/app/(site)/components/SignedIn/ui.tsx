@@ -290,7 +290,7 @@ const TIER_OUTCOMES: Record<string, string[]> = {
     ],
     illuminate: [
         'Send payment links',
-        'Go live and earn in real-time',
+        'Earn in real-time, anywhere',
         'Sell at expos and markets',
     ],
     manifest: [
