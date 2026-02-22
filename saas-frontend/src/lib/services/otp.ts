@@ -9,28 +9,23 @@ import { AzureNamedKeyCredential, TableClient, RestError } from "@azure/data-tab
 import { createHash, randomInt } from "crypto";
 
 // ---------------------------------------------------------------------------
-// Azure Table Storage client (lazy singleton — deferred because 'use server'
-// modules don't reliably run module-level side-effects like auth.ts does)
+// Azure Table Storage client (singleton, same pattern as auth.ts)
 // ---------------------------------------------------------------------------
 
-let _tableClient: TableClient | null = null;
-
-const getTableClient = () => {
-    if (!_tableClient) {
-        const { env_name, env_index } = azure_identity();
-        const storagename = `stspvapp${env_name}${env_index}`;
-        const credential = new AzureNamedKeyCredential(storagename, process.env.AUTH_AZURE_ACCESS_KEY as string);
-        _tableClient = new TableClient(`https://${storagename}.table.core.windows.net`, "otp", credential);
-    }
-    return _tableClient;
+const initializeTableClient = () => {
+    const { env_name, env_index } = azure_identity();
+    const storagename = `stspvapp${env_name}${env_index}`;
+    const credential = new AzureNamedKeyCredential(storagename, process.env.AUTH_AZURE_ACCESS_KEY as string);
+    return new TableClient(`https://${storagename}.table.core.windows.net`, "otp", credential);
 };
+
+const tableClient = initializeTableClient();
 
 // Ensure the table exists (runs once, cached promise)
 let tableReady: Promise<void> | null = null;
 const ensureTable = () => {
     if (!tableReady) {
-        const client = getTableClient();
-        tableReady = client.createTable().catch((err: unknown) => {
+        tableReady = tableClient.createTable().catch((err: unknown) => {
             // 409 = table already exists, which is fine
             if (err instanceof RestError && err.statusCode === 409) return;
             tableReady = null; // retry on real errors
@@ -83,7 +78,7 @@ export const generateOTP = async (subject: string) => {
 
     // --- Rate limiting: count gen_* rows in the last 10 minutes ---
     const windowStart = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
-    const rateEntities = getTableClient().listEntities<{ createdAt: string }>({
+    const rateEntities = tableClient.listEntities<{ createdAt: string }>({
         queryOptions: {
             filter: `PartitionKey eq '${pk}' and RowKey ge 'gen_' and RowKey lt 'gen_~' and createdAt ge '${windowStart}'`,
         },
@@ -102,7 +97,7 @@ export const generateOTP = async (subject: string) => {
     const expiresAt = new Date(Date.now() + OTP_TTL_MS).toISOString();
 
     // Upsert the OTP entity (overwrites any previous OTP for this subject)
-    await getTableClient().upsertEntity({
+    await tableClient.upsertEntity({
         partitionKey: pk,
         rowKey: "current",
         otpHash: hashOtp(otp),
@@ -112,7 +107,7 @@ export const generateOTP = async (subject: string) => {
 
     // Record rate-limit entry
     const now = Date.now();
-    await getTableClient().upsertEntity({
+    await tableClient.upsertEntity({
         partitionKey: pk,
         rowKey: `gen_${now}`,
         createdAt: new Date(now).toISOString(),
@@ -155,7 +150,7 @@ export const verifyOTP = async (payload: {
     // Point-read the current OTP entity
     let entity;
     try {
-        entity = await getTableClient().getEntity<{
+        entity = await tableClient.getEntity<{
             otpHash: string;
             expiresAt: string;
             attempts: number;
@@ -181,7 +176,7 @@ export const verifyOTP = async (payload: {
 
     // Increment attempts with optimistic concurrency (etag)
     try {
-        await getTableClient().updateEntity(
+        await tableClient.updateEntity(
             { partitionKey: pk, rowKey: "current", attempts: (attempts as number) + 1 },
             "Merge",
             { etag: etag as string }
@@ -213,7 +208,7 @@ export const clearOTP = async (email: string) => {
 
 async function deleteEntity(pk: string, rk: string) {
     try {
-        await getTableClient().deleteEntity(pk, rk);
+        await tableClient.deleteEntity(pk, rk);
     } catch (err: unknown) {
         // 404 = already gone, that's fine
         if (err instanceof RestError && err.statusCode === 404) return;
@@ -223,7 +218,7 @@ async function deleteEntity(pk: string, rk: string) {
 
 async function cleanupExpiredRateLimitEntries(pk: string) {
     const windowStart = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
-    const expired = getTableClient().listEntities<{ createdAt: string }>({
+    const expired = tableClient.listEntities<{ createdAt: string }>({
         queryOptions: {
             filter: `PartitionKey eq '${pk}' and RowKey ge 'gen_' and RowKey lt 'gen_~' and createdAt lt '${windowStart}'`,
         },
