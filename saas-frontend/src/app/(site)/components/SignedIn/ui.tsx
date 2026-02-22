@@ -1,7 +1,7 @@
 'use client';
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Package, Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard } from "lucide-react";
+import { Package, Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard, LoaderIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { VendorDocType } from "@/utils/spiriverse";
+import { useSubscriptionTiers } from "@/hooks/UseSubscriptionTiers";
 
 function getInitials(email: string): string {
     const local = email.split('@')[0] ?? '';
@@ -25,6 +26,8 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
     const { data: session, status } = useSession();
     const queryClient = useQueryClient();
     const [showProfileDialog, setShowProfileDialog] = useState(false);
+    const [showGetStarted, setShowGetStarted] = useState<'merchant' | 'practitioner' | null>(null);
+    const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
     const [menuOpen, setMenuOpen] = useState(false);
 
     const initials = getInitials(email);
@@ -177,7 +180,9 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                                 if (session.user && session.user.requiresInput) {
                                                     setShowProfileDialog(true);
                                                 } else {
-                                                    router.push('/m/setup');
+                                                    setMenuOpen(false);
+                                                    setBillingInterval('monthly');
+                                                    setShowGetStarted('merchant');
                                                 }
                                             }}
                                         >
@@ -193,7 +198,9 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                                 if (session.user && session.user.requiresInput) {
                                                     setShowProfileDialog(true);
                                                 } else {
-                                                    router.push('/p/setup');
+                                                    setMenuOpen(false);
+                                                    setBillingInterval('monthly');
+                                                    setShowGetStarted('practitioner');
                                                 }
                                             }}
                                         >
@@ -259,7 +266,205 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                     </DialogContent>
                 </Dialog>
             )}
+
+            {showGetStarted && (
+                <GetStartedDialog
+                    type={showGetStarted}
+                    billingInterval={billingInterval}
+                    onBillingIntervalChange={setBillingInterval}
+                    onClose={() => setShowGetStarted(null)}
+                    onContinue={(interval) => {
+                        setShowGetStarted(null);
+                        if (showGetStarted === 'merchant') {
+                            router.push(`/m/setup?tier=manifest&interval=${interval}`);
+                        } else {
+                            router.push(`/p/setup?tier=awaken&interval=${interval}`);
+                        }
+                    }}
+                />
+            )}
         </>
+    );
+};
+
+const MERCHANT_CONFIG = {
+    tier: 'manifest',
+    tierName: 'Manifest',
+    profileType: 'merchant',
+    icon: Store,
+    title: 'Open Your Shop',
+    subtitle: 'Start selling on SpiriVerse with the Manifest plan',
+    accentColor: 'amber',
+    benefits: [
+        'List and sell products on your own storefront',
+        'Accept payments with integrated checkout',
+        'Manage orders, fulfilment and inventory',
+        'Customise your shop branding and appearance',
+    ],
+} as const;
+
+const PRACTITIONER_CONFIG = {
+    tier: 'awaken',
+    tierName: 'Awaken',
+    profileType: 'practitioner',
+    icon: Sparkles,
+    title: 'Start Your Practice',
+    subtitle: 'Share your gifts with the world on the Awaken plan',
+    accentColor: 'purple',
+    benefits: [
+        'Create your professional practitioner profile',
+        'Offer readings, healings and coaching sessions',
+        'Build your gallery and showcase your work',
+        'Connect with seekers around the world',
+    ],
+} as const;
+
+type GetStartedDialogProps = {
+    type: 'merchant' | 'practitioner';
+    billingInterval: 'monthly' | 'annual';
+    onBillingIntervalChange: (interval: 'monthly' | 'annual') => void;
+    onClose: () => void;
+    onContinue: (interval: 'monthly' | 'annual') => void;
+};
+
+const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
+    type,
+    billingInterval,
+    onBillingIntervalChange,
+    onClose,
+    onContinue,
+}) => {
+    const config = type === 'merchant' ? MERCHANT_CONFIG : PRACTITIONER_CONFIG;
+    const Icon = config.icon;
+    const { data: tiers, isLoading: tiersLoading } = useSubscriptionTiers(config.profileType);
+
+    const tierDef = tiers?.find(t => t.tier === config.tier);
+    const price = tierDef
+        ? billingInterval === 'monthly'
+            ? tierDef.monthlyPrice
+            : tierDef.annualPrice
+        : null;
+    const currency = tierDef?.currency || 'USD';
+
+    const formatPrice = (cents: number) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+        }).format(cents / 100);
+    };
+
+    const isPurple = config.accentColor === 'purple';
+
+    return (
+        <Dialog open onOpenChange={() => onClose()}>
+            <DialogContent data-testid="get-started-dialog" className="sm:max-w-md rounded-2xl p-0 overflow-hidden">
+                {/* Header */}
+                <div className={`px-6 pt-6 pb-4 ${isPurple ? 'bg-purple-500/10' : 'bg-amber-500/10'}`}>
+                    <DialogHeader>
+                        <div className="flex items-center gap-3">
+                            <div className={`rounded-full p-3 ${isPurple ? 'bg-purple-500/20' : 'bg-amber-500/20'}`}>
+                                <Icon className={`h-7 w-7 ${isPurple ? 'text-purple-400' : 'text-amber-400'}`} />
+                            </div>
+                            <div>
+                                <DialogTitle data-testid="get-started-title" className="text-xl font-bold">{config.title}</DialogTitle>
+                                <DialogDescription className="text-sm text-muted-foreground mt-0.5">
+                                    {config.subtitle}
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                </div>
+
+                <div className="px-6 pb-6 pt-4 space-y-5">
+                    {/* Benefits */}
+                    <div data-testid="get-started-benefits" className="space-y-2.5">
+                        {config.benefits.map((benefit, i) => (
+                            <div key={i} className="flex items-start gap-2.5 text-sm">
+                                <Sparkles className={`h-3.5 w-3.5 mt-0.5 flex-shrink-0 ${isPurple ? 'text-purple-400' : 'text-amber-400'}`} />
+                                <span className="text-muted-foreground">{benefit}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Billing toggle */}
+                    <div>
+                        <div
+                            className="flex rounded-lg border p-1"
+                            data-testid="get-started-interval-toggle"
+                        >
+                            <button
+                                type="button"
+                                data-testid="get-started-monthly-btn"
+                                onClick={() => onBillingIntervalChange('monthly')}
+                                className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                                    billingInterval === 'monthly'
+                                        ? isPurple ? 'bg-purple-600 text-white' : 'bg-amber-600 text-white'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                Monthly
+                            </button>
+                            <button
+                                type="button"
+                                data-testid="get-started-annual-btn"
+                                onClick={() => onBillingIntervalChange('annual')}
+                                className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                                    billingInterval === 'annual'
+                                        ? isPurple ? 'bg-purple-600 text-white' : 'bg-amber-600 text-white'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                Annual
+                            </button>
+                        </div>
+
+                        {/* Price */}
+                        <div className="mt-3 text-center" data-testid="get-started-price">
+                            {tiersLoading ? (
+                                <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                                    <LoaderIcon className="h-4 w-4 animate-spin" />
+                                    <span className="text-sm">Loading pricing...</span>
+                                </div>
+                            ) : price != null ? (
+                                <div>
+                                    <span className="text-2xl font-bold">{formatPrice(price)}</span>
+                                    <span className="text-muted-foreground text-sm">
+                                        /{billingInterval === 'monthly' ? 'mo' : 'yr'}
+                                    </span>
+                                </div>
+                            ) : null}
+                        </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            data-testid="get-started-cancel-btn"
+                            onClick={onClose}
+                            className="flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted"
+                        >
+                            Not Now
+                        </button>
+                        <button
+                            type="button"
+                            data-testid="get-started-continue-btn"
+                            onClick={() => onContinue(billingInterval)}
+                            disabled={tiersLoading}
+                            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                                isPurple
+                                    ? 'bg-purple-600 hover:bg-purple-700'
+                                    : 'bg-amber-600 hover:bg-amber-700'
+                            }`}
+                        >
+                            Get Started
+                        </button>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 };
 
