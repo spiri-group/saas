@@ -437,15 +437,15 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                         }`}
                                     >
                                         <div className="space-y-3">
-                                            <div className="flex items-baseline justify-between">
-                                                <p className={`text-base font-semibold ${
+                                            <div className="flex items-baseline justify-between gap-2 flex-nowrap">
+                                                <p className={`text-base font-semibold whitespace-nowrap ${
                                                     isSelected
                                                         ? isPurple ? 'text-purple-300' : 'text-amber-300'
                                                         : 'text-white/90'
                                                 }`}>
                                                     {tier.name}
                                                 </p>
-                                                <div>
+                                                <div className="whitespace-nowrap">
                                                     <span className="text-xl font-bold">{formatPrice(tierPrice)}</span>
                                                     <span className="text-muted-foreground text-sm">
                                                         /{billingInterval === 'monthly' ? 'mo' : 'yr'}
