@@ -47,7 +47,9 @@ export default function SiteLayout({
               <SpiriLogo height={40} />
             </Link>
               <ConditionalNavItems>
-                <SearchBar className="flex-grow mx-6" />
+                <Suspense fallback={null}>
+                  <SearchBar className="flex-grow mx-6" />
+                </Suspense>
                 <div className="flex flex-row items-center space-x-2">
                 <CartIcon />
                 <SignedIn/>
@@ -60,7 +62,9 @@ export default function SiteLayout({
         </ConditionalMainWrapper>
         <div id="modal-div" className="absolute t-0 l-0 text-slate-800"/>
         <Notifications />
-        <ResolveStripeSuccess />
+        <Suspense fallback={null}>
+          <ResolveStripeSuccess />
+        </Suspense>
         <ConsentGuard />
         <CookieBanner />
         <Suspense fallback={null}>

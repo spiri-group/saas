@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import UI from "./ui";
 import { auth } from "@/lib/auth";
@@ -14,7 +15,11 @@ async function CardPullPage({ params }: { params: Promise<{ userId: string }> })
     redirect('/');
   }
 
-  return <UI userId={userId} />;
+  return (
+    <Suspense fallback={null}>
+      <UI userId={userId} />
+    </Suspense>
+  );
 }
 
 export default CardPullPage;
