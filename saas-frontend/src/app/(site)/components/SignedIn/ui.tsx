@@ -271,11 +271,7 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                     onSwitchType={(t) => setShowGetStarted(t)}
                     onContinue={(tier, interval) => {
                         setShowGetStarted(null);
-                        if (showGetStarted === 'merchant') {
-                            router.push(`/m/setup?tier=${tier}&interval=${interval}`);
-                        } else {
-                            router.push(`/p/setup?tier=${tier}&interval=${interval}`);
-                        }
+                        router.push(`/setup?tier=${tier}&interval=${interval}`);
                     }}
                 />
             )}

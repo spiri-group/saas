@@ -308,7 +308,7 @@ const useBL = (props: BLProps) => {
                     icon: <Plus className="w-5 h-5" />,
                     label: "Open New Shop",
                     ...(canCreateMerchant
-                        ? { href: "/m/setup" }
+                        ? { href: "/setup" }
                         : { dialogId: "Shop Upgrade" }),
                     testId: "open-new-shop-btn"
                 },

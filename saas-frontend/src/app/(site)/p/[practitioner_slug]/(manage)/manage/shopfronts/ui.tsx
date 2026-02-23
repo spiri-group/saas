@@ -103,7 +103,7 @@ export default function PractitionerShopfrontsUI({ session, practitionerId, slug
                                         <div className="text-center py-6">
                                             <Store className="h-12 w-12 text-slate-600 mx-auto mb-3" />
                                             <p className="text-slate-400">No shops available to link</p>
-                                            <Link href="/m/setup">
+                                            <Link href="/setup">
                                                 <Button variant="outline" className="mt-4">
                                                     <Plus className="h-4 w-4 mr-2" />
                                                     Create a New Shop
@@ -163,7 +163,7 @@ export default function PractitionerShopfrontsUI({ session, practitionerId, slug
                                         Link your merchant shops to show products on your practitioner profile
                                     </p>
                                     {userMerchants.length === 0 ? (
-                                        <Link href="/m/setup">
+                                        <Link href="/setup">
                                             <Button>
                                                 <Plus className="h-4 w-4 mr-2" />
                                                 Create Your First Shop

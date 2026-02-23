@@ -50,7 +50,7 @@ export default function ShopUpgradeDialog({ vendorId, currentTier, onClose }: Sh
             });
             toast.success('Upgraded to Manifest! Setting up your shop...');
             onClose();
-            router.push(`/m/setup?tier=manifest&interval=${interval}`);
+            router.push(`/setup?tier=manifest&interval=${interval}`);
         } catch {
             toast.error('Failed to upgrade. Please try again.');
         }

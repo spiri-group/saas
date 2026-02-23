@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Form } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { Mail } from 'lucide-react';
@@ -9,6 +10,8 @@ import SpiriLogo from '@/icons/spiri-logo';
 import { SignIn } from '@/components/ux/SignIn';
 
 import { gql } from '@/lib/services/gql';
+import UseUserProfile from '@/hooks/user/UseUserProfile';
+import useReverseGeocoding from '@/components/utils/useReverseGeoCoding';
 import OnboardingShell, { type OnboardingTheme } from './components/OnboardingShell';
 import MarketingPanel from './components/MarketingPanel';
 import StepIndicator from './components/StepIndicator';
@@ -93,8 +96,12 @@ function isCardStep(step: Step): boolean {
 
 export default function SetupUI() {
     const { data: session, status } = useSession();
+    const router = useRouter();
     const isAuthenticated = !!session?.user;
     const isLoading = status === 'loading';
+    const searchParams = useSearchParams();
+    const tierParam = searchParams.get('tier');
+    const intervalParam = searchParams.get('interval') as 'monthly' | 'annual' | null;
 
     const [mounted, setMounted] = useState(false);
     const [step, setStep] = useState<Step>('basic');
@@ -103,6 +110,9 @@ export default function SetupUI() {
     const [createdMerchantSlug, setCreatedMerchantSlug] = useState<string | null>(null);
 
     const { form, initMerchant, initPractitioner, createVendor, createPractitioner } = useOnboardingForm();
+    const { data: userProfile } = UseUserProfile(session?.user?.id ?? '');
+    const detectedCountry = useReverseGeocoding();
+    const didSkipRef = useRef(false);
 
     useEffect(() => { setMounted(true); }, []);
 
@@ -112,6 +122,44 @@ export default function SetupUI() {
             form.setValue('email', session.user.email);
         }
     }, [session, form]);
+
+    // Skip redundant steps when profile is already complete
+    useEffect(() => {
+        if (didSkipRef.current) return;
+        if (!session?.user || !userProfile) return;
+        if (session.user.requiresInput) return;
+
+        // Pre-fill form from existing profile
+        const country = detectedCountry ?? '';
+        form.setValue('firstName', userProfile.firstname || '');
+        form.setValue('lastName', userProfile.lastname || '');
+        form.setValue('email', userProfile.email || session.user.email || '');
+        if (country) form.setValue('country', country);
+        if (userProfile.religion?.id) form.setValue('religionId', userProfile.religion.id);
+        if (userProfile.openToOtherExperiences != null) {
+            form.setValue('openToOtherExperiences', userProfile.openToOtherExperiences);
+        }
+
+        if (tierParam) {
+            // Tier was chosen in the GetStartedDialog — skip basic + plan, go to consent
+            form.setValue('subscription.tier', tierParam);
+            if (intervalParam) form.setValue('subscription.billingInterval', intervalParam);
+
+            const newBranch: Branch = tierParam === 'awaken' ? 'practitioner' : 'merchant';
+            setBranch(newBranch);
+            if (newBranch === 'merchant') {
+                initMerchant();
+            } else {
+                initPractitioner();
+            }
+            setStep('consent');
+        } else {
+            // No tier param — skip basic, land on plan selection
+            setStep('plan');
+        }
+
+        didSkipRef.current = true;
+    }, [session, userProfile, detectedCountry, tierParam, intervalParam, form, initMerchant, initPractitioner]);
 
     // ── Step handlers ───────────────────────────────────────────────
 
@@ -168,8 +216,13 @@ export default function SetupUI() {
     }, [initMerchant, initPractitioner]);
 
     const handleConsentBack = useCallback(() => {
-        setStep('plan');
-    }, []);
+        if (tierParam && session?.user?.id) {
+            // Tier was pre-selected via URL — cancel back to My Journey
+            router.push(`/u/${session.user.id}/space`);
+        } else {
+            setStep('plan');
+        }
+    }, [tierParam, session?.user?.id, router]);
 
     const handleConsentAccepted = useCallback(() => {
         // After consent, go to profile step based on branch
@@ -181,8 +234,13 @@ export default function SetupUI() {
     }, [branch]);
 
     const handlePlanBack = useCallback(() => {
-        setStep('basic');
-    }, []);
+        if (didSkipRef.current && session?.user?.id) {
+            // Basic step was skipped — cancel back to My Journey
+            router.push(`/u/${session.user.id}/space`);
+        } else {
+            setStep('basic');
+        }
+    }, [session?.user?.id, router]);
 
     // Merchant submission
     const handleMerchantSubmit = useCallback(async () => {
@@ -373,6 +431,7 @@ export default function SetupUI() {
             isFullScreen={fullScreen}
             isCentered={step === 'basic'}
             marketingContent={<MarketingPanel theme={theme} />}
+            cancelHref={didSkipRef.current && session?.user?.id ? `/u/${session.user.id}/space` : undefined}
         >            {showCard ? (
                 <div
                     className={`flex flex-col rounded-2xl flex-1 min-h-0 transition-all duration-1000 overflow-hidden ${
