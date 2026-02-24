@@ -128,13 +128,14 @@ export default function SetupUI() {
         if (didSkipRef.current) return;
         if (!session?.user || !userProfile) return;
         if (session.user.requiresInput) return;
+        if (!detectedCountry) return; // Wait for country detection before skipping basic step
 
         // Pre-fill form from existing profile
-        const country = detectedCountry ?? '';
+        const country = detectedCountry;
         form.setValue('firstName', userProfile.firstname || '');
         form.setValue('lastName', userProfile.lastname || '');
         form.setValue('email', userProfile.email || session.user.email || '');
-        if (country) form.setValue('country', country);
+        form.setValue('country', country);
         if (userProfile.religion?.id) form.setValue('religionId', userProfile.religion.id);
         if (userProfile.openToOtherExperiences != null) {
             form.setValue('openToOtherExperiences', userProfile.openToOtherExperiences);
@@ -244,6 +245,11 @@ export default function SetupUI() {
 
     // Merchant submission
     const handleMerchantSubmit = useCallback(async () => {
+        // Ensure country is set (fallback for skip path where detection resolved late)
+        if (!form.getValues('country') && detectedCountry) {
+            form.setValue('country', detectedCountry);
+        }
+
         setIsSubmitting(true);
         try {
             const slug = await createVendor();
@@ -255,7 +261,7 @@ export default function SetupUI() {
         } finally {
             setIsSubmitting(false);
         }
-    }, [createVendor]);
+    }, [createVendor, form, detectedCountry]);
 
     const handleMerchantBack = useCallback(() => {
         setStep('consent');
@@ -291,6 +297,11 @@ export default function SetupUI() {
     }, []);
 
     const handlePractitionerSubmit = useCallback(async () => {
+        // Ensure country is set (fallback for skip path where detection resolved late)
+        if (!form.getValues('country') && detectedCountry) {
+            form.setValue('country', detectedCountry);
+        }
+
         setIsSubmitting(true);
         try {
             // If merchant branch, practitioner gets awaken tier
@@ -309,7 +320,7 @@ export default function SetupUI() {
         } finally {
             setIsSubmitting(false);
         }
-    }, [branch, createdMerchantSlug, createPractitioner, form]);
+    }, [branch, createdMerchantSlug, createPractitioner, form, detectedCountry]);
 
     // ── Auth gate ───────────────────────────────────────────────────
 

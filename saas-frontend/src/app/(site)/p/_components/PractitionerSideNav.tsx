@@ -29,7 +29,6 @@ import {
     Store,
     Plus,
     Settings,
-    Wallet,
     ImageIcon,
     Receipt,
     Radio
@@ -171,38 +170,6 @@ const useBL = (props: BLProps) => {
             ],
         },
         {
-            label: "Payment Links",
-            icon: <Receipt className="w-5 h-5" />,
-            testId: "nav-payment-links",
-            ...(features.hasPaymentLinks
-                ? { href: `/p/${practitionerSlug}/manage/payment-links` }
-                : { dialogId: "Upgrade Payment Links" }),
-        },
-        {
-            label: "Live Assist",
-            icon: <Radio className="w-5 h-5" />,
-            testId: "nav-live-assist",
-            ...(features.hasLiveAssist
-                ? { href: `/p/${practitionerSlug}/manage/live-assist` }
-                : { dialogId: "Upgrade Live Assist" }),
-        },
-        {
-            label: "Expo Mode",
-            icon: <Store className="w-5 h-5" />,
-            testId: "nav-expo-mode",
-            ...(features.hasExpoMode
-                ? { href: `/p/${practitionerSlug}/manage/expo-mode` }
-                : { dialogId: "Upgrade Expo Mode" }),
-        },
-        {
-            icon: <div className="flex items-center justify-center"><SpiriAssistLogo height={20} /></div>,
-            label: "SpiriAssist",
-            testId: "nav-spiri-assist",
-            ...(features.hasSpiriAssist
-                ? { href: `/p/${practitionerSlug}/manage/spiri-assist` }
-                : { dialogId: "Upgrade SpiriAssist" }),
-        },
-        {
             label: "Profile",
             icon: <User className="w-5 h-5" />,
             testId: "nav-profile",
@@ -299,44 +266,71 @@ const useBL = (props: BLProps) => {
                 },
             ],
         },
-        {
-            label: "Shop Fronts",
-            icon: <Store className="w-5 h-5 text-amber-500" />,
-            testId: "nav-shop-fronts",
-            navOptions: [
-                {
-                    icon: <Plus className="w-5 h-5" />,
-                    label: "Open New Shop",
-                    ...(canCreateMerchant
-                        ? { href: "/setup" }
-                        : { dialogId: "Shop Upgrade" }),
-                    testId: "open-new-shop-btn"
-                },
-                // Dynamically add user's existing merchants
-                ...getUserMerchants(props.session).map(merchant => ({
+        // Feature items — unlocked ones appear inline, locked ones grouped under a divider at the bottom
+        ...(() => {
+            const featureItems = [
+                { label: "Payment Links", icon: <Receipt className="w-5 h-5" />, testId: "nav-payment-links", href: `/p/${practitionerSlug}/manage/payment-links`, dialogId: "Upgrade Payment Links", unlocked: features.hasPaymentLinks },
+                { label: "Live Assist", icon: <Radio className="w-5 h-5" />, testId: "nav-live-assist", href: `/p/${practitionerSlug}/manage/live-assist`, dialogId: "Upgrade Live Assist", unlocked: features.hasLiveAssist },
+                { label: "Expo Mode", icon: <Store className="w-5 h-5" />, testId: "nav-expo-mode", href: `/p/${practitionerSlug}/manage/expo-mode`, dialogId: "Upgrade Expo Mode", unlocked: features.hasExpoMode },
+                { label: "SpiriAssist", icon: <div className="flex items-center justify-center"><SpiriAssistLogo height={20} /></div>, testId: "nav-spiri-assist", href: `/p/${practitionerSlug}/manage/spiri-assist`, dialogId: "Upgrade SpiriAssist", unlocked: features.hasSpiriAssist },
+            ];
+
+            const unlocked: NavOption[] = featureItems.filter(f => f.unlocked).map(f => ({
+                label: f.label, icon: f.icon, testId: f.testId, href: f.href,
+            }));
+            const locked: NavOption[] = featureItems.filter(f => !f.unlocked).map(f => ({
+                label: f.label, icon: f.icon, testId: f.testId, dialogId: f.dialogId,
+            }));
+
+            // Shop Fronts — unlocked on manifest+, otherwise locked
+            const shopFrontsItem: NavOption = canCreateMerchant
+                ? {
+                    label: "Shop Fronts",
+                    icon: <Store className="w-5 h-5 text-amber-500" />,
+                    testId: "nav-shop-fronts",
+                    navOptions: [
+                        {
+                            icon: <Plus className="w-5 h-5" />,
+                            label: "Open New Shop",
+                            href: "/setup",
+                            testId: "open-new-shop-btn"
+                        },
+                        ...getUserMerchants(props.session).map(merchant => ({
+                            icon: <Store className="w-5 h-5" />,
+                            label: merchant.name,
+                            href: `/m/${merchant.slug}`
+                        })),
+                        ...(getUserMerchants(props.session).length > 0 ? [
+                            { type: "divider" as const, label: "" },
+                            {
+                                icon: <Settings className="w-5 h-5" />,
+                                label: "Manage Linked Shops",
+                                href: `/p/${practitionerSlug}/manage/shopfronts`
+                            }
+                        ] : [])
+                    ],
+                }
+                : {
+                    label: "Shop Fronts",
                     icon: <Store className="w-5 h-5" />,
-                    label: merchant.name,
-                    href: `/m/${merchant.slug}`
-                })),
-                ...(getUserMerchants(props.session).length > 0 ? [
-                    {
-                        type: "divider" as const,
-                        label: ""
-                    },
-                    {
-                        icon: <Settings className="w-5 h-5" />,
-                        label: "Manage Linked Shops",
-                        href: `/p/${practitionerSlug}/manage/shopfronts`
-                    }
-                ] : [])
-            ],
-        },
-        {
-            label: "Subscription",
-            icon: <Wallet className="w-5 h-5" />,
-            href: `/p/${practitionerSlug}/manage/subscription`,
-            testId: "nav-subscription"
-        },
+                    testId: "nav-shop-fronts",
+                    dialogId: "Shop Upgrade",
+                };
+
+            if (canCreateMerchant) {
+                unlocked.push(shopFrontsItem);
+            } else {
+                locked.push(shopFrontsItem);
+            }
+
+            return [
+                ...unlocked,
+                ...(locked.length > 0 ? [
+                    { type: "divider" as const, label: "Upgrade to Unlock" },
+                    ...locked,
+                ] : []),
+            ];
+        })(),
     ];
 
     const dialogMapping: Record<string, (onClose: () => void) => JSX.Element> = !isNullOrUndefined(practitioner)
