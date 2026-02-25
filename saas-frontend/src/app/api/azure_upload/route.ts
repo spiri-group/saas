@@ -105,8 +105,10 @@ export async function POST(req: Request) {
 
           console.log(`Uploading file: ${file.name}`);
 
+          const isImageFile = file.name.match(/\.(jpg|jpeg|png|gif|webp|avif|tiff|tif|svg|heic|heif)$/i)
+            || (file.type && file.type.startsWith('image/'));
           if (
-            file.name.match(/\.(jpg|jpeg|png|gif|webp|avif)$/)
+            isImageFile
             || (output != null && output.match(/image\/(png|jpeg|webp)/))
           ) {
             const buffer = Buffer.from(await file.arrayBuffer());

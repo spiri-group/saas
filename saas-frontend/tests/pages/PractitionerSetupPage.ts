@@ -120,7 +120,8 @@ export class PractitionerSetupPage extends BasePage {
   async createPractitioner(
     testEmail: string,
     practitionerName: string,
-    testInfo: { parallelIndex: number }
+    testInfo: { parallelIndex: number },
+    tier: 'awaken' | 'illuminate' | 'manifest' | 'transcend' = 'awaken'
   ): Promise<string> {
     const timestamp = Date.now();
     const workerId = testInfo.parallelIndex;
@@ -166,11 +167,11 @@ export class PractitionerSetupPage extends BasePage {
     });
     await userSetupPage.setupBusiness();
 
-    // ── Step 5: ChoosePlanStep → select "awaken" (Practitioner) tier ──
+    // ── Step 5: ChoosePlanStep → select tier ──
     await expect(this.page.locator('[data-testid="choose-plan-step"]')).toBeVisible({ timeout: 10000 });
-    const awakenCard = this.page.locator('[data-testid="tier-card-awaken"]');
-    await expect(awakenCard).toBeVisible({ timeout: 10000 });
-    await awakenCard.click();
+    const tierCard = this.page.locator(`[data-testid="tier-card-${tier}"]`);
+    await expect(tierCard).toBeVisible({ timeout: 10000 });
+    await tierCard.click();
 
     const planContinueBtn = this.page.locator('[data-testid="plan-continue-btn"]');
     await expect(planContinueBtn).toBeEnabled({ timeout: 5000 });

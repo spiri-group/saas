@@ -147,7 +147,7 @@ const GalleryItemEditor: React.FC<Props> = ({
         <div className="space-y-6">
           {/* Preview */}
           <div className="flex justify-center">
-            <div className="relative max-h-48 rounded-lg overflow-hidden drop-shadow-lg bg-muted">
+            <div className="relative max-h-48 rounded-lg overflow-hidden drop-shadow-lg bg-slate-800/50">
               {isVideo ? (
                 <div className="relative w-full h-full">
                   <img
@@ -171,8 +171,9 @@ const GalleryItemEditor: React.FC<Props> = ({
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="title">Title *</Label>
+              <Label dark htmlFor="title">Title *</Label>
               <Input
+                dark
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -181,8 +182,9 @@ const GalleryItemEditor: React.FC<Props> = ({
             </div>
 
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label dark htmlFor="description">Description</Label>
               <Textarea
+                dark
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -193,9 +195,9 @@ const GalleryItemEditor: React.FC<Props> = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="category">Category</Label>
-                <Select value={selectedCategoryId || undefined} onValueChange={(value) => setSelectedCategoryId(value || '')}>
-                  <SelectTrigger className="w-full">
+                <Label dark htmlFor="category">Category</Label>
+                <Select dark value={selectedCategoryId || undefined} onValueChange={(value) => setSelectedCategoryId(value || '')}>
+                  <SelectTrigger dark className="w-full">
                     <SelectValue placeholder="Select category (optional)" />
                   </SelectTrigger>
                   <SelectContent>
@@ -212,15 +214,15 @@ const GalleryItemEditor: React.FC<Props> = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-slate-400 mt-1">
                   What type of content this is
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="album">Album</Label>
-                <Select value={selectedAlbumId || undefined} onValueChange={(value) => setSelectedAlbumId(value || '')}>
-                  <SelectTrigger className="w-full">
+                <Label dark htmlFor="album">Album</Label>
+                <Select dark value={selectedAlbumId || undefined} onValueChange={(value) => setSelectedAlbumId(value || '')}>
+                  <SelectTrigger dark className="w-full">
                     <SelectValue placeholder="Select album (optional)" />
                   </SelectTrigger>
                   <SelectContent>
@@ -231,7 +233,7 @@ const GalleryItemEditor: React.FC<Props> = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-slate-400 mt-1">
                   Which album to add this to
                 </p>
               </div>
@@ -239,10 +241,11 @@ const GalleryItemEditor: React.FC<Props> = ({
 
 
             <div>
-              <Label htmlFor="tags">Tags</Label>
+              <Label dark htmlFor="tags">Tags</Label>
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <Input
+                    dark
                     id="tags"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
@@ -278,7 +281,7 @@ const GalleryItemEditor: React.FC<Props> = ({
                   </div>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 Tags help organize and search your content
               </p>
             </div>

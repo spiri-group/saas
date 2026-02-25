@@ -48,7 +48,7 @@ const normalizeSubject = (subject: string): string =>
 const MAX_ATTEMPTS = 5;
 const OTP_TTL_MS = 3 * 60_000; // 3 minutes
 const RATE_WINDOW_MS = 10 * 60_000; // 10 minutes
-const MAX_GENERATIONS = 3;
+const MAX_GENERATIONS = process.env.NODE_ENV === "development" ? 50 : 3;
 
 // ---------------------------------------------------------------------------
 // Test mode helpers

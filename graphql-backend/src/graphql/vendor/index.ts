@@ -733,7 +733,10 @@ const resolvers = {
                 // Tier-based subscription
                 subscriptionTier: subscription?.tier || 'manifest',
                 billingInterval: subscription?.billingInterval || 'monthly',
-                billingStatus: 'pendingFirstBilling',
+                billingModel: 'trial',
+                billingStatus: 'trial',
+                trialStartedAt: DateTime.now().toISO(),
+                trialEndsAt: DateTime.now().plus({ days: 14 }).toISO(),
                 cumulativePayouts: 0,
                 subscriptionCostThreshold: 3200, // Manifest monthly default in cents, overridden by selectVendorSubscriptionTier
                 failedPaymentAttempts: 0,
@@ -742,7 +745,6 @@ const resolvers = {
                 last_payment_date: null,
                 card_status: merchant_card_status.not_saved,
                 payment_status: merchant_subscription_payment_status.not_attempted,
-                // Deferred subscription model: first payout triggers card requirement
                 first_payout_received: false,
                 payouts_blocked: false,
                 plans: subscription?.plans || []
@@ -955,7 +957,10 @@ const resolvers = {
                 subscription: {
                     subscriptionTier: 'awaken' as const,
                     billingInterval: subscription?.billingInterval || 'monthly',
-                    billingStatus: 'pendingFirstBilling' as const,
+                    billingModel: 'trial' as const,
+                    billingStatus: 'trial' as const,
+                    trialStartedAt: DateTime.now().toISO(),
+                    trialEndsAt: DateTime.now().plus({ days: 14 }).toISO(),
                     cumulativePayouts: 0,
                     subscriptionCostThreshold: 1600, // Awaken monthly in cents
                     failedPaymentAttempts: 0,

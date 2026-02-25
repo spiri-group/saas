@@ -148,8 +148,8 @@ export function useOnboardingForm() {
         }
     };
 
-    /** Create vendor via GraphQL mutation. Returns vendor slug. */
-    const createVendor = async (): Promise<string> => {
+    /** Create vendor via GraphQL mutation. Returns { id, slug }. */
+    const createVendor = async (): Promise<{ id: string; slug: string }> => {
         const vals = form.getValues();
         const merchant = vals.merchant!;
         const currency = countryToCurrency[vals.country as keyof typeof countryToCurrency] || 'USD';
@@ -187,11 +187,11 @@ export function useOnboardingForm() {
         });
 
         await updateSession();
-        return vendor.slug;
+        return vendor;
     };
 
-    /** Create practitioner via GraphQL mutation. Returns practitioner slug. */
-    const createPractitioner = async (overrideTier?: string): Promise<string> => {
+    /** Create practitioner via GraphQL mutation. Returns { id, slug }. */
+    const createPractitioner = async (overrideTier?: string): Promise<{ id: string; slug: string }> => {
         const vals = form.getValues();
         const prac = vals.practitioner!;
         const currency = countryToCurrency[vals.country as keyof typeof countryToCurrency] || 'USD';
@@ -232,7 +232,7 @@ export function useOnboardingForm() {
         });
 
         await updateSession();
-        return practitioner.slug;
+        return practitioner;
     };
 
     return {

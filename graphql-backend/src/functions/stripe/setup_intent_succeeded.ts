@@ -180,9 +180,40 @@ const handler : StripeHandler = async (event, logger, services ) => {
             { op: "set", path: "/subscription/saved_payment_method", value: payment_method },
         ], "STRIPE");
 
-        // No immediate charge — the billing processor will trigger first billing
-        // when cumulativePayouts >= subscriptionCostThreshold
-        logger.logMessage(`[setup_intent_succeeded] Payment method saved. Billing processor will handle charging when payout threshold is reached.`);
+        // For trial-model vendors, create a $5 auth hold to verify the card, then immediately release it
+        if (merchant.subscription?.billingModel === 'trial') {
+            logger.logMessage(`[setup_intent_succeeded] Trial model vendor — creating $5 auth hold for card verification`);
+            try {
+                const authHoldResult = await stripe.callApi("POST", "payment_intents", {
+                    amount: 500, // $5 in cents
+                    currency: merchant.currency || 'aud',
+                    customer: merchant.stripe.customerId,
+                    payment_method: payment_method,
+                    capture_method: 'manual', // auth hold, not a charge
+                    confirm: true,
+                    description: 'SpiriVerse card verification hold — automatically released',
+                });
+
+                if (authHoldResult.status === 200 && authHoldResult.data?.id) {
+                    // Immediately cancel/release the hold
+                    await stripe.callApi("POST", `payment_intents/${authHoldResult.data.id}/cancel`);
+                    logger.logMessage(`[setup_intent_succeeded] Auth hold ${authHoldResult.data.id} created and released`);
+
+                    // Store reference on vendor subscription
+                    await cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
+                        { op: "set", path: "/subscription/trialAuthHoldPaymentIntentId", value: authHoldResult.data.id }
+                    ], "STRIPE");
+                } else {
+                    logger.logMessage(`[setup_intent_succeeded] Auth hold failed: ${JSON.stringify(authHoldResult.data)}`);
+                }
+            } catch (authError) {
+                // Non-fatal — card is still saved even if auth hold fails
+                logger.logMessage(`[setup_intent_succeeded] Auth hold error (non-fatal): ${authError}`);
+            }
+        }
+
+        // Billing processor will handle charging when trial expires (or when payout threshold is reached for legacy vendors)
+        logger.logMessage(`[setup_intent_succeeded] Payment method saved. Billing processor will handle charging.`);
 
         // Keep the legacy block below but skip it since we no longer charge immediately
         if (false) {

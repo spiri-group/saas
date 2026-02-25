@@ -22,6 +22,7 @@ import MerchantProfileStep from './components/MerchantProfileStep';
 import PractitionerProfileStep from './components/PractitionerProfileStep';
 import PractitionerOptionalStep from './components/PractitionerOptionalStep';
 import AlsoPractitionerStep from './components/AlsoPractitionerStep';
+import CardCaptureStep from './components/CardCaptureStep';
 import { useOnboardingForm } from './hooks/useOnboardingForm';
 
 // ── Step identifiers ────────────────────────────────────────────────
@@ -31,6 +32,7 @@ type Step =
     | 'plan'
     | 'consent'
     | 'merchant-profile'
+    | 'card-capture'
     | 'also-practitioner'
     | 'practitioner-profile'
     | 'practitioner-optional';
@@ -50,6 +52,10 @@ function themeForStep(step: Step, branch: Branch, hasReligion?: boolean): Onboar
         if (branch === 'practitioner') return 'purple';
         return 'neutral';
     }
+    if (step === 'card-capture') {
+        if (branch === 'merchant') return 'amber';
+        return 'purple';
+    }
     if (step === 'merchant-profile' || step === 'also-practitioner') return 'amber';
     if (step === 'practitioner-profile' || step === 'practitioner-optional') return 'purple';
     return 'neutral';
@@ -62,6 +68,8 @@ function isFullScreenStep(step: Step): boolean {
 // ── Step labels for indicator ───────────────────────────────────────
 
 function stepLabels(step: Step, branch: Branch): string[] {
+    // Card capture is a standalone step — no indicator
+    if (step === 'card-capture') return [];
     // After merchant clicks "yes" to also create practitioner, show practitioner labels
     if (branch === 'merchant' && (step === 'practitioner-profile' || step === 'practitioner-optional')) {
         return ['Profile', 'Extras'];
@@ -108,6 +116,7 @@ export default function SetupUI() {
     const [branch, setBranch] = useState<Branch>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [createdMerchantSlug, setCreatedMerchantSlug] = useState<string | null>(null);
+    const [createdVendorId, setCreatedVendorId] = useState<string | null>(null);
 
     const { form, initMerchant, initPractitioner, createVendor, createPractitioner } = useOnboardingForm();
     const { data: userProfile } = UseUserProfile(session?.user?.id ?? '');
@@ -252,9 +261,10 @@ export default function SetupUI() {
 
         setIsSubmitting(true);
         try {
-            const slug = await createVendor();
-            setCreatedMerchantSlug(slug);
-            setStep('also-practitioner');
+            const vendor = await createVendor();
+            setCreatedMerchantSlug(vendor.slug);
+            setCreatedVendorId(vendor.id);
+            setStep('card-capture');
         } catch (error) {
             console.error('Error creating vendor:', error);
             toast.error('Failed to create your shop. Please try again.');
@@ -265,6 +275,15 @@ export default function SetupUI() {
 
     const handleMerchantBack = useCallback(() => {
         setStep('consent');
+    }, []);
+
+    // Card capture completion (merchant flow)
+    const handleCardCaptureComplete = useCallback(() => {
+        setStep('also-practitioner');
+    }, []);
+
+    const handleCardCaptureSkip = useCallback(() => {
+        setStep('also-practitioner');
     }, []);
 
     // Also-practitioner decision
@@ -306,13 +325,17 @@ export default function SetupUI() {
         try {
             // If merchant branch, practitioner gets awaken tier
             const overrideTier = branch === 'merchant' ? 'awaken' : undefined;
-            await createPractitioner(overrideTier);
+            const practitioner = await createPractitioner(overrideTier);
 
-            if (branch === 'merchant' && createdMerchantSlug) {
-                window.location.href = `/m/${createdMerchantSlug}`;
+            if (branch === 'merchant') {
+                // Merchant already did card capture — go straight to redirect
+                if (createdMerchantSlug) {
+                    window.location.href = `/m/${createdMerchantSlug}`;
+                }
             } else {
-                const pracSlug = form.getValues('practitioner.slug');
-                window.location.href = `/p/${pracSlug}`;
+                // Practitioner-only flow — go to card capture
+                setCreatedVendorId(practitioner.id);
+                setStep('card-capture');
             }
         } catch (error) {
             console.error('Error creating practitioner:', error);
@@ -321,6 +344,25 @@ export default function SetupUI() {
             setIsSubmitting(false);
         }
     }, [branch, createdMerchantSlug, createPractitioner, form, detectedCountry]);
+
+    // Card capture completion (practitioner-only flow)
+    const handlePractitionerCardComplete = useCallback(() => {
+        if (branch === 'merchant' && createdMerchantSlug) {
+            window.location.href = `/m/${createdMerchantSlug}`;
+        } else {
+            const pracSlug = form.getValues('practitioner.slug');
+            window.location.href = `/p/${pracSlug}`;
+        }
+    }, [branch, createdMerchantSlug, form]);
+
+    const handlePractitionerCardSkip = useCallback(() => {
+        if (branch === 'merchant' && createdMerchantSlug) {
+            window.location.href = `/m/${createdMerchantSlug}`;
+        } else {
+            const pracSlug = form.getValues('practitioner.slug');
+            window.location.href = `/p/${pracSlug}`;
+        }
+    }, [branch, createdMerchantSlug, form]);
 
     // ── Auth gate ───────────────────────────────────────────────────
 
@@ -407,6 +449,14 @@ export default function SetupUI() {
                         onSubmit={handleMerchantSubmit}
                         onBack={handleMerchantBack}
                         isSubmitting={isSubmitting}
+                    />
+                )}
+
+                {step === 'card-capture' && createdVendorId && (
+                    <CardCaptureStep
+                        vendorId={createdVendorId}
+                        onComplete={branch === 'practitioner' ? handlePractitionerCardComplete : handleCardCaptureComplete}
+                        onSkip={branch === 'practitioner' ? handlePractitionerCardSkip : handleCardCaptureSkip}
                     />
                 )}
 

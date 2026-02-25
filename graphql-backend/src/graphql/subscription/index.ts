@@ -62,7 +62,7 @@ const resolvers = {
             return {
                 subscriptionTier: tier,
                 billingInterval: sub.billingInterval || "monthly",
-                billingStatus: sub.billingStatus || "pendingFirstBilling",
+                billingStatus: sub.billingStatus || "trial",
                 cumulativePayouts: sub.cumulativePayouts || 0,
                 subscriptionCostThreshold: sub.subscriptionCostThreshold || 0,
                 firstBillingTriggeredAt: sub.firstBillingTriggeredAt,
@@ -84,6 +84,10 @@ const resolvers = {
                 waived: sub.waived,
                 waivedUntil: sub.waivedUntil,
                 overrideNotes: sub.overrideNotes,
+                // Trial billing model fields
+                billingModel: sub.billingModel,
+                trialStartedAt: sub.trialStartedAt,
+                trialEndsAt: sub.trialEndsAt,
             };
         },
 
