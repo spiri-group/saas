@@ -303,6 +303,7 @@ type PreReadingQuestion {
   description: String
   required: Boolean!
   options: [QuestionOption!]
+  scaleMax: Int
 }
 
 enum PreReadingQuestionType {
@@ -314,6 +315,11 @@ enum PreReadingQuestionType {
   DATE
   NUMBER
   EMAIL
+  RATING
+  LINEAR_SCALE
+  YES_NO
+  PHONE
+  TIME
 }
 
 type ColorChoice {

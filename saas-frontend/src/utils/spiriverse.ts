@@ -4692,6 +4692,11 @@ export type vendorSubscription_type = {
   failedPaymentAttempts: number,        // 0-3
   nextRetryAt?: string,                // ISO date for next retry
   lastPaymentAttemptAt?: string,        // ISO date of last attempt (safety check)
+  // Trial billing model (new signups)
+  billingModel?: 'trial',              // undefined = legacy, 'trial' = 14-day free trial model
+  trialStartedAt?: string,             // ISO date when trial began (= vendor creation date)
+  trialEndsAt?: string,                // ISO date when trial expires (trialStartedAt + 14 days)
+  trialAuthHoldPaymentIntentId?: string, // Stripe PaymentIntent ID for $5 auth hold
   // Downgrade scheduling
   pendingDowngradeTo?: subscription_tier | null,
   downgradeEffectiveAt?: string | null,
@@ -4726,7 +4731,7 @@ export type plan_type =  {
 
 export type subscription_tier = 'awaken' | 'illuminate' | 'manifest' | 'transcend'
 
-export type billing_status = 'pendingFirstBilling' | 'active' | 'suspended' | 'cancelled'
+export type billing_status = 'pendingFirstBilling' | 'trial' | 'active' | 'suspended' | 'cancelled'
 
 export type teamMember_type ={
     id: string,

@@ -78,8 +78,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             aria-autocomplete={withAutocomplete ? "both" : "none"}
             className={cn(
               "min-w-[48px] w-full px-3 py-2 focus-visible:outline-none h-8",
-              withButtons 
-                ? "max-w-[120px] text-right rounded-l-md" 
+              withButtons
+                ? "flex-1 text-right rounded-l-md"
                 : "text-left rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               dark
                 ? "bg-slate-800 text-white placeholder:text-slate-400"

@@ -20,6 +20,7 @@ import AccordionInput from "@/components/ux/AccordionInput";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UpsertTicketVariants from "./components/UpsertTicketVariants";
 import CreateActivityList from "./components/CreateActivityList";
+import { StepIndicator } from "@/components/ui/step-indicator";
 import useVendorRefundPolicies from "@/app/(site)/m/_components/Profile/Edit/RefundPolicies/_hooks/UseVendorRefundPolicies";
 import ComboBox from "@/components/ux/ComboBox";
 import { useRouter } from "next/navigation";
@@ -168,6 +169,7 @@ const useBL = (props: BLProps) => {
         form,
         values,
         currentStep,
+        setCurrentStep,
         handleNext,
         handlePrevious,
         isDataLoading,
@@ -193,46 +195,17 @@ const CreateTour : React.FC<Props> = (props) => {
 
             {/* Progress indicator */}
             <div className="flex items-center justify-between mb-4 px-4 pt-2">
-                <div className="flex items-center space-x-2">
-                    <div className={`h-1 w-8 rounded-full transition-colors ${
-                        bl.currentStep >= 1 ? 'bg-primary' : 'bg-muted'
-                    }`}></div>
-                    <span className={`text-xs font-medium transition-colors ${
-                        bl.currentStep === 1 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                    }`}>
-                        Details
-                    </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <div className={`h-1 w-8 rounded-full transition-colors ${
-                        bl.currentStep >= 2 ? 'bg-primary' : 'bg-muted'
-                    }`}></div>
-                    <span className={`text-xs font-medium transition-colors ${
-                        bl.currentStep === 2 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                    }`}>
-                        Thumbnail
-                    </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <div className={`h-1 w-8 rounded-full transition-colors ${
-                        bl.currentStep >= 3 ? 'bg-primary' : 'bg-muted'
-                    }`}></div>
-                    <span className={`text-xs font-medium transition-colors ${
-                        bl.currentStep === 3 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                    }`}>
-                        Itinerary
-                    </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <div className={`h-1 w-8 rounded-full transition-colors ${
-                        bl.currentStep >= 4 ? 'bg-primary' : 'bg-muted'
-                    }`}></div>
-                    <span className={`text-xs font-medium transition-colors ${
-                        bl.currentStep === 4 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                    }`}>
-                        Tickets
-                    </span>
-                </div>
+                <StepIndicator
+                    dark
+                    steps={[
+                        { label: 'Details' },
+                        { label: 'Thumbnail' },
+                        { label: 'Itinerary' },
+                        { label: 'Tickets' },
+                    ]}
+                    currentStep={bl.currentStep}
+                    onStepClick={bl.setCurrentStep}
+                />
                 <Button variant="outline" onClick={() => {
                     const event = new CustomEvent('close-dialog');
                     window.dispatchEvent(event);

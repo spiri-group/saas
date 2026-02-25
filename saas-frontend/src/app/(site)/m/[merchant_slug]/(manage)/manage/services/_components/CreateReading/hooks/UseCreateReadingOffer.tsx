@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { gql } from '@/lib/services/gql';
 import { useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import { omit } from '@/lib/functions';
+import UseVendorCurrency from '@/app/(site)/m/_hooks/UseVendorCurrency';
 
 type MediaFile = {
   name: string;
@@ -57,11 +59,12 @@ type QuestionOption = {
 
 type PreReadingQuestion = {
   id: string;
-  type: "SHORT_TEXT" | "LONG_TEXT" | "MULTIPLE_CHOICE" | "CHECKBOXES" | "DROPDOWN" | "DATE" | "NUMBER" | "EMAIL";
+  type: "SHORT_TEXT" | "LONG_TEXT" | "MULTIPLE_CHOICE" | "CHECKBOXES" | "DROPDOWN" | "DATE" | "NUMBER" | "EMAIL" | "RATING" | "LINEAR_SCALE" | "YES_NO" | "PHONE" | "TIME";
   question: string;
   description?: string;
   required: boolean;
   options?: QuestionOption[];
+  scaleMax?: number;
 };
 
 interface CreateReadingOfferSchema {
@@ -92,6 +95,7 @@ interface CreateReadingOfferSchema {
 
 export const useCreateReadingOffer = (merchantId: string) => {
   const queryClient = useQueryClient();
+  const vendorCurrency = UseVendorCurrency(merchantId);
 
   const form = useForm<CreateReadingOfferSchema>({
     defaultValues: {
@@ -109,7 +113,7 @@ export const useCreateReadingOffer = (merchantId: string) => {
       customReadingDetails: '',
       deliveryFormat: 'RECORDED_VIDEO',
       price: '',
-      currency: 'USD',
+      currency: 'AUD',
       turnaroundDays: 3,
       includePullCardSummary: false,
       includeVoiceNote: false,
@@ -118,6 +122,13 @@ export const useCreateReadingOffer = (merchantId: string) => {
       scheduleId: undefined
     }
   });
+
+  // Update currency when vendor data loads
+  useEffect(() => {
+    if (vendorCurrency.data?.vendor?.currency) {
+      form.setValue('currency', vendorCurrency.data.vendor.currency);
+    }
+  }, [vendorCurrency.data, form]);
 
   const mutation = useMutation({
     mutationFn: async (data: CreateReadingOfferSchema) => {
