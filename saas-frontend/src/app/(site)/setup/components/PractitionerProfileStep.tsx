@@ -4,7 +4,6 @@ import { UseFormReturn } from 'react-hook-form';
 import { useCallback } from 'react';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -98,47 +97,6 @@ export default function PractitionerProfileStep({ form, onNext, onBack }: Props)
                                 />
                             </div>
                         </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-
-            <FormField
-                control={form.control}
-                name="practitioner.headline"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Headline</FormLabel>
-                        <FormControl>
-                            <Input
-                                {...field}
-                                data-testid="setup-practitioner-headline"
-                                placeholder="e.g., Intuitive Tarot Reader & Spiritual Guide"
-                                maxLength={150}
-                            />
-                        </FormControl>
-                        <FormDescription>{field.value?.length || 0}/150</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-
-            <FormField
-                control={form.control}
-                name="practitioner.bio"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Bio</FormLabel>
-                        <FormControl>
-                            <Textarea
-                                {...field}
-                                data-testid="setup-practitioner-bio"
-                                placeholder="Tell seekers about your journey, your approach, and what they can expect..."
-                                className="min-h-[120px]"
-                                maxLength={2000}
-                            />
-                        </FormControl>
-                        <FormDescription>{field.value?.length || 0}/2000</FormDescription>
                         <FormMessage />
                     </FormItem>
                 )}
