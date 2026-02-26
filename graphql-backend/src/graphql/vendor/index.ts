@@ -2679,6 +2679,12 @@ const resolvers = {
             const card = attachResp.data.card;
             console.log(`[add_test_card] ✅ Card attached: ${card.brand} ****${card.last4}`);
 
+            // Update card_status in Cosmos DB so goLiveReadiness.hasPaymentCard reflects the change
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.merchantId, args.merchantId, [
+                { op: "set", path: "/subscription/card_status", value: merchant_card_status.saved },
+            ], context.userId || "TEST");
+            console.log(`[add_test_card] Updated card_status to saved in Cosmos DB`);
+
             return {
                 code: '200',
                 success: true,

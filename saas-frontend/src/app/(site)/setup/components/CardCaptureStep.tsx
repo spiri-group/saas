@@ -38,8 +38,7 @@ function CardCaptureForm({
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async () => {
         if (!stripe || !elements) return;
 
         setIsProcessing(true);
@@ -71,7 +70,7 @@ function CardCaptureForm({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-5">
             <div className="p-4 border border-slate-300 rounded-lg bg-white">
                 <CardElement
                     options={{
@@ -103,7 +102,8 @@ function CardCaptureForm({
                     Skip for now
                 </button>
                 <Button
-                    type="submit"
+                    type="button"
+                    onClick={handleSubmit}
                     disabled={!stripe || isProcessing}
                     data-testid="card-capture-submit-btn"
                 >
@@ -120,7 +120,7 @@ function CardCaptureForm({
                     )}
                 </Button>
             </div>
-        </form>
+        </div>
     );
 }
 

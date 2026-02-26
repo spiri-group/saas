@@ -206,6 +206,12 @@ export class PractitionerSetupPage extends BasePage {
     await expect(submitBtn).toBeEnabled({ timeout: 5000 });
     await submitBtn.click();
 
+    // ── Step 9: CardCaptureStep → skip card capture ──
+    const skipCardBtn = this.page.locator('[data-testid="card-capture-skip-btn"]');
+    await expect(skipCardBtn).toBeVisible({ timeout: 30000 });
+    await skipCardBtn.click();
+    console.log('[PractitionerSetup] Skipped card capture');
+
     // Wait for redirect to practitioner profile page
     await this.page.waitForURL(new RegExp(`/p/${practitionerSlug}`), { timeout: 30000 });
     console.log(`[PractitionerSetup] ✓ Practitioner created: ${practitionerSlug}`);

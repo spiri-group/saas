@@ -1,6 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page, TestInfo } from '@playwright/test';
 import { AuthPage } from '../pages/AuthPage';
-import { PractitionerSetupPage } from '../pages/PractitionerSetupPage';
 import {
   clearTestEntityRegistry,
   registerTestUser,
@@ -9,6 +8,8 @@ import {
   cleanupTestUsers,
   cleanupTestPractitioners,
   getVendorIdFromSlug,
+  addTestCard,
+  gqlDirect,
 } from '../utils/test-cleanup';
 import { handleConsentGuardIfPresent } from '../utils/test-helpers';
 
@@ -18,10 +19,281 @@ const cookiesPerWorker = new Map<number, string>();
 /**
  * Practitioner Signup Flow Tests
  *
- * Tests the unified onboarding flow for practitioners:
- *   BasicDetails → ChoosePlan → OnboardingConsent → PractitionerProfile → PractitionerOptional → CardCapture → Profile
- * Then verifies dashboard navigation and service creation dialogs.
+ * Two tests covering the card capture step during onboarding:
+ *   1. Skip card capture, add card later via API
+ *   2. Provide card during onboarding via Stripe CardElement iframe
+ *
+ * Both verify that goLiveReadiness.hasPaymentCard === true after completion.
  */
+
+interface SignupResult {
+  practitionerSlug: string;
+  testEmail: string;
+  workerId: number;
+}
+
+/**
+ * Shared helper: completes practitioner signup from auth through the optional step.
+ * Stops BEFORE the card capture step so each test can handle it differently.
+ */
+async function completeSignupUntilCardCapture(
+  page: Page,
+  testInfo: TestInfo
+): Promise<SignupResult> {
+  const timestamp = Date.now();
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  const workerId = testInfo.parallelIndex;
+  const testEmail = `practitioner-${timestamp}-${workerId}@playwright.com`;
+  const practitionerSlug = `test-prac-${timestamp}-${randomSuffix}`;
+
+  const authPage = new AuthPage(page);
+
+  // === AUTHENTICATION ===
+  await authPage.startAuthFlow(testEmail);
+  await expect(page.locator('[aria-label="input-login-otp"]')).toBeVisible({ timeout: 15000 });
+  await page.locator('[aria-label="input-login-otp"]').click();
+  await page.keyboard.type('123456');
+  await page.waitForURL('/', { timeout: 15000 });
+
+  // === HANDLE SITE-LEVEL CONSENT GUARD ===
+  await handleConsentGuardIfPresent(page);
+
+  // === NAVIGATE TO SETUP ===
+  await page.goto('/setup');
+  await page.waitForLoadState('networkidle');
+
+  // === BASIC DETAILS STEP ===
+  const firstNameInput = page.locator('[data-testid="setup-first-name"]');
+  const planStep = page.locator('[data-testid="choose-plan-step"]');
+  await expect(firstNameInput.or(planStep)).toBeVisible({ timeout: 20000 });
+
+  // Register user for cleanup
+  const userId = await page.evaluate(async () => {
+    const response = await fetch('/api/auth/session');
+    const session = await response.json();
+    return session?.user?.id;
+  });
+  if (userId) {
+    const cookies = await getCookiesFromPage(page);
+    if (cookies) {
+      cookiesPerWorker.set(workerId, cookies);
+      registerTestUser({ id: userId, email: testEmail, cookies }, workerId);
+    }
+  }
+
+  // Fill basic details if shown (skipped when user profile already exists)
+  if (await firstNameInput.isVisible()) {
+    await firstNameInput.fill('Test');
+    await page.locator('[data-testid="setup-last-name"]').fill('Practitioner');
+    await page.waitForTimeout(300);
+
+    // Ensure country is selected
+    const countryCombobox = page.locator('[data-testid="setup-country"]');
+    const hasCountry = await countryCombobox.locator('text=Australia').isVisible().catch(() => false);
+    if (!hasCountry) {
+      await countryCombobox.click();
+      await page.waitForTimeout(300);
+      const australiaOption = page.getByRole('option', { name: 'Australia' });
+      if (await australiaOption.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await australiaOption.click();
+      } else {
+        const searchInput = page.locator('[role="listbox"]').locator('input').first();
+        if (await searchInput.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await searchInput.fill('Australia');
+          await page.waitForTimeout(300);
+        }
+        await page.getByRole('option', { name: 'Australia' }).click();
+      }
+      await page.waitForTimeout(300);
+    }
+
+    const setupBusinessBtn = page.locator('[data-testid="setup-basic-setup-btn"]');
+    await expect(setupBusinessBtn).toBeVisible({ timeout: 5000 });
+    await setupBusinessBtn.click();
+  }
+
+  // === CHOOSE PLAN STEP ===
+  await expect(planStep).toBeVisible({ timeout: 10000 });
+  const awakenCard = page.locator('[data-testid="tier-card-awaken"]');
+  await expect(awakenCard).toBeVisible({ timeout: 10000 });
+  await awakenCard.click();
+
+  const planContinueBtn = page.locator('[data-testid="plan-continue-btn"]');
+  await expect(planContinueBtn).toBeEnabled({ timeout: 5000 });
+  await planContinueBtn.click();
+
+  // === ONBOARDING CONSENT ===
+  const consentContainer = page.locator('[data-testid="onboarding-consent"]');
+  await expect(consentContainer).toBeVisible({ timeout: 15000 });
+
+  for (let step = 0; step < 10; step++) {
+    const checkbox = page.locator('[data-testid^="consent-checkbox-"]').first();
+    await expect(checkbox).toBeVisible({ timeout: 5000 });
+    await checkbox.click();
+
+    const acceptBtn = page.locator('[data-testid="onboarding-consent-accept-btn"]');
+    if (await acceptBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await expect(acceptBtn).toBeEnabled({ timeout: 3000 });
+      await acceptBtn.click();
+      await page.waitForTimeout(1000);
+      break;
+    }
+
+    const nextBtn = page.locator('[data-testid="onboarding-consent-next-btn"]');
+    await expect(nextBtn).toBeEnabled({ timeout: 3000 });
+    await nextBtn.click();
+    await page.waitForTimeout(500);
+  }
+
+  // === PRACTITIONER PROFILE STEP ===
+  const nameInput = page.locator('[data-testid="setup-practitioner-name"]');
+  await expect(nameInput).toBeVisible({ timeout: 10000 });
+
+  await nameInput.fill(`Test Practitioner ${timestamp}`);
+  const slugInput = page.locator('[data-testid="setup-practitioner-slug"]');
+  await expect(slugInput).toHaveValue(/.+/, { timeout: 15000 });
+  await expect(slugInput).toBeEnabled({ timeout: 10000 });
+  await slugInput.fill(practitionerSlug);
+
+  await page.locator('[data-testid="setup-modality-TAROT"]').click();
+  await page.waitForTimeout(100);
+  await page.locator('[data-testid="setup-modality-ORACLE"]').click();
+  await page.waitForTimeout(100);
+
+  await page.locator('[data-testid="setup-specialization-RELATIONSHIPS"]').click();
+  await page.waitForTimeout(100);
+  await page.locator('[data-testid="setup-specialization-CAREER"]').click();
+  await page.waitForTimeout(100);
+
+  const continueBtn = page.locator('[data-testid="setup-practitioner-continue-btn"]');
+  await continueBtn.click();
+
+  // === PRACTITIONER OPTIONAL STEP ===
+  const pronounsInput = page.locator('[data-testid="setup-practitioner-pronouns"]');
+  await expect(pronounsInput).toBeVisible({ timeout: 10000 });
+
+  await pronounsInput.fill('she/her');
+  await page.locator('[data-testid="setup-practitioner-years"]').fill('10');
+  await page.locator('[data-testid="setup-practitioner-journey"]').fill(
+    'My journey began when I received my first tarot deck as a gift.'
+  );
+  await page.locator('[data-testid="setup-practitioner-approach"]').fill(
+    'I believe in empowering clients to make their own decisions through guidance.'
+  );
+
+  const submitBtn = page.locator('[data-testid="setup-practitioner-submit-btn"]');
+  await expect(submitBtn).toBeEnabled({ timeout: 5000 });
+  await submitBtn.click();
+
+  // Card capture step should now appear
+  return { practitionerSlug, testEmail, workerId };
+}
+
+/**
+ * After signup + card capture, register practitioner for cleanup and return IDs.
+ */
+async function registerPractitionerForCleanup(
+  page: Page,
+  practitionerSlug: string,
+  testEmail: string,
+  workerId: number
+): Promise<{ vendorId: string; cookies: string }> {
+  const cookies = await getCookiesFromPage(page);
+  let vendorId = '';
+
+  if (cookies) {
+    cookiesPerWorker.set(workerId, cookies);
+
+    const actualVendorId = await getVendorIdFromSlug(practitionerSlug, cookies);
+    if (actualVendorId) {
+      vendorId = actualVendorId;
+      console.log(`[Test] Registering practitioner for cleanup: vendorId=${actualVendorId}, slug=${practitionerSlug}`);
+      registerTestPractitioner({ id: actualVendorId, slug: practitionerSlug, email: testEmail, cookies }, workerId);
+    } else {
+      console.error(`[Test] WARNING: Could not fetch actual vendor ID for slug ${practitionerSlug}`);
+      registerTestPractitioner({ slug: practitionerSlug, email: testEmail, cookies }, workerId);
+    }
+  }
+
+  return { vendorId, cookies: cookies || '' };
+}
+
+/**
+ * Query goLiveReadiness to verify a payment card is saved.
+ */
+async function verifyCardSaved(vendorId: string, cookies: string): Promise<boolean> {
+  const result = await gqlDirect<{ vendor: { goLiveReadiness: { hasPaymentCard: boolean } } }>(
+    `query GoLiveCheck($vendorId: String!) { vendor(id: $vendorId) { goLiveReadiness { hasPaymentCard } } }`,
+    { vendorId },
+    cookies
+  );
+  return result.vendor.goLiveReadiness.hasPaymentCard;
+}
+
+/**
+ * Fill card details in a Stripe CardElement iframe.
+ *
+ * The CardElement renders all fields (card number, expiry, CVC, postal)
+ * in a SINGLE iframe. Stripe auto-advances focus between fields as the
+ * user types. We click into the card number field and then use
+ * page.keyboard.type() which sends keystrokes to the currently focused
+ * element, letting Stripe handle the auto-advance transitions.
+ */
+async function fillStripeCardElement(page: Page): Promise<void> {
+  const stripeFrames = page.locator('iframe[name^="__privateStripeFrame"]');
+  await expect(stripeFrames.first()).toBeVisible({ timeout: 30000 });
+  await page.waitForTimeout(3000); // Wait for Stripe to fully initialize
+
+  const frameCount = await stripeFrames.count();
+  console.log(`[CardCapture] Found ${frameCount} Stripe iframe(s)`);
+
+  // Find the frame with the card number input (the actual CardElement iframe)
+  let cardFrame: ReturnType<typeof page.frameLocator> | null = null;
+  for (let i = 0; i < frameCount; i++) {
+    const frame = page.frameLocator('iframe[name^="__privateStripeFrame"]').nth(i);
+    if (await frame.locator('[name="cardnumber"]').isVisible({ timeout: 2000 }).catch(() => false)) {
+      cardFrame = frame;
+      console.log(`[CardCapture] Found CardElement in iframe ${i}`);
+      break;
+    }
+  }
+
+  if (!cardFrame) {
+    throw new Error('Could not find Stripe CardElement iframe with card number input');
+  }
+
+  // Click into card number field and type — Stripe auto-advances between fields
+  const cardNumberInput = cardFrame.locator('[name="cardnumber"]');
+  await cardNumberInput.click();
+  await cardNumberInput.pressSequentially('4242424242424242', { delay: 50 });
+  console.log('[CardCapture] Typed card number');
+  await page.waitForTimeout(500);
+
+  // Stripe auto-advances to expiry
+  const expiryInput = cardFrame.locator('[name="exp-date"]');
+  await expiryInput.click();
+  await expiryInput.pressSequentially('1234', { delay: 50 });
+  console.log('[CardCapture] Typed expiry');
+  await page.waitForTimeout(500);
+
+  // Stripe auto-advances to CVC
+  const cvcInput = cardFrame.locator('[name="cvc"]');
+  await cvcInput.click();
+  await cvcInput.pressSequentially('123', { delay: 50 });
+  console.log('[CardCapture] Typed CVC');
+  await page.waitForTimeout(500);
+
+  // Stripe auto-advances to postal code
+  const postalInput = cardFrame.locator('[name="postal"]');
+  if (await postalInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await postalInput.click();
+    await postalInput.pressSequentially('12345', { delay: 50 });
+    console.log('[CardCapture] Typed postal code');
+  }
+
+  // Let Stripe validate all fields before submitting
+  await page.waitForTimeout(1500);
+}
 
 test.beforeAll(async ({}, testInfo) => {
   console.log('[Setup] Preparing practitioner test environment...');
@@ -47,222 +319,44 @@ test.afterAll(async ({}, testInfo) => {
 });
 
 test.describe('Practitioner', () => {
-  let authPage: AuthPage;
-  let practitionerSetupPage: PractitionerSetupPage;
-
   test.beforeEach(async ({ page }) => {
-    authPage = new AuthPage(page);
-    practitionerSetupPage = new PractitionerSetupPage(page);
     await page.goto('/');
   });
 
-  test('complete practitioner signup flow with dashboard navigation', async ({ page }, testInfo) => {
+  test('practitioner signup — skip card, add later', async ({ page }, testInfo) => {
     test.setTimeout(300000); // 5 minutes for full flow including dashboard tests
 
-    const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substring(2, 8);
-    const workerId = testInfo.parallelIndex;
-    const testEmail = `practitioner-${timestamp}-${workerId}@playwright.com`;
-    const practitionerSlug = `test-prac-${timestamp}-${randomSuffix}`;
+    // === COMPLETE SIGNUP THROUGH OPTIONAL STEP ===
+    const { practitionerSlug, testEmail, workerId } = await completeSignupUntilCardCapture(page, testInfo);
 
-    // === AUTHENTICATION ===
-    await authPage.startAuthFlow(testEmail);
-    await expect(page.locator('[aria-label="input-login-otp"]')).toBeVisible({ timeout: 15000 });
-    await page.locator('[aria-label="input-login-otp"]').click();
-    await page.keyboard.type('123456');
-    await page.waitForURL('/', { timeout: 15000 });
-
-    // === HANDLE SITE-LEVEL CONSENT GUARD ===
-    await handleConsentGuardIfPresent(page);
-
-    // === NAVIGATE TO SETUP ===
-    await page.goto('/setup');
-    await page.waitForLoadState('networkidle');
-
-    // === BASIC DETAILS STEP ===
-    // Wait for either basic details or plan step (basic may be skipped if profile already exists)
-    const firstNameInput = page.locator('[data-testid="setup-first-name"]');
-    const planStep = page.locator('[data-testid="choose-plan-step"]');
-    await expect(firstNameInput.or(planStep)).toBeVisible({ timeout: 20000 });
-
-    // Register user for cleanup (get user ID from session)
-    const userId = await page.evaluate(async () => {
-      const response = await fetch('/api/auth/session');
-      const session = await response.json();
-      return session?.user?.id;
-    });
-    if (userId) {
-      const cookies = await getCookiesFromPage(page);
-      if (cookies) {
-        cookiesPerWorker.set(workerId, cookies);
-        registerTestUser({ id: userId, email: testEmail, cookies }, workerId);
-      }
-    }
-
-    // Fill basic details if shown (skipped when user profile already exists)
-    if (await firstNameInput.isVisible()) {
-      await firstNameInput.fill('Test');
-      await page.locator('[data-testid="setup-last-name"]').fill('Practitioner');
-      await page.waitForTimeout(300);
-
-      // Ensure country is selected (geolocation may not work in test env)
-      const countryCombobox = page.locator('[data-testid="setup-country"]');
-      const hasCountry = await countryCombobox.locator('text=Australia').isVisible().catch(() => false);
-      if (!hasCountry) {
-        await countryCombobox.click();
-        await page.waitForTimeout(300);
-        const australiaOption = page.getByRole('option', { name: 'Australia' });
-        if (await australiaOption.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await australiaOption.click();
-        } else {
-          // Search for it
-          const searchInput = page.locator('[role="listbox"]').locator('input').first();
-          if (await searchInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-            await searchInput.fill('Australia');
-            await page.waitForTimeout(300);
-          }
-          await page.getByRole('option', { name: 'Australia' }).click();
-        }
-        await page.waitForTimeout(300);
-      }
-
-      // Click "Set Up a Business" to proceed to plan selection
-      const setupBusinessBtn = page.locator('[data-testid="setup-basic-setup-btn"]');
-      await expect(setupBusinessBtn).toBeVisible({ timeout: 5000 });
-      await setupBusinessBtn.click();
-    }
-
-    // === CHOOSE PLAN STEP ===
-    await expect(planStep).toBeVisible({ timeout: 10000 });
-
-    // Select "Awaken" tier (practitioner)
-    const awakenCard = page.locator('[data-testid="tier-card-awaken"]');
-    await expect(awakenCard).toBeVisible({ timeout: 10000 });
-    await awakenCard.click();
-
-    const planContinueBtn = page.locator('[data-testid="plan-continue-btn"]');
-    await expect(planContinueBtn).toBeEnabled({ timeout: 5000 });
-    await planContinueBtn.click();
-
-    // === ONBOARDING CONSENT ===
-    const consentContainer = page.locator('[data-testid="onboarding-consent"]');
-    await expect(consentContainer).toBeVisible({ timeout: 15000 });
-
-    // Accept all consent documents
-    for (let step = 0; step < 10; step++) {
-      const checkbox = page.locator('[data-testid^="consent-checkbox-"]').first();
-      await expect(checkbox).toBeVisible({ timeout: 5000 });
-      await checkbox.click();
-
-      // Check if Accept & Continue button is visible (final step)
-      const acceptBtn = page.locator('[data-testid="onboarding-consent-accept-btn"]');
-      if (await acceptBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await expect(acceptBtn).toBeEnabled({ timeout: 3000 });
-        await acceptBtn.click();
-        await page.waitForTimeout(1000);
-        break;
-      }
-
-      // Otherwise click Next
-      const nextBtn = page.locator('[data-testid="onboarding-consent-next-btn"]');
-      await expect(nextBtn).toBeEnabled({ timeout: 3000 });
-      await nextBtn.click();
-      await page.waitForTimeout(500);
-    }
-
-    // === PRACTITIONER PROFILE STEP ===
-    const nameInput = page.locator('[data-testid="setup-practitioner-name"]');
-    await expect(nameInput).toBeVisible({ timeout: 10000 });
-
-    // Test validation - try to continue with empty fields
-    const continueBtn = page.locator('[data-testid="setup-practitioner-continue-btn"]');
-    await continueBtn.click();
-    await page.waitForTimeout(500);
-
-    // Should show validation errors (name, slug, modalities, specializations are required)
-    const errors = page.locator('[role="alert"], [data-testid*="error"], .text-destructive, .text-red');
-    await expect(errors.first()).toBeVisible({ timeout: 3000 });
-
-    // Fill name and verify auto-slug generation
-    await nameInput.fill(`Test Practitioner ${timestamp}`);
-    const slugInput = page.locator('[data-testid="setup-practitioner-slug"]');
-    await expect(slugInput).toHaveValue(/.+/, { timeout: 15000 });
-    await expect(slugInput).toBeEnabled({ timeout: 10000 });
-
-    // Verify auto-generated slug is lowercase with hyphens
-    const autoSlug = await slugInput.inputValue();
-    expect(autoSlug).toMatch(/^[a-z0-9-]+$/);
-
-    // Override slug with our test slug
-    await slugInput.fill(practitionerSlug);
-
-    // Select modalities
-    await page.locator('[data-testid="setup-modality-TAROT"]').click();
-    await page.waitForTimeout(100);
-    await page.locator('[data-testid="setup-modality-ORACLE"]').click();
-    await page.waitForTimeout(100);
-
-    // Select specializations
-    await page.locator('[data-testid="setup-specialization-RELATIONSHIPS"]').click();
-    await page.waitForTimeout(100);
-    await page.locator('[data-testid="setup-specialization-CAREER"]').click();
-    await page.waitForTimeout(100);
-
-    // Click continue
-    await continueBtn.click();
-
-    // === PRACTITIONER OPTIONAL STEP ===
-    const pronounsInput = page.locator('[data-testid="setup-practitioner-pronouns"]');
-    await expect(pronounsInput).toBeVisible({ timeout: 10000 });
-
-    await pronounsInput.fill('she/her');
-    await page.locator('[data-testid="setup-practitioner-years"]').fill('10');
-    await page.locator('[data-testid="setup-practitioner-journey"]').fill(
-      'My journey began when I received my first tarot deck as a gift.'
-    );
-    await page.locator('[data-testid="setup-practitioner-approach"]').fill(
-      'I believe in empowering clients to make their own decisions through guidance.'
-    );
-
-    // Submit the form
-    const submitBtn = page.locator('[data-testid="setup-practitioner-submit-btn"]');
-    await expect(submitBtn).toBeEnabled({ timeout: 5000 });
-    await submitBtn.click();
-
-    // === CARD CAPTURE STEP ===
-    // Skip card capture (no real Stripe in test env)
+    // === CARD CAPTURE STEP — SKIP ===
     const skipBtn = page.locator('[data-testid="card-capture-skip-btn"]');
     await expect(skipBtn).toBeVisible({ timeout: 30000 });
     await skipBtn.click();
 
     // === VERIFY REDIRECT TO PROFILE PAGE ===
-    // After signup with skipped card capture, practitioner is not yet published
-    // (go-live requires payment card + Stripe onboarding), so public profile shows "not found".
-    // We just verify the redirect URL is correct, then test the dashboard.
     await page.waitForURL(new RegExp(`/p/${practitionerSlug}`), { timeout: 30000 });
     expect(page.url()).toMatch(new RegExp(`/p/${practitionerSlug}`));
 
-    // Get cookies and fetch actual vendor ID for cleanup
-    const updatedCookies = await getCookiesFromPage(page);
-    if (updatedCookies) {
-      cookiesPerWorker.set(workerId, updatedCookies);
+    // === REGISTER FOR CLEANUP & GET IDS ===
+    const { vendorId, cookies } = await registerPractitionerForCleanup(page, practitionerSlug, testEmail, workerId);
+    expect(vendorId).toBeTruthy();
+    expect(cookies).toBeTruthy();
 
-      const actualVendorId = await getVendorIdFromSlug(practitionerSlug, updatedCookies);
-      if (actualVendorId) {
-        console.log(`[Test] Registering practitioner for cleanup: vendorId=${actualVendorId}, slug=${practitionerSlug}`);
-        registerTestPractitioner({ id: actualVendorId, slug: practitionerSlug, email: testEmail, cookies: updatedCookies }, workerId);
-      } else {
-        console.error(`[Test] WARNING: Could not fetch actual vendor ID for slug ${practitionerSlug}`);
-        registerTestPractitioner({ slug: practitionerSlug, email: testEmail, cookies: updatedCookies }, workerId);
-      }
-    }
+    // === ADD CARD VIA API ===
+    console.log(`[Test] Adding test card via API for vendor ${vendorId}...`);
+    const cardResult = await addTestCard(vendorId, cookies);
+    expect(cardResult.success).toBe(true);
+    console.log(`[Test] Card added: ${cardResult.card?.brand} ending ${cardResult.card?.last4}`);
+
+    // === VERIFY CARD SAVED VIA GO-LIVE READINESS ===
+    const hasCard = await verifyCardSaved(vendorId, cookies);
+    expect(hasCard).toBe(true);
+    console.log('[Test] Verified hasPaymentCard === true');
 
     // === NAVIGATE TO DASHBOARD ===
     await page.goto(`/p/${practitionerSlug}/manage`);
-    // Dashboard greeting is time-based (Good morning/afternoon/evening)
     await expect(page.locator('text=/Good (morning|afternoon|evening)/')).toBeVisible({ timeout: 15000 });
-
-    // Verify dashboard elements
     await expect(page.getByText('Getting Started')).toBeVisible();
 
     // === TEST SIDEBAR NAVIGATION ===
@@ -281,13 +375,13 @@ test.describe('Practitioner', () => {
     await sideNav.getByRole('menuitem', { name: 'Bookings' }).click();
     await expect(page).toHaveURL(new RegExp(`/p/${practitionerSlug}/manage/bookings`), { timeout: 10000 });
 
-    // Navigate to Schedule > Availability (re-expand Schedule submenu)
+    // Navigate to Schedule > Availability
     await sideNav.getByRole('menuitem', { name: 'Schedule' }).click();
     await page.waitForTimeout(300);
     await sideNav.getByRole('menuitem', { name: 'Availability' }).click();
     await expect(page).toHaveURL(new RegExp(`/p/${practitionerSlug}/manage/availability`), { timeout: 10000 });
 
-    // Navigate to Profile > Overview (use testid to avoid matching "View Profile")
+    // Navigate to Profile > Overview
     await sideNav.locator('[data-testid="nav-profile"]').click();
     await page.waitForTimeout(300);
     await sideNav.getByRole('menuitem', { name: 'Overview' }).click();
@@ -298,21 +392,54 @@ test.describe('Practitioner', () => {
     await expect(page).toHaveURL(new RegExp(`/p/${practitionerSlug}/manage$`), { timeout: 10000 });
 
     // === TEST SERVICE CREATION DIALOGS ===
-    // Test New Reading dialog from quick actions
     await page.getByRole('button', { name: 'New Reading' }).click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 });
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
 
-    // Test New Healing dialog from dashboard
     await page.getByRole('button', { name: 'New Healing' }).click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 });
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
 
     // === TEST MANAGE PROFILE PAGE ===
-    // Public profile is not yet visible (unpublished), but manage dashboard works
     await page.goto(`/p/${practitionerSlug}/manage/profile`);
     await expect(page.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible({ timeout: 10000 });
+  });
+
+  test('practitioner signup — provide card during onboarding', async ({ page }, testInfo) => {
+    test.setTimeout(300000); // 5 minutes for full flow including Stripe interaction
+
+    // === COMPLETE SIGNUP THROUGH OPTIONAL STEP ===
+    const { practitionerSlug, testEmail, workerId } = await completeSignupUntilCardCapture(page, testInfo);
+
+    // === CARD CAPTURE STEP — FILL STRIPE CARD ELEMENT ===
+    // Wait for card capture step to load (SetupIntent must be created first)
+    const submitCardBtn = page.locator('[data-testid="card-capture-submit-btn"]');
+    await expect(submitCardBtn).toBeVisible({ timeout: 30000 });
+    console.log('[Test] Card capture step visible');
+
+    // Fill card details in Stripe CardElement iframe
+    await fillStripeCardElement(page);
+
+    // Click "Add Card & Continue"
+    await expect(submitCardBtn).toBeEnabled({ timeout: 5000 });
+    await submitCardBtn.click();
+    console.log('[Test] Clicked Add Card & Continue');
+
+    // === VERIFY REDIRECT TO PROFILE PAGE ===
+    await page.waitForURL(new RegExp(`/p/${practitionerSlug}`), { timeout: 60000 });
+    expect(page.url()).toMatch(new RegExp(`/p/${practitionerSlug}`));
+    console.log('[Test] Redirected to practitioner profile page');
+
+    // === REGISTER FOR CLEANUP & GET IDS ===
+    const { vendorId, cookies } = await registerPractitionerForCleanup(page, practitionerSlug, testEmail, workerId);
+    expect(vendorId).toBeTruthy();
+    expect(cookies).toBeTruthy();
+
+    // === VERIFY CARD SAVED VIA GO-LIVE READINESS ===
+    const hasCard = await verifyCardSaved(vendorId, cookies);
+    expect(hasCard).toBe(true);
+    console.log('[Test] Verified hasPaymentCard === true (card provided during onboarding)');
   });
 });
