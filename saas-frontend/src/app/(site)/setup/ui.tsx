@@ -174,6 +174,7 @@ export default function SetupUI() {
     // ── Step handlers ───────────────────────────────────────────────
 
     const handleBasicBrowse = useCallback(async () => {
+        didSkipRef.current = true; // Prevent skip useEffect from resetting step later
         if (!session?.user?.id) {
             window.location.href = '/';
             return;
@@ -208,6 +209,7 @@ export default function SetupUI() {
     }, [session, form]);
 
     const handleBasicSetupBusiness = useCallback(() => {
+        didSkipRef.current = true; // Prevent skip useEffect from resetting step later
         setStep('plan');
     }, []);
 
