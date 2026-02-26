@@ -277,10 +277,11 @@ jobs:
               const prUrl = context.payload.pull_request.html_url;
               const isUpdate = context.payload.action === 'synchronize';
 
-              const { data: commits } = await github.rest.pulls.listCommits({
+              const commits = await github.paginate(github.rest.pulls.listCommits, {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: prNum,
+                per_page: 100,
               });
 
               const commitHtml = commits
@@ -343,14 +344,8 @@ jobs:
               const prUrl = context.payload.pull_request.html_url;
               const isUpdate = context.payload.action === 'synchronize';
 
-              const { data: commits } = await github.rest.pulls.listCommits({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: prNum,
-              });
-
               const recentCommits = commits
-                .slice(-3)
+                .slice(-5)
                 .map(c => `- \`${c.sha.substring(0, 7)}\` ${c.commit.message.split('\n')[0]}`)
                 .join('\n');
 
