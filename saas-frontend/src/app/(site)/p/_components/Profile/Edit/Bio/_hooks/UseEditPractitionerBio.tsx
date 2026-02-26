@@ -11,7 +11,7 @@ import { MediaSchema } from "@/shared/schemas/media";
 const EditPractitionerBioSchema = z.object({
     id: z.string().min(1),
     headline: z.string()
-        .min(10, "Headline must be at least 10 characters")
+        .min(3, "Headline must be at least 3 characters")
         .max(150, "Headline must be less than 150 characters"),
     bio: z.string()
         .min(50, "Bio must be at least 50 characters")
