@@ -690,7 +690,8 @@ const handler : StripeHandler = async (event, logger, services ) => {
 
 /**
  * Checks if a vendor has met all go-live requirements and publishes them if so.
- * Requirements: payment card saved, first month paid, Stripe Connect onboarding complete.
+ * Only requirement: Stripe Connect onboarding complete (charges_enabled).
+ * Payment card is optional — vendors start with a 14-day free trial.
  */
 async function checkAndPublishVendor(
     merchantId: string,
@@ -708,17 +709,7 @@ async function checkAndPublishVendor(
         return;
     }
 
-    // Check requirement 1: Payment card saved
-    const hasPaymentCard = vendor.subscription?.card_status === merchant_card_status.saved;
-    if (!hasPaymentCard) {
-        logger.logMessage(`[checkAndPublishVendor] Vendor ${merchantId} missing payment card`);
-        return;
-    }
-
-    // Subscription payment is NOT required for go-live.
-    // Billing triggers automatically once cumulative payouts reach the threshold.
-
-    // Check requirement 2: Stripe Connect onboarding complete
+    // Only requirement: Stripe Connect onboarding complete
     let hasStripeOnboarding = false;
     if (vendor.stripe?.accountId) {
         const accountResp = await stripe.callApi("GET", `accounts/${vendor.stripe.accountId}`);

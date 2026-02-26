@@ -371,9 +371,9 @@ input CreatePractitionerInput {
   country: CountryCode!
   currency: Currency!
 
-  # Practitioner profile (required for practitioner)
-  headline: String!
-  bio: String!
+  # Practitioner profile (optional — can be completed later from profile management)
+  headline: String
+  bio: String
   modalities: [PractitionerModality!]!
   specializations: [PractitionerSpecialization!]!
 

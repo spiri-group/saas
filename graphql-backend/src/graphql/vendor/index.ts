@@ -3272,9 +3272,10 @@ const resolvers = {
                 }
             }
 
-            // Subscription payment is NOT required for go-live.
-            // Billing triggers automatically once cumulative payouts reach the threshold.
-            const isReady = hasPaymentCard && hasStripeOnboarding;
+            // Only Stripe onboarding is required for go-live.
+            // Payment card is optional — vendors start with a 14-day free trial,
+            // and billing triggers automatically once cumulative payouts reach the threshold.
+            const isReady = hasStripeOnboarding;
 
             // Auto-publish if all requirements met and not yet published
             if (isReady && !parent.publishedAt) {
@@ -3285,7 +3286,6 @@ const resolvers = {
             }
 
             const missingRequirements: string[] = [];
-            if (!hasPaymentCard) missingRequirements.push("Add a payment card");
             if (!hasStripeOnboarding) missingRequirements.push("Complete Stripe Connect onboarding");
 
             return {

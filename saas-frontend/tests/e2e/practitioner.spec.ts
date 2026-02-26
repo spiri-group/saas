@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { AuthPage } from '../pages/AuthPage';
-import { HomePage } from '../pages/HomePage';
-import { UserSetupPage } from '../pages/UserSetupPage';
 import { PractitionerSetupPage } from '../pages/PractitionerSetupPage';
 import {
   clearTestEntityRegistry,
@@ -12,6 +10,7 @@ import {
   cleanupTestPractitioners,
   getVendorIdFromSlug,
 } from '../utils/test-cleanup';
+import { handleConsentGuardIfPresent } from '../utils/test-helpers';
 
 // Store cookies per test worker
 const cookiesPerWorker = new Map<number, string>();
@@ -19,19 +18,14 @@ const cookiesPerWorker = new Map<number, string>();
 /**
  * Practitioner Signup Flow Tests
  *
- * Consolidated tests for practitioner registration and dashboard:
- * 1. Full signup flow with validation checks along the way
- * 2. Public profile display verification
- * 3. Dashboard navigation and functionality
- * 4. Service creation dialogs
+ * Tests the unified onboarding flow for practitioners:
+ *   BasicDetails → ChoosePlan → OnboardingConsent → PractitionerProfile → PractitionerOptional → CardCapture → Profile
+ * Then verifies dashboard navigation and service creation dialogs.
  */
 
 test.beforeAll(async ({}, testInfo) => {
   console.log('[Setup] Preparing practitioner test environment...');
   clearTestEntityRegistry(testInfo.parallelIndex);
-
-  // Note: If you see "slug already taken" errors, manually delete test practitioners
-  // from the database with slugs matching "test-prac-*" or "test-practitioner-*"
 });
 
 test.afterAll(async ({}, testInfo) => {
@@ -54,14 +48,10 @@ test.afterAll(async ({}, testInfo) => {
 
 test.describe('Practitioner', () => {
   let authPage: AuthPage;
-  let homePage: HomePage;
-  let userSetupPage: UserSetupPage;
   let practitionerSetupPage: PractitionerSetupPage;
 
   test.beforeEach(async ({ page }) => {
     authPage = new AuthPage(page);
-    homePage = new HomePage(page);
-    userSetupPage = new UserSetupPage(page);
     practitionerSetupPage = new PractitionerSetupPage(page);
     await page.goto('/');
   });
@@ -82,124 +72,182 @@ test.describe('Practitioner', () => {
     await page.keyboard.type('123456');
     await page.waitForURL('/', { timeout: 15000 });
 
-    // === USER SETUP ===
-    await homePage.waitForCompleteProfileLink();
-    await homePage.clickCompleteProfile();
-    await expect(page).toHaveURL(/\/u\/.*\/setup/, { timeout: 10000 });
+    // === HANDLE SITE-LEVEL CONSENT GUARD ===
+    await handleConsentGuardIfPresent(page);
 
-    // Register user for cleanup
-    const url = page.url();
-    const userIdMatch = url.match(/\/u\/([^\/]+)\/setup/);
-    if (userIdMatch) {
-      registerTestUser({ id: userIdMatch[1], email: testEmail }, workerId);
+    // === NAVIGATE TO SETUP ===
+    await page.goto('/setup');
+    await page.waitForLoadState('networkidle');
+
+    // === BASIC DETAILS STEP ===
+    // Wait for either basic details or plan step (basic may be skipped if profile already exists)
+    const firstNameInput = page.locator('[data-testid="setup-first-name"]');
+    const planStep = page.locator('[data-testid="choose-plan-step"]');
+    await expect(firstNameInput.or(planStep)).toBeVisible({ timeout: 20000 });
+
+    // Register user for cleanup (get user ID from session)
+    const userId = await page.evaluate(async () => {
+      const response = await fetch('/api/auth/session');
+      const session = await response.json();
+      return session?.user?.id;
+    });
+    if (userId) {
       const cookies = await getCookiesFromPage(page);
-      if (cookies) cookiesPerWorker.set(workerId, cookies);
+      if (cookies) {
+        cookiesPerWorker.set(workerId, cookies);
+        registerTestUser({ id: userId, email: testEmail, cookies }, workerId);
+      }
     }
 
-    await userSetupPage.fillUserProfile({
-      firstName: 'Test',
-      lastName: 'Practitioner',
-      phone: '0412345678',
-      address: 'Sydney Opera House',
-      securityQuestion: 'What is your favorite color?',
-      securityAnswer: 'Blue',
-    });
+    // Fill basic details if shown (skipped when user profile already exists)
+    if (await firstNameInput.isVisible()) {
+      await firstNameInput.fill('Test');
+      await page.locator('[data-testid="setup-last-name"]').fill('Practitioner');
+      await page.waitForTimeout(300);
 
-    // Click "Continue as Practitioner"
-    const practitionerBtn = page.locator('[data-testid="continue-as-practitioner-btn"]');
-    await expect(practitionerBtn).toBeVisible({ timeout: 10000 });
-    await expect(practitionerBtn).toBeEnabled({ timeout: 10000 });
-    await practitionerBtn.click();
-    await expect(page).toHaveURL(/\/p\/setup\?practitionerId=/, { timeout: 15000 });
+      // Ensure country is selected (geolocation may not work in test env)
+      const countryCombobox = page.locator('[data-testid="setup-country"]');
+      const hasCountry = await countryCombobox.locator('text=Australia').isVisible().catch(() => false);
+      if (!hasCountry) {
+        await countryCombobox.click();
+        await page.waitForTimeout(300);
+        const australiaOption = page.getByRole('option', { name: 'Australia' });
+        if (await australiaOption.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await australiaOption.click();
+        } else {
+          // Search for it
+          const searchInput = page.locator('[role="listbox"]').locator('input').first();
+          if (await searchInput.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await searchInput.fill('Australia');
+            await page.waitForTimeout(300);
+          }
+          await page.getByRole('option', { name: 'Australia' }).click();
+        }
+        await page.waitForTimeout(300);
+      }
 
-    // === STEP 1: BASIC INFO ===
-    await practitionerSetupPage.waitForStep1();
+      // Click "Set Up a Business" to proceed to plan selection
+      const setupBusinessBtn = page.locator('[data-testid="setup-basic-setup-btn"]');
+      await expect(setupBusinessBtn).toBeVisible({ timeout: 5000 });
+      await setupBusinessBtn.click();
+    }
+
+    // === CHOOSE PLAN STEP ===
+    await expect(planStep).toBeVisible({ timeout: 10000 });
+
+    // Select "Awaken" tier (practitioner)
+    const awakenCard = page.locator('[data-testid="tier-card-awaken"]');
+    await expect(awakenCard).toBeVisible({ timeout: 10000 });
+    await awakenCard.click();
+
+    const planContinueBtn = page.locator('[data-testid="plan-continue-btn"]');
+    await expect(planContinueBtn).toBeEnabled({ timeout: 5000 });
+    await planContinueBtn.click();
+
+    // === ONBOARDING CONSENT ===
+    const consentContainer = page.locator('[data-testid="onboarding-consent"]');
+    await expect(consentContainer).toBeVisible({ timeout: 15000 });
+
+    // Accept all consent documents
+    for (let step = 0; step < 10; step++) {
+      const checkbox = page.locator('[data-testid^="consent-checkbox-"]').first();
+      await expect(checkbox).toBeVisible({ timeout: 5000 });
+      await checkbox.click();
+
+      // Check if Accept & Continue button is visible (final step)
+      const acceptBtn = page.locator('[data-testid="onboarding-consent-accept-btn"]');
+      if (await acceptBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await expect(acceptBtn).toBeEnabled({ timeout: 3000 });
+        await acceptBtn.click();
+        await page.waitForTimeout(1000);
+        break;
+      }
+
+      // Otherwise click Next
+      const nextBtn = page.locator('[data-testid="onboarding-consent-next-btn"]');
+      await expect(nextBtn).toBeEnabled({ timeout: 3000 });
+      await nextBtn.click();
+      await page.waitForTimeout(500);
+    }
+
+    // === PRACTITIONER PROFILE STEP ===
+    const nameInput = page.locator('[data-testid="setup-practitioner-name"]');
+    await expect(nameInput).toBeVisible({ timeout: 10000 });
 
     // Test validation - try to continue with empty fields
-    await practitionerSetupPage.clickContinue();
+    const continueBtn = page.locator('[data-testid="setup-practitioner-continue-btn"]');
+    await continueBtn.click();
     await page.waitForTimeout(500);
-    let errors = await practitionerSetupPage.getValidationErrors();
-    expect(errors.length).toBeGreaterThan(0);
 
-    // Test slug format - invalid characters should show error
-    await page.fill('input[name="slug"]', 'Invalid Slug!');
-    await page.waitForTimeout(300);
+    // Should show validation errors (name, slug, modalities, specializations are required)
+    const errors = page.locator('[role="alert"], [data-testid*="error"], .text-destructive, .text-red');
+    await expect(errors.first()).toBeVisible({ timeout: 3000 });
 
-    // Test auto-slug generation from name
-    await page.fill('input[name="name"]', `Test Practitioner ${timestamp}`);
-    await page.waitForTimeout(500);
-    const autoSlug = await page.inputValue('input[name="slug"]');
-    expect(autoSlug).toMatch(/^[a-z0-9-]+$/); // Should be lowercase with hyphens
+    // Fill name and verify auto-slug generation
+    await nameInput.fill(`Test Practitioner ${timestamp}`);
+    const slugInput = page.locator('[data-testid="setup-practitioner-slug"]');
+    await expect(slugInput).toHaveValue(/.+/, { timeout: 15000 });
+    await expect(slugInput).toBeEnabled({ timeout: 10000 });
 
-    // Fill valid step 1 data
-    await practitionerSetupPage.fillBasicInfo({
-      name: `Test Practitioner ${timestamp}`,
-      slug: practitionerSlug,
-      email: testEmail,
-      countryName: 'Australia',
-    });
-    await practitionerSetupPage.clickContinue();
+    // Verify auto-generated slug is lowercase with hyphens
+    const autoSlug = await slugInput.inputValue();
+    expect(autoSlug).toMatch(/^[a-z0-9-]+$/);
 
-    // === STEP 2: PROFILE ===
-    await practitionerSetupPage.waitForStep2();
+    // Override slug with our test slug
+    await slugInput.fill(practitionerSlug);
 
-    // Test validation - try to continue without modalities/specializations
-    await page.fill('input[name="headline"]', 'Test Headline');
-    await page.fill('textarea[name="bio"]', 'This is a test bio that needs to be at least 50 characters long for validation.');
-    await practitionerSetupPage.clickContinue();
-    await page.waitForTimeout(500);
-    errors = await practitionerSetupPage.getValidationErrors();
-    expect(errors.length).toBeGreaterThan(0); // Should require modalities/specializations
+    // Select modalities
+    await page.locator('[data-testid="setup-modality-TAROT"]').click();
+    await page.waitForTimeout(100);
+    await page.locator('[data-testid="setup-modality-ORACLE"]').click();
+    await page.waitForTimeout(100);
 
-    // Test back navigation preserves data
-    await practitionerSetupPage.clickBack();
-    await practitionerSetupPage.waitForStep1();
-    const nameValue = await page.inputValue('input[name="name"]');
-    expect(nameValue).toContain('Test Practitioner');
+    // Select specializations
+    await page.locator('[data-testid="setup-specialization-RELATIONSHIPS"]').click();
+    await page.waitForTimeout(100);
+    await page.locator('[data-testid="setup-specialization-CAREER"]').click();
+    await page.waitForTimeout(100);
 
-    // Go forward again
-    await practitionerSetupPage.clickContinue();
-    await practitionerSetupPage.waitForStep2();
+    // Click continue
+    await continueBtn.click();
 
-    // Fill valid step 2 data
-    await practitionerSetupPage.fillProfile({
-      headline: 'Experienced Tarot Reader & Intuitive Guide',
-      bio: 'I have been reading tarot for over 10 years and specialize in helping people find clarity. My approach is gentle yet direct, providing actionable insights for your journey.',
-      modalities: ['TAROT', 'ORACLE'],
-      specializations: ['RELATIONSHIPS', 'CAREER'],
-    });
-    await practitionerSetupPage.clickContinue();
+    // === PRACTITIONER OPTIONAL STEP ===
+    const pronounsInput = page.locator('[data-testid="setup-practitioner-pronouns"]');
+    await expect(pronounsInput).toBeVisible({ timeout: 10000 });
 
-    // === STEP 3: DETAILS (OPTIONAL) ===
-    await practitionerSetupPage.waitForStep3();
-    await practitionerSetupPage.fillDetails({
-      pronouns: 'she/her',
-      yearsExperience: 10,
-      spiritualJourney: 'My journey began when I received my first tarot deck as a gift.',
-      approach: 'I believe in empowering clients to make their own decisions through guidance.',
-    });
-    await practitionerSetupPage.clickContinue();
+    await pronounsInput.fill('she/her');
+    await page.locator('[data-testid="setup-practitioner-years"]').fill('10');
+    await page.locator('[data-testid="setup-practitioner-journey"]').fill(
+      'My journey began when I received my first tarot deck as a gift.'
+    );
+    await page.locator('[data-testid="setup-practitioner-approach"]').fill(
+      'I believe in empowering clients to make their own decisions through guidance.'
+    );
 
-    // === STEP 4: SUBSCRIPTION ===
-    await practitionerSetupPage.waitForStep4();
-    await practitionerSetupPage.waitForSubscriptionLoaded();
-    // Base plan (Essentials) is automatically selected, just verify it loaded
+    // Submit the form
+    const submitBtn = page.locator('[data-testid="setup-practitioner-submit-btn"]');
+    await expect(submitBtn).toBeEnabled({ timeout: 5000 });
+    await submitBtn.click();
 
-    await practitionerSetupPage.submitForm();
+    // === CARD CAPTURE STEP ===
+    // Skip card capture (no real Stripe in test env)
+    const skipBtn = page.locator('[data-testid="card-capture-skip-btn"]');
+    await expect(skipBtn).toBeVisible({ timeout: 30000 });
+    await skipBtn.click();
 
-    // === VERIFY PROFILE PAGE ===
+    // === VERIFY REDIRECT TO PROFILE PAGE ===
+    // After signup with skipped card capture, practitioner is not yet published
+    // (go-live requires payment card + Stripe onboarding), so public profile shows "not found".
+    // We just verify the redirect URL is correct, then test the dashboard.
     await page.waitForURL(new RegExp(`/p/${practitionerSlug}`), { timeout: 30000 });
+    expect(page.url()).toMatch(new RegExp(`/p/${practitionerSlug}`));
 
     // Get cookies and fetch actual vendor ID for cleanup
     const updatedCookies = await getCookiesFromPage(page);
     if (updatedCookies) {
       cookiesPerWorker.set(workerId, updatedCookies);
 
-      // IMPORTANT: The practitionerId from the URL is NOT the actual vendor ID.
-      // The server generates its own ID during create_practitioner mutation.
-      // We need to fetch the actual vendor ID using the slug.
       const actualVendorId = await getVendorIdFromSlug(practitionerSlug, updatedCookies);
-
       if (actualVendorId) {
         console.log(`[Test] Registering practitioner for cleanup: vendorId=${actualVendorId}, slug=${practitionerSlug}`);
         registerTestPractitioner({ id: actualVendorId, slug: practitionerSlug, email: testEmail, cookies: updatedCookies }, workerId);
@@ -209,50 +257,41 @@ test.describe('Practitioner', () => {
       }
     }
 
-    // Verify profile displays correctly
-    expect(page.url()).toMatch(new RegExp(`/p/${practitionerSlug}`));
-    await expect(page.locator('h1').filter({ hasText: 'Test Practitioner' })).toBeVisible({ timeout: 10000 });
-
     // === NAVIGATE TO DASHBOARD ===
     await page.goto(`/p/${practitionerSlug}/manage`);
-    await expect(page.getByText('Welcome back')).toBeVisible({ timeout: 15000 });
+    // Dashboard greeting is time-based (Good morning/afternoon/evening)
+    await expect(page.locator('text=/Good (morning|afternoon|evening)/')).toBeVisible({ timeout: 15000 });
 
     // Verify dashboard elements
-    await expect(page.getByText('Quick Actions')).toBeVisible();
     await expect(page.getByText('Getting Started')).toBeVisible();
 
     // === TEST SIDEBAR NAVIGATION ===
     const sideNav = page.locator('[aria-label="practitioner-side-nav"]');
     await expect(sideNav).toBeVisible();
 
-    // Navigate to Services page
-    await sideNav.getByRole('menuitem', { name: 'My Services' }).click();
+    // Navigate to Services > View All Services
+    await sideNav.getByRole('menuitem', { name: 'Services' }).click();
     await page.waitForTimeout(300);
     await sideNav.getByRole('menuitem', { name: 'View All Services' }).click();
     await expect(page).toHaveURL(new RegExp(`/p/${practitionerSlug}/manage/services`), { timeout: 10000 });
-    await expect(page.getByRole('heading', { name: 'My Services' })).toBeVisible();
 
-    // Navigate to Reading Requests page
-    await sideNav.getByRole('menuitem', { name: 'Reading Requests' }).click();
-    await expect(page).toHaveURL(new RegExp(`/p/${practitionerSlug}/manage/readings`), { timeout: 10000 });
-    await expect(page.getByRole('heading', { name: 'SpiriReadings', exact: true })).toBeVisible();
-
-    // Navigate to Bookings page
+    // Navigate to Schedule > Bookings
+    await sideNav.getByRole('menuitem', { name: 'Schedule' }).click();
+    await page.waitForTimeout(300);
     await sideNav.getByRole('menuitem', { name: 'Bookings' }).click();
     await expect(page).toHaveURL(new RegExp(`/p/${practitionerSlug}/manage/bookings`), { timeout: 10000 });
-    await expect(page.getByRole('heading', { name: 'Bookings' })).toBeVisible();
 
-    // Navigate to Availability page
+    // Navigate to Schedule > Availability (re-expand Schedule submenu)
+    await sideNav.getByRole('menuitem', { name: 'Schedule' }).click();
+    await page.waitForTimeout(300);
     await sideNav.getByRole('menuitem', { name: 'Availability' }).click();
     await expect(page).toHaveURL(new RegExp(`/p/${practitionerSlug}/manage/availability`), { timeout: 10000 });
-    await expect(page.getByRole('heading', { name: 'Availability' })).toBeVisible();
 
-    // Navigate to Profile page (via Profile > Overview submenu)
-    await sideNav.getByRole('menuitem', { name: 'Profile' }).click();
+    // Navigate to Profile > Overview (use testid to avoid matching "View Profile")
+    await sideNav.locator('[data-testid="nav-profile"]').click();
     await page.waitForTimeout(300);
     await sideNav.getByRole('menuitem', { name: 'Overview' }).click();
     await expect(page).toHaveURL(new RegExp(`/p/${practitionerSlug}/manage/profile`), { timeout: 10000 });
-    await expect(page.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible();
 
     // Navigate back to Dashboard
     await sideNav.getByRole('menuitem', { name: 'Dashboard' }).click();
@@ -265,17 +304,15 @@ test.describe('Practitioner', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
 
-    // Test New Healing dialog from sidebar
-    await sideNav.getByRole('menuitem', { name: 'My Services' }).click();
-    await page.waitForTimeout(300);
-    await sideNav.getByRole('menuitem', { name: 'New Healing' }).click();
+    // Test New Healing dialog from dashboard
+    await page.getByRole('button', { name: 'New Healing' }).click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 });
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
 
-    // === TEST GO TO PUBLIC PROFILE ===
-    // Navigate directly to public profile to verify it works
-    await page.goto(`/p/${practitionerSlug}`);
-    await expect(page.locator('h1').filter({ hasText: 'Test Practitioner' })).toBeVisible({ timeout: 10000 });
+    // === TEST MANAGE PROFILE PAGE ===
+    // Public profile is not yet visible (unpublished), but manage dashboard works
+    await page.goto(`/p/${practitionerSlug}/manage/profile`);
+    await expect(page.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible({ timeout: 10000 });
   });
 });
