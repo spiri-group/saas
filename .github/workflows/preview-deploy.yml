@@ -270,6 +270,7 @@ jobs:
             const actor = context.actor;
 
             let heading, subject, detailsHtml, footerNote;
+            let commits = [];
 
             if (isPr) {
               const prNum = context.issue.number;
@@ -277,7 +278,7 @@ jobs:
               const prUrl = context.payload.pull_request.html_url;
               const isUpdate = context.payload.action === 'synchronize';
 
-              const commits = await github.paginate(github.rest.pulls.listCommits, {
+              commits = await github.paginate(github.rest.pulls.listCommits, {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: prNum,
