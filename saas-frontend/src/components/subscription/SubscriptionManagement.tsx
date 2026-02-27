@@ -26,6 +26,7 @@ type SubscriptionManagementProps = {
 
 const TIER_DISPLAY: Record<string, string> = {
     awaken: 'Awaken',
+    illuminate: 'Illuminate',
     manifest: 'Manifest',
     transcend: 'Transcend',
 };

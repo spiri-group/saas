@@ -104,4 +104,5 @@ type CreateExpoCheckoutResponse implements MutationResponseInterface {
     message: String!
     sale: ExpoSale
     clientSecret: String
+    stripeAccountId: String
 }

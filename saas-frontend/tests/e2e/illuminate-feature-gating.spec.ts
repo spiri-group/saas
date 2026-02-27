@@ -76,7 +76,8 @@ test.describe('Illuminate Feature Gating', () => {
     // Verify upgrade button links to subscription page
     const paymentLinksUpgradeBtn = page.locator('[data-testid="payment-links-upgrade-btn"]');
     await expect(paymentLinksUpgradeBtn).toBeVisible();
-    const paymentLinksHref = await paymentLinksUpgradeBtn.getAttribute('href');
+    const paymentLinksLink = paymentLinksUpgradeBtn.locator('xpath=ancestor::a');
+    const paymentLinksHref = await paymentLinksLink.getAttribute('href');
     expect(paymentLinksHref).toContain(`/p/${slug}/manage/subscription`);
 
     // ── 2. Expo Mode → upgrade UI visible ──

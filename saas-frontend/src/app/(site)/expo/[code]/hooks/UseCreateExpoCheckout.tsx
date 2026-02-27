@@ -22,6 +22,7 @@ type CreateExpoCheckoutResponse = {
         saleStatus: string;
     };
     clientSecret: string;
+    stripeAccountId: string;
 };
 
 export const useCreateExpoCheckout = () => {
@@ -54,6 +55,7 @@ export const useCreateExpoCheckout = () => {
                             saleStatus
                         }
                         clientSecret
+                        stripeAccountId
                     }
                 }
             `, { input });

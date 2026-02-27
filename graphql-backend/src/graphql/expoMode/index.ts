@@ -888,6 +888,7 @@ const resolvers = {
                 message: "Checkout created",
                 sale,
                 clientSecret: paymentIntentResult.data.client_secret,
+                stripeAccountId: vendor.stripe.accountId,
             };
         },
     },

@@ -71,4 +71,5 @@ type JoinLiveQueueResponse implements MutationResponseInterface {
     message: String!
     entry: LiveQueueEntry
     clientSecret: String
+    stripeAccountId: String
 }

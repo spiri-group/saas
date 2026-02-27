@@ -42,6 +42,7 @@ export type JoinLiveQueueResult = {
         createdDate: string;
     } | null;
     clientSecret: string | null;
+    stripeAccountId: string | null;
 };
 
 export const useJoinLiveQueue = () => {
@@ -82,6 +83,7 @@ export const useJoinLiveQueue = () => {
                             createdDate
                         }
                         clientSecret
+                        stripeAccountId
                     }
                 }
             `, { input });

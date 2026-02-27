@@ -27,7 +27,18 @@ import { useQueuePosition, useLeaveLiveQueue } from './hooks/UseQueuePosition';
 import { resizePhoto } from './utils/resizePhoto';
 import AudioRecorder, { AudioPlayback } from '@/components/live-assist/AudioRecorder';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_stripe_token ?? '');
+const stripePromiseCache = new Map<string, ReturnType<typeof loadStripe>>();
+
+function getStripePromise(stripeAccountId?: string) {
+    const key = stripeAccountId || '__platform__';
+    if (!stripePromiseCache.has(key)) {
+        stripePromiseCache.set(key, loadStripe(
+            process.env.NEXT_PUBLIC_stripe_token ?? '',
+            stripeAccountId ? { stripeAccount: stripeAccountId } : undefined
+        ));
+    }
+    return stripePromiseCache.get(key)!;
+}
 
 function formatAmount(cents: number, currency: string): string {
     return `$${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`;
@@ -601,7 +612,7 @@ export default function LiveSessionUI({ code }: Props) {
                     <Card className="bg-slate-900 border-slate-700">
                         <CardContent className="p-5">
                             <Elements
-                                stripe={stripePromise}
+                                stripe={getStripePromise(joinResult.stripeAccountId || undefined)}
                                 options={{
                                     clientSecret: joinResult.clientSecret,
                                     appearance: {

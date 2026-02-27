@@ -23,6 +23,7 @@ export const usePauseLiveSession = () => {
         },
         onSuccess: (_, vars) => {
             queryClient.invalidateQueries({ queryKey: ['live-sessions', vars.vendorId] });
+            queryClient.invalidateQueries({ queryKey: ['live-session-detail', vars.sessionId] });
         },
     });
 };
@@ -47,6 +48,7 @@ export const useResumeLiveSession = () => {
         },
         onSuccess: (_, vars) => {
             queryClient.invalidateQueries({ queryKey: ['live-sessions', vars.vendorId] });
+            queryClient.invalidateQueries({ queryKey: ['live-session-detail', vars.sessionId] });
         },
     });
 };
@@ -71,6 +73,8 @@ export const useEndLiveSession = () => {
         },
         onSuccess: (_, vars) => {
             queryClient.invalidateQueries({ queryKey: ['live-sessions', vars.vendorId] });
+            queryClient.invalidateQueries({ queryKey: ['live-session-detail', vars.sessionId] });
+            queryClient.invalidateQueries({ queryKey: ['live-queue', vars.sessionId] });
         },
     });
 };

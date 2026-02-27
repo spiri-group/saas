@@ -157,10 +157,10 @@ type PractitionerVerification {
 type PractitionerProfile {
     # Identity
     pronouns: String
-    headline: String!
+    headline: String
 
     # Personal Story
-    bio: String!
+    bio: String
     spiritualJourney: String
 
     # Gifts & Modalities

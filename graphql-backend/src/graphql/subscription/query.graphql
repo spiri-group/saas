@@ -29,6 +29,9 @@ type VendorSubscriptionDetail {
   waived: Boolean
   waivedUntil: String
   overrideNotes: String
+  billingModel: String
+  trialStartedAt: String
+  trialEndsAt: String
 }
 
 type TierFeatures {

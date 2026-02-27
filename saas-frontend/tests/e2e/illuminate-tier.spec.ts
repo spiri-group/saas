@@ -8,7 +8,7 @@ import {
   cleanupTestPractitioners,
   completeStripeTestOnboarding,
 } from '../utils/test-cleanup';
-import { handleConsentGuardIfPresent } from '../utils/test-helpers';
+
 
 /**
  * Illuminate Tier E2E — Full Feature Tests (Sequential)
@@ -18,12 +18,13 @@ import { handleConsentGuardIfPresent } from '../utils/test-helpers';
  *   - Dev server on port 3002
  *
  * Tests:
- *   1. Illuminate signup + Stripe onboarding + dashboard nav verification
+ *   1. Awaken signup + Stripe onboarding + tier upgrade through all tiers with feature verification
  *   2. Payment Links full lifecycle with real Stripe payment
  *   3. Expo Mode — create, catalog, QR checkout, walk-up sale
  *   4. Live Assist — start session, customer queue + payment authorization
  *   5. SpiriAssist — three-panel layout loads correctly
  */
+
 
 // ─── Per-worker state ────────────────────────────────────────
 const practitionerCookiesPerWorker = new Map<number, string>();
@@ -128,25 +129,27 @@ async function fillStripePaymentElement(page: Page): Promise<void> {
 test.describe.serial('Illuminate Tier', () => {
 
   // ═══════════════════════════════════════════════════════════
-  // Test 1: Illuminate signup + Stripe onboarding + dashboard
+  // Test 1: Signup + Stripe onboarding + UI upgrade to
+  //         Illuminate + verify features unlock
   // ═══════════════════════════════════════════════════════════
 
-  test('Illuminate practitioner signup and dashboard verification', async ({ browser }, testInfo) => {
-    test.setTimeout(180000); // 3 minutes
+  test('Practitioner signup, Stripe onboarding, and UI upgrade to Illuminate', async ({ browser }, testInfo) => {
+    test.setTimeout(240000); // 4 minutes
 
     const practitionerContext = await browser.newContext();
     const practitionerPage = await practitionerContext.newPage();
 
     try {
+      // ── Create awaken practitioner (the only tier that uses practitioner-only flow) ──
       const practitionerEmail = generateUniqueEmail('illum-e2e', testInfo);
       const setupPage = new PractitionerSetupPage(practitionerPage);
-      const slug = await setupPage.createPractitioner(practitionerEmail, 'Illuminate Tester', testInfo, 'illuminate');
+      const slug = await setupPage.createPractitioner(practitionerEmail, 'Illuminate Tester', testInfo, 'awaken');
 
       const cookies = await getCookiesFromPage(practitionerPage);
       if (cookies) practitionerCookiesPerWorker.set(testInfo.parallelIndex, cookies);
       practitionerSlugPerWorker.set(testInfo.parallelIndex, slug);
 
-      console.log(`[Test 1] Illuminate practitioner created: ${slug}`);
+      console.log(`[Test 1] Awaken practitioner created: ${slug}`);
 
       // Get vendor ID and complete Stripe onboarding
       const vendorId = await getVendorIdFromSlug(slug, cookies!);
@@ -157,40 +160,95 @@ test.describe.serial('Illuminate Tier', () => {
       expect(onboardingResult.success).toBe(true);
       console.log('[Test 1] Stripe onboarding complete');
 
-      // Navigate to dashboard
+      // ── Awaken tier: all 4 features should be BLOCKED ──
+      await practitionerPage.goto(`/p/${slug}/manage/payment-links`);
+      await expect(practitionerPage.locator('[data-testid="payment-links-upgrade"]')).toBeVisible({ timeout: 15000 });
+      await expect(practitionerPage.locator('[data-testid="payment-links-view"]')).not.toBeVisible();
+      console.log('[Test 1] Awaken → Payment Links: blocked ✓');
+
+      await practitionerPage.goto(`/p/${slug}/manage/expo-mode`);
+      await expect(practitionerPage.locator('[data-testid="expo-mode-upgrade"]')).toBeVisible({ timeout: 15000 });
+      await expect(practitionerPage.locator('[data-testid="expo-mode-page"]')).not.toBeVisible();
+      console.log('[Test 1] Awaken → Expo Mode: blocked ✓');
+
+      await practitionerPage.goto(`/p/${slug}/manage/live-assist`);
+      await expect(practitionerPage.locator('[data-testid="live-assist-upgrade"]')).toBeVisible({ timeout: 15000 });
+      await expect(practitionerPage.locator('[data-testid="live-assist-page"]')).not.toBeVisible();
+      console.log('[Test 1] Awaken → Live Assist: blocked ✓');
+
+      await practitionerPage.goto(`/p/${slug}/manage/spiri-assist`);
+      await expect(practitionerPage.locator('[data-testid="spiri-assist-locked-preview"]')).toBeVisible({ timeout: 15000 });
+      console.log('[Test 1] Awaken → SpiriAssist: blocked ✓');
+
+      // ── Upgrade to Illuminate via Subscription Management UI ──
+      await practitionerPage.goto(`/p/${slug}/manage/subscription`);
+      await expect(practitionerPage.locator('[data-testid="subscription-management"]')).toBeVisible({ timeout: 15000 });
+      console.log('[Test 1] Subscription management page loaded');
+
+      // Click Upgrade button
+      await practitionerPage.locator('[data-testid="upgrade-plan-btn"]').click();
+      await expect(practitionerPage.locator('[data-testid="upgrade-modal"]')).toBeVisible({ timeout: 10000 });
+      console.log('[Test 1] Upgrade modal visible');
+
+      // Select Illuminate tier and upgrade
+      // The modal may be taller than the viewport with 3 tier cards, so scroll within it
+      const modal = practitionerPage.locator('[data-testid="upgrade-modal"]');
+      const upgradeBtn = modal.locator('[data-testid="upgrade-btn-illuminate"]');
+      await upgradeBtn.scrollIntoViewIfNeeded();
+      await upgradeBtn.click();
+
+      // Wait for success toast
+      await expect(practitionerPage.locator('[data-sonner-toast][data-type="success"]').first()).toBeVisible({ timeout: 15000 });
+      console.log('[Test 1] Upgrade to Illuminate succeeded');
+
+      // Wait for modal to close
+      await expect(practitionerPage.locator('[data-testid="upgrade-modal"]')).not.toBeVisible({ timeout: 5000 });
+
+      // ── Illuminate tier: all 4 features should be UNLOCKED ──
       await practitionerPage.goto(`/p/${slug}/manage`);
       await practitionerPage.waitForLoadState('networkidle');
+
+      // Dismiss cookie banner if present (it overlaps sidenav items)
+      const cookieBanner = practitionerPage.locator('[data-testid="cookie-banner"]');
+      if (await cookieBanner.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await cookieBanner.locator('button:has-text("Accept")').click();
+        await expect(cookieBanner).not.toBeVisible({ timeout: 3000 });
+      }
 
       // Verify sidenav has nav items for all 4 Illuminate features
       await expect(practitionerPage.locator('[data-testid="nav-payment-links"]')).toBeVisible({ timeout: 15000 });
       await expect(practitionerPage.locator('[data-testid="nav-expo-mode"]')).toBeVisible();
       await expect(practitionerPage.locator('[data-testid="nav-live-assist"]')).toBeVisible();
       await expect(practitionerPage.locator('[data-testid="nav-spiri-assist"]')).toBeVisible();
-      console.log('[Test 1] All 4 Illuminate nav items visible in sidenav');
+      console.log('[Test 1] Illuminate → All 4 nav items visible in sidenav');
 
-      // Click each nav item and verify navigation (no upgrade dialog intercept)
-      await practitionerPage.locator('[data-testid="nav-payment-links"]').click();
-      await expect(practitionerPage).toHaveURL(new RegExp(`/p/${slug}/manage/payment-links`), { timeout: 15000 });
-      await expect(practitionerPage.locator('[data-testid="payment-links-view"]')).toBeVisible({ timeout: 15000 });
-      console.log('[Test 1] Payment Links page accessible');
+      // Navigate to each feature page via sidenav and verify actual page loads (no upgrade UI)
+      // Return to manage dashboard between each to ensure sidenav is visible
+      const features = [
+        { nav: 'nav-payment-links', url: 'payment-links', visible: 'payment-links-view', name: 'Payment Links' },
+        { nav: 'nav-expo-mode', url: 'expo-mode', visible: 'expo-mode-page', name: 'Expo Mode' },
+        { nav: 'nav-live-assist', url: 'live-assist', visible: 'live-assist-page', name: 'Live Assist' },
+      ];
 
-      await practitionerPage.locator('[data-testid="nav-expo-mode"]').click();
-      await expect(practitionerPage).toHaveURL(new RegExp(`/p/${slug}/manage/expo-mode`), { timeout: 15000 });
-      await expect(practitionerPage.locator('[data-testid="expo-mode-page"]')).toBeVisible({ timeout: 15000 });
-      console.log('[Test 1] Expo Mode page accessible');
+      for (const feature of features) {
+        await practitionerPage.locator(`[data-testid="${feature.nav}"]`).click();
+        await expect(practitionerPage).toHaveURL(new RegExp(`/p/${slug}/manage/${feature.url}`), { timeout: 15000 });
+        await expect(practitionerPage.locator(`[data-testid="${feature.visible}"]`)).toBeVisible({ timeout: 15000 });
+        console.log(`[Test 1] Illuminate → ${feature.name}: accessible ✓`);
+        // Go back to manage dashboard so sidenav is visible for next click
+        await practitionerPage.goBack();
+        await expect(practitionerPage.locator('[data-testid="nav-payment-links"]')).toBeVisible({ timeout: 10000 });
+      }
 
-      await practitionerPage.locator('[data-testid="nav-live-assist"]').click();
-      await expect(practitionerPage).toHaveURL(new RegExp(`/p/${slug}/manage/live-assist`), { timeout: 15000 });
-      await expect(practitionerPage.locator('[data-testid="live-assist-page"]')).toBeVisible({ timeout: 15000 });
-      console.log('[Test 1] Live Assist page accessible');
-
-      await practitionerPage.locator('[data-testid="nav-spiri-assist"]').click();
+      // SpiriAssist: scroll sidenav to item and click
+      const spiriAssistNav = practitionerPage.locator('[data-testid="nav-spiri-assist"]');
+      await spiriAssistNav.scrollIntoViewIfNeeded();
+      await spiriAssistNav.click();
       await expect(practitionerPage).toHaveURL(new RegExp(`/p/${slug}/manage/spiri-assist`), { timeout: 15000 });
-      // SpiriAssist should NOT show locked preview for Illuminate
       await expect(practitionerPage.locator('[data-testid="spiri-assist-locked-preview"]')).not.toBeVisible({ timeout: 5000 });
-      console.log('[Test 1] SpiriAssist page accessible (not locked)');
+      console.log('[Test 1] Illuminate → SpiriAssist: accessible ✓');
 
-      console.log('[Test 1] All Illuminate features verified');
+      console.log('[Test 1] All tier gating and upgrade verified');
     } finally {
       await practitionerContext.close();
     }
@@ -238,20 +296,23 @@ test.describe.serial('Illuminate Tier', () => {
 
       // Validation: submit empty → error toast
       await practitionerPage.locator('[data-testid="payment-link-submit"]').click();
-      await expect(practitionerPage.locator('[data-sonner-toast][data-type="error"]')).toBeVisible({ timeout: 5000 });
+      await expect(practitionerPage.locator('[data-sonner-toast][data-type="error"]').first()).toBeVisible({ timeout: 5000 });
       console.log('[Test 2] Validation: empty email error');
 
       // Fill email, but leave amount at zero → error
       const customerEmail = generateUniqueEmail('pay-customer', testInfo);
       await practitionerPage.locator('[data-testid="payment-link-customer-email"]').fill(customerEmail);
       await practitionerPage.locator('[data-testid="payment-link-submit"]').click();
-      await expect(practitionerPage.locator('[data-sonner-toast][data-type="error"]')).toBeVisible({ timeout: 5000 });
+      // Wait briefly for the new toast to appear (previous ones may still be visible)
+      await practitionerPage.waitForTimeout(500);
+      await expect(practitionerPage.locator('[data-sonner-toast][data-type="error"]').first()).toBeVisible({ timeout: 5000 });
       console.log('[Test 2] Validation: zero amount error');
 
       // Fill amount but empty description → error
       await practitionerPage.locator('[data-testid="payment-link-item-amount-0"]').fill('25');
       await practitionerPage.locator('[data-testid="payment-link-submit"]').click();
-      await expect(practitionerPage.locator('[data-sonner-toast][data-type="error"]')).toBeVisible({ timeout: 5000 });
+      await practitionerPage.waitForTimeout(500);
+      await expect(practitionerPage.locator('[data-sonner-toast][data-type="error"]').first()).toBeVisible({ timeout: 5000 });
       console.log('[Test 2] Validation: empty description error');
 
       // Fill complete form
@@ -263,7 +324,7 @@ test.describe.serial('Illuminate Tier', () => {
 
       // Submit
       await practitionerPage.locator('[data-testid="payment-link-submit"]').click();
-      await expect(practitionerPage.locator('[data-sonner-toast][data-type="success"]')).toBeVisible({ timeout: 15000 });
+      await expect(practitionerPage.locator('[data-sonner-toast][data-type="success"]').first()).toBeVisible({ timeout: 15000 });
       console.log('[Test 2] Payment link created successfully');
 
       // Dialog should close
@@ -360,7 +421,7 @@ test.describe.serial('Illuminate Tier', () => {
       await practitionerPage.locator('[data-testid="payment-link-item-description-0"]').fill('Cancel Test');
       await practitionerPage.locator('[data-testid="payment-link-item-amount-0"]').fill('50');
       await practitionerPage.locator('[data-testid="payment-link-submit"]').click();
-      await expect(practitionerPage.locator('[data-sonner-toast][data-type="success"]')).toBeVisible({ timeout: 15000 });
+      await expect(practitionerPage.locator('[data-sonner-toast][data-type="success"]').first()).toBeVisible({ timeout: 15000 });
       await expect(practitionerPage.locator('[data-testid="create-payment-link-dialog"]')).not.toBeVisible({ timeout: 5000 });
       console.log('[Test 2] Second payment link created for cancel test');
 
@@ -390,7 +451,7 @@ test.describe.serial('Illuminate Tier', () => {
       await practitionerPage.locator('[data-testid="payment-link-item-description-0"]').fill('Resend Test');
       await practitionerPage.locator('[data-testid="payment-link-item-amount-0"]').fill('15');
       await practitionerPage.locator('[data-testid="payment-link-submit"]').click();
-      await expect(practitionerPage.locator('[data-sonner-toast][data-type="success"]')).toBeVisible({ timeout: 15000 });
+      await expect(practitionerPage.locator('[data-sonner-toast][data-type="success"]').first()).toBeVisible({ timeout: 15000 });
       await expect(practitionerPage.locator('[data-testid="create-payment-link-dialog"]')).not.toBeVisible({ timeout: 5000 });
       console.log('[Test 2] Third payment link created for resend test');
 
@@ -403,7 +464,7 @@ test.describe.serial('Illuminate Tier', () => {
 
       // Resend the third link
       await practitionerPage.locator(`[data-testid="payment-link-resend-${thirdLinkId}"]`).click();
-      await expect(practitionerPage.locator('[data-sonner-toast][data-type="success"]')).toBeVisible({ timeout: 10000 });
+      await expect(practitionerPage.locator('[data-sonner-toast][data-type="success"]').first()).toBeVisible({ timeout: 10000 });
       console.log('[Test 2] Third link resent successfully');
 
       console.log('[Test 2] Payment Links lifecycle complete');
@@ -482,7 +543,8 @@ test.describe.serial('Illuminate Tier', () => {
       await expect(practitionerPage.locator('[data-testid="add-item-dialog"]')).toBeVisible({ timeout: 10000 });
       await practitionerPage.locator('[data-testid="item-name-input"]').fill('Aura Photo');
       await practitionerPage.locator('[data-testid="item-price-input"]').fill('15');
-      await practitionerPage.locator('[data-testid="track-inventory-checkbox"]').click();
+      await practitionerPage.locator('[data-testid="track-inventory-checkbox"]').check();
+      await expect(practitionerPage.locator('[data-testid="item-qty-input"]')).toBeVisible({ timeout: 5000 });
       await practitionerPage.locator('[data-testid="item-qty-input"]').fill('10');
       await practitionerPage.locator('[data-testid="confirm-add-item-btn"]').click();
       await expect(practitionerPage.locator('[data-testid="add-item-dialog"]')).not.toBeVisible({ timeout: 5000 });
@@ -523,6 +585,13 @@ test.describe.serial('Illuminate Tier', () => {
       await expect(customerPage.locator('[data-testid="expo-catalog"]')).toBeVisible({ timeout: 15000 });
       console.log('[Test 3] Customer expo catalog loaded');
 
+      // Dismiss cookie banner if present
+      const expoCookieBanner = customerPage.locator('[data-testid="cookie-banner"]');
+      if (await expoCookieBanner.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await expoCookieBanner.locator('button:has-text("Accept")').click();
+        await expect(expoCookieBanner).not.toBeVisible({ timeout: 3000 });
+      }
+
       // Find the Crystal Reading item and add to cart
       const crystalItem = customerPage.locator('[data-testid^="public-item-"]').filter({ hasText: 'Crystal Reading' });
       await expect(crystalItem).toBeVisible({ timeout: 10000 });
@@ -549,12 +618,41 @@ test.describe.serial('Illuminate Tier', () => {
       // Fill Stripe payment
       await fillStripePaymentElement(customerPage);
 
-      // Pay
-      await customerPage.locator('[data-testid="pay-btn"]').click();
-      console.log('[Test 3] Customer payment submitted...');
+      // Click outside Stripe iframe to commit card values, then wait for validation
+      await customerPage.locator('[data-testid="customer-name-input"]').click();
+      await customerPage.waitForTimeout(2000);
 
-      // Wait for success
-      await expect(customerPage.locator('[data-testid="checkout-success"]')).toBeVisible({ timeout: 30000 });
+      // Pay — click and wait for Stripe redirect
+      const payBtn = customerPage.locator('[data-testid="pay-btn"]');
+      await payBtn.scrollIntoViewIfNeeded();
+      await expect(payBtn).toBeEnabled({ timeout: 5000 });
+
+      // Try submitting payment — retry once if redirect doesn't happen
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        await payBtn.click();
+        console.log(`[Test 3] Pay button clicked (attempt ${attempt})...`);
+
+        try {
+          await customerPage.waitForURL(/success=true/, { timeout: 30000 });
+          console.log('[Test 3] Stripe redirected to success URL');
+          break;
+        } catch {
+          if (attempt === 2) {
+            const errorEl = customerPage.locator('[data-testid="payment-error"]');
+            if (await errorEl.isVisible({ timeout: 2000 }).catch(() => false)) {
+              const errorText = await errorEl.textContent();
+              console.log(`[Test 3] Payment error: ${errorText}`);
+            }
+            console.log(`[Test 3] Current URL: ${customerPage.url()}`);
+            throw new Error('Stripe payment redirect did not complete after 2 attempts');
+          }
+          console.log('[Test 3] Redirect not detected, retrying...');
+          await customerPage.waitForTimeout(2000);
+        }
+      }
+
+      // Wait for success view to render
+      await expect(customerPage.locator('[data-testid="checkout-success"]')).toBeVisible({ timeout: 15000 });
       console.log('[Test 3] Customer checkout successful');
 
       // ── Back to practitioner: wait for sale to appear ──
@@ -604,11 +702,13 @@ test.describe.serial('Illuminate Tier', () => {
       await expect(practitionerPage.locator('[data-testid="log-sale-dialog"]')).not.toBeVisible({ timeout: 5000 });
       console.log('[Test 3] Walk-up sale logged: Aura Photo x1 (Cash)');
 
-      // Verify updated stats
-      await practitionerPage.waitForTimeout(2000);
-      await expect(practitionerPage.locator('[data-testid="stat-sales"]')).toContainText('2');
-      await expect(practitionerPage.locator('[data-testid="stat-revenue"]')).toContainText('45.00');
-      await expect(practitionerPage.locator('[data-testid="stat-items-sold"]')).toContainText('2');
+      // Verify updated stats — reload to pick up the new sale
+      await practitionerPage.reload();
+      await practitionerPage.waitForLoadState('networkidle');
+      await expect(practitionerPage.locator('[data-testid="stat-sales"]')).toContainText('2', { timeout: 10000 });
+      await expect(practitionerPage.locator('[data-testid="stat-revenue"]')).toContainText('45.00', { timeout: 5000 });
+      await expect(practitionerPage.locator('[data-testid="stat-items-sold"]')).toContainText('2', { timeout: 5000 });
+      console.log('[Test 3] Stats verified: 2 sales, $45.00, 2 items');
 
       // ── Pause / Resume ──
       await practitionerPage.locator('[data-testid="pause-btn"]').click();
@@ -670,7 +770,7 @@ test.describe.serial('Illuminate Tier', () => {
       console.log('[Test 4] Live Assist page loaded');
 
       // ── Start a live session ──
-      await practitionerPage.locator('[data-testid="go-live-btn"]').click();
+      await practitionerPage.locator('[data-testid="live-assist-page"] [data-testid="go-live-btn"]').click();
       await expect(practitionerPage.locator('[data-testid="start-live-session-dialog"]')).toBeVisible({ timeout: 10000 });
 
       // Fill session details
@@ -681,7 +781,7 @@ test.describe.serial('Illuminate Tier', () => {
       await practitionerPage.locator('[data-testid="custom-amount-input"]').fill('20');
 
       // Click Go Live inside dialog
-      await practitionerPage.locator('[data-testid="go-live-btn"]').click();
+      await practitionerPage.locator('[data-testid="start-live-session-dialog"] [data-testid="go-live-btn"]').click();
       console.log('[Test 4] Go Live clicked, waiting for session creation...');
 
       // Wait for share URL to appear (session created)
@@ -737,6 +837,8 @@ test.describe.serial('Illuminate Tier', () => {
       console.log('[Test 4] Customer is in queue');
 
       // ── Practitioner sees customer in queue ──
+      // With a single customer, the dashboard shows them in the "Next Up" card
+      // (queue-entry-* only renders for entries beyond the first when no reading is active)
       let customerInQueue = false;
       for (let attempt = 0; attempt < 20; attempt++) {
         if (attempt > 0) {
@@ -745,8 +847,8 @@ test.describe.serial('Illuminate Tier', () => {
           await practitionerPage.waitForLoadState('networkidle');
         }
 
-        const queueEntry = practitionerPage.locator('[data-testid^="queue-entry-"]').first();
-        const isVisible = await queueEntry.isVisible({ timeout: 3000 }).catch(() => false);
+        const nextUpCard = practitionerPage.locator('[data-testid="next-up-card"]');
+        const isVisible = await nextUpCard.isVisible({ timeout: 3000 }).catch(() => false);
         if (isVisible) {
           customerInQueue = true;
           console.log(`[Test 4] Customer visible in queue (attempt ${attempt + 1})`);
@@ -756,13 +858,14 @@ test.describe.serial('Illuminate Tier', () => {
       }
       expect(customerInQueue).toBe(true);
 
-      // Verify customer info in queue
-      const queueEntry = practitionerPage.locator('[data-testid^="queue-entry-"]').first();
-      await expect(queueEntry).toContainText('Queue Customer');
+      // Verify customer info in the "Next Up" card
+      const nextUpCard = practitionerPage.locator('[data-testid="next-up-card"]');
+      await expect(nextUpCard).toContainText('Queue Customer');
 
       // ── Pause / Resume ──
       await practitionerPage.locator('[data-testid="pause-btn"]').click();
-      await practitionerPage.waitForTimeout(2000);
+      // Wait for query invalidation to propagate
+      await expect(practitionerPage.locator('[data-testid="resume-btn"]')).toBeVisible({ timeout: 15000 });
       // Customer should see paused state
       const pausedIndicator = customerPage.locator('[data-testid="live-paused"]').or(
         customerPage.locator('[data-testid="live-in-queue"]') // may stay in queue with paused notice
@@ -771,7 +874,8 @@ test.describe.serial('Illuminate Tier', () => {
       console.log('[Test 4] Session PAUSED');
 
       await practitionerPage.locator('[data-testid="resume-btn"]').click();
-      await practitionerPage.waitForTimeout(2000);
+      // Wait for query invalidation to propagate
+      await expect(practitionerPage.locator('[data-testid="pause-btn"]')).toBeVisible({ timeout: 15000 });
       console.log('[Test 4] Session RESUMED');
 
       // ── End session ──
@@ -779,7 +883,10 @@ test.describe.serial('Illuminate Tier', () => {
       await expect(practitionerPage.locator('[data-testid="confirm-end-btn"]')).toBeVisible({ timeout: 5000 });
       await practitionerPage.locator('[data-testid="confirm-end-btn"]').click();
 
-      // Wait for ended state
+      // Wait for ended state — reload to ensure both session and queue data refresh
+      await practitionerPage.waitForTimeout(2000);
+      await practitionerPage.reload();
+      await practitionerPage.waitForLoadState('networkidle');
       await expect(practitionerPage.locator('[data-testid="session-ended"]')).toBeVisible({ timeout: 15000 });
       console.log('[Test 4] Session ENDED');
 

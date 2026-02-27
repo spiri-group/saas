@@ -904,8 +904,8 @@ const resolvers = {
             // Build the practitioner profile
             const practitionerProfile: practitioner_profile_type = {
                 pronouns: input.pronouns,
-                headline: input.headline,
-                bio: input.bio,
+                headline: input.headline || "",
+                bio: input.bio || "",
                 modalities: input.modalities,
                 specializations: input.specializations,
                 yearsExperience: input.yearsExperience,

@@ -12,7 +12,7 @@ import { handleConsentGuardIfPresent } from '../utils/test-helpers';
  *   1. BasicDetailsStep — firstName, lastName, email, country → "Set Up a Business"
  *   2. ChoosePlanStep — select tier (awaken = practitioner) → Continue
  *   3. OnboardingConsent — accept documents
- *   4. PractitionerProfileStep — name, slug, headline, bio, modalities, specializations → Continue
+ *   4. PractitionerProfileStep — name, slug, modalities, specializations → Continue
  *   5. PractitionerOptionalStep — pronouns, years, journey, approach → Submit
  *   → Redirect to /p/{slug}
  */
@@ -57,8 +57,6 @@ export class PractitionerSetupPage extends BasePage {
   async fillPractitionerProfile(data: {
     name: string;
     slug: string;
-    headline: string;
-    bio: string;
     modalities: string[];
     specializations: string[];
   }) {
@@ -76,9 +74,6 @@ export class PractitionerSetupPage extends BasePage {
 
     // Override auto-generated slug with our custom one
     await slugInput.fill(data.slug);
-
-    await this.page.locator('[data-testid="setup-practitioner-headline"]').fill(data.headline);
-    await this.page.locator('[data-testid="setup-practitioner-bio"]').fill(data.bio);
 
     for (const modality of data.modalities) {
       const badge = this.page.locator(`[data-testid="setup-modality-${modality}"]`);
@@ -184,8 +179,6 @@ export class PractitionerSetupPage extends BasePage {
     await this.fillPractitionerProfile({
       name: practitionerName,
       slug: practitionerSlug,
-      headline: 'Experienced Tarot Reader & Intuitive Guide',
-      bio: 'I have been reading tarot for over 10 years and specialize in helping people find clarity in their lives.',
       modalities: ['TAROT', 'ORACLE'],
       specializations: ['RELATIONSHIPS', 'CAREER'],
     });

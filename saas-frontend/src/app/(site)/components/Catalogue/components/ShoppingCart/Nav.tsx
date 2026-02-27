@@ -14,7 +14,7 @@ import { useSession } from "next-auth/react";
 const Nav: React.FC = () => {
     const [mounted, setMounted] = useState(false);
     const { data: session } = useSession();
-    const { totalItems } = useUnifiedCart();
+    const { totalItems } = useUnifiedCart({ enabled: !!session?.user });
     const toggleCartVisibility = useEventDispatcher(TOGGLE_DETAILED_CART);
     const controls = useAnimation();
 

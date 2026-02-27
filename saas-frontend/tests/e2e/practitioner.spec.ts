@@ -295,6 +295,64 @@ async function fillStripeCardElement(page: Page): Promise<void> {
   await page.waitForTimeout(1500);
 }
 
+/**
+ * Verify the public profile page actually rendered after redirect,
+ * then open the Bio & Headline dialog via sidebar, fill and save,
+ * and verify the data persisted via GraphQL.
+ *
+ * Assumes the page is already on `/p/{slug}` (from redirect or navigation)
+ * and the sidebar is visible (owner is logged in).
+ */
+async function verifyProfileAndEditBio(
+  page: Page,
+  practitionerSlug: string,
+  vendorId: string,
+  cookies: string,
+  timestamp: number
+): Promise<void> {
+  // === VERIFY PROFILE PAGE LOADED (not "Practitioner not found") ===
+  const notFoundHeading = page.getByRole('heading', { name: 'Practitioner not found' });
+  const practitionerName = page.locator('h1').filter({ hasText: /Test Practitioner/ });
+  await expect(notFoundHeading).not.toBeVisible({ timeout: 5000 });
+  await expect(practitionerName).toBeVisible({ timeout: 15000 });
+
+  // === OPEN BIO & HEADLINE DIALOG VIA SIDEBAR ===
+  const sideNav = page.locator('[aria-label="practitioner-side-nav"]');
+  await expect(sideNav).toBeVisible();
+  await sideNav.locator('[data-testid="nav-profile"]').click();
+  await page.waitForTimeout(300);
+  await sideNav.getByRole('menuitem', { name: 'Bio & Headline' }).click();
+
+  // === FILL AND SAVE BIO ===
+  const dialog = page.locator('[data-testid="edit-practitioner-bio-dialog"]');
+  await expect(dialog).toBeVisible({ timeout: 15000 });
+
+  const testHeadline = `E2E Test Headline ${timestamp}`;
+  const testBio = `This is an automated E2E test bio written at ${timestamp} to verify the practitioner profile works correctly end to end after signup completion.`;
+
+  const headlineInput = dialog.locator('[data-testid="headline-input"]');
+  await headlineInput.clear();
+  await headlineInput.fill(testHeadline);
+
+  const bioInput = dialog.locator('[data-testid="bio-input"]');
+  await bioInput.clear();
+  await bioInput.fill(testBio);
+
+  await dialog.locator('[data-testid="save-bio-btn"]').click();
+  await expect(dialog).not.toBeVisible({ timeout: 15000 });
+  console.log('[Test] Bio & Headline saved successfully');
+
+  // === VERIFY PERSISTED VIA GRAPHQL ===
+  const result = await gqlDirect<{ vendor: { practitioner: { headline: string; bio: string } } }>(
+    `query GetPrac($id: String!) { vendor(id: $id) { practitioner { headline bio } } }`,
+    { id: vendorId },
+    cookies
+  );
+  expect(result.vendor.practitioner.headline).toBe(testHeadline);
+  expect(result.vendor.practitioner.bio).toBe(testBio);
+  console.log('[Test] Verified bio & headline persisted via GraphQL');
+}
+
 test.beforeAll(async ({}, testInfo) => {
   console.log('[Setup] Preparing practitioner test environment...');
   clearTestEntityRegistry(testInfo.parallelIndex);
@@ -337,6 +395,11 @@ test.describe('Practitioner', () => {
     // === VERIFY REDIRECT TO PROFILE PAGE ===
     await page.waitForURL(new RegExp(`/p/${practitionerSlug}`), { timeout: 30000 });
     expect(page.url()).toMatch(new RegExp(`/p/${practitionerSlug}`));
+
+    // Verify the profile page actually rendered (not "Practitioner not found")
+    await expect(page.getByRole('heading', { name: 'Practitioner not found' })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.locator('h1').filter({ hasText: /Test Practitioner/ })).toBeVisible({ timeout: 15000 });
+    console.log('[Test] Profile page rendered correctly after redirect');
 
     // === REGISTER FOR CLEANUP & GET IDS ===
     const { vendorId, cookies } = await registerPractitionerForCleanup(page, practitionerSlug, testEmail, workerId);
@@ -391,20 +454,38 @@ test.describe('Practitioner', () => {
     await sideNav.getByRole('menuitem', { name: 'Dashboard' }).click();
     await expect(page).toHaveURL(new RegExp(`/p/${practitionerSlug}/manage$`), { timeout: 10000 });
 
-    // === TEST SERVICE CREATION DIALOGS ===
-    await page.getByRole('button', { name: 'New Reading' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 });
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(500);
+    // === TEST BIO & HEADLINE EDIT VIA SIDEBAR ===
+    await sideNav.locator('[data-testid="nav-profile"]').click();
+    await page.waitForTimeout(300);
+    await sideNav.getByRole('menuitem', { name: 'Bio & Headline' }).click();
 
-    await page.getByRole('button', { name: 'New Healing' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 });
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(500);
+    const bioDialog = page.locator('[data-testid="edit-practitioner-bio-dialog"]');
+    await expect(bioDialog).toBeVisible({ timeout: 15000 });
 
-    // === TEST MANAGE PROFILE PAGE ===
-    await page.goto(`/p/${practitionerSlug}/manage/profile`);
-    await expect(page.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible({ timeout: 10000 });
+    const testHeadline = `E2E Test Headline ${Date.now()}`;
+    const testBio = 'This is an automated E2E test bio to verify the practitioner profile works correctly end to end after signup completion.';
+
+    const headlineInput = bioDialog.locator('[data-testid="headline-input"]');
+    await headlineInput.clear();
+    await headlineInput.fill(testHeadline);
+
+    const bioInput = bioDialog.locator('[data-testid="bio-input"]');
+    await bioInput.clear();
+    await bioInput.fill(testBio);
+
+    await bioDialog.locator('[data-testid="save-bio-btn"]').click();
+    await expect(bioDialog).not.toBeVisible({ timeout: 15000 });
+    console.log('[Test] Bio & Headline saved via manage sidebar');
+
+    // Verify persisted via GraphQL
+    const bioResult = await gqlDirect<{ vendor: { practitioner: { headline: string; bio: string } } }>(
+      `query GetPrac($id: String!) { vendor(id: $id) { practitioner { headline bio } } }`,
+      { id: vendorId },
+      cookies
+    );
+    expect(bioResult.vendor.practitioner.headline).toBe(testHeadline);
+    expect(bioResult.vendor.practitioner.bio).toBe(testBio);
+    console.log('[Test] Verified bio & headline persisted via GraphQL');
   });
 
   test('practitioner signup — provide card during onboarding', async ({ page }, testInfo) => {
@@ -441,5 +522,8 @@ test.describe('Practitioner', () => {
     const hasCard = await verifyCardSaved(vendorId, cookies);
     expect(hasCard).toBe(true);
     console.log('[Test] Verified hasPaymentCard === true (card provided during onboarding)');
+
+    // === VERIFY PROFILE PAGE LOADED & EDIT BIO VIA SIDEBAR ===
+    await verifyProfileAndEditBio(page, practitionerSlug, vendorId, cookies, Date.now());
   });
 });

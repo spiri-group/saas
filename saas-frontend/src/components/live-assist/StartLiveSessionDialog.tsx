@@ -86,7 +86,7 @@ export default function StartLiveSessionDialog({ open, onOpenChange, vendorId, v
                     }
                 }
             `, { merchantId: vendorId });
-            return response.services || [];
+            return (response.services || []).filter(Boolean);
         },
         enabled: open && !!vendorId,
     });

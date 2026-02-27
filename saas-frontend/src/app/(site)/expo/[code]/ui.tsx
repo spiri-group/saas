@@ -21,7 +21,18 @@ import { useCreateExpoCheckout } from './hooks/UseCreateExpoCheckout';
 import { useSignalRConnection } from '@/components/utils/SignalRProvider';
 import { useQueryClient } from '@tanstack/react-query';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_stripe_token ?? '');
+const stripePromiseCache = new Map<string, ReturnType<typeof loadStripe>>();
+
+function getStripePromise(stripeAccountId?: string) {
+    const key = stripeAccountId || '__platform__';
+    if (!stripePromiseCache.has(key)) {
+        stripePromiseCache.set(key, loadStripe(
+            process.env.NEXT_PUBLIC_stripe_token ?? '',
+            stripeAccountId ? { stripeAccount: stripeAccountId } : undefined
+        ));
+    }
+    return stripePromiseCache.get(key)!;
+}
 
 type CartItem = {
     itemId: string;
@@ -108,6 +119,7 @@ export default function ExpoCustomerUI({ code }: Props) {
     const [customerName, setCustomerName] = useState('');
     const [customerEmail, setCustomerEmail] = useState('');
     const [clientSecret, setClientSecret] = useState<string | null>(null);
+    const [stripeAccountId, setStripeAccountId] = useState<string | undefined>(undefined);
     const [saleNumber, setSaleNumber] = useState<number | null>(null);
     const [saleSummary, setSaleSummary] = useState<any>(null);
 
@@ -180,6 +192,7 @@ export default function ExpoCustomerUI({ code }: Props) {
             });
 
             setClientSecret(result.clientSecret);
+            setStripeAccountId(result.stripeAccountId);
             setSaleNumber(result.sale.saleNumber);
             setSaleSummary(result.sale);
             setCartOpen(false);
@@ -287,6 +300,7 @@ export default function ExpoCustomerUI({ code }: Props) {
                             setViewState('catalog');
                             setCart([]);
                             setClientSecret(null);
+                            setStripeAccountId(undefined);
                             setSaleSummary(null);
                         }}
                         className="bg-purple-600 hover:bg-purple-700 text-white"
@@ -316,7 +330,7 @@ export default function ExpoCustomerUI({ code }: Props) {
                             variant="ghost"
                             size="sm"
                             className="mb-4"
-                            onClick={() => { setViewState('catalog'); setClientSecret(null); }}
+                            onClick={() => { setViewState('catalog'); setClientSecret(null); setStripeAccountId(undefined); }}
                             data-testid="back-to-catalog-btn"
                         >
                             &larr; Back to catalog
@@ -371,7 +385,7 @@ export default function ExpoCustomerUI({ code }: Props) {
 
                     {/* Stripe Payment */}
                     <Elements
-                        stripe={stripePromise}
+                        stripe={getStripePromise(stripeAccountId)}
                         options={{
                             clientSecret,
                             appearance: {

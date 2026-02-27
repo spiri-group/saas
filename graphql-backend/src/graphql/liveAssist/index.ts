@@ -806,6 +806,7 @@ const resolvers = {
                 message: "You've joined the queue!",
                 entry,
                 clientSecret: paymentIntentResult.data.client_secret,
+                stripeAccountId: vendor.stripe.accountId,
             };
         },
 
