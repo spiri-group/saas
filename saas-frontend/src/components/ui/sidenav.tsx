@@ -375,10 +375,10 @@ const SideNav: React.FC<SideNavProps> = ({ navOptions, depth = 1, activePath = [
                 className={cn(
                     "fixed py-1 drop-shadow-lg rounded-xl flex z-40 left-0",
                     effectiveColumns > 1 ? "flex-row" : "flex-col",
-                    depth === 1 ? "top-20 overflow-y-auto" : "bg-slate-950 border border-white/10 overflow-y-auto",
+                    depth === 1 ? "top-20" : "bg-slate-950 border border-white/10 overflow-y-auto",
                     className
                 )}
-                style={depth > 1 && maxHeight ? { maxHeight: `${maxHeight}px` } : depth === 1 ? { maxHeight: 'calc(100vh - 5rem)' } : undefined}
+                style={depth > 1 && maxHeight ? { maxHeight: `${maxHeight}px` } : undefined}
                 initial={{ width: 0, opacity: 0 }}
                 animate={{ width: animateWidth, opacity: 1 }}
                 transition={{ duration: 0.2 }}
