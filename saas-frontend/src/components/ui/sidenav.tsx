@@ -1,4 +1,5 @@
 import React, { JSX, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -60,15 +61,19 @@ type SideNavItemProps = {
 const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath, commandLocation }) => {
     const [showSubNav, setShowSubNav] = useState(false);
     const [flyoutMaxHeight, setFlyoutMaxHeight] = useState<number | undefined>(undefined);
+    const [flyoutPosition, setFlyoutPosition] = useState<{ top: number; left: number } | null>(null);
     const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
-    const flyoutRef = useRef<HTMLDivElement>(null);
+    const itemRef = useRef<HTMLLIElement>(null);
 
-    // Measure available vertical space when flyout opens
+    // Calculate flyout position and available space from the trigger item
     useEffect(() => {
-        if (showSubNav && flyoutRef.current) {
-            const rect = flyoutRef.current.getBoundingClientRect();
+        if (showSubNav && itemRef.current) {
+            const rect = itemRef.current.getBoundingClientRect();
             const available = window.innerHeight - rect.top - 16;
             setFlyoutMaxHeight(Math.max(200, available));
+            setFlyoutPosition({ top: rect.top, left: rect.right + 4 });
+        } else if (!showSubNav) {
+            setFlyoutPosition(null);
         }
     }, [showSubNav]);
 
@@ -146,7 +151,7 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
         navOption.path.every((item, index) => activePath[index] === item);
 
     return (
-        <li className="relative w-full p-2" role="none">
+        <li ref={itemRef} className="relative w-full p-2" role="none">
             <div className="w-full">
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -217,23 +222,23 @@ const SideNavItem: React.FC<SideNavItemProps> = ({ navOption, depth, activePath,
                         </div>
                     </Button>
                 </motion.div>
-                {subNavOptions && showSubNav && (
-                    <motion.div
-                        ref={flyoutRef}
-                        className="absolute"
-                        style={{ top: 0, transform: `translateX(${sidebar_size.width + 4}px)` }}
-                    >
-                        <SideNav
-                            navOptions={subNavOptions}
-                            depth={depth + 1}
-                            activePath={activePath}
-                            commandLocation={commandLocation}
-                            columns={navOption.columns}
-                            maxHeight={flyoutMaxHeight}
-                        />
-                    </motion.div>
-                )}
             </div>
+            {subNavOptions && showSubNav && flyoutPosition && typeof document !== 'undefined' && createPortal(
+                <div
+                    className="fixed z-50"
+                    style={{ top: flyoutPosition.top, left: flyoutPosition.left, transform: 'translateZ(0)' }}
+                >
+                    <SideNav
+                        navOptions={subNavOptions}
+                        depth={depth + 1}
+                        activePath={activePath}
+                        commandLocation={commandLocation}
+                        columns={navOption.columns}
+                        maxHeight={flyoutMaxHeight}
+                    />
+                </div>,
+                document.body
+            )}
             {showUpgradePrompt && navOption.requiredTier && (
                 <UpgradePrompt
                     feature={navOption.disabledReason || navOption.label}
@@ -375,10 +380,10 @@ const SideNav: React.FC<SideNavProps> = ({ navOptions, depth = 1, activePath = [
                 className={cn(
                     "fixed py-1 drop-shadow-lg rounded-xl flex z-40 left-0",
                     effectiveColumns > 1 ? "flex-row" : "flex-col",
-                    depth === 1 ? "top-20" : "bg-slate-950 border border-white/10 overflow-y-auto",
+                    depth === 1 ? "top-20 overflow-y-auto" : "bg-slate-950 border border-white/10 overflow-y-auto",
                     className
                 )}
-                style={depth > 1 && maxHeight ? { maxHeight: `${maxHeight}px` } : undefined}
+                style={depth > 1 && maxHeight ? { maxHeight: `${maxHeight}px` } : depth === 1 ? { maxHeight: 'calc(100vh - 5rem)' } : undefined}
                 initial={{ width: 0, opacity: 0 }}
                 animate={{ width: animateWidth, opacity: 1 }}
                 transition={{ duration: 0.2 }}
