@@ -77,8 +77,8 @@ test.describe('Practitioner Profile Customization', () => {
     practitionerProfilePage = new PractitionerProfilePage(page);
   });
 
-  test('should create practitioner and edit bio & headline', async ({ page }, testInfo) => {
-    test.setTimeout(180000); // 3 minutes for full flow
+  test('should create practitioner, upload and crop profile picture, edit bio & headline, and verify on public profile', async ({ page }, testInfo) => {
+    test.setTimeout(240000); // 4 minutes for full flow including upload
 
     const workerId = testInfo.parallelIndex;
     const timestamp = Date.now();
@@ -100,13 +100,49 @@ test.describe('Practitioner Profile Customization', () => {
     // Navigate to manage page
     await practitionerProfilePage.navigateToManage(practitionerSlug);
 
+    // === PART 1: Upload and crop profile picture ===
+    console.log('[Test] Part 1: Uploading and cropping profile picture...');
+
     // Open Bio & Headline dialog
     await practitionerProfilePage.openBioDialog();
-
-    // Verify dialog is open
     await expect(page.locator('[data-testid="edit-practitioner-bio-dialog"]')).toBeVisible();
 
-    // Edit bio and headline
+    // Verify upload button is visible (no picture yet)
+    await expect(page.locator('[data-testid="upload-profile-picture-btn"]')).toBeVisible();
+
+    // Create a small test PNG image (10x10 purple square)
+    const testImageBuffer = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFklEQVQYV2P8z8Dwn4EIwDiqEF8oAwBf9AoL/k2CEQAAAABJRU5ErkJggg==',
+      'base64'
+    );
+
+    // Upload the test image - this should trigger the crop dialog
+    await practitionerProfilePage.uploadProfilePicture(testImageBuffer);
+
+    // Verify crop dialog appears
+    await expect(page.locator('[data-testid="profile-picture-crop-dialog"]')).toBeVisible({ timeout: 10000 });
+    console.log('[Test] Crop dialog appeared');
+
+    // Verify crop dialog has the expected controls
+    await expect(page.locator('[data-testid="profile-pic-crop-viewport"]')).toBeVisible();
+    await expect(page.locator('[data-testid="profile-pic-zoom-slider"]')).toBeVisible();
+    await expect(page.locator('[data-testid="profile-pic-crop-confirm-btn"]')).toBeVisible();
+    await expect(page.locator('[data-testid="profile-pic-crop-cancel-btn"]')).toBeVisible();
+
+    // Confirm the crop
+    await practitionerProfilePage.confirmCrop();
+    console.log('[Test] Crop confirmed');
+
+    // Wait for upload to complete (the upload button should disappear, replaced by the image preview)
+    await page.waitForTimeout(8000); // Allow time for Azure upload + image availability polling
+
+    // Verify the profile picture is now showing (remove button should be visible)
+    const hasProfilePic = await practitionerProfilePage.hasProfilePicture();
+    console.log(`[Test] Profile picture visible after upload: ${hasProfilePic}`);
+
+    // === PART 2: Edit bio and headline ===
+    console.log('[Test] Part 2: Editing bio and headline...');
+
     const newHeadline = 'Updated Intuitive Tarot Reader & Life Coach';
     const newBio = 'I have updated my bio to reflect my new journey. I now specialize in life coaching combined with intuitive readings to help clients achieve their full potential.';
 
@@ -117,10 +153,60 @@ test.describe('Practitioner Profile Customization', () => {
 
     // Verify dialog closed (success)
     await expect(page.locator('[data-testid="edit-practitioner-bio-dialog"]')).not.toBeVisible({ timeout: 10000 });
+    console.log('[Test] Bio and headline saved');
 
-    // Navigate to public profile and verify changes
+    // === PART 3: Verify on public profile ===
+    console.log('[Test] Part 3: Verifying changes on public profile...');
+
     await page.goto(`/p/${practitionerSlug}`);
+    await page.waitForLoadState('networkidle');
+
+    // Verify headline is shown
     await expect(page.getByText(newHeadline)).toBeVisible({ timeout: 10000 });
+
+    // Verify avatar is present
+    await expect(page.locator('[data-testid="practitioner-profile-avatar"]')).toBeVisible({ timeout: 10000 });
+    console.log('[Test] Public profile verified');
+
+    // === PART 4: Remove profile picture ===
+    console.log('[Test] Part 4: Removing profile picture...');
+
+    await practitionerProfilePage.navigateToManage(practitionerSlug);
+    await practitionerProfilePage.openBioDialog();
+    await expect(page.locator('[data-testid="edit-practitioner-bio-dialog"]')).toBeVisible();
+
+    // Remove profile picture
+    await practitionerProfilePage.removeProfilePicture();
+
+    // Verify upload button is back (picture removed)
+    await expect(page.locator('[data-testid="upload-profile-picture-btn"]')).toBeVisible({ timeout: 5000 });
+
+    // Save changes (bio and headline should still be the same)
+    await page.locator('[data-testid="save-bio-btn"]').click();
+    await expect(page.locator('[data-testid="edit-practitioner-bio-dialog"]')).not.toBeVisible({ timeout: 10000 });
+    console.log('[Test] Profile picture removed and saved');
+
+    // === PART 5: Test cancel crop flow ===
+    console.log('[Test] Part 5: Testing crop cancel flow...');
+
+    await practitionerProfilePage.openBioDialog();
+    await expect(page.locator('[data-testid="edit-practitioner-bio-dialog"]')).toBeVisible();
+
+    // Upload again
+    await practitionerProfilePage.uploadProfilePicture(testImageBuffer);
+
+    // Crop dialog should appear
+    await expect(page.locator('[data-testid="profile-picture-crop-dialog"]')).toBeVisible({ timeout: 10000 });
+
+    // Cancel the crop
+    await practitionerProfilePage.cancelCrop();
+
+    // Upload button should still be visible (no picture set)
+    await expect(page.locator('[data-testid="upload-profile-picture-btn"]')).toBeVisible();
+    console.log('[Test] Crop cancel flow verified');
+
+    await practitionerProfilePage.closeDialog();
+    console.log('[Test] Full profile editing test completed');
   });
 
   test('should edit modalities and specializations', async ({ page }, testInfo) => {
