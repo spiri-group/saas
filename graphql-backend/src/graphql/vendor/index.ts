@@ -1758,12 +1758,12 @@ const resolvers = {
 
             // now patch the background image or logo if they were not provided
             // this would mean the person wants to remove the image
-            if (args.theme.background.image == null) {
+            if (args.theme.background != null && args.theme.background.image == null) {
                 await context.dataSources.cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
                     { op: "set", path: "/background/image", value: null}
                 ], context.userId)
             }
-            if (args.theme.logo == null) {
+            if ('logo' in args.theme && args.theme.logo == null) {
                 await context.dataSources.cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
                     { op: "set", path: "/logo", value: null}
                 ], context.userId)

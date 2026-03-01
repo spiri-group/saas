@@ -38,6 +38,7 @@ When writing Playwright tests, follow the patterns in `/saas-frontend/tests/TEST
 3. **ALWAYS pass `testInfo` parameter** to access `testInfo.parallelIndex`
 4. **PREFER inline cleanup** over complex state tracking
 5. **AVOID hard navigation** (`page.goto`) — tests should emulate real user behavior. Navigate via UI elements (sidebar links, buttons, menus) instead of jumping directly to URLs. Only use `page.goto` for the initial entry point of a test flow.
+6. **ALWAYS emulate real user behavior** — interact with the UI the same way a user would (clicking buttons, filling forms, navigating menus). **NEVER** use `CustomEvent` dispatch, `page.evaluate()` to trigger internal app events, or other programmatic shortcuts to bypass the UI. Only resort to non-UI approaches if there is genuinely no other way.
 
 ---
 

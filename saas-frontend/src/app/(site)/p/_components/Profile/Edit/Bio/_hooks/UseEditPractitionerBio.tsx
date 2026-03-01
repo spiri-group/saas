@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod"
 import { useEffect, useState } from "react";
-import { mergeDeepWithClone, countWords } from "@/lib/functions";
+import { mergeDeepWithClone, countWords, omit } from "@/lib/functions";
 import { MediaSchema } from "@/shared/schemas/media";
 
 // Schema for bio and headline editing
@@ -153,6 +153,7 @@ const useEditPractitionerBio = (practitionerId: string) => {
 
                 // Update logo if changed
                 if (values.logo !== undefined) {
+                    const theme = omit({ logo: values.logo }, ["logo.url"])
                     await gql<{
                         update_merchant_theme: {
                             vendor: {
@@ -177,15 +178,13 @@ const useEditPractitionerBio = (practitionerId: string) => {
                         }
                     `, {
                         merchantId: values.id,
-                        theme: {
-                            logo: values.logo
-                        }
+                        theme
                     })
                 }
 
                 return {
                     ...profileResponse.update_practitioner_profile.practitioner,
-                    logo: values.logo ?? undefined
+                    logo: values.logo ?? null
                 }
             },
             onSuccess: async (data: Practitioner) => {
