@@ -17,6 +17,22 @@ export class PractitionerProfilePage extends BasePage {
     bioInput: '[data-testid="bio-input"]',
     saveBioBtn: '[data-testid="save-bio-btn"]',
 
+    // Profile Picture
+    uploadProfilePictureBtn: '[data-testid="upload-profile-picture-btn"]',
+    profilePictureFileInput: '[data-testid="profile-picture-file-input"]',
+    removeProfilePictureBtn: '[data-testid="remove-profile-picture-btn"]',
+    cropDialog: '[data-testid="profile-picture-crop-dialog"]',
+    cropViewport: '[data-testid="profile-pic-crop-viewport"]',
+    cropZoomSlider: '[data-testid="profile-pic-zoom-slider"]',
+    cropConfirmBtn: '[data-testid="profile-pic-crop-confirm-btn"]',
+    cropCancelBtn: '[data-testid="profile-pic-crop-cancel-btn"]',
+    cropResetBtn: '[data-testid="profile-pic-crop-reset-btn"]',
+
+    // Public Profile
+    profileAvatar: '[data-testid="practitioner-profile-avatar"]',
+    profileAvatarImg: '[data-testid="practitioner-profile-avatar-img"]',
+    profileAvatarFallback: '[data-testid="practitioner-profile-avatar-fallback"]',
+
     // Modalities Dialog
     modalitiesDialog: '[data-testid="edit-practitioner-modalities-dialog"]',
     modalitiesSelect: '[data-testid="modalities-select"]',
@@ -108,6 +124,80 @@ export class PractitionerProfilePage extends BasePage {
     await this.page.locator(this.selectors.bioInput).fill(data.bio);
     await this.page.locator(this.selectors.saveBioBtn).click();
     await expect(this.page.locator(this.selectors.bioDialog)).not.toBeVisible({ timeout: 10000 });
+  }
+
+  /**
+   * Upload a profile picture via the bio dialog (triggers crop dialog)
+   */
+  async uploadProfilePicture(imageBuffer: Buffer, filename: string = 'test-profile-pic.png') {
+    const fileInput = this.page.locator(this.selectors.profilePictureFileInput);
+    await fileInput.setInputFiles({
+      name: filename,
+      mimeType: 'image/png',
+      buffer: imageBuffer,
+    });
+  }
+
+  /**
+   * Wait for crop dialog to appear and confirm the crop
+   */
+  async confirmCrop() {
+    await expect(this.page.locator(this.selectors.cropDialog)).toBeVisible({ timeout: 10000 });
+    await this.page.locator(this.selectors.cropConfirmBtn).click();
+    await expect(this.page.locator(this.selectors.cropDialog)).not.toBeVisible({ timeout: 10000 });
+  }
+
+  /**
+   * Wait for crop dialog to appear and cancel
+   */
+  async cancelCrop() {
+    await expect(this.page.locator(this.selectors.cropDialog)).toBeVisible({ timeout: 10000 });
+    await this.page.locator(this.selectors.cropCancelBtn).click();
+    await expect(this.page.locator(this.selectors.cropDialog)).not.toBeVisible({ timeout: 10000 });
+  }
+
+  /**
+   * Check if the crop dialog is visible
+   */
+  async isCropDialogVisible(): Promise<boolean> {
+    return await this.page.locator(this.selectors.cropDialog).isVisible();
+  }
+
+  /**
+   * Remove the current profile picture (within the bio dialog)
+   */
+  async removeProfilePicture() {
+    const removeBtn = this.page.locator(this.selectors.removeProfilePictureBtn);
+    await removeBtn.click({ force: true }); // force because it's opacity-0 until hover
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * Check if profile picture is displayed in bio dialog (has image vs upload button)
+   */
+  async hasProfilePicture(): Promise<boolean> {
+    return await this.page.locator(this.selectors.removeProfilePictureBtn).isVisible({ timeout: 2000 }).catch(() => false);
+  }
+
+  /**
+   * Check if the upload profile picture button is visible (no image set)
+   */
+  async isUploadButtonVisible(): Promise<boolean> {
+    return await this.page.locator(this.selectors.uploadProfilePictureBtn).isVisible({ timeout: 2000 }).catch(() => false);
+  }
+
+  /**
+   * Check if public profile shows avatar image (not fallback)
+   */
+  async hasPublicProfileAvatar(): Promise<boolean> {
+    return await this.page.locator(this.selectors.profileAvatarImg).isVisible({ timeout: 5000 }).catch(() => false);
+  }
+
+  /**
+   * Check if public profile shows fallback initials
+   */
+  async hasPublicProfileFallback(): Promise<boolean> {
+    return await this.page.locator(this.selectors.profileAvatarFallback).isVisible({ timeout: 5000 }).catch(() => false);
   }
 
   /**

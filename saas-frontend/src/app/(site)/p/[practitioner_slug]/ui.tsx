@@ -1133,9 +1133,9 @@ export default function PractitionerProfileContent({
                         <div className="flex flex-col md:flex-row gap-6">
                             {/* Avatar */}
                             <div className="flex-shrink-0">
-                                <Avatar className="w-32 h-32 border-4 border-white shadow-xl">
-                                    <AvatarImage src={practitioner.logo?.url || practitioner.thumbnail?.image?.media?.url} alt={practitioner.name} />
-                                    <AvatarFallback className="text-3xl bg-purple-100 text-purple-700">
+                                <Avatar className="w-32 h-32 border-4 border-white shadow-xl" data-testid="practitioner-profile-avatar">
+                                    <AvatarImage src={practitioner.logo?.url || practitioner.thumbnail?.image?.media?.url} alt={practitioner.name} data-testid="practitioner-profile-avatar-img" />
+                                    <AvatarFallback className="text-3xl bg-purple-100 text-purple-700" data-testid="practitioner-profile-avatar-fallback">
                                         {practitioner.name?.slice(0, 2).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
