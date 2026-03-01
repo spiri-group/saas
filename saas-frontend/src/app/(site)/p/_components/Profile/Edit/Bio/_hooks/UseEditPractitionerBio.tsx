@@ -184,7 +184,7 @@ const useEditPractitionerBio = (practitionerId: string) => {
 
                 return {
                     ...profileResponse.update_practitioner_profile.practitioner,
-                    logo: values.logo ?? null
+                    logo: values.logo ?? undefined
                 }
             },
             onSuccess: async (data: Practitioner) => {
