@@ -191,7 +191,8 @@ export const authOptions: NextAuthConfig = {
                 auth
             );
 
-            // Handle case where user exists in auth table but not in Cosmos (e.g., after cleanup)
+            // Handle case where user exists in auth table but not in Cosmos (e.g., transient error, cleanup)
+            // Default requiresInput to false — a transient failure should not lock users out to /setup
             if (!me) {
                 console.warn('[auth] Session references non-existent user, returning minimal session');
                 return {
@@ -201,7 +202,7 @@ export const authOptions: NextAuthConfig = {
                         id: '',
                         email: session.user?.email || '',
                         vendors: [],
-                        requiresInput: true,
+                        requiresInput: false,
                         currency: undefined,
                         locale: undefined,
                         cases: [],
