@@ -136,7 +136,9 @@ export default function SetupUI() {
     useEffect(() => {
         if (didSkipRef.current) return;
         if (!session?.user || !userProfile) return;
-        if (session.user.requiresInput) return;
+        // When tierParam is set (e.g. from upgrade dialog), the user already has a profile —
+        // skip the requiresInput check since the JWT may be stale.
+        if (!tierParam && session.user.requiresInput) return;
         if (!detectedCountry) return; // Wait for country detection before skipping basic step
 
         // Pre-fill form from existing profile

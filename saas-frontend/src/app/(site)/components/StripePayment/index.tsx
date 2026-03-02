@@ -538,14 +538,15 @@ const AddressPill = ({
   };
 
   const handleSavedAddressSelect = (savedAddress: any) => {
+    if (!savedAddress.address) return;
     const addressData: AddressPillData = {
-      name: savedAddress.address.formattedAddress.split(',')[0] || 'Saved Address',
+      name: savedAddress.address.formattedAddress?.split(',')[0] || 'Saved Address',
       address: {
-        line1: savedAddress.address.components.line1,
-        city: savedAddress.address.components.city,
-        state: savedAddress.address.components.state || "",
-        postal_code: savedAddress.address.components.postal_code,
-        country: savedAddress.address.components.country
+        line1: savedAddress.address.components?.line1 || '',
+        city: savedAddress.address.components?.city || '',
+        state: savedAddress.address.components?.state || '',
+        postal_code: savedAddress.address.components?.postal_code || '',
+        country: savedAddress.address.components?.country || ''
       }
     };
     onAddressChange(addressData);
@@ -621,7 +622,7 @@ const AddressPill = ({
                             <div className="flex items-center justify-between">
                               <div>
                                 <div className="font-medium text-sm">
-                                  {savedAddress.address.formattedAddress}
+                                  {savedAddress.address?.formattedAddress || 'Address'}
                                 </div>
                                 {savedAddress.isDefault && (
                                   <div className="text-xs text-blue-600 mt-1">Default Address</div>
@@ -944,15 +945,15 @@ const MasterCheckout = ({
   useEffect(() => {
     if (userAddresses && userAddresses.length > 0 && !billingAddress) {
       const defaultAddress = userAddresses.find(addr => addr.isDefault);
-      if (defaultAddress) {
+      if (defaultAddress && defaultAddress.address) {
         const addressData: AddressPillData = {
-          name: defaultAddress.address.formattedAddress.split(',')[0] || 'Default Address',
+          name: defaultAddress.address.formattedAddress?.split(',')[0] || 'Default Address',
           address: {
-            line1: defaultAddress.address.components.line1,
-            city: defaultAddress.address.components.city,
-            state: defaultAddress.address.components.state || "",
-            postal_code: defaultAddress.address.components.postal_code,
-            country: defaultAddress.address.components.country
+            line1: defaultAddress.address.components?.line1 || '',
+            city: defaultAddress.address.components?.city || '',
+            state: defaultAddress.address.components?.state || '',
+            postal_code: defaultAddress.address.components?.postal_code || '',
+            country: defaultAddress.address.components?.country || ''
           }
         };
 

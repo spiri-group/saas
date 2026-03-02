@@ -21,6 +21,20 @@ export class PractitionerSetupPage extends BasePage {
     super(page);
   }
 
+  // ── Cookie banner dismissal ──
+
+  private async dismissCookieBanner() {
+    const cookieBanner = this.page.getByTestId('cookie-banner');
+    if (await cookieBanner.isVisible({ timeout: 2000 }).catch(() => false)) {
+      const acceptBtn = this.page.getByTestId('cookie-accept-btn');
+      if (await acceptBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await acceptBtn.click();
+        await cookieBanner.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
+        console.log('[PractitionerSetup] Dismissed cookie banner');
+      }
+    }
+  }
+
   // ── Onboarding Consent helper (different testids from site-level ConsentGuard) ──
 
   private async handleOnboardingConsent() {
@@ -143,6 +157,9 @@ export class PractitionerSetupPage extends BasePage {
     await this.page.goto('/setup');
     await userSetupPage.waitForForm();
 
+    // Dismiss cookie banner early so it doesn't intercept button clicks later
+    await this.dismissCookieBanner();
+
     // Get user ID from session for cleanup registration
     const userId = await this.page.evaluate(async () => {
       const response = await fetch('/api/auth/session');
@@ -195,6 +212,9 @@ export class PractitionerSetupPage extends BasePage {
       approach: 'I approach each reading with compassion and clarity.',
     });
 
+    // Dismiss cookie banner again in case it reappeared
+    await this.dismissCookieBanner();
+
     const submitBtn = this.page.locator('[data-testid="setup-practitioner-submit-btn"]');
     await expect(submitBtn).toBeEnabled({ timeout: 5000 });
     await submitBtn.click();
@@ -221,6 +241,107 @@ export class PractitionerSetupPage extends BasePage {
       }
     }
 
+    return practitionerSlug;
+  }
+
+  /**
+   * Create a practitioner through the unified onboarding flow, stopping BEFORE the card capture step.
+   * Returns the practitioner slug so the caller can handle card capture differently (skip vs fill).
+   */
+  async createPractitionerUntilCardCapture(
+    testEmail: string,
+    practitionerName: string,
+    testInfo: { parallelIndex: number },
+    tier: 'awaken' | 'illuminate' | 'manifest' | 'transcend' = 'awaken'
+  ): Promise<string> {
+    const timestamp = Date.now();
+    const workerId = testInfo.parallelIndex;
+    const practitionerSlug = `test-practitioner-${timestamp}`;
+
+    const authPage = new AuthPage(this.page);
+    const userSetupPage = new UserSetupPage(this.page);
+
+    // Clear any existing session
+    await this.page.context().clearCookies();
+
+    // ── Step 1: Authenticate ──
+    await this.page.goto('/');
+    await authPage.startAuthFlow(testEmail);
+    await this.page.waitForSelector('[aria-label="input-login-otp"]', { timeout: 15000 });
+    await this.page.locator('[aria-label="input-login-otp"]').click();
+    await this.page.keyboard.type('123456');
+    await this.page.waitForURL('/', { timeout: 15000 });
+
+    // ── Step 2: Handle site-level ConsentGuard ──
+    await handleConsentGuardIfPresent(this.page);
+
+    // ── Step 3: Navigate to setup page ──
+    await this.page.goto('/setup');
+    await userSetupPage.waitForForm();
+
+    // Dismiss cookie banner early so it doesn't intercept button clicks later
+    await this.dismissCookieBanner();
+
+    // Get user ID from session for cleanup registration
+    const userId = await this.page.evaluate(async () => {
+      const response = await fetch('/api/auth/session');
+      const session = await response.json();
+      return session?.user?.id;
+    });
+
+    if (userId) {
+      const cookies = await getCookiesFromPage(this.page);
+      registerTestUser({ id: userId, email: testEmail, cookies }, workerId);
+    }
+
+    // ── Step 4: BasicDetailsStep → fill name, click "Set Up a Business" ──
+    await userSetupPage.fillUserProfile({
+      firstName: 'Test',
+      lastName: 'Practitioner',
+    });
+    await userSetupPage.setupBusiness();
+
+    // ── Step 5: ChoosePlanStep → select tier ──
+    await expect(this.page.locator('[data-testid="choose-plan-step"]')).toBeVisible({ timeout: 10000 });
+    const tierCard = this.page.locator(`[data-testid="tier-card-${tier}"]`);
+    await expect(tierCard).toBeVisible({ timeout: 10000 });
+    await tierCard.click();
+
+    const planContinueBtn = this.page.locator('[data-testid="plan-continue-btn"]');
+    await expect(planContinueBtn).toBeEnabled({ timeout: 5000 });
+    await planContinueBtn.click();
+
+    // ── Step 6: OnboardingConsent → accept terms ──
+    await this.handleOnboardingConsent();
+
+    // ── Step 7: PractitionerProfileStep → fill profile ──
+    await this.fillPractitionerProfile({
+      name: practitionerName,
+      slug: practitionerSlug,
+      modalities: ['TAROT', 'ORACLE'],
+      specializations: ['RELATIONSHIPS', 'CAREER'],
+    });
+
+    const profileContinueBtn = this.page.locator('[data-testid="setup-practitioner-continue-btn"]');
+    await expect(profileContinueBtn).toBeEnabled({ timeout: 5000 });
+    await profileContinueBtn.click();
+
+    // ── Step 8: PractitionerOptionalStep → fill optional details and submit ──
+    await expect(this.page.locator('[data-testid="setup-practitioner-pronouns"]')).toBeVisible({ timeout: 10000 });
+    await this.fillPractitionerOptional({
+      pronouns: 'she/her',
+      yearsExperience: 10,
+      approach: 'I approach each reading with compassion and clarity.',
+    });
+
+    // Dismiss cookie banner again in case it reappeared
+    await this.dismissCookieBanner();
+
+    const submitBtn = this.page.locator('[data-testid="setup-practitioner-submit-btn"]');
+    await expect(submitBtn).toBeEnabled({ timeout: 5000 });
+    await submitBtn.click();
+
+    // Card capture step should now appear — caller handles skip vs fill
     return practitionerSlug;
   }
 }

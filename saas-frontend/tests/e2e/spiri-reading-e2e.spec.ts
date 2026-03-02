@@ -5,7 +5,6 @@ import { PractitionerSetupPage } from '../pages/PractitionerSetupPage';
 import { AuthPage } from '../pages/AuthPage';
 import { UserSetupPage } from '../pages/UserSetupPage';
 import { OnboardingPage } from '../pages/OnboardingPage';
-import { TEST_CONFIG } from '../fixtures/test-config';
 import { handleConsentGuardIfPresent } from '../utils/test-helpers';
 import {
   clearTestEntityRegistry,
@@ -88,16 +87,16 @@ test.describe('SpiriReading', () => {
       const practitionerSetupPage = new PractitionerSetupPage(practitionerPage);
       const spiriReadingsPage = new SpiriReadingsPage(practitionerPage);
       const practitionerEmail = generateUniqueEmail('e2e-practitioner', testInfo);
-      const practitionerSlug = await practitionerSetupPage.createPractitioner(practitionerEmail, 'E2E Reader', testInfo);
+      const practitionerSlug = await practitionerSetupPage.createPractitioner(practitionerEmail, 'E2E Reader', testInfo, 'awaken');
 
       const practitionerCookies = await getCookiesFromPage(practitionerPage);
       if (practitionerCookies) practitionerCookiesPerWorker.set(testInfo.parallelIndex, practitionerCookies);
 
-      console.log(`[E2E] ✓ Practitioner created: ${practitionerSlug}`);
+      console.log(`[E2E] Practitioner created: ${practitionerSlug}`);
 
       // Complete Stripe onboarding so practitioner can receive payments
       const practitionerId = await getPractitionerIdAndCompleteOnboarding(practitionerPage, practitionerSlug, practitionerCookies!);
-      console.log('[E2E] ✓ Stripe onboarding complete');
+      console.log('[E2E] Stripe onboarding complete');
 
       // ================================================================
       // PHASE 2: User signs up + creates reading request
@@ -110,12 +109,13 @@ test.describe('SpiriReading', () => {
       const onboardingPage = new OnboardingPage(userPage);
 
       // --- User signup via unified /setup flow ---
-      const testEmail = TEST_CONFIG.TEST_EMAIL;
+      const testEmail = generateUniqueEmail('e2e-reader', testInfo);
       let testUserId = '';
 
+      // Authenticate
       await userPage.goto('/');
       await authPage.startAuthFlow(testEmail);
-      await expect(userPage.locator('[aria-label="input-login-otp"]')).toBeVisible({ timeout: 15000 });
+      await userPage.waitForSelector('[aria-label="input-login-otp"]', { timeout: 15000 });
       await userPage.locator('[aria-label="input-login-otp"]').click();
       await userPage.keyboard.type('123456');
       await userPage.waitForURL('/', { timeout: 15000 });
@@ -147,7 +147,7 @@ test.describe('SpiriReading', () => {
       // Complete onboarding (spiritual interest selection)
       await onboardingPage.completeWithPrimaryOnly('mediumship');
 
-      console.log(`[E2E] ✓ User created: ${testUserId}`);
+      console.log(`[E2E] User created: ${testUserId}`);
 
       // --- Create reading request via wizard ---
       await readingRequestPage.goto(testUserId);
@@ -331,6 +331,14 @@ test.describe('SpiriReading', () => {
       }
 
       console.log('[E2E] ✓ Reading fulfilled');
+
+      // Close fulfillment dialog if still open
+      const fulfillmentDialog = practitionerPage.locator('[data-testid="fulfillment-dialog"]');
+      if (await fulfillmentDialog.isVisible({ timeout: 2000 }).catch(() => false)) {
+        // Press Escape to close the dialog
+        await practitionerPage.keyboard.press('Escape');
+        await expect(fulfillmentDialog).not.toBeVisible({ timeout: 5000 });
+      }
 
       // Verify claim removed from My Claims
       await spiriReadingsPage.clickMyClaimsTab();

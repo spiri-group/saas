@@ -1,8 +1,7 @@
-import { test, expect, Page, TestInfo } from '@playwright/test';
-import { AuthPage } from '../pages/AuthPage';
+import { test, expect, Page } from '@playwright/test';
+import { PractitionerSetupPage } from '../pages/PractitionerSetupPage';
 import {
   clearTestEntityRegistry,
-  registerTestUser,
   registerTestPractitioner,
   getCookiesFromPage,
   cleanupTestUsers,
@@ -11,7 +10,6 @@ import {
   addTestCard,
   gqlDirect,
 } from '../utils/test-cleanup';
-import { handleConsentGuardIfPresent } from '../utils/test-helpers';
 
 // Store cookies per test worker
 const cookiesPerWorker = new Map<number, string>();
@@ -25,169 +23,6 @@ const cookiesPerWorker = new Map<number, string>();
  *
  * Both verify that goLiveReadiness.hasPaymentCard === true after completion.
  */
-
-interface SignupResult {
-  practitionerSlug: string;
-  testEmail: string;
-  workerId: number;
-}
-
-/**
- * Shared helper: completes practitioner signup from auth through the optional step.
- * Stops BEFORE the card capture step so each test can handle it differently.
- */
-async function completeSignupUntilCardCapture(
-  page: Page,
-  testInfo: TestInfo
-): Promise<SignupResult> {
-  const timestamp = Date.now();
-  const randomSuffix = Math.random().toString(36).substring(2, 8);
-  const workerId = testInfo.parallelIndex;
-  const testEmail = `practitioner-${timestamp}-${workerId}@playwright.com`;
-  const practitionerSlug = `test-prac-${timestamp}-${randomSuffix}`;
-
-  const authPage = new AuthPage(page);
-
-  // === AUTHENTICATION ===
-  await authPage.startAuthFlow(testEmail);
-  await expect(page.locator('[aria-label="input-login-otp"]')).toBeVisible({ timeout: 15000 });
-  await page.locator('[aria-label="input-login-otp"]').click();
-  await page.keyboard.type('123456');
-  await page.waitForURL('/', { timeout: 15000 });
-
-  // === HANDLE SITE-LEVEL CONSENT GUARD ===
-  await handleConsentGuardIfPresent(page);
-
-  // === NAVIGATE TO SETUP ===
-  await page.goto('/setup');
-  await page.waitForLoadState('networkidle');
-
-  // === BASIC DETAILS STEP ===
-  const firstNameInput = page.locator('[data-testid="setup-first-name"]');
-  const planStep = page.locator('[data-testid="choose-plan-step"]');
-  await expect(firstNameInput.or(planStep)).toBeVisible({ timeout: 20000 });
-
-  // Register user for cleanup
-  const userId = await page.evaluate(async () => {
-    const response = await fetch('/api/auth/session');
-    const session = await response.json();
-    return session?.user?.id;
-  });
-  if (userId) {
-    const cookies = await getCookiesFromPage(page);
-    if (cookies) {
-      cookiesPerWorker.set(workerId, cookies);
-      registerTestUser({ id: userId, email: testEmail, cookies }, workerId);
-    }
-  }
-
-  // Fill basic details if shown (skipped when user profile already exists)
-  if (await firstNameInput.isVisible()) {
-    await firstNameInput.fill('Test');
-    await page.locator('[data-testid="setup-last-name"]').fill('Practitioner');
-    await page.waitForTimeout(300);
-
-    // Ensure country is selected
-    const countryCombobox = page.locator('[data-testid="setup-country"]');
-    const hasCountry = await countryCombobox.locator('text=Australia').isVisible().catch(() => false);
-    if (!hasCountry) {
-      await countryCombobox.click();
-      await page.waitForTimeout(300);
-      const australiaOption = page.getByRole('option', { name: 'Australia' });
-      if (await australiaOption.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await australiaOption.click();
-      } else {
-        const searchInput = page.locator('[role="listbox"]').locator('input').first();
-        if (await searchInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-          await searchInput.fill('Australia');
-          await page.waitForTimeout(300);
-        }
-        await page.getByRole('option', { name: 'Australia' }).click();
-      }
-      await page.waitForTimeout(300);
-    }
-
-    const setupBusinessBtn = page.locator('[data-testid="setup-basic-setup-btn"]');
-    await expect(setupBusinessBtn).toBeVisible({ timeout: 5000 });
-    await setupBusinessBtn.click();
-  }
-
-  // === CHOOSE PLAN STEP ===
-  await expect(planStep).toBeVisible({ timeout: 10000 });
-  const awakenCard = page.locator('[data-testid="tier-card-awaken"]');
-  await expect(awakenCard).toBeVisible({ timeout: 10000 });
-  await awakenCard.click();
-
-  const planContinueBtn = page.locator('[data-testid="plan-continue-btn"]');
-  await expect(planContinueBtn).toBeEnabled({ timeout: 5000 });
-  await planContinueBtn.click();
-
-  // === ONBOARDING CONSENT ===
-  const consentContainer = page.locator('[data-testid="onboarding-consent"]');
-  await expect(consentContainer).toBeVisible({ timeout: 15000 });
-
-  for (let step = 0; step < 10; step++) {
-    const checkbox = page.locator('[data-testid^="consent-checkbox-"]').first();
-    await expect(checkbox).toBeVisible({ timeout: 5000 });
-    await checkbox.click();
-
-    const acceptBtn = page.locator('[data-testid="onboarding-consent-accept-btn"]');
-    if (await acceptBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await expect(acceptBtn).toBeEnabled({ timeout: 3000 });
-      await acceptBtn.click();
-      await page.waitForTimeout(1000);
-      break;
-    }
-
-    const nextBtn = page.locator('[data-testid="onboarding-consent-next-btn"]');
-    await expect(nextBtn).toBeEnabled({ timeout: 3000 });
-    await nextBtn.click();
-    await page.waitForTimeout(500);
-  }
-
-  // === PRACTITIONER PROFILE STEP ===
-  const nameInput = page.locator('[data-testid="setup-practitioner-name"]');
-  await expect(nameInput).toBeVisible({ timeout: 10000 });
-
-  await nameInput.fill(`Test Practitioner ${timestamp}`);
-  const slugInput = page.locator('[data-testid="setup-practitioner-slug"]');
-  await expect(slugInput).toHaveValue(/.+/, { timeout: 15000 });
-  await expect(slugInput).toBeEnabled({ timeout: 10000 });
-  await slugInput.fill(practitionerSlug);
-
-  await page.locator('[data-testid="setup-modality-TAROT"]').click();
-  await page.waitForTimeout(100);
-  await page.locator('[data-testid="setup-modality-ORACLE"]').click();
-  await page.waitForTimeout(100);
-
-  await page.locator('[data-testid="setup-specialization-RELATIONSHIPS"]').click();
-  await page.waitForTimeout(100);
-  await page.locator('[data-testid="setup-specialization-CAREER"]').click();
-  await page.waitForTimeout(100);
-
-  const continueBtn = page.locator('[data-testid="setup-practitioner-continue-btn"]');
-  await continueBtn.click();
-
-  // === PRACTITIONER OPTIONAL STEP ===
-  const pronounsInput = page.locator('[data-testid="setup-practitioner-pronouns"]');
-  await expect(pronounsInput).toBeVisible({ timeout: 10000 });
-
-  await pronounsInput.fill('she/her');
-  await page.locator('[data-testid="setup-practitioner-years"]').fill('10');
-  await page.locator('[data-testid="setup-practitioner-journey"]').fill(
-    'My journey began when I received my first tarot deck as a gift.'
-  );
-  await page.locator('[data-testid="setup-practitioner-approach"]').fill(
-    'I believe in empowering clients to make their own decisions through guidance.'
-  );
-
-  const submitBtn = page.locator('[data-testid="setup-practitioner-submit-btn"]');
-  await expect(submitBtn).toBeEnabled({ timeout: 5000 });
-  await submitBtn.click();
-
-  // Card capture step should now appear
-  return { practitionerSlug, testEmail, workerId };
-}
 
 /**
  * After signup + card capture, register practitioner for cleanup and return IDs.
@@ -320,8 +155,8 @@ async function verifyProfileAndEditBio(
   const sideNav = page.locator('[aria-label="practitioner-side-nav"]');
   await expect(sideNav).toBeVisible();
   await sideNav.locator('[data-testid="nav-profile"]').click();
-  await page.waitForTimeout(300);
-  await sideNav.getByRole('menuitem', { name: 'Bio & Headline' }).click();
+  await page.waitForTimeout(500);
+  await page.getByRole('menuitem', { name: 'Bio & Headline' }).click();
 
   // === FILL AND SAVE BIO ===
   const dialog = page.locator('[data-testid="edit-practitioner-bio-dialog"]');
@@ -377,15 +212,22 @@ test.afterAll(async ({}, testInfo) => {
 });
 
 test.describe('Practitioner', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-  });
-
   test('practitioner signup — skip card, add later', async ({ page }, testInfo) => {
     test.setTimeout(300000); // 5 minutes for full flow including dashboard tests
 
-    // === COMPLETE SIGNUP THROUGH OPTIONAL STEP ===
-    const { practitionerSlug, testEmail, workerId } = await completeSignupUntilCardCapture(page, testInfo);
+    const workerId = testInfo.parallelIndex;
+    const timestamp = Date.now();
+    const testEmail = `practitioner-${timestamp}-${workerId}@playwright.com`;
+    const practitionerName = `Test Practitioner ${timestamp}`;
+
+    // === COMPLETE SIGNUP THROUGH OPTIONAL STEP (stops before card capture) ===
+    const setupPage = new PractitionerSetupPage(page);
+    const practitionerSlug = await setupPage.createPractitionerUntilCardCapture(
+      testEmail,
+      practitionerName,
+      testInfo,
+      'awaken'
+    );
 
     // === CARD CAPTURE STEP — SKIP ===
     const skipBtn = page.locator('[data-testid="card-capture-skip-btn"]');
@@ -426,28 +268,28 @@ test.describe('Practitioner', () => {
     const sideNav = page.locator('[aria-label="practitioner-side-nav"]');
     await expect(sideNav).toBeVisible();
 
-    // Navigate to Services > View All Services
+    // Navigate to Services > View All Services (dropdown is rendered as portal)
     await sideNav.getByRole('menuitem', { name: 'Services' }).click();
-    await page.waitForTimeout(300);
-    await sideNav.getByRole('menuitem', { name: 'View All Services' }).click();
+    await page.waitForTimeout(500);
+    await page.getByRole('menuitem', { name: 'View All Services' }).click();
     await expect(page).toHaveURL(new RegExp(`/p/${practitionerSlug}/manage/services`), { timeout: 10000 });
 
     // Navigate to Schedule > Bookings
     await sideNav.getByRole('menuitem', { name: 'Schedule' }).click();
-    await page.waitForTimeout(300);
-    await sideNav.getByRole('menuitem', { name: 'Bookings' }).click();
+    await page.waitForTimeout(500);
+    await page.getByRole('menuitem', { name: 'Bookings' }).click();
     await expect(page).toHaveURL(new RegExp(`/p/${practitionerSlug}/manage/bookings`), { timeout: 10000 });
 
     // Navigate to Schedule > Availability
     await sideNav.getByRole('menuitem', { name: 'Schedule' }).click();
-    await page.waitForTimeout(300);
-    await sideNav.getByRole('menuitem', { name: 'Availability' }).click();
+    await page.waitForTimeout(500);
+    await page.getByRole('menuitem', { name: 'Availability' }).click();
     await expect(page).toHaveURL(new RegExp(`/p/${practitionerSlug}/manage/availability`), { timeout: 10000 });
 
     // Navigate to Profile > Overview
     await sideNav.locator('[data-testid="nav-profile"]').click();
-    await page.waitForTimeout(300);
-    await sideNav.getByRole('menuitem', { name: 'Overview' }).click();
+    await page.waitForTimeout(500);
+    await page.getByRole('menuitem', { name: 'Overview' }).click();
     await expect(page).toHaveURL(new RegExp(`/p/${practitionerSlug}/manage/profile`), { timeout: 10000 });
 
     // Navigate back to Dashboard
@@ -457,7 +299,7 @@ test.describe('Practitioner', () => {
     // === TEST BIO & HEADLINE EDIT VIA SIDEBAR ===
     await sideNav.locator('[data-testid="nav-profile"]').click();
     await page.waitForTimeout(300);
-    await sideNav.getByRole('menuitem', { name: 'Bio & Headline' }).click();
+    await page.getByRole('menuitem', { name: 'Bio & Headline' }).click();
 
     const bioDialog = page.locator('[data-testid="edit-practitioner-bio-dialog"]');
     await expect(bioDialog).toBeVisible({ timeout: 15000 });
@@ -491,8 +333,19 @@ test.describe('Practitioner', () => {
   test('practitioner signup — provide card during onboarding', async ({ page }, testInfo) => {
     test.setTimeout(300000); // 5 minutes for full flow including Stripe interaction
 
-    // === COMPLETE SIGNUP THROUGH OPTIONAL STEP ===
-    const { practitionerSlug, testEmail, workerId } = await completeSignupUntilCardCapture(page, testInfo);
+    const workerId = testInfo.parallelIndex;
+    const timestamp = Date.now();
+    const testEmail = `practitioner-${timestamp}-${workerId}@playwright.com`;
+    const practitionerName = `Test Practitioner ${timestamp}`;
+
+    // === COMPLETE SIGNUP THROUGH OPTIONAL STEP (stops before card capture) ===
+    const setupPage = new PractitionerSetupPage(page);
+    const practitionerSlug = await setupPage.createPractitionerUntilCardCapture(
+      testEmail,
+      practitionerName,
+      testInfo,
+      'awaken'
+    );
 
     // === CARD CAPTURE STEP — FILL STRIPE CARD ELEMENT ===
     // Wait for card capture step to load (SetupIntent must be created first)

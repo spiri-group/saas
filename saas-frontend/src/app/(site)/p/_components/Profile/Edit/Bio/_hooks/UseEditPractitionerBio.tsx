@@ -44,7 +44,7 @@ interface Practitioner {
     id: string;
     name: string;
     slug: string;
-    logo?: Media;
+    logo?: Media | null;
     practitioner: PractitionerProfile;
 }
 
@@ -184,7 +184,7 @@ const useEditPractitionerBio = (practitionerId: string) => {
 
                 return {
                     ...profileResponse.update_practitioner_profile.practitioner,
-                    logo: values.logo ?? undefined
+                    logo: values.logo ?? null
                 }
             },
             onSuccess: async (data: Practitioner) => {
@@ -193,8 +193,9 @@ const useEditPractitionerBio = (practitionerId: string) => {
                     if (!oldData) return data
                     return mergeDeepWithClone(oldData, data)
                 })
-                // Also invalidate branding cache in case it's used elsewhere
+                // Invalidate branding and profile caches to ensure removed logos are reflected
                 queryClient.invalidateQueries({ queryKey: ['branding-for-vendor', practitionerId] })
+                queryClient.invalidateQueries({ queryKey: ['practitioner-profile', practitionerId] })
             }
         })
     }
