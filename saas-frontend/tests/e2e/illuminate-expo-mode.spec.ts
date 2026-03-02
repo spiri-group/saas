@@ -27,7 +27,7 @@ test.afterAll(async ({}, testInfo) => {
 
 test.describe('Expo Mode', () => {
   test('Expo Mode — full lifecycle with customer checkout and walk-up sale', async ({ browser }, testInfo) => {
-    test.setTimeout(480000); // 8 minutes
+    test.setTimeout(540000); // 9 minutes — includes inventory depletion flow
 
     const slug = practitionerSlugPerWorker.get(testInfo.parallelIndex);
     const cookies = practitionerCookiesPerWorker.get(testInfo.parallelIndex);
@@ -77,17 +77,17 @@ test.describe('Expo Mode', () => {
       await expect(practitionerPage.locator('[data-testid="add-item-dialog"]')).not.toBeVisible({ timeout: 5000 });
       console.log('[Expo Mode] Item 1 added: Crystal Reading $30');
 
-      // Item 2: Aura Photo $15, tracked inventory, qty 10
+      // Item 2: Aura Photo $15, tracked inventory, qty 2
       await practitionerPage.locator('[data-testid="add-item-btn"]').click();
       await expect(practitionerPage.locator('[data-testid="add-item-dialog"]')).toBeVisible({ timeout: 10000 });
       await practitionerPage.locator('[data-testid="item-name-input"]').fill('Aura Photo');
       await practitionerPage.locator('[data-testid="item-price-input"]').fill('15');
       await practitionerPage.locator('[data-testid="track-inventory-checkbox"]').check();
       await expect(practitionerPage.locator('[data-testid="item-qty-input"]')).toBeVisible({ timeout: 5000 });
-      await practitionerPage.locator('[data-testid="item-qty-input"]').fill('10');
+      await practitionerPage.locator('[data-testid="item-qty-input"]').fill('2');
       await practitionerPage.locator('[data-testid="confirm-add-item-btn"]').click();
       await expect(practitionerPage.locator('[data-testid="add-item-dialog"]')).not.toBeVisible({ timeout: 5000 });
-      console.log('[Expo Mode] Item 2 added: Aura Photo $15 (qty 10)');
+      console.log('[Expo Mode] Item 2 added: Aura Photo $15 (qty 2)');
 
       // Verify both items visible
       const catalogItems = practitionerPage.locator('[data-testid^="catalog-item-"]');
@@ -100,6 +100,23 @@ test.describe('Expo Mode', () => {
       await expect(practitionerPage.locator('[data-testid="expo-status-badge"]')).toContainText(/Live/i, { timeout: 15000 });
       await expect(practitionerPage.locator('[data-testid="share-card"]')).toBeVisible({ timeout: 10000 });
       console.log('[Expo Mode] Expo is LIVE');
+
+      // ── Toggle catalog item (disable then re-enable) ──
+      const crystalCatalogItem = practitionerPage.locator('[data-testid^="catalog-item-"]').filter({ hasText: 'Crystal Reading' });
+      await expect(crystalCatalogItem).toBeVisible({ timeout: 10000 });
+      const crystalCatalogTestId = await crystalCatalogItem.getAttribute('data-testid');
+      const crystalId = crystalCatalogTestId!.replace('catalog-item-', '');
+
+      // Disable Crystal Reading — button text flips from "Disable" to "Enable" and card gets opacity
+      const toggleBtn = practitionerPage.locator(`[data-testid="toggle-item-${crystalId}"]`);
+      await toggleBtn.click();
+      await expect(toggleBtn).toHaveText('Enable', { timeout: 5000 });
+      console.log('[Expo Mode] Crystal Reading toggled OFF (button shows Enable)');
+
+      // Re-enable Crystal Reading — button text flips back to "Disable"
+      await toggleBtn.click();
+      await expect(toggleBtn).toHaveText('Disable', { timeout: 5000 });
+      console.log('[Expo Mode] Crystal Reading toggled ON (button shows Disable)');
 
       // Extract expo code
       const copyLinkBtn = practitionerPage.locator('[data-testid="copy-link-btn"]');
@@ -235,7 +252,101 @@ test.describe('Expo Mode', () => {
       await expect(practitionerPage.locator('[data-testid="stat-sales"]')).toContainText('2', { timeout: 10000 });
       await expect(practitionerPage.locator('[data-testid="stat-revenue"]')).toContainText('45.00', { timeout: 5000 });
       await expect(practitionerPage.locator('[data-testid="stat-items-sold"]')).toContainText('2', { timeout: 5000 });
-      console.log('[Expo Mode] Stats verified: 2 sales, $45.00, 2 items');
+      console.log('[Expo Mode] Stats verified after first walk-up sale: 2 sales, $45.00, 2 items');
+
+      // Verify practitioner catalog shows "1/2 sold" for Aura Photo
+      const auraPhotoCatalogItem = practitionerPage.locator('[data-testid^="catalog-item-"]').filter({ hasText: 'Aura Photo' });
+      await expect(auraPhotoCatalogItem).toContainText('1/2 sold', { timeout: 10000 });
+      console.log('[Expo Mode] Practitioner catalog shows 1/2 sold for Aura Photo');
+
+      // ── Log 2nd walk-up sale for Aura Photo to deplete inventory ──
+      await practitionerPage.locator('[data-testid="log-sale-btn"]').click();
+      await expect(practitionerPage.locator('[data-testid="log-sale-dialog"]')).toBeVisible({ timeout: 10000 });
+
+      // Add Aura Photo — find the item and click plus
+      const auraPhotoSaleItem2 = practitionerPage.locator('[data-testid^="sale-item-"]').filter({ hasText: 'Aura Photo' });
+      await expect(auraPhotoSaleItem2).toBeVisible();
+      const auraItemTestId2 = await auraPhotoSaleItem2.getAttribute('data-testid');
+      const auraItemId2 = auraItemTestId2!.replace('sale-item-', '');
+
+      // Should show "(1 left)" since 1 was already sold
+      await expect(auraPhotoSaleItem2).toContainText('1 left', { timeout: 5000 });
+
+      await practitionerPage.locator(`[data-testid="sale-item-plus-${auraItemId2}"]`).click();
+
+      // Plus button should now be disabled (qty 1 = max available)
+      await expect(practitionerPage.locator(`[data-testid="sale-item-plus-${auraItemId2}"]`)).toBeDisabled({ timeout: 5000 });
+      console.log('[Expo Mode] Plus button disabled at max available inventory');
+
+      // Select Cash and confirm
+      await practitionerPage.locator('[data-testid="payment-method-select"]').click();
+      await practitionerPage.locator('[role="option"]:has-text("Cash")').click();
+
+      await practitionerPage.locator('[data-testid="confirm-log-sale-btn"]').click();
+      await expect(practitionerPage.locator('[data-testid="log-sale-dialog"]')).not.toBeVisible({ timeout: 5000 });
+      console.log('[Expo Mode] Walk-up sale 2 logged: Aura Photo x1 (Cash) — inventory depleted');
+
+      // Reload and verify practitioner catalog shows "2/2 sold" and SOLD OUT
+      await practitionerPage.reload();
+      await practitionerPage.waitForLoadState('networkidle');
+
+      const auraPhotoCatalogAfter = practitionerPage.locator('[data-testid^="catalog-item-"]').filter({ hasText: 'Aura Photo' });
+      await expect(auraPhotoCatalogAfter).toContainText('2/2 sold', { timeout: 10000 });
+      await expect(auraPhotoCatalogAfter).toContainText('SOLD OUT', { timeout: 5000 });
+      console.log('[Expo Mode] Practitioner catalog shows 2/2 sold + SOLD OUT badge');
+
+      // ── Customer page: verify SOLD OUT prevents purchase ──
+      const customer2Context = await browser.newContext();
+      const customer2Page = await customer2Context.newPage();
+
+      try {
+        await customer2Page.goto(`/expo/${expoCode}`);
+        await expect(customer2Page.locator('[data-testid="expo-catalog"]')).toBeVisible({ timeout: 15000 });
+
+        // Dismiss cookie banner if present
+        const cookieBanner2 = customer2Page.locator('[data-testid="cookie-banner"]');
+        if (await cookieBanner2.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await cookieBanner2.locator('button:has-text("Accept")').click();
+          await expect(cookieBanner2).not.toBeVisible({ timeout: 3000 });
+        }
+
+        // Aura Photo should show SOLD OUT
+        const auraPhotoPublic = customer2Page.locator('[data-testid^="public-item-"]').filter({ hasText: 'Aura Photo' });
+        await expect(auraPhotoPublic).toBeVisible({ timeout: 10000 });
+        await expect(auraPhotoPublic).toContainText('SOLD OUT', { timeout: 5000 });
+
+        // Get Aura Photo item ID to verify no add-to-cart button
+        const auraPublicTestId = await auraPhotoPublic.getAttribute('data-testid');
+        const auraPublicId = auraPublicTestId!.replace('public-item-', '');
+        await expect(customer2Page.locator(`[data-testid="add-to-cart-${auraPublicId}"]`)).not.toBeVisible({ timeout: 5000 });
+        console.log('[Expo Mode] Customer page: Aura Photo shows SOLD OUT, no add-to-cart');
+
+        // Crystal Reading should still be purchasable
+        const crystalPublic = customer2Page.locator('[data-testid^="public-item-"]').filter({ hasText: 'Crystal Reading' });
+        await expect(crystalPublic).toBeVisible({ timeout: 5000 });
+        const crystalPublicTestId = await crystalPublic.getAttribute('data-testid');
+        const crystalPublicId = crystalPublicTestId!.replace('public-item-', '');
+        await expect(customer2Page.locator(`[data-testid="add-to-cart-${crystalPublicId}"]`)).toBeVisible({ timeout: 5000 });
+        console.log('[Expo Mode] Customer page: Crystal Reading still purchasable');
+      } finally {
+        await customer2Context.close();
+      }
+
+      // ── Practitioner: verify log-sale dialog shows 0 left for Aura Photo ──
+      await practitionerPage.locator('[data-testid="log-sale-btn"]').click();
+      await expect(practitionerPage.locator('[data-testid="log-sale-dialog"]')).toBeVisible({ timeout: 10000 });
+
+      const auraPhotoSaleItemFinal = practitionerPage.locator('[data-testid^="sale-item-"]').filter({ hasText: 'Aura Photo' });
+      await expect(auraPhotoSaleItemFinal).toContainText('0 left', { timeout: 5000 });
+
+      const auraItemTestIdFinal = await auraPhotoSaleItemFinal.getAttribute('data-testid');
+      const auraItemIdFinal = auraItemTestIdFinal!.replace('sale-item-', '');
+      await expect(practitionerPage.locator(`[data-testid="sale-item-plus-${auraItemIdFinal}"]`)).toBeDisabled({ timeout: 5000 });
+      console.log('[Expo Mode] Log-sale dialog: Aura Photo shows (0 left), plus disabled');
+
+      await practitionerPage.locator('[data-testid="cancel-log-sale-btn"]').click();
+      await expect(practitionerPage.locator('[data-testid="log-sale-dialog"]')).not.toBeVisible({ timeout: 5000 });
+      console.log('[Expo Mode] Inventory depletion flow complete');
 
       // ── Pause / Resume ──
       await practitionerPage.locator('[data-testid="pause-btn"]').click();
@@ -259,6 +370,22 @@ test.describe('Expo Mode', () => {
       const pastExpoCard = practitionerPage.locator('[data-testid^="expo-card-"]').first();
       await expect(pastExpoCard).toBeVisible({ timeout: 10000 });
       console.log('[Expo Mode] Past expo visible in list');
+
+      // ── Past expo review ──
+      await pastExpoCard.click();
+      await expect(practitionerPage.locator('[data-testid="expo-dashboard"]')).toBeVisible({ timeout: 15000 });
+      console.log('[Expo Mode] Navigated to past expo detail');
+
+      await expect(practitionerPage.locator('[data-testid="expo-status-badge"]')).toContainText(/Ended/i, { timeout: 10000 });
+      await expect(practitionerPage.locator('[data-testid="stat-sales"]')).toContainText('3', { timeout: 5000 });
+      await expect(practitionerPage.locator('[data-testid="stat-revenue"]')).toBeVisible({ timeout: 5000 });
+      await expect(practitionerPage.locator('[data-testid="stat-items-sold"]')).toContainText('3', { timeout: 5000 });
+      console.log('[Expo Mode] Past expo stats verified: 3 sales, 3 items sold');
+
+      // Navigate back to list
+      await practitionerPage.goto(`/p/${slug}/manage/expo-mode`);
+      await expect(practitionerPage.locator('[data-testid="expo-mode-page"]')).toBeVisible({ timeout: 15000 });
+      console.log('[Expo Mode] Navigated back to list after past expo review');
 
       console.log('[Expo Mode] Full lifecycle complete');
     } finally {

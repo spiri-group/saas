@@ -214,6 +214,68 @@ test.describe('Payment Links', () => {
       await expect(practitionerPage.locator('[data-sonner-toast][data-type="success"]').first()).toBeVisible({ timeout: 10000 });
       console.log('[Payment Links] Third link resent');
 
+      // ── Create a multi-item payment link ──
+      await practitionerPage.locator('[data-testid="create-payment-link-btn"]').click();
+      await expect(practitionerPage.locator('[data-testid="create-payment-link-dialog"]')).toBeVisible({ timeout: 10000 });
+
+      const multiItemEmail = generateUniqueEmail('pay-multi', testInfo);
+      await practitionerPage.locator('[data-testid="payment-link-customer-email"]').fill(multiItemEmail);
+
+      // Item 0: Energy Cleansing $35
+      await practitionerPage.locator('[data-testid="payment-link-item-description-0"]').fill('Energy Cleansing');
+      await practitionerPage.locator('[data-testid="payment-link-item-amount-0"]').fill('35');
+
+      // Add a second item
+      await practitionerPage.locator('[data-testid="payment-link-add-item"]').click();
+
+      // Item 1: Crystal Gift $20
+      await practitionerPage.locator('[data-testid="payment-link-item-description-1"]').fill('Crystal Gift');
+      await practitionerPage.locator('[data-testid="payment-link-item-amount-1"]').fill('20');
+
+      // Verify total
+      await expect(practitionerPage.locator('[data-testid="payment-link-total"]')).toContainText('$55.00', { timeout: 5000 });
+      console.log('[Payment Links] Multi-item total shows $55.00');
+
+      // Verify remove button visible for item 1 (only shows when >1 items)
+      await expect(practitionerPage.locator('[data-testid="payment-link-remove-item-1"]')).toBeVisible({ timeout: 5000 });
+      console.log('[Payment Links] Remove button visible for second item');
+
+      // Submit
+      await practitionerPage.locator('[data-testid="payment-link-submit"]').click();
+      await expect(practitionerPage.locator('[data-sonner-toast][data-type="success"]').first()).toBeVisible({ timeout: 15000 });
+      await expect(practitionerPage.locator('[data-testid="create-payment-link-dialog"]')).not.toBeVisible({ timeout: 5000 });
+      console.log('[Payment Links] Multi-item payment link created');
+
+      // Find the new link in the list
+      await practitionerPage.waitForTimeout(2000);
+      const multiItemRow = practitionerPage.locator('[data-testid^="payment-link-row-"]').filter({ hasText: multiItemEmail }).first();
+      await expect(multiItemRow).toBeVisible({ timeout: 10000 });
+      const multiItemRowTestId = await multiItemRow.getAttribute('data-testid');
+      const multiItemLinkId = multiItemRowTestId!.replace('payment-link-row-', '');
+      console.log(`[Payment Links] Multi-item link ID: ${multiItemLinkId}`);
+
+      // Verify amount shows $55.00
+      await expect(practitionerPage.locator(`[data-testid="payment-link-amount-${multiItemLinkId}"]`)).toContainText('55.00');
+
+      // ── Customer views multi-item checkout page ──
+      let multiCustomerContext: BrowserContext | null = null;
+      try {
+        multiCustomerContext = await browser.newContext();
+        const multiCustomerPage = await multiCustomerContext.newPage();
+
+        await multiCustomerPage.goto(`/pay/${multiItemLinkId}`);
+        await expect(multiCustomerPage.locator('[data-testid="payment-link-checkout"]')).toBeVisible({ timeout: 15000 });
+        console.log('[Payment Links] Multi-item checkout page loaded');
+
+        // Verify both items displayed
+        await expect(multiCustomerPage.locator('[data-testid="checkout-item-0"]')).toContainText('Energy Cleansing');
+        await expect(multiCustomerPage.locator('[data-testid="checkout-item-1"]')).toContainText('Crystal Gift');
+        await expect(multiCustomerPage.locator('[data-testid="checkout-total"]')).toContainText('$55.00');
+        console.log('[Payment Links] Multi-item checkout verified: 2 items, $55.00 total');
+      } finally {
+        if (multiCustomerContext) await multiCustomerContext.close();
+      }
+
       console.log('[Payment Links] Full lifecycle complete');
     } finally {
       if (customerContext) await customerContext.close();

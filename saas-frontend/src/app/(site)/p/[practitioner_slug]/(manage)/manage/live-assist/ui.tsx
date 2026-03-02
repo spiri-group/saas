@@ -163,32 +163,35 @@ export default function LiveAssistUI({ session, practitionerId, slug }: Props) {
                         <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide">Past Sessions</h3>
                     )}
                     {pastSessions.map((s) => (
-                        <Card key={s.id} className="bg-slate-900 border-slate-700" data-testid={`session-card-${s.id}`}>
-                            <CardContent className="p-4">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="font-medium text-white">
-                                            {s.sessionTitle || 'Live Session'}
-                                        </p>
-                                        <p className="text-sm text-slate-400">{formatDate(s.startedAt)}</p>
+                        <Link key={s.id} href={`/p/${slug}/manage/live-assist/session/${s.id}`}>
+                            <Card className="bg-slate-900 border-slate-700 hover:bg-slate-800 cursor-pointer transition-colors" data-testid={`session-card-${s.id}`}>
+                                <CardContent className="p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="font-medium text-white">
+                                                {s.sessionTitle || 'Live Session'}
+                                            </p>
+                                            <p className="text-sm text-slate-400">{formatDate(s.startedAt)}</p>
+                                        </div>
+                                        <div className="flex items-center gap-4 text-sm text-slate-400">
+                                            <span className="flex items-center gap-1">
+                                                <Clock className="h-3.5 w-3.5" />
+                                                {formatDuration(s.startedAt, s.endedAt)}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <Users className="h-3.5 w-3.5" />
+                                                {s.totalJoined}/{s.totalCompleted}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <DollarSign className="h-3.5 w-3.5" />
+                                                {formatAmount(s.totalRevenue)}
+                                            </span>
+                                            <ArrowRight className="h-4 w-4" />
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-4 text-sm text-slate-400">
-                                        <span className="flex items-center gap-1">
-                                            <Clock className="h-3.5 w-3.5" />
-                                            {formatDuration(s.startedAt, s.endedAt)}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <Users className="h-3.5 w-3.5" />
-                                            {s.totalJoined}/{s.totalCompleted}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <DollarSign className="h-3.5 w-3.5" />
-                                            {formatAmount(s.totalRevenue)}
-                                        </span>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
+                        </Link>
                     ))}
                 </div>
             )}
