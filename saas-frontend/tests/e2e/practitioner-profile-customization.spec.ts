@@ -4,6 +4,7 @@ import { PractitionerProfilePage } from '../pages/PractitionerProfilePage';
 import { AuthPage } from '../pages/AuthPage';
 import { HomePage } from '../pages/HomePage';
 import { UserSetupPage } from '../pages/UserSetupPage';
+import { OnboardingPage } from '../pages/OnboardingPage';
 import { PurchaseManager } from '../managers/PurchaseManager';
 import {
   clearTestEntityRegistry,
@@ -14,6 +15,7 @@ import {
   registerTestUser,
   completeStripeTestOnboarding,
 } from '../utils/test-cleanup';
+import { handleConsentGuardIfPresent } from '../utils/test-helpers';
 
 // Helper to get practitioner ID from slug
 async function getPractitionerIdFromSlug(cookies: string, slug: string): Promise<string> {
@@ -133,12 +135,10 @@ test.describe('Practitioner Profile Customization', () => {
     await practitionerProfilePage.confirmCrop();
     console.log('[Test] Crop confirmed');
 
-    // Wait for upload to complete (the upload button should disappear, replaced by the image preview)
-    await page.waitForTimeout(8000); // Allow time for Azure upload + image availability polling
-
-    // Verify the profile picture is now showing (remove button should be visible)
-    const hasProfilePic = await practitionerProfilePage.hasProfilePicture();
-    console.log(`[Test] Profile picture visible after upload: ${hasProfilePic}`);
+    // Wait for upload to complete — the upload button should disappear, replaced by the image preview.
+    // The remove button becomes visible once the image is set in the form.
+    await expect(page.locator('[data-testid="remove-profile-picture-btn"]')).toBeAttached({ timeout: 30000 });
+    console.log('[Test] Profile picture uploaded and visible');
 
     // === PART 2: Edit bio and headline ===
     console.log('[Test] Part 2: Editing bio and headline...');
@@ -580,31 +580,30 @@ test.describe('Practitioner Profile Customization', () => {
     await page.keyboard.type('123456');
     await page.waitForURL('/', { timeout: 15000 });
 
-    // Complete customer setup
-    await homePage.waitForCompleteProfileLink();
-    await homePage.clickCompleteProfile();
-    await expect(page).toHaveURL(/\/u\/.*\/setup/, { timeout: 10000 });
+    // Complete customer setup via unified /setup page
+    await handleConsentGuardIfPresent(page);
+    await page.goto('/setup');
+    await userSetupPage.waitForForm();
 
-    const customerUrl = page.url();
-    const userIdMatch = customerUrl.match(/\/u\/([^\/]+)\/setup/);
-    if (!userIdMatch) throw new Error('Could not extract user ID from URL');
-    const customerUserId = userIdMatch[1];
-    registerTestUser({ id: customerUserId, email: customerEmail }, workerId);
+    const customerUserId = await page.evaluate(async () => {
+      const response = await fetch('/api/auth/session');
+      const session = await response.json();
+      return session?.user?.id || '';
+    });
+    if (customerUserId) {
+      registerTestUser({ id: customerUserId, email: customerEmail }, workerId);
+    }
     console.log(`[Test] Customer user ID: ${customerUserId}`);
 
     await userSetupPage.fillUserProfile({
       firstName: 'Test',
       lastName: 'Customer',
-      phone: '0498765432',
-      address: 'Melbourne CBD',
-      securityQuestion: 'What is your favorite color?',
-      securityAnswer: 'Blue',
     });
+    await userSetupPage.startBrowsing();
 
-    const startBrowsingBtn = page.getByRole('button', { name: 'Start Browsing SpiriVerse' });
-    await expect(startBrowsingBtn).toBeVisible({ timeout: 5000 });
-    await startBrowsingBtn.click();
-    await page.waitForURL('/', { timeout: 30000 });
+    // Complete onboarding (spiritual interest selection)
+    const onboardingPage = new OnboardingPage(page);
+    await onboardingPage.completeWithPrimaryOnly('mediumship');
 
     // === STEP 4: CUSTOMER BROWSES TO PRACTITIONER AND PURCHASES SERVICE ===
     console.log('[Test] Step 4: Customer purchasing service...');
@@ -814,34 +813,34 @@ test.describe('Practitioner Profile Customization', () => {
     // === STEP 7: CUSTOMER LEAVES A TESTIMONIAL ===
     console.log('[Test] Step 7: Customer leaving testimonial...');
 
-    // Click "Leave a Testimonial" button
-    const leaveTestimonialBtn = page.locator('[data-testid="leave-testimonial-btn"]');
-    await expect(leaveTestimonialBtn).toBeVisible({ timeout: 5000 });
-    await leaveTestimonialBtn.click();
+    // Click "Leave a Review" button
+    const leaveReviewBtn = page.locator('[data-testid="leave-review-btn"]');
+    await expect(leaveReviewBtn).toBeVisible({ timeout: 5000 });
+    await leaveReviewBtn.click();
 
-    // Fill out the testimonial form
+    // Fill out the review form
     // Select 5 stars
-    const star5 = page.locator('[data-testid="testimonial-star-5"]');
+    const star5 = page.locator('[data-testid="review-star-5"]');
     await expect(star5).toBeVisible({ timeout: 5000 });
     await star5.click();
 
     // Enter headline
-    const headlineInput = page.locator('[data-testid="testimonial-headline-input"]');
+    const headlineInput = page.locator('[data-testid="review-headline-input"]');
     await headlineInput.fill('Amazing reading experience!');
 
-    // Enter testimonial text
-    const textInput = page.locator('[data-testid="testimonial-text-input"]');
+    // Enter review text
+    const textInput = page.locator('[data-testid="review-text-input"]');
     await textInput.fill('This practitioner provided incredible insights. The reading was detailed and resonated deeply with my situation. Highly recommended!');
 
-    // Submit the testimonial
-    const submitTestimonialBtn = page.locator('[data-testid="submit-testimonial-btn"]');
-    await submitTestimonialBtn.click();
+    // Submit the review
+    const submitReviewBtn = page.locator('[data-testid="submit-review-btn"]');
+    await submitReviewBtn.click();
 
-    // Wait for success (testimonial submitted message should appear)
+    // Wait for success (toast confirmation)
     await page.waitForTimeout(3000);
-    const testimonialSubmitted = page.getByText('Testimonial submitted');
-    await expect(testimonialSubmitted).toBeVisible({ timeout: 10000 });
-    console.log('[Test] Testimonial submitted successfully');
+    const reviewSubmitted = page.getByText('Thank you for your review!');
+    await expect(reviewSubmitted).toBeVisible({ timeout: 10000 });
+    console.log('[Test] Review submitted successfully');
 
     // Close the dialog
     await page.keyboard.press('Escape');
@@ -863,37 +862,40 @@ test.describe('Practitioner Profile Customization', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
-    // Navigate to practitioner profile management - pinned testimonials section
-    await page.goto(`/p/${practitionerSlug}/manage/profile`);
+    // Navigate to practitioner manage page
+    await page.goto(`/p/${practitionerSlug}/manage`);
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
 
-    // Open pinned testimonials dialog
-    const pinnedTestimonialsBtn = page.locator('[data-testid="edit-pinned-testimonials-btn"]');
-    await expect(pinnedTestimonialsBtn).toBeVisible({ timeout: 10000 });
-    await pinnedTestimonialsBtn.click();
+    // Open pinned testimonials dialog via sidenav: Profile → Pinned Reviews
+    const sideNav = page.locator('[aria-label="practitioner-side-nav"]');
+    await expect(sideNav).toBeVisible({ timeout: 10000 });
+    await sideNav.getByTestId('nav-profile').click();
+    await page.waitForTimeout(500);
+    await page.getByRole('menuitem', { name: 'Pinned Reviews' }).click();
 
     // Should show the pinned testimonials dialog
-    const pinnedDialog = page.locator('[data-testid="pinned-testimonials-dialog"]');
+    const pinnedDialog = page.locator('[data-testid="edit-practitioner-pinned-testimonials-dialog"]');
     await expect(pinnedDialog).toBeVisible({ timeout: 10000 });
     console.log('[Test] Pinned testimonials dialog opened');
 
-    // The newly submitted testimonial should be available to pin
+    // The newly submitted review should be available to pin
     const pinnableReview = page.locator('[data-testid^="pinnable-review-"]').first();
     await expect(pinnableReview).toBeVisible({ timeout: 10000 });
-    console.log('[Test] Testimonial available to pin');
+    console.log('[Test] Review available to pin');
 
-    // Click to pin the testimonial
+    // Click to pin the review
     await pinnableReview.click();
     await page.waitForTimeout(500);
 
     // Save pinned testimonials
-    const savePinnedBtn = page.locator('[data-testid="save-pinned-btn"]');
+    const savePinnedBtn = page.locator('[data-testid="save-pinned-testimonials-btn"]');
     await savePinnedBtn.click();
 
     // Wait for save to complete and dialog to close
     await page.waitForTimeout(2000);
     await expect(pinnedDialog).not.toBeVisible({ timeout: 10000 });
-    console.log('[Test] Testimonial pinned successfully');
+    console.log('[Test] Review pinned successfully');
 
     // === STEP 9: VERIFY PINNED TESTIMONIAL ON PUBLIC PROFILE ===
     console.log('[Test] Step 9: Verifying pinned testimonial on public profile...');
@@ -903,7 +905,7 @@ test.describe('Practitioner Profile Customization', () => {
     await page.waitForLoadState('networkidle');
 
     // Should show pinned testimonials section
-    const pinnedTestimonialsSection = page.locator('[data-testid="pinned-testimonials-section"]');
+    const pinnedTestimonialsSection = page.locator('[data-testid="pinned-testimonials"]');
     await expect(pinnedTestimonialsSection).toBeVisible({ timeout: 10000 });
     console.log('[Test] Pinned testimonials section visible on public profile');
 

@@ -1,7 +1,7 @@
 import { EmailTemplate } from "./types";
 
 const EMAIL_CONTAINER = 'System-Settings';
-const EMAIL_PARTITION = 'email-templates';
+const EMAIL_PARTITION = 'email-template';
 
 /**
  * Fetch an email template from the database

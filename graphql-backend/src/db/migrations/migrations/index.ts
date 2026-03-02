@@ -47,6 +47,20 @@ import { migration as migration036 } from "./036_standardize_refund_language";
 import { migration as migration037 } from "./037_genericize_base_documents";
 import { migration as migration038 } from "./038_seed_country_supplements";
 import { migration as migration039 } from "./039_seed_subscription_terms";
+import { migration as migration040 } from "./040_add_illuminate_tier";
+import { migration as migration041 } from "./041_create_payment_links_container";
+import { migration as migration042 } from "./042_seed_payment_link_email_templates";
+import { migration as migration043 } from "./043_add_live_assist_feature_gate";
+import { migration as migration044 } from "./044_create_live_session_containers";
+import { migration as migration045 } from "./045_seed_live_assist_email_templates";
+import { migration as migration046 } from "./046_illuminate_spiri_assist";
+import { migration as migration047 } from "./047_add_expo_mode_feature_gate";
+import { migration as migration048 } from "./048_create_expo_mode_container";
+import { migration as migration049 } from "./049_seed_expo_mode_email_templates";
+import { migration as migration050 } from "./050_seed_demo_accounts";
+import { migration as migration051 } from "./051_seed_help_request_categories";
+import { migration as migration052 } from "./052_reseed_payment_link_email_template";
+import { migration as migration053 } from "./053_reseed_live_assist_email_templates";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -89,4 +103,18 @@ export const migrations: Migration[] = [
     migration037,
     migration038,
     migration039,
+    migration040,
+    migration041,
+    migration042,
+    migration043,
+    migration044,
+    migration045,
+    migration046,
+    migration047,
+    migration048,
+    migration049,
+    migration050,
+    migration051,
+    migration052,
+    migration053,
 ];

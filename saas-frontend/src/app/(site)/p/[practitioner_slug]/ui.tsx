@@ -1111,7 +1111,7 @@ export default function PractitionerProfileContent({
             )}
             <div className={`min-h-screen bg-gradient-to-b from-violet-950 via-purple-900 to-slate-900 ${isOwner ? 'md:ml-[200px]' : ''}`}>
                 {/* Hero Banner */}
-                <div className="relative h-64 md:h-80 overflow-hidden">
+                <div className={`relative overflow-hidden ${practitioner.banner?.url ? 'h-64 md:h-80' : 'h-32 md:h-40'}`}>
                 {practitioner.banner?.url ? (
                     <Image
                         src={practitioner.banner.url}
@@ -1126,7 +1126,7 @@ export default function PractitionerProfileContent({
             </div>
 
             {/* Profile Content */}
-            <div className="mx-auto px-4 md:px-8 lg:px-12 -mt-32 relative z-10 pb-16">
+            <div className={`mx-auto px-4 md:px-8 lg:px-12 relative z-10 pb-16 ${practitioner.banner?.url ? '-mt-32' : '-mt-16'}`}>
                 {/* Profile Header Card */}
                 <Card className="backdrop-blur-xl bg-white/95 shadow-2xl border-0">
                     <CardContent className="p-8">
@@ -1225,6 +1225,7 @@ export default function PractitionerProfileContent({
                                     </Button>
                                     <Button
                                         variant="outline"
+                                        className="border-slate-300 text-slate-700 bg-white hover:bg-slate-50"
                                         onClick={() => setMessageDialogOpen(true)}
                                         data-testid="send-message-btn"
                                     >
@@ -1314,7 +1315,7 @@ export default function PractitionerProfileContent({
                                                         <div className="flex-1 min-w-0">
                                                             <h4 className="font-medium text-slate-900 truncate">{service.name}</h4>
                                                             {service.description && (
-                                                                <p className="text-sm text-slate-600 line-clamp-2 mt-1">{service.description}</p>
+                                                                <div className="text-sm text-slate-600 line-clamp-2 mt-1" dangerouslySetInnerHTML={{ __html: service.description }} />
                                                             )}
                                                             <div className="flex items-center gap-3 mt-2">
                                                                 {service.pricing?.fixedPrice && (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { cn } from '@/lib/utils';
 import { FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -47,7 +48,7 @@ function ZoomRail({
     <div className="flex flex-col items-stretch gap-2 select-none">
       <div className="flex items-center gap-2">
         <ZoomIn className="w-4 h-4" />
-        <span className="text-xs text-slate-500">Zoom</span>
+        <span className="text-xs text-slate-400">Zoom</span>
       </div>
 
       {/* Discrete steps */}
@@ -82,6 +83,7 @@ function ZoomRail({
 type ThumbnailBuilderProps = {
   control: Control<any>;
   name: string;
+  dark?: boolean;
   onUploadCoverPhoto: (file: File) => Promise<MediaFile>;
   onUploadVideo: (file: File) => Promise<MediaFile>;
   onUploadCollageImage: (file: File) => Promise<MediaFile>;
@@ -90,6 +92,7 @@ type ThumbnailBuilderProps = {
 export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
   control,
   name,
+  dark = false,
   onUploadCoverPhoto,
   onUploadVideo,
   onUploadCollageImage
@@ -188,11 +191,10 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
       render={({ field }) => (
         <FormItem className="w-full">
           <>
-          {/* Header - Sets the stage */}
-          <div className="text-center py-4 bg-slate-50 rounded-lg mb-4">
-            <h3 className="text-xl font-bold mb-1">
-              ✨ {fieldValue?.image?.media ? "Refine Your Service Thumbnail" : "Create Your Service Thumbnail"}
-            </h3>
+          {/* Header */}
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold">Service Thumbnail</h2>
+            <p className="text-sm text-slate-400">Upload images and customise how your listing appears</p>
           </div>
 
           {/* Main layout: Steps on left, Preview on right */}
@@ -204,7 +206,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <ImageIcon className="h-5 w-5" />
-                  <FormLabel className="text-base font-semibold">
+                  <FormLabel dark={dark} className="text-base font-semibold">
                     {!coverPhotoPreview ? "Step 1: Add Your Universal Cover Photo" : "✓ Step 1 Complete"}
                   </FormLabel>
                 </div>
@@ -222,11 +224,11 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
               
               {!coverSectionCollapsed && (
                 <>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-slate-400">
                     Choose an image that represents your reading energy and style.
                   </p>
                   
-                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 hover:border-purple-400 transition-colors">
+                  <div className="border-2 border-dashed border-slate-600 rounded-lg p-4 hover:border-purple-400 transition-colors">
                     {coverPhotoPreview ? (
                       <>
                       <div className="flex gap-3">
@@ -297,7 +299,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                         <div className="flex flex-col gap-3 flex-1 min-w-0">
                           {/* Object Fit */}
                           <div className="flex flex-col gap-1.5">
-                            <label className="text-xs font-medium">Image Fit</label>
+                            <label className={cn("text-xs font-medium", dark && "text-slate-300")}>Image Fit</label>
                             <div className="flex gap-1.5">
                               <Button
                                 type="button"
@@ -341,7 +343,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                           {/* Background Color (only for contain mode) */}
                           {objectFit === "contain" && (
                             <div className="flex flex-col gap-1.5">
-                              <label className="text-xs font-medium">Background Color</label>
+                              <label className={cn("text-xs font-medium", dark && "text-slate-300")}>Background Color</label>
                               <ColorPickerDropDown
                                 value={bgColor}
                                 placeholder="Choose background color"
@@ -373,7 +375,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                       <label className="flex flex-col items-center justify-center cursor-pointer">
                         <Upload className="h-10 w-10 text-slate-400 mb-2" />
                         <span className="text-sm font-medium">Upload Cover Photo</span>
-                        <span className="text-xs text-muted-foreground mt-1">
+                        <span className="text-xs text-slate-400 mt-1">
                           PNG, JPG up to 10MB
                         </span>
                         <Input
@@ -416,7 +418,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <ImagesIcon className="h-5 w-5" />
-                  <FormLabel className="text-base font-semibold">
+                  <FormLabel dark={dark} className="text-base font-semibold">
                     {!videoPreview && collagePreview.length === 0 
                       ? "Step 2: Add Dynamic Movement (Optional)" 
                       : "✓ Step 2 Complete"}
@@ -436,7 +438,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
               
               {!dynamicSectionCollapsed && (
                 <>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-slate-400">
                     Add movement to draw clients in — video of yourself, or a slideshow of meaningful images.
                   </p>
 
@@ -455,20 +457,20 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="none" id="none" />
-                      <Label htmlFor="none" className="cursor-pointer">
+                      <Label dark={dark} htmlFor="none" className="cursor-pointer">
                         None
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="video" id="video" />
-                      <Label htmlFor="video" className="cursor-pointer flex items-center">
+                      <Label dark={dark} htmlFor="video" className="cursor-pointer flex items-center">
                         <VideoIcon className="h-4 w-4 mr-1" />
                         Video
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="collage" id="collage" />
-                      <Label htmlFor="collage" className="cursor-pointer flex items-center">
+                      <Label dark={dark} htmlFor="collage" className="cursor-pointer flex items-center">
                         <ImagesIcon className="h-4 w-4 mr-1" />
                         Slideshow
                       </Label>
@@ -481,11 +483,11 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                   <p className="text-sm font-medium">
                     Upload a short video clip
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-slate-400">
                     Show your presence — clients will see this when they hover over your reading.
                   </p>
                   
-                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
+                  <div className="border-2 border-dashed border-slate-600 rounded-lg p-6 hover:border-blue-400 transition-colors">
                     {videoPreview ? (
                       <div className="relative w-64 mx-auto">
                         <video
@@ -517,7 +519,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                       <label className="flex flex-col items-center justify-center cursor-pointer">
                         <VideoIcon className="h-10 w-10 text-slate-400 mb-2" />
                         <span className="text-sm font-medium">Upload Video (max 5s)</span>
-                        <span className="text-xs text-muted-foreground mt-1">
+                        <span className="text-xs text-slate-400 mt-1">
                           MP4, WebM up to 50MB
                         </span>
                         <Input
@@ -564,7 +566,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                   <p className="text-sm font-medium">
                     Upload 3-5 images for a gentle slideshow
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-slate-400">
                     Perfect for tarot spreads, oracle cards, crystals, or sacred symbols.
                   </p>
 
@@ -620,13 +622,13 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                     )}
 
                     {collagePreview.length < 5 && (
-                      <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
+                      <div className="border-2 border-dashed border-slate-600 rounded-lg p-6 hover:border-blue-400 transition-colors">
                         <label className="flex flex-col items-center justify-center cursor-pointer">
                           <ImagesIcon className="h-10 w-10 text-slate-400 mb-2" />
                           <span className="text-sm font-medium">
                             Add Image ({collagePreview.length}/5)
                           </span>
-                          <span className="text-xs text-muted-foreground mt-1">
+                          <span className="text-xs text-slate-400 mt-1">
                             PNG, JPG up to 10MB each
                           </span>
                           <Input
@@ -685,7 +687,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Sun className="h-5 w-5" />
-                  <FormLabel className="text-base font-semibold">
+                  <FormLabel dark={dark} className="text-base font-semibold">
                     Step 3: Customize Panel Style (Optional)
                   </FormLabel>
                 </div>
@@ -701,13 +703,13 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
 
               {!panelSectionCollapsed && (
                 <>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-slate-400">
                     Customize the panel that appears below your image.
                   </p>
 
                 {/* Title Input */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium">Title (Optional)</label>
+                  <label className={cn("text-sm font-medium", dark && "text-slate-300")}>Title (Optional)</label>
                   <Input
                     type="text"
                     placeholder="Your service title"
@@ -724,7 +726,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                       });
                     }}
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-slate-400">
                     Leave blank to use the service name automatically
                   </p>
                 </div>
@@ -732,7 +734,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                 {/* Hover Description */}
                 {titleText && (
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium">Hover Description (Optional)</label>
+                    <label className={cn("text-sm font-medium", dark && "text-slate-300")}>Hover Description (Optional)</label>
                     <RichTextInput
                       value={hoverDescription}
                       onChange={(content) => {
@@ -751,7 +753,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
 
                 {/* Panel Tone */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium">Panel Tone</label>
+                  <label className={cn("text-sm font-medium", dark && "text-slate-300")}>Panel Tone</label>
                   <div className="flex gap-2">
                     <Button
                       type="button"
@@ -793,7 +795,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                         : "✨ Live Preview"
                       }
                     </h4>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-slate-400">
                       {videoPreview
                         ? "Hover to see it come alive ✨"
                         : collagePreview.length > 0
@@ -1051,8 +1053,8 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="text-center p-8 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">
-                  <p className="text-sm text-muted-foreground">
+                <div className={cn("text-center p-8 rounded-lg border-2 border-dashed border-slate-600", dark ? "bg-white/5" : "bg-slate-50")}>
+                  <p className="text-sm text-slate-400">
                     Upload a cover photo to see your preview
                   </p>
                 </div>

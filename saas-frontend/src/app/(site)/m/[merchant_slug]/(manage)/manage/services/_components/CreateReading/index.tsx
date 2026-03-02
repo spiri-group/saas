@@ -10,12 +10,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { escape_key } from "@/lib/functions";
 import { useCreateReadingOffer } from "./hooks/UseCreateReadingOffer";
 import { Label } from "@/components/ui/label";
+import { StepIndicator } from "@/components/ui/step-indicator";
 import ThumbnailBuilder from "@/components/ux/ThumbnailBuilder";
 import QuestionBuilder from "@/components/ux/QuestionBuilder";
 import VisuallyHidden from "@/components/ux/VisuallyHidden";
-import TargetTimezoneSelector from "@/components/scheduling/TargetTimezoneSelector";
-import TimezoneImpactMap from "@/components/scheduling/TimezoneImpactMap";
-import SmartSchedulingRecommendations from "@/components/scheduling/SmartSchedulingRecommendations";
 
 type BLProps = {
     merchantId: string;
@@ -120,6 +118,7 @@ const useBL = (props: BLProps) => {
         form,
         mutation,
         currentStep,
+        setCurrentStep,
         handleNext,
         handlePrevious,
         canProceedToNextStep,
@@ -149,46 +148,17 @@ const CreateReading: React.FC<Props> = (props) => {
 
             {/* Progress indicator with close button */}
             <div className="flex items-center justify-between mb-4 px-4 pt-2">
-                <div className="flex items-center space-x-2">
-                    <div className={`h-1 w-6 rounded-full transition-colors ${
-                        bl.currentStep >= 1 ? 'bg-primary' : 'bg-muted'
-                    }`}></div>
-                    <span className={`text-xs font-medium transition-colors ${
-                        bl.currentStep === 1 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                    }`}>
-                        Basic Info
-                    </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <div className={`h-1 w-6 rounded-full transition-colors ${
-                        bl.currentStep >= 2 ? 'bg-primary' : 'bg-muted'
-                    }`}></div>
-                    <span className={`text-xs font-medium transition-colors ${
-                        bl.currentStep === 2 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                    }`}>
-                        Details
-                    </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <div className={`h-1 w-6 rounded-full transition-colors ${
-                        bl.currentStep >= 3 ? 'bg-primary' : 'bg-muted'
-                    }`}></div>
-                    <span className={`text-xs font-medium transition-colors ${
-                        bl.currentStep === 3 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                    }`}>
-                        Thumbnail
-                    </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <div className={`h-1 w-6 rounded-full transition-colors ${
-                        bl.currentStep >= 4 ? 'bg-primary' : 'bg-muted'
-                    }`}></div>
-                    <span className={`text-xs font-medium transition-colors ${
-                        bl.currentStep === 4 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                    }`}>
-                        Questions
-                    </span>
-                </div>
+                <StepIndicator
+                    dark
+                    steps={[
+                        { label: 'Basic Info' },
+                        { label: 'Details' },
+                        { label: 'Thumbnail' },
+                        { label: 'Questions' },
+                    ]}
+                    currentStep={bl.currentStep}
+                    onStepClick={bl.setCurrentStep}
+                />
                 <Button variant="outline" onClick={() => {
                     const event = new CustomEvent('close-dialog');
                     window.dispatchEvent(event);
@@ -216,9 +186,9 @@ const CreateReading: React.FC<Props> = (props) => {
                                 control={bl.form.control}
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Service Name *</FormLabel>
+                                        <FormLabel dark>Service Name *</FormLabel>
                                         <FormControl>
-                                            <Input {...field} placeholder="e.g., 30-Minute Tarot Reading" data-testid="service-name-input" />
+                                            <Input {...field} dark placeholder="e.g., 30-Minute Tarot Reading" data-testid="service-name-input" />
                                         </FormControl>
                                     </FormItem>
                                 )}
@@ -229,10 +199,11 @@ const CreateReading: React.FC<Props> = (props) => {
                                 control={bl.form.control}
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>About this service *</FormLabel>
+                                        <FormLabel dark>About this service *</FormLabel>
                                         <FormControl>
                                             <Textarea
                                                 {...field}
+                                                dark
                                                 placeholder="Describe what clients can expect..."
                                                 rows={4}
                                                 data-testid="service-description-input"
@@ -247,8 +218,8 @@ const CreateReading: React.FC<Props> = (props) => {
                                 control={bl.form.control}
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Reading Type</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormLabel dark>Reading Type</FormLabel>
+                                        <Select dark onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
                                                 <SelectTrigger data-testid="reading-type-select">
                                                     <SelectValue />
@@ -271,19 +242,20 @@ const CreateReading: React.FC<Props> = (props) => {
                                 name="requiresConsultation"
                                 control={bl.form.control}
                                 render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-4">
+                                    <FormItem className="flex flex-row items-center gap-2 rounded-md border border-slate-700 p-4">
                                         <FormControl>
                                             <Checkbox
+                                                dark
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
                                                 data-testid="requires-consultation-checkbox"
                                             />
                                         </FormControl>
                                         <div className="space-y-1 leading-none">
-                                            <FormLabel className="font-medium cursor-pointer">
+                                            <FormLabel dark className="font-medium cursor-pointer">
                                                 Requires Live Consultation
                                             </FormLabel>
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-sm text-slate-400">
                                                 Check this if you&apos;ll deliver this service via live session instead of recorded file
                                             </p>
                                         </div>
@@ -298,8 +270,8 @@ const CreateReading: React.FC<Props> = (props) => {
                                         control={bl.form.control}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Delivery Format</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormLabel dark>Delivery Format</FormLabel>
+                                                <Select dark onValueChange={field.onChange} defaultValue={field.value}>
                                                     <FormControl>
                                                         <SelectTrigger>
                                                             <SelectValue />
@@ -320,10 +292,11 @@ const CreateReading: React.FC<Props> = (props) => {
                                         control={bl.form.control}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Delivery (days)</FormLabel>
+                                                <FormLabel dark>Delivery (days)</FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         {...field}
+                                                        dark
                                                         type="number"
                                                         min="1"
                                                         max="30"
@@ -341,10 +314,11 @@ const CreateReading: React.FC<Props> = (props) => {
                                     control={bl.form.control}
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Price *</FormLabel>
+                                            <FormLabel dark>Price *</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
+                                                    dark
                                                     type="number"
                                                     step="0.01"
                                                     placeholder="0.00"
@@ -360,8 +334,8 @@ const CreateReading: React.FC<Props> = (props) => {
                                     control={bl.form.control}
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Currency</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormLabel dark>Currency</FormLabel>
+                                            <Select dark onValueChange={field.onChange} defaultValue={field.value}>
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue />
@@ -380,95 +354,24 @@ const CreateReading: React.FC<Props> = (props) => {
                                 />
                             </div>
 
-                            <div className="space-y-3">
-                                <Label>Inclusion Options</Label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        name="includePullCardSummary"
-                                        control={bl.form.control}
-                                        render={({ field }) => (
-                                            <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                                <FormControl>
-                                                    <Checkbox
-                                                        checked={field.value}
-                                                        onCheckedChange={field.onChange}
-                                                    />
-                                                </FormControl>
-                                                <FormLabel className="font-normal">Pull-card summary PDF</FormLabel>
-                                            </FormItem>
-                                        )}
-                                    />
 
-                                    <FormField
-                                        name="includeVoiceNote"
-                                        control={bl.form.control}
-                                        render={({ field }) => (
-                                            <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                                <FormControl>
-                                                    <Checkbox
-                                                        checked={field.value}
-                                                        onCheckedChange={field.onChange}
-                                                    />
-                                                </FormControl>
-                                                <FormLabel className="font-normal">Voice note</FormLabel>
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                            </div>
 
-                            {/* Target Timezone Selector */}
-                            <FormField
-                                name="targetTimezones"
-                                control={bl.form.control}
-                                render={({ field }) => (
-                                    <TargetTimezoneSelector
-                                        value={field.value}
-                                        onChange={field.onChange}
-                                    />
-                                )}
-                            />
-
-                            {/* Show timezone impact visualization when regions are selected */}
-                            {(bl.form.watch('targetTimezones')?.length ?? 0) > 0 && (
-                                <div className="space-y-4 mt-6 pt-6 border-t">
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold">Global Availability Preview</h3>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            See how your typical business hours (9 AM - 5 PM) appear in your target markets.
-                                        </p>
-
-                                        {/* Timezone Impact Map */}
-                                        <TimezoneImpactMap
-                                            practitionerTimezone={Intl.DateTimeFormat().resolvedOptions().timeZone}
-                                            availableHours={{ start: 9, end: 17 }}
-                                        />
-
-                                        {/* Smart Recommendations */}
-                                        <SmartSchedulingRecommendations
-                                            practitionerTimezone={Intl.DateTimeFormat().resolvedOptions().timeZone}
-                                            currentAvailableHours={{ start: 9, end: 17 }}
-                                            targetTimezones={bl.form.watch('targetTimezones') || []}
-                                        />
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     )}
 
                     {/* Step 2: Details (conditional based on reading type) */}
                     {bl.currentStep === 2 && (
                         <div className="space-y-6 mt-4">
-                            <div className="text-center mb-6">
+                            <div className="mb-6">
                                 <h2 className="text-lg font-semibold">Service Details</h2>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-sm text-slate-400">
                                     Add specific details based on your reading type
                                 </p>
                             </div>
 
                             {/* Tarot/Oracle specific fields */}
                             {(bl.form.watch('readingType') === 'Tarot' || bl.form.watch('readingType') === 'Oracle') && (
-                                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                                <div className="space-y-4 p-4 border border-slate-700 rounded-lg bg-white/5">
                                     <h3 className="font-medium flex items-center gap-2">
                                         🃏 {bl.form.watch('readingType')} Details
                                     </h3>
@@ -477,15 +380,16 @@ const CreateReading: React.FC<Props> = (props) => {
                                         control={bl.form.control}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Deck(s) Used</FormLabel>
+                                                <FormLabel dark>Deck(s) Used</FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         {...field}
+                                                        dark
                                                         placeholder="e.g., Rider-Waite, Thoth, Wild Unknown"
                                                         data-testid="deck-used-input"
                                                     />
                                                 </FormControl>
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="text-xs text-slate-400">
                                                     List the tarot or oracle decks you use for this service
                                                 </p>
                                             </FormItem>
@@ -496,26 +400,47 @@ const CreateReading: React.FC<Props> = (props) => {
                                         control={bl.form.control}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Available Topics</FormLabel>
+                                                <FormLabel dark>Available Topics</FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         {...field}
+                                                        dark
                                                         placeholder="e.g., Love, Career, General Guidance"
                                                         data-testid="available-topics-input"
                                                     />
                                                 </FormControl>
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="text-xs text-slate-400">
                                                     Topics clients can choose from (comma separated)
                                                 </p>
                                             </FormItem>
                                         )}
                                     />
+
+                                    <div className="flex flex-col gap-3 pt-2 border-t border-slate-600">
+                                        <Label dark>Include with Reading</Label>
+                                        <FormField
+                                            name="includePullCardSummary"
+                                            control={bl.form.control}
+                                            render={({ field }) => (
+                                                <FormItem className="flex flex-row items-center gap-2">
+                                                    <FormControl>
+                                                        <Checkbox
+                                                            dark
+                                                            checked={field.value}
+                                                            onCheckedChange={field.onChange}
+                                                        />
+                                                    </FormControl>
+                                                    <FormLabel dark className="font-normal">Pull-card summary PDF</FormLabel>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
                                 </div>
                             )}
 
                             {/* Astrology specific fields */}
                             {bl.form.watch('readingType') === 'Astrology' && (
-                                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                                <div className="space-y-4 p-4 border border-slate-700 rounded-lg bg-white/5">
                                     <h3 className="font-medium flex items-center gap-2">
                                         ✨ Astrology Details
                                     </h3>
@@ -524,7 +449,7 @@ const CreateReading: React.FC<Props> = (props) => {
                                         control={bl.form.control}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Reading Types Offered</FormLabel>
+                                                <FormLabel dark>Reading Types Offered</FormLabel>
                                                 <div className="grid grid-cols-2 gap-2 mt-2">
                                                     {[
                                                         { value: 'birth_chart', label: 'Birth Chart Analysis' },
@@ -536,6 +461,7 @@ const CreateReading: React.FC<Props> = (props) => {
                                                     ].map((option) => (
                                                         <div key={option.value} className="flex items-center space-x-2">
                                                             <Checkbox
+                                                                dark
                                                                 id={`astro-${option.value}`}
                                                                 checked={(field.value || []).includes(option.value)}
                                                                 onCheckedChange={(checked) => {
@@ -562,8 +488,8 @@ const CreateReading: React.FC<Props> = (props) => {
                                         control={bl.form.control}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>House System</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value || 'placidus'}>
+                                                <FormLabel dark>House System</FormLabel>
+                                                <Select dark onValueChange={field.onChange} defaultValue={field.value || 'placidus'}>
                                                     <FormControl>
                                                         <SelectTrigger data-testid="house-system-select">
                                                             <SelectValue placeholder="Select house system" />
@@ -585,31 +511,52 @@ const CreateReading: React.FC<Props> = (props) => {
                                         name="requiresBirthTime"
                                         control={bl.form.control}
                                         render={({ field }) => (
-                                            <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                            <FormItem className="flex flex-row items-center gap-2">
                                                 <FormControl>
                                                     <Checkbox
+                                                        dark
                                                         checked={field.value}
                                                         onCheckedChange={field.onChange}
                                                         data-testid="requires-birth-time-checkbox"
                                                     />
                                                 </FormControl>
                                                 <div>
-                                                    <FormLabel className="font-normal cursor-pointer">
+                                                    <FormLabel dark className="font-normal cursor-pointer">
                                                         Requires exact birth time
                                                     </FormLabel>
-                                                    <p className="text-xs text-muted-foreground">
+                                                    <p className="text-xs text-slate-400">
                                                         Check if your reading requires the client&apos;s exact birth time
                                                     </p>
                                                 </div>
                                             </FormItem>
                                         )}
                                     />
+
+                                    <div className="flex flex-col gap-3 pt-2 border-t border-slate-600">
+                                        <Label dark>Include with Reading</Label>
+                                        <FormField
+                                            name="includePullCardSummary"
+                                            control={bl.form.control}
+                                            render={({ field }) => (
+                                                <FormItem className="flex flex-row items-center gap-2">
+                                                    <FormControl>
+                                                        <Checkbox
+                                                            dark
+                                                            checked={field.value}
+                                                            onCheckedChange={field.onChange}
+                                                        />
+                                                    </FormControl>
+                                                    <FormLabel dark className="font-normal">Birth chart PDF</FormLabel>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
                                 </div>
                             )}
 
                             {/* Psychic/Mediumship specific fields */}
                             {(bl.form.watch('readingType') === 'Psychic' || bl.form.watch('readingType') === 'Mediumship') && (
-                                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                                <div className="space-y-4 p-4 border border-slate-700 rounded-lg bg-white/5">
                                     <h3 className="font-medium flex items-center gap-2">
                                         🔮 {bl.form.watch('readingType')} Details
                                     </h3>
@@ -618,36 +565,58 @@ const CreateReading: React.FC<Props> = (props) => {
                                         control={bl.form.control}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Focus Areas / Specialties</FormLabel>
+                                                <FormLabel dark>Focus Areas / Specialties</FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         {...field}
+                                                        dark
                                                         placeholder="e.g., Spirit Communication, Past Lives, Energy Reading"
                                                         data-testid="focus-areas-input"
                                                     />
                                                 </FormControl>
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="text-xs text-slate-400">
                                                     Your areas of specialty (comma separated)
                                                 </p>
                                             </FormItem>
                                         )}
                                     />
+
+                                    <div className="flex flex-col gap-3 pt-2 border-t border-slate-600">
+                                        <Label dark>Include with Reading</Label>
+                                        <FormField
+                                            name="includeVoiceNote"
+                                            control={bl.form.control}
+                                            render={({ field }) => (
+                                                <FormItem className="flex flex-row items-center gap-2">
+                                                    <FormControl>
+                                                        <Checkbox
+                                                            dark
+                                                            checked={field.value}
+                                                            onCheckedChange={field.onChange}
+                                                        />
+                                                    </FormControl>
+                                                    <FormLabel dark className="font-normal">Voice note</FormLabel>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
                                 </div>
                             )}
 
                             {/* Other reading type */}
                             {bl.form.watch('readingType') === 'Other' && (
-                                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                                <div className="space-y-4 p-4 border border-slate-700 rounded-lg bg-white/5">
                                     <h3 className="font-medium">Additional Details</h3>
                                     <FormField
                                         name="customReadingDetails"
                                         control={bl.form.control}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Describe Your Reading Style</FormLabel>
+                                                <FormLabel dark>Describe Your Reading Style</FormLabel>
                                                 <FormControl>
                                                     <Textarea
                                                         {...field}
+                                                        dark
                                                         placeholder="Describe the tools or methods you use..."
                                                         rows={3}
                                                         data-testid="custom-details-input"
@@ -661,8 +630,8 @@ const CreateReading: React.FC<Props> = (props) => {
 
                             {/* No reading type selected message */}
                             {!bl.form.watch('readingType') && (
-                                <div className="text-center p-8 border rounded-lg border-dashed">
-                                    <p className="text-muted-foreground">
+                                <div className="text-center p-8 border border-slate-700 rounded-lg border-dashed">
+                                    <p className="text-slate-400">
                                         Please select a reading type on the previous step to see relevant options.
                                     </p>
                                 </div>
@@ -674,6 +643,7 @@ const CreateReading: React.FC<Props> = (props) => {
                     {bl.currentStep === 3 && (
                         <div className="space-y-4">
                             <ThumbnailBuilder
+                                dark
                                 control={bl.form.control}
                                 name="thumbnail"
                                 onUploadCoverPhoto={bl.mockUploadCoverPhoto}
@@ -687,15 +657,17 @@ const CreateReading: React.FC<Props> = (props) => {
                     {bl.currentStep === 4 && (
                         <div className="space-y-4">
                             <QuestionBuilder
+                                dark
                                 control={bl.form.control}
                                 name="preReadingQuestions"
+                                readingType={bl.form.watch('readingType')}
                             />
                         </div>
                     )}
                     </div>
 
                     {/* Navigation Footer */}
-                    <div className="flex items-center justify-between p-4 border-t">
+                    <div className="flex items-center justify-between p-4 border-t border-slate-700">
                         {bl.currentStep > 1 ? (
                             <Button
                                 type="button"

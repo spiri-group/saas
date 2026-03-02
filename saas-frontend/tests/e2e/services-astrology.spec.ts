@@ -1,9 +1,9 @@
 import { test, expect, Page, TestInfo } from '@playwright/test';
 import { PractitionerSetupPage } from '../pages/PractitionerSetupPage';
 import { AuthPage } from '../pages/AuthPage';
-import { HomePage } from '../pages/HomePage';
 import { UserSetupPage } from '../pages/UserSetupPage';
 import { OnboardingPage } from '../pages/OnboardingPage';
+import { handleConsentGuardIfPresent } from '../utils/test-helpers';
 import {
   getCookiesFromPage,
   registerTestUser,
@@ -97,7 +97,7 @@ test.describe.serial('ASYNC Reading Service - Astrology - Full Customer Journey'
 
     const testEmail = generateUniqueTestEmail(testInfo, 'astro-merchant');
     const practitionerSetupPage = new PractitionerSetupPage(page);
-    practitionerSlug = await practitionerSetupPage.createPractitioner(testEmail, 'Astrology Reader', testInfo);
+    practitionerSlug = await practitionerSetupPage.createPractitioner(testEmail, 'Astrology Reader', testInfo, 'awaken');
     console.log(`[Test 1] Merchant slug: ${practitionerSlug}`);
 
     const cookies = await getCookiesFromPage(page);
@@ -170,9 +170,9 @@ test.describe.serial('ASYNC Reading Service - Astrology - Full Customer Journey'
     try {
       customerEmail = generateUniqueTestEmail(testInfo, 'astro-customer');
       const authPage = new AuthPage(customerPage);
-      const homePage = new HomePage(customerPage);
       const userSetupPage = new UserSetupPage(customerPage);
 
+      // Customer signup via unified /setup flow
       await customerPage.goto('/');
       await authPage.startAuthFlow(customerEmail);
       await expect(customerPage.locator('[aria-label="input-login-otp"]')).toBeVisible({ timeout: 15000 });
@@ -180,31 +180,33 @@ test.describe.serial('ASYNC Reading Service - Astrology - Full Customer Journey'
       await customerPage.keyboard.type('123456');
       await customerPage.waitForURL('/', { timeout: 15000 });
 
-      // Complete profile
-      try {
-        await homePage.waitForCompleteProfileLink();
-        await homePage.clickCompleteProfile();
-        await expect(customerPage).toHaveURL(/\/u\/.*\/setup/, { timeout: 10000 });
+      // Handle site-level ConsentGuard if present
+      await handleConsentGuardIfPresent(customerPage);
 
-        const url = customerPage.url();
-        const userIdMatch = url.match(/\/u\/([^\/]+)\/setup/);
-        if (userIdMatch) {
-          customerId = userIdMatch[1];
-          console.log(`[Test 2] Customer ID: ${customerId}`);
-        }
+      // Navigate to unified setup page
+      await customerPage.goto('/setup');
+      await userSetupPage.waitForForm();
 
-        await userSetupPage.fillUserProfile({
-          firstName: 'Star',
-          lastName: 'Seeker',
-          phone: '0412345681',
-          address: 'Perth CBD',
-          securityQuestion: 'Sun sign?',
-          securityAnswer: 'Sagittarius',
-        });
-        await userSetupPage.startBrowsing();
-      } catch {
-        console.log('[Test 2] Profile already complete');
+      // Get user ID from session for cleanup
+      customerId = await customerPage.evaluate(async () => {
+        const response = await fetch('/api/auth/session');
+        const session = await response.json();
+        return session?.user?.id || '';
+      });
+      if (customerId) {
+        console.log(`[Test 2] Customer user ID: ${customerId}`);
       }
+
+      // Fill basic details and click "Start Your Journey"
+      await userSetupPage.fillUserProfile({
+        firstName: 'Star',
+        lastName: 'Seeker',
+      });
+      await userSetupPage.startBrowsing();
+      console.log('[Test 2] ✓ Customer profile completed');
+
+      // Complete onboarding (spiritual interest selection)
+      await completeOnboardingIfNeeded(customerPage);
 
       customerCookies = await getCookiesFromPage(customerPage) || '';
       if (customerId) {
@@ -216,11 +218,25 @@ test.describe.serial('ASYNC Reading Service - Astrology - Full Customer Journey'
       await customerPage.waitForLoadState('networkidle');
       await customerPage.waitForTimeout(2000);
 
-      const serviceCard = customerPage.locator(`a[aria-label^="catalogue-item"]:has-text("${serviceName}")`).first();
+      // Find and click on the service using href-based locator
+      const servicesSection = customerPage.getByTestId('services-section');
+      await expect(servicesSection).toBeVisible({ timeout: 10000 });
+      const serviceCard = servicesSection.locator(`a[href*="/services/"]`).filter({ hasText: serviceName }).first();
       await expect(serviceCard).toBeVisible({ timeout: 15000 });
       await serviceCard.click();
       await customerPage.waitForURL(/\/services\//, { timeout: 15000 });
       console.log('[Test 2] Navigated to service detail');
+
+      // Dismiss cookie banner if present
+      const cookieBanner = customerPage.getByTestId('cookie-banner');
+      if (await cookieBanner.isVisible({ timeout: 2000 }).catch(() => false)) {
+        const acceptCookieBtn = customerPage.getByTestId('cookie-accept-btn');
+        if (await acceptCookieBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await acceptCookieBtn.click();
+          await expect(cookieBanner).not.toBeVisible({ timeout: 3000 });
+          console.log('[Test 2] ✓ Dismissed cookie banner');
+        }
+      }
 
       // Wait for page to fully load
       await customerPage.waitForTimeout(3000);
@@ -283,8 +299,10 @@ test.describe.serial('ASYNC Reading Service - Astrology - Full Customer Journey'
       await customerPage.goto(`/p/${practitionerSlug}`);
       await customerPage.waitForLoadState('networkidle');
 
-      // Find and click the service again
-      const serviceCard2 = customerPage.locator(`a[aria-label^="catalogue-item"]:has-text("${serviceName}")`).first();
+      // Find and click the service again using href-based locator
+      const servicesSection2 = customerPage.getByTestId('services-section');
+      await expect(servicesSection2).toBeVisible({ timeout: 10000 });
+      const serviceCard2 = servicesSection2.locator(`a[href*="/services/"]`).filter({ hasText: serviceName }).first();
       await expect(serviceCard2).toBeVisible({ timeout: 15000 });
       await serviceCard2.click();
       await customerPage.waitForURL(/\/services\//, { timeout: 15000 });

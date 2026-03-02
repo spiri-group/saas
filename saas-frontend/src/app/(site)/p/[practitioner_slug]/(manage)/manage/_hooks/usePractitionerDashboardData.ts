@@ -22,15 +22,18 @@ const usePractitionerServices = (practitionerId: string) => {
         queryKey: ['practitioner-services', practitionerId],
         queryFn: async () => {
             const response = await gql<{
-                catalogue: { id: string }[];
+                catalogue: { listings: { id: string }[]; totalCount: number };
             }>(`
                 query PractitionerServices($vendorId: ID!) {
                     catalogue(vendorId: $vendorId, types: ["SERVICE"]) {
-                        id
+                        listings {
+                            id
+                        }
+                        totalCount
                     }
                 }
             `, { vendorId: practitionerId });
-            return response.catalogue || [];
+            return response.catalogue?.listings || [];
         },
         enabled: !!practitionerId,
     });

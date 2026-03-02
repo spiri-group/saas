@@ -146,7 +146,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
           </motion.p>
 
           <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 pt-4">
-            <Link href="/m/setup">
+            <Link href="/setup">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-900 font-medium px-8"
@@ -155,7 +155,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
                 <Store className="w-4 h-4 ml-2" />
               </Button>
             </Link>
-            <Link href="/p/setup">
+            <Link href="/setup">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white font-medium px-8"
@@ -354,7 +354,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <Link href="/m/setup">
+            <Link href="/setup">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-900 font-medium px-8"
@@ -363,7 +363,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
                 <Store className="w-4 h-4 ml-2" />
               </Button>
             </Link>
-            <Link href="/p/setup">
+            <Link href="/setup">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white font-medium px-8"
@@ -469,7 +469,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
             Join our growing community of spiritual practitioners and start connecting with seekers today.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center">
-            <Link href="/m/setup">
+            <Link href="/setup">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-900 font-medium px-8 py-6 text-lg"
@@ -478,7 +478,7 @@ export default function LearnMoreContent({ blogPosts }: LearnMoreContentProps) {
                 <Store className="w-5 h-5 ml-2" />
               </Button>
             </Link>
-            <Link href="/p/setup">
+            <Link href="/setup">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white font-medium px-8 py-6 text-lg"

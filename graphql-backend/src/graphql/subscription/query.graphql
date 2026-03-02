@@ -29,6 +29,9 @@ type VendorSubscriptionDetail {
   waived: Boolean
   waivedUntil: String
   overrideNotes: String
+  billingModel: String
+  trialStartedAt: String
+  trialEndsAt: String
 }
 
 type TierFeatures {
@@ -41,6 +44,9 @@ type TierFeatures {
   canCreateTours: Boolean!
   hasSpiriAssist: Boolean!
   hasBackorders: Boolean!
+  hasPaymentLinks: Boolean!
+  hasLiveAssist: Boolean!
+  hasExpoMode: Boolean!
 }
 
 type BillingRecord {

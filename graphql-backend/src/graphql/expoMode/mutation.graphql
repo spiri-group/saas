@@ -1,0 +1,108 @@
+type Mutation {
+    createExpo(input: CreateExpoInput!): CreateExpoResponse!
+    updateExpo(input: UpdateExpoInput!): ExpoMutationResponse!
+    goLiveExpo(expoId: ID!, vendorId: ID!): ExpoMutationResponse!
+    pauseExpo(expoId: ID!, vendorId: ID!): ExpoMutationResponse!
+    resumeExpo(expoId: ID!, vendorId: ID!): ExpoMutationResponse!
+    endExpo(expoId: ID!, vendorId: ID!): ExpoMutationResponse!
+    addExpoItem(input: AddExpoItemInput!): ExpoItemMutationResponse!
+    updateExpoItem(input: UpdateExpoItemInput!): ExpoItemMutationResponse!
+    removeExpoItem(itemId: ID!, expoId: ID!): ExpoItemMutationResponse!
+    reorderExpoItems(expoId: ID!, itemIds: [ID!]!): ExpoMutationResponse!
+    logExpoSale(input: LogExpoSaleInput!): ExpoSaleMutationResponse!
+    createExpoCheckout(input: CreateExpoCheckoutInput!): CreateExpoCheckoutResponse!
+}
+
+input CreateExpoInput {
+    vendorId: String!
+    expoName: String!
+}
+
+input UpdateExpoInput {
+    expoId: String!
+    vendorId: String!
+    expoName: String
+}
+
+input AddExpoItemInput {
+    expoId: String!
+    vendorId: String!
+    itemSource: String!
+    serviceId: String
+    itemName: String!
+    itemDescription: String
+    itemImage: String
+    price: CurrencyAmountInput!
+    trackInventory: Boolean!
+    quantityBrought: Int
+}
+
+input UpdateExpoItemInput {
+    itemId: String!
+    expoId: String!
+    itemName: String
+    itemDescription: String
+    itemImage: String
+    price: CurrencyAmountInput
+    quantityBrought: Int
+    isActive: Boolean
+}
+
+input LogExpoSaleInput {
+    expoId: String!
+    vendorId: String!
+    items: [ExpoSaleItemInput!]!
+    paymentMethod: String!
+    customerName: String
+    customerEmail: String
+}
+
+input ExpoSaleItemInput {
+    itemId: String!
+    quantity: Int!
+}
+
+input CreateExpoCheckoutInput {
+    expoId: String!
+    items: [ExpoSaleItemInput!]!
+    customerName: String
+    customerEmail: String
+}
+
+type CreateExpoResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    expo: Expo
+    shareUrl: String
+}
+
+type ExpoMutationResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    expo: Expo
+}
+
+type ExpoItemMutationResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    item: ExpoItem
+}
+
+type ExpoSaleMutationResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    sale: ExpoSale
+}
+
+type CreateExpoCheckoutResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    sale: ExpoSale
+    clientSecret: String
+    stripeAccountId: String
+}

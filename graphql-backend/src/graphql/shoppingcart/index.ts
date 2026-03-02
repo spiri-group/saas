@@ -10,7 +10,7 @@ import { featuring_relationship_type, FeaturingRequestStatus, featuring_source_t
 const resolvers = {
     Query: {
         shoppingCart: async (_: any, __: any, { dataSources: { cosmos }, userId }: serverContext) => {
-            if (userId == null) throw "You cannot retrieve a shopping cart for a non auth'd user"
+            if (userId == null) return null;
 
             if (!(await cosmos.record_exists("Main-ShoppingCart", userId, userId))) {
                 await cosmos.add_record("Main-ShoppingCart", {

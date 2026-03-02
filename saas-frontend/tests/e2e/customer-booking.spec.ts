@@ -14,18 +14,17 @@
 
 import { test, expect } from '@playwright/test';
 import { AuthPage } from '../pages/AuthPage';
-import { HomePage } from '../pages/HomePage';
 import { UserSetupPage } from '../pages/UserSetupPage';
 import { PractitionerSetupPage } from '../pages/PractitionerSetupPage';
+import { OnboardingPage } from '../pages/OnboardingPage';
 import {
     clearTestEntityRegistry,
     registerTestUser,
-    registerTestPractitioner,
     getCookiesFromPage,
     cleanupTestUsers,
     cleanupTestPractitioners,
-    getVendorIdFromSlug,
 } from '../utils/test-cleanup';
+import { handleConsentGuardIfPresent } from '../utils/test-helpers';
 
 // Per-worker state management (parallel-safe)
 const practitionerCookiesPerWorker = new Map<number, string>();
@@ -80,15 +79,9 @@ test.afterAll(async ({}, testInfo) => {
 test.describe('Customer Booking Flow - STRICT', () => {
     test.describe.configure({ mode: 'serial' });
 
-    let authPage: AuthPage;
-    let homePage: HomePage;
-    let userSetupPage: UserSetupPage;
     let practitionerSetupPage: PractitionerSetupPage;
 
     test.beforeEach(async ({ page }) => {
-        authPage = new AuthPage(page);
-        homePage = new HomePage(page);
-        userSetupPage = new UserSetupPage(page);
         practitionerSetupPage = new PractitionerSetupPage(page);
     });
 
@@ -96,113 +89,26 @@ test.describe('Customer Booking Flow - STRICT', () => {
         test.setTimeout(360000); // 6 minutes for full setup
 
         const timestamp = Date.now();
-        const randomSuffix = Math.random().toString(36).substring(2, 8);
         const workerId = testInfo.parallelIndex;
         const practitionerEmail = `strict-prac-${timestamp}-${workerId}@playwright.com`;
-        const practitionerSlug = `strict-book-${timestamp}-${randomSuffix}`;
         const serviceName = `Live Tarot Reading ${timestamp}`;
 
         console.log('[Test] Creating practitioner:', practitionerEmail);
 
         // =========================================
-        // PART 1: PRACTITIONER AUTHENTICATION
+        // PRACTITIONER CREATION (unified onboarding flow)
         // =========================================
-        await page.goto('/');
-        await authPage.startAuthFlow(practitionerEmail);
+        const practitionerSlug = await practitionerSetupPage.createPractitioner(
+            practitionerEmail,
+            `StrictTest Practitioner ${timestamp}`,
+            testInfo,
+            'awaken'
+        );
 
-        // STRICT: OTP input must appear
-        const otpInput = page.locator('[aria-label="input-login-otp"]');
-        await expect(otpInput).toBeVisible({ timeout: 15000 });
-        await otpInput.click();
-        await page.keyboard.type('123456');
-        await page.waitForURL('/', { timeout: 15000 });
-
-        // STRICT: Complete profile link must appear
-        await homePage.waitForCompleteProfileLink();
-        await homePage.clickCompleteProfile();
-        await expect(page).toHaveURL(/\/u\/.*\/setup/, { timeout: 10000 });
-
-        // Register user for cleanup (with cookies so purge can work)
-        const url = page.url();
-        const userIdMatch = url.match(/\/u\/([^\/]+)\/setup/);
-        let practitionerId = '';
-        if (userIdMatch) {
-            const cookies = await getCookiesFromPage(page);
-            if (cookies) practitionerCookiesPerWorker.set(workerId, cookies);
-            // Register with cookies so the user can purge themselves
-            registerTestUser({ id: userIdMatch[1], email: practitionerEmail, cookies }, workerId);
-        }
-
-        // =========================================
-        // PART 2: USER PROFILE SETUP
-        // =========================================
-        await userSetupPage.fillUserProfile({
-            firstName: 'StrictTest',
-            lastName: 'Practitioner',
-            phone: '0412345678',
-            address: 'Sydney Opera House',
-            securityQuestion: 'What is your favorite color?',
-            securityAnswer: 'Purple',
-        });
-
-        // STRICT: Continue as practitioner button must exist
-        const practitionerBtn = page.locator('[data-testid="continue-as-practitioner-btn"]');
-        await expect(practitionerBtn).toBeVisible({ timeout: 10000 });
-        await practitionerBtn.click();
-        await expect(page).toHaveURL(/\/p\/setup\?practitionerId=/, { timeout: 15000 });
-
-        // Get practitioner ID
-        const setupUrl = page.url();
-        const pracIdMatch = setupUrl.match(/practitionerId=([^&]+)/);
-        if (pracIdMatch) {
-            practitionerId = pracIdMatch[1];
-        }
-
-        // =========================================
-        // PART 3: PRACTITIONER PROFILE SETUP
-        // =========================================
-        await practitionerSetupPage.waitForStep1();
-        await practitionerSetupPage.fillBasicInfo({
-            name: `StrictTest Practitioner ${timestamp}`,
-            slug: practitionerSlug,
-            email: practitionerEmail,
-            countryName: 'Australia',
-        });
-        await practitionerSetupPage.clickContinue();
-
-        await practitionerSetupPage.waitForStep2();
-        await practitionerSetupPage.fillProfile({
-            headline: 'Professional Tarot Reader for STRICT Testing',
-            bio: 'I specialize in tarot readings with insightful guidance. This is a test practitioner for strict E2E booking tests.',
-            modalities: ['TAROT', 'ORACLE'],
-            specializations: ['RELATIONSHIPS', 'CAREER'],
-        });
-        await practitionerSetupPage.clickContinue();
-
-        await practitionerSetupPage.waitForStep3();
-        await practitionerSetupPage.submitForm();
-
-        // STRICT: Must navigate to profile page
-        await page.waitForURL(new RegExp(`/p/${practitionerSlug}`), { timeout: 30000 });
-
-        // Update cookies after profile creation and register practitioner WITH cookies
-        const updatedCookies = await getCookiesFromPage(page);
-        if (updatedCookies) {
-            practitionerCookiesPerWorker.set(workerId, updatedCookies);
-
-            // IMPORTANT: The practitionerId from the URL is NOT the actual vendor ID.
-            // The server generates its own ID during create_practitioner mutation.
-            // We need to fetch the actual vendor ID using the slug.
-            const actualVendorId = await getVendorIdFromSlug(practitionerSlug, updatedCookies);
-
-            if (actualVendorId) {
-                console.log(`[Test] Registering practitioner for cleanup: vendorId=${actualVendorId}, slug=${practitionerSlug}`);
-                registerTestPractitioner({ id: actualVendorId, slug: practitionerSlug, cookies: updatedCookies }, workerId);
-            } else {
-                console.error(`[Test] WARNING: Could not fetch actual vendor ID for slug ${practitionerSlug}`);
-                // Fall back to the practitionerId from URL (may not work for cleanup)
-                registerTestPractitioner({ id: practitionerId, slug: practitionerSlug, cookies: updatedCookies }, workerId);
-            }
+        // Store cookies after creation
+        const practitionerCookies = await getCookiesFromPage(page);
+        if (practitionerCookies) {
+            practitionerCookiesPerWorker.set(workerId, practitionerCookies);
         }
 
         // =========================================
@@ -259,10 +165,10 @@ test.describe('Customer Booking Flow - STRICT', () => {
         await expect(page.getByRole('heading', { name: 'My Services' })).toBeVisible({ timeout: 15000 });
 
         // STRICT: Open dialog via SideNav menu (more reliable than card click)
-        // First expand "My Services" menu
-        const myServicesMenu = page.locator('[role="menuitem"]').filter({ hasText: 'My Services' });
-        await expect(myServicesMenu).toBeVisible({ timeout: 5000 });
-        await myServicesMenu.click();
+        // First expand "Services" menu
+        const servicesNav = page.getByTestId('nav-services');
+        await expect(servicesNav).toBeVisible({ timeout: 5000 });
+        await servicesNav.click();
         await page.waitForTimeout(500);
 
         // Click "New Reading" option in the submenu
@@ -339,7 +245,7 @@ test.describe('Customer Booking Flow - STRICT', () => {
         practitionerDataPerWorker.set(workerId, {
             slug: practitionerSlug,
             email: practitionerEmail,
-            id: practitionerId,
+            id: '', // ID is managed by createPractitioner cleanup registration
             serviceName,
         });
 
@@ -367,6 +273,9 @@ test.describe('Customer Booking Flow - STRICT', () => {
         // =========================================
         // PART 1: CUSTOMER AUTHENTICATION
         // =========================================
+        const authPage = new AuthPage(page);
+        const userSetupPage = new UserSetupPage(page);
+
         await page.goto('/');
         await authPage.startAuthFlow(customerEmail);
 
@@ -377,20 +286,23 @@ test.describe('Customer Booking Flow - STRICT', () => {
         await page.keyboard.type('123456');
         await page.waitForURL('/', { timeout: 15000 });
 
-        // STRICT: Complete profile link must appear
-        await homePage.waitForCompleteProfileLink();
-        await homePage.clickCompleteProfile();
-        await expect(page).toHaveURL(/\/u\/.*\/setup/, { timeout: 10000 });
+        // Handle site-level ConsentGuard if present
+        await handleConsentGuardIfPresent(page);
 
-        // Get customer ID and register with cookies for cleanup
-        const url = page.url();
-        const customerIdMatch = url.match(/\/u\/([^\/]+)\/setup/);
-        let customerId = '';
-        if (customerIdMatch) {
-            customerId = customerIdMatch[1];
+        // Navigate to setup page
+        await page.goto('/setup');
+        await userSetupPage.waitForForm();
+
+        // Get customer ID from session for cleanup registration
+        const customerId = await page.evaluate(async () => {
+            const response = await fetch('/api/auth/session');
+            const session = await response.json();
+            return session?.user?.id;
+        }) || '';
+
+        if (customerId) {
             const cookies = await getCookiesFromPage(page);
             if (cookies) customerCookiesPerWorker.set(workerId, cookies);
-            // Register with cookies so the user can purge themselves
             registerTestUser({ id: customerId, email: customerEmail, cookies }, workerId);
         }
 
@@ -400,39 +312,21 @@ test.describe('Customer Booking Flow - STRICT', () => {
         await userSetupPage.fillUserProfile({
             firstName: 'StrictTest',
             lastName: 'Customer',
-            phone: '0498765432',
-            address: 'Sydney Harbour Bridge',
-            securityQuestion: 'What is your favorite color?',
-            securityAnswer: 'Blue',
         });
+
+        // Click "Start Your Journey" button to complete setup as regular user
+        await userSetupPage.startBrowsing();
+
+        // Complete onboarding (spiritual interest selection)
+        const onboardingPage = new OnboardingPage(page);
+        await onboardingPage.completeWithPrimaryOnly('mediumship');
 
         customerDataPerWorker.set(workerId, {
             email: customerEmail,
             id: customerId,
         });
 
-        // Click "Start Browsing SpiriVerse" button to complete setup
-        // Using manual click with longer timeout for slow server actions
-        const startBrowsingBtn = page.locator('button:has-text("Start Browsing SpiriVerse")');
-        await expect(startBrowsingBtn).toBeVisible({ timeout: 10000 });
-        await expect(startBrowsingBtn).toBeEnabled({ timeout: 5000 });
-        await startBrowsingBtn.click();
-
-        // Wait for navigation with longer timeout (server action can be slow)
-        try {
-            await page.waitForURL('/', { timeout: 60000 });
-        } catch {
-            // If timeout, check if we're on a different valid page
-            console.log('[Test] Slow navigation, current URL:', page.url());
-        }
-
-        // STRICT: Should be on home or still processing
-        const currentUrl = page.url();
-        if (!currentUrl.endsWith('/')) {
-            console.log('[Test] Not on home page yet, continuing anyway. URL:', currentUrl);
-        }
-
-        // Update cookies after setup attempt
+        // Update cookies after setup
         const updatedCustomerCookies = await getCookiesFromPage(page);
         if (updatedCustomerCookies) customerCookiesPerWorker.set(workerId, updatedCustomerCookies);
 
@@ -635,17 +529,17 @@ test.describe('Customer Booking Flow - STRICT', () => {
         await page.context().addCookies(cookieArray);
 
         // Navigate to customer bookings page
-        await page.goto(`/c/${customerData.id}/bookings`);
+        await page.goto(`/u/${customerData.id}/space/bookings`);
 
         // STRICT: Bookings page must load
         await expect(page.getByRole('heading', { name: 'My Bookings' })).toBeVisible({ timeout: 15000 });
 
         // STRICT: Services tab must exist
-        const servicesTab = page.locator('[data-testid="services-tab"]');
+        const servicesTab = page.getByTestId('bookings-services-tab');
         await expect(servicesTab).toBeVisible({ timeout: 5000 });
 
         // STRICT: Tours tab must exist
-        const toursTab = page.locator('[data-testid="tours-tab"]');
+        const toursTab = page.getByTestId('bookings-tours-tab');
         await expect(toursTab).toBeVisible({ timeout: 5000 });
 
         // Test tab switching

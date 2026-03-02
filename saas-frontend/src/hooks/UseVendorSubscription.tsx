@@ -39,6 +39,10 @@ export type VendorSubscriptionDetail = {
     waived?: boolean;
     waivedUntil?: string;
     overrideNotes?: string;
+    // Trial billing model
+    billingModel?: string;
+    trialStartedAt?: string;
+    trialEndsAt?: string;
 };
 
 export const useVendorSubscription = (vendorId: string) => {
@@ -85,11 +89,21 @@ export const useVendorSubscription = (vendorId: string) => {
                             canHostPractitioners
                             hasInventoryAutomation
                             hasShippingAutomation
+                            canCreateEvents
+                            canCreateTours
+                            hasSpiriAssist
+                            hasBackorders
+                            hasPaymentLinks
+                            hasLiveAssist
+                            hasExpoMode
                         }
                         discountPercent
                         waived
                         waivedUntil
                         overrideNotes
+                        billingModel
+                        trialStartedAt
+                        trialEndsAt
                     }
                 }
             `, { vendorId });

@@ -406,6 +406,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                         <Button
                             variant="outline"
                             onClick={onClose}
+                            data-testid="wizard-cancel-btn"
                             className="flex-1 border-slate-600 bg-slate-900/50 text-slate-200 hover:bg-slate-800 hover:text-white"
                         >
                             Cancel
@@ -416,6 +417,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                                 setSelectedSpread(null);
                             }}
                             disabled={!category}
+                            data-testid="wizard-next-btn"
                             className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
                         >
                             Next
@@ -478,6 +480,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                         <Button
                             variant="outline"
                             onClick={() => setStep(1)}
+                            data-testid="wizard-back-btn"
                             className="border-slate-600 bg-slate-900/50 text-slate-200 hover:bg-slate-800 hover:text-white"
                         >
                             <ChevronLeft className="w-4 h-4 mr-2" />
@@ -486,6 +489,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                         <Button
                             onClick={() => setStep(3)}
                             disabled={!isStep2Valid()}
+                            data-testid="wizard-next-btn"
                             className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
                         >
                             Next: Choose Spread
@@ -742,6 +746,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                         <Button
                             variant="outline"
                             onClick={() => setStep(1)}
+                            data-testid="wizard-back-btn"
                             className="border-slate-600 bg-slate-900/50 text-slate-200 hover:bg-slate-800 hover:text-white"
                         >
                             <ChevronLeft className="w-4 h-4 mr-2" />
@@ -750,6 +755,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                         <Button
                             onClick={() => setStep(3)}
                             disabled={!isStep2Valid()}
+                            data-testid="wizard-next-btn"
                             className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
                         >
                             Next: Choose Tier
@@ -804,7 +810,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                     {/* Payment Method Selection */}
                     {selectedConfig && (
                         <div className="space-y-3">
-                            <Label className="font-medium">Payment Method</Label>
+                            <Label className="font-medium" data-testid="payment-method-section">Payment Method</Label>
 
                             {hasSavedCards && (
                                 <div className="space-y-2">
@@ -815,6 +821,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                                             <button
                                                 key={card.paymentMethodId}
                                                 type="button"
+                                                data-testid={`saved-card-${card.paymentMethodId}`}
                                                 onClick={() => {
                                                     setSelectedCard(card);
                                                     setUseNewCard(false);
@@ -847,6 +854,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
 
                             <button
                                 type="button"
+                                data-testid="add-new-card-btn"
                                 onClick={() => {
                                     setSelectedCard(null);
                                     setUseNewCard(true);
@@ -884,6 +892,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                             variant="outline"
                             onClick={onClose}
                             disabled={createMutation.isPending}
+                            data-testid="wizard-cancel-btn"
                             className="border-slate-600 bg-slate-900/50 text-slate-200 hover:bg-slate-800 hover:text-white"
                         >
                             Cancel
@@ -892,6 +901,7 @@ const SpiriReadingsWizard: React.FC<SpiriReadingsWizardProps> = ({ userId, onClo
                             variant="outline"
                             onClick={() => setStep(2)}
                             disabled={createMutation.isPending}
+                            data-testid="wizard-back-btn"
                             className="border-slate-600 bg-slate-900/50 text-slate-200 hover:bg-slate-800 hover:text-white"
                         >
                             <ChevronLeft className="w-4 h-4 mr-2" />

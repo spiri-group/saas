@@ -15,12 +15,17 @@ async function MerchantDashboardPage({ params }: { params: Promise<{ merchant_sl
     const merchant = session.user.vendors?.find(v => v.id === merchantId);
     const merchantName = merchant?.name || "Your Shop";
 
+    const vendors = (session.user.vendors || [])
+        .filter(v => v.id)
+        .map(v => ({ id: v.id, name: v.name, currency: v.currency }));
+
     return (
         <UI
             merchantId={merchantId}
             merchantSlug={slug}
             merchantName={merchantName}
             me={session.user}
+            vendors={vendors}
         />
     );
 }

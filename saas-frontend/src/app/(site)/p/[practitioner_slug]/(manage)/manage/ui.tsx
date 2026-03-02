@@ -1,9 +1,9 @@
 'use client'
 
-import React from "react";
+import React, { useState } from "react";
 import { Session } from "next-auth";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Heart, MessageCircle } from "lucide-react";
+import { Sparkles, Heart, MessageCircle, Receipt, Radio } from "lucide-react";
 import UIContainer from "@/components/uicontainer";
 import PractitionerSideNav from "../../../_components/PractitionerSideNav";
 import WelcomeHeader from "./_components/WelcomeHeader";
@@ -12,6 +12,9 @@ import NeedsAttention from "./_components/NeedsAttention";
 import RecentBookings from "./_components/RecentBookings";
 import GettingStarted from "./_components/GettingStarted";
 import { usePractitionerDashboardData } from "./_hooks/usePractitionerDashboardData";
+import { useTierFeatures } from "@/hooks/UseTierFeatures";
+import CreatePaymentLinkDialog from "@/components/payment-links/CreatePaymentLinkDialog";
+import StartLiveSessionDialog from "@/components/live-assist/StartLiveSessionDialog";
 
 type Props = {
     session: Session;
@@ -53,6 +56,13 @@ const QuickAction: React.FC<{
 
 export default function PractitionerDashboard({ session, practitionerId, slug, practitionerName }: Props) {
     const data = usePractitionerDashboardData(practitionerId, slug);
+    const { features } = useTierFeatures(practitionerId);
+    const [showPaymentLinkDialog, setShowPaymentLinkDialog] = useState(false);
+    const [showGoLiveDialog, setShowGoLiveDialog] = useState(false);
+
+    const vendors = session.user.vendors
+        ?.filter(v => v.id)
+        .map(v => ({ id: v.id, name: v.name, currency: v.currency })) || [];
 
     return (
         <UIContainer me={session.user}>
@@ -93,6 +103,28 @@ export default function PractitionerDashboard({ session, practitionerId, slug, p
                                     icon={<MessageCircle className="w-4 h-4" />}
                                     dialogId="Create Coaching"
                                 />
+                                {features.hasPaymentLinks && (
+                                    <Button
+                                        variant="outline"
+                                        className="flex items-center gap-2 bg-slate-800/50 border-slate-700 text-white hover:bg-purple-500/20 hover:border-purple-500/50 hover:text-purple-300"
+                                        onClick={() => setShowPaymentLinkDialog(true)}
+                                        data-testid="quick-action-payment-link"
+                                    >
+                                        <Receipt className="w-4 h-4" />
+                                        Payment Link
+                                    </Button>
+                                )}
+                                {features.hasLiveAssist && (
+                                    <Button
+                                        variant="outline"
+                                        className="flex items-center gap-2 bg-slate-800/50 border-red-500/30 text-white hover:bg-red-500/20 hover:border-red-500/50 hover:text-red-300"
+                                        onClick={() => setShowGoLiveDialog(true)}
+                                        data-testid="quick-action-go-live"
+                                    >
+                                        <Radio className="w-4 h-4" />
+                                        Go Live
+                                    </Button>
+                                )}
                             </div>
                         </div>
 
@@ -126,6 +158,26 @@ export default function PractitionerDashboard({ session, practitionerId, slug, p
                     </div>
                 </div>
             </div>
+
+            <>
+                {features.hasPaymentLinks && (
+                    <CreatePaymentLinkDialog
+                        open={showPaymentLinkDialog}
+                        onOpenChange={setShowPaymentLinkDialog}
+                        vendors={vendors}
+                    />
+                )}
+
+                {features.hasLiveAssist && (
+                    <StartLiveSessionDialog
+                        open={showGoLiveDialog}
+                        onOpenChange={setShowGoLiveDialog}
+                        vendorId={practitionerId}
+                        vendorCurrency={vendors.find(v => v.id === practitionerId)?.currency || 'AUD'}
+                        practitionerSlug={slug}
+                    />
+                )}
+            </>
         </UIContainer>
     );
 }

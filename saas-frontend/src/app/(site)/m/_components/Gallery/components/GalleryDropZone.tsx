@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Upload, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -55,8 +54,8 @@ const GalleryDropZone: React.FC<Props> = ({
   const storageLimits = MERCHANT_PLANS[merchantPlan].limits;
   
   const acceptedTypes = {
-    'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
-    'video/*': ['.mp4', '.mov', '.avi', '.mkv']
+    'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.tiff', '.tif', '.svg', '.heic', '.heif'],
+    'video/*': ['.mp4', '.mov', '.avi', '.mkv', '.webm']
   };
 
   // Notify parent component of state changes
@@ -160,18 +159,21 @@ const GalleryDropZone: React.FC<Props> = ({
       const formData = new FormData();
       formData.append('files', uploadingFile.file);
 
+      const isImage = uploadingFile.file.type.startsWith('image/');
       const res = await fetch('/api/azure_upload', {
         method: 'POST',
         body: formData,
         headers: {
           container: 'public',
           relative_path: `merchants/${merchantId}/gallery`,
-          output: 'image/webp',
-          variants: JSON.stringify([
-            { suffix: 'tile', width: 380, height: 380, fit: 'cover' },
-            { suffix: 'dialog', width: 1280, height: 720, fit: 'contain' },
-            { suffix: 'fullscreen', width: 1920, height: 1080, fit: 'contain' },
-          ]),
+          ...(isImage && {
+            output: 'image/webp',
+            variants: JSON.stringify([
+              { suffix: 'tile', width: 380, height: 380, fit: 'cover' },
+              { suffix: 'dialog', width: 1280, height: 720, fit: 'contain' },
+              { suffix: 'fullscreen', width: 1920, height: 1080, fit: 'contain' },
+            ]),
+          }),
         } as any,
       });
 
@@ -260,10 +262,10 @@ const GalleryDropZone: React.FC<Props> = ({
   return (
     <>
       {/* Compact Square Drop Zone */}
-      <Card 
+      <div
         className={cn(
-          'border-2 border-dashed transition-all duration-200 cursor-pointer',
-          isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50',
+          'rounded-2xl border-2 border-dashed transition-all duration-200 cursor-pointer bg-slate-800/50',
+          isDragging ? 'border-purple-400 bg-purple-500/10' : 'border-white/20 hover:border-purple-400/50',
           className
         )}
         onDragOver={handleDragOver}
@@ -271,38 +273,36 @@ const GalleryDropZone: React.FC<Props> = ({
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
       >
-        <CardContent className="flex flex-col items-center justify-center aspect-square text-center p-6">
-          <Upload className={cn('h-8 w-8 mb-3', isDragging ? 'text-primary' : 'text-muted-foreground')} />
-          <h3 className="text-base font-medium mb-2">
+        <div className="flex flex-col items-center justify-center aspect-square text-center p-6">
+          <Upload className={cn('h-8 w-8 mb-3', isDragging ? 'text-purple-400' : 'text-slate-400')} />
+          <h3 className="text-base font-medium mb-2 text-white">
             {isDragging ? 'Drop files here' : 'Drop or click to upload'}
           </h3>
-          <p className="text-xs text-muted-foreground mb-3">
+          <p className="text-xs text-slate-400 mb-3">
             Images & Videos
           </p>
-          <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-            <Badge variant="outline" className="text-xs">Max {storageLimits.maxPhotoSizeMB}MB photos</Badge>
-            <Badge variant="outline" className="text-xs">Max {storageLimits.maxVideoSizeGB}GB videos</Badge>
+          <div className="flex flex-col gap-1 text-xs">
+            <Badge variant="outline" className="text-xs border-white/20 text-slate-300">Max {storageLimits.maxPhotoSizeMB}MB photos</Badge>
+            <Badge variant="outline" className="text-xs border-white/20 text-slate-300">Max {storageLimits.maxVideoSizeGB}GB videos</Badge>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Validation Errors - Show as overlay */}
       {validationErrors.length > 0 && (
-        <Card className="border-red-200 bg-red-50 mt-4">
-          <CardContent className="pt-4">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium text-red-800">Upload validation failed</h4>
-                <ul className="text-sm text-red-700 space-y-1">
-                  {validationErrors.map((error, index) => (
-                    <li key={index}>• {error}</li>
-                  ))}
-                </ul>
-              </div>
+        <div className="border border-red-500/20 bg-red-500/10 rounded-2xl mt-4 p-4">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+            <div className="space-y-1">
+              <h4 className="text-sm font-medium text-red-300">Upload validation failed</h4>
+              <ul className="text-sm text-red-400 space-y-1">
+                {validationErrors.map((error, index) => (
+                  <li key={index}>• {error}</li>
+                ))}
+              </ul>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       <input

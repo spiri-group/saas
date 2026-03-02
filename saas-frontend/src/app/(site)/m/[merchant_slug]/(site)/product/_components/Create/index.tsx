@@ -12,6 +12,7 @@ import UpsertVariants from "./component/UpsertVariants";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import VisuallyHidden from "@/components/ux/VisuallyHidden";
 import { DialogDescription } from "@radix-ui/react-dialog";
+import { StepIndicator } from "@/components/ui/step-indicator";
 import { useEffect, useState } from "react";
 import ListProductSuccess from "./component/ListProductSuccess";
 import { recordref_type } from "@/utils/spiriverse";
@@ -238,6 +239,7 @@ const useBL = (props: BLProps) => {
         changeDefaultCurrency,
         productRef,
         currentStep,
+        setCurrentStep,
         handleNext,
         handlePrevious,
         hasVariants,
@@ -275,38 +277,17 @@ const CreateProduct : React.FC<Props> = (props) => {
                 
                 {/* Progress indicator with close button */}
                 <div className="flex items-center justify-between mb-4 px-4 pt-2">
-                    <div className="flex items-center space-x-2">
-                        <div className={`h-1 w-8 rounded-full transition-colors ${
-                            bl.currentStep >= 1 ? 'bg-primary' : 'bg-muted'
-                        }`}></div>
-                        <span className={`text-xs font-medium transition-colors ${
-                            bl.currentStep === 1 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                        }`}>
-                            Product Details
-                        </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <div className={`h-1 w-8 rounded-full transition-colors ${
-                            bl.currentStep >= 2 ? 'bg-primary' : 'bg-muted'
-                        }`}></div>
-                        <span className={`text-xs font-medium transition-colors ${
-                            bl.currentStep === 2 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                        }`}>
-                            Properties
-                        </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <div className={`h-1 w-8 rounded-full transition-colors ${
-                            bl.currentStep >= 3 ? 'bg-primary' : 'bg-muted'
-                        }`}></div>
-                        <span className={`text-xs font-medium transition-colors ${
-                            bl.currentStep === 3 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                        }`}>
-                            Variants
-                        </span>
-                    </div>
+                    <StepIndicator
+                        dark
+                        steps={[
+                            { label: 'Product Details' },
+                            { label: 'Properties' },
+                            { label: 'Variants' },
+                        ]}
+                        currentStep={bl.currentStep}
+                        onStepClick={bl.setCurrentStep}
+                    />
                     <Button variant="outline" onClick={() => {
-                        // Dispatch a custom event to close the dialog
                         const event = new CustomEvent('close-dialog');
                         window.dispatchEvent(event);
                     }}>

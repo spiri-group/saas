@@ -9,6 +9,7 @@ import { TableStorageAdapter } from "@auth/azure-tables-adapter";
 import { DateTime } from "luxon";
 import { decode, encode } from "next-auth/jwt";
 import { isNullOrUndefined } from "./functions";
+import { verifyOTP } from "./services/otp";
 
 declare module "next-auth" {
     /**
@@ -88,16 +89,20 @@ export const authOptions: NextAuthConfig = {
                     throw new Error("Missing credentials");
                 }
 
-                // Special test case: OTP "000000" always fails for @playwright.com emails
-                // This allows testing graceful OTP failure handling (similar to Stripe test cards)
-                const isPlaywrightEmail = email.toLowerCase().endsWith('@playwright.com');
-                const isTestFailureCode = otp_entered === '000000';
-                const isNonProduction = process.env.NODE_ENV !== 'production';
+                // Demo accounts bypass OTP verification
+                const DEMO_EMAILS = [
+                    "awaken@spirigroup.com",
+                    "illuminate@spirigroup.com",
+                    "manifest@spirigroup.com",
+                    "transcend@spirigroup.com",
+                ];
+                const isDemoAccount = DEMO_EMAILS.includes(email.toLowerCase());
 
-                if (isNonProduction && isPlaywrightEmail && isTestFailureCode) {
-                    // Return null to fail authentication
-                    // NextAuth will handle this as a failed sign-in
-                    return null;
+                if (!isDemoAccount) {
+                    const isValid = await verifyOTP({ email, otp: otp_entered });
+                    if (!isValid) {
+                        return null;
+                    }
                 }
 
                 let user = await dbAdapter.getUserByEmail!(email.toString());
@@ -186,7 +191,8 @@ export const authOptions: NextAuthConfig = {
                 auth
             );
 
-            // Handle case where user exists in auth table but not in Cosmos (e.g., after cleanup)
+            // Handle case where user exists in auth table but not in Cosmos (e.g., transient error, cleanup)
+            // Default requiresInput to false — a transient failure should not lock users out to /setup
             if (!me) {
                 console.warn('[auth] Session references non-existent user, returning minimal session');
                 return {
@@ -196,7 +202,7 @@ export const authOptions: NextAuthConfig = {
                         id: '',
                         email: session.user?.email || '',
                         vendors: [],
-                        requiresInput: true,
+                        requiresInput: false,
                         currency: undefined,
                         locale: undefined,
                         cases: [],

@@ -17,7 +17,8 @@ import { useSession } from "next-auth/react"
 import { v4 as uuid } from "uuid"
 import { currency_amount_type, recordref_type, stripe_details_type } from "@/utils/spiriverse"
 import StripePayment from "@/app/(site)/components/StripePayment"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import useFormStatus from "@/components/utils/UseFormStatus"
 import { Badge } from "@/components/ui/badge"
 import { Loader2 } from "lucide-react"
@@ -54,7 +55,10 @@ const summariseCart = async (items: CartItem[], userCurrency = "USD"): Promise<c
         };
 
         if (!item.listingRef) {
-            console.error('Cart item missing listingRef:', item);
+            // Optimistic items (pending sync) may lack listingRef — skip silently
+            if (!item._pendingSync) {
+                console.warn('Cart item missing listingRef:', item);
+            }
             return null;
         }
 
@@ -293,6 +297,7 @@ const ShoppingCart = () => {
         return (
             <Dialog open={bl.stripe.visibility}>
                 <DialogContent>
+                    <VisuallyHidden><DialogTitle>Payment</DialogTitle></VisuallyHidden>
                     <StripePayment
                         type="SETUP"
                         orderRef={bl.orderRef}

@@ -1,8 +1,16 @@
 'use client'
 
 import { useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import UseMerchantIdFromSlug from '../../_hooks/UseMerchantIdFromSlug';
+import TrialBanner from '@/components/TrialBanner';
+import TrialExpiredDialog from '@/components/TrialExpiredDialog';
 
 export default function ManageLayout({ children }: { children: React.ReactNode }) {
+  const params = useParams<{ merchant_slug: string }>();
+  const { data: slugData } = UseMerchantIdFromSlug(params.merchant_slug);
+  const merchantId = slugData?.merchantId;
+
   useEffect(() => {
     // Reset all merchant theming CSS variables to restore normal SpiriVerse theming
     const root = document.documentElement;
@@ -43,6 +51,8 @@ export default function ManageLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="min-h-screen bg-slate-900">
+      {merchantId && <TrialBanner vendorId={merchantId} />}
+      {merchantId && <TrialExpiredDialog vendorId={merchantId} />}
       {children}
     </div>
   );

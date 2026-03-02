@@ -10,6 +10,9 @@ export type TierFeatures = {
     canCreateTours: boolean;
     hasSpiriAssist: boolean;
     hasBackorders: boolean;
+    hasPaymentLinks: boolean;
+    hasLiveAssist: boolean;
+    hasExpoMode: boolean;
 };
 
 const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
@@ -23,6 +26,23 @@ const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
         canCreateTours: false,
         hasSpiriAssist: false,
         hasBackorders: false,
+        hasPaymentLinks: false,
+        hasLiveAssist: false,
+        hasExpoMode: false,
+    },
+    illuminate: {
+        canCreateMerchantProfile: false,
+        maxProducts: 0,
+        canHostPractitioners: false,
+        hasInventoryAutomation: false,
+        hasShippingAutomation: false,
+        canCreateEvents: false,
+        canCreateTours: false,
+        hasSpiriAssist: true,
+        hasBackorders: false,
+        hasPaymentLinks: true,
+        hasLiveAssist: true,
+        hasExpoMode: true,
     },
     manifest: {
         canCreateMerchantProfile: true,
@@ -34,6 +54,9 @@ const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
         canCreateTours: false,
         hasSpiriAssist: true,
         hasBackorders: false,
+        hasPaymentLinks: true,
+        hasLiveAssist: true,
+        hasExpoMode: true,
     },
     transcend: {
         canCreateMerchantProfile: true,
@@ -45,10 +68,13 @@ const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
         canCreateTours: true,
         hasSpiriAssist: true,
         hasBackorders: true,
+        hasPaymentLinks: true,
+        hasLiveAssist: true,
+        hasExpoMode: true,
     },
 };
 
-const TIER_ORDER: subscription_tier[] = ['awaken', 'manifest', 'transcend'];
+const TIER_ORDER: subscription_tier[] = ['awaken', 'illuminate', 'manifest', 'transcend'];
 
 export function getTierFeatures(tier: subscription_tier): TierFeatures {
     return TIER_FEATURES[tier];

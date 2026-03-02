@@ -1,7 +1,7 @@
 'use client';
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Package, Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard } from "lucide-react";
+import { Package, Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard, LoaderIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { VendorDocType } from "@/utils/spiriverse";
+import { useSubscriptionTiers } from "@/hooks/UseSubscriptionTiers";
 
 function getInitials(email: string): string {
     const local = email.split('@')[0] ?? '';
@@ -25,6 +26,7 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
     const { data: session, status } = useSession();
     const queryClient = useQueryClient();
     const [showProfileDialog, setShowProfileDialog] = useState(false);
+    const [showGetStarted, setShowGetStarted] = useState<'merchant' | 'practitioner' | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
 
     const initials = getInitials(email);
@@ -177,7 +179,8 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                                 if (session.user && session.user.requiresInput) {
                                                     setShowProfileDialog(true);
                                                 } else {
-                                                    router.push('/m/setup');
+                                                    setMenuOpen(false);
+                                                    setShowGetStarted('merchant');
                                                 }
                                             }}
                                         >
@@ -193,7 +196,8 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                                 if (session.user && session.user.requiresInput) {
                                                     setShowProfileDialog(true);
                                                 } else {
-                                                    router.push('/p/setup');
+                                                    setMenuOpen(false);
+                                                    setShowGetStarted('practitioner');
                                                 }
                                             }}
                                         >
@@ -259,7 +263,263 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                     </DialogContent>
                 </Dialog>
             )}
+
+            {showGetStarted && (
+                <GetStartedDialog
+                    type={showGetStarted}
+                    onClose={() => setShowGetStarted(null)}
+                    onSwitchType={(t) => setShowGetStarted(t)}
+                    onContinue={(tier, interval) => {
+                        setShowGetStarted(null);
+                        router.push(`/setup?tier=${tier}&interval=${interval}`);
+                    }}
+                />
+            )}
         </>
+    );
+};
+
+const TIER_OUTCOMES: Record<string, string[]> = {
+    awaken: [
+        'Share your practice globally',
+        'Book readings & sessions',
+        'Showcase work in a gallery',
+    ],
+    illuminate: [
+        'Send payment links',
+        'Earn in real-time, anywhere',
+        'Sell at expos and markets',
+    ],
+    manifest: [
+        'Your own online storefront',
+        'Manage products & orders',
+        'Integrated checkout',
+    ],
+    transcend: [
+        'Unlimited products',
+        'Host practitioners',
+        'Automated shipping',
+    ],
+};
+
+const DIALOG_CONFIG = {
+    practitioner: {
+        icon: Sparkles,
+        title: 'Start Your Practice',
+        subtitle: 'Choose the plan that fits your practice',
+        profileType: 'practitioner',
+        tiers: ['awaken', 'illuminate'],
+        defaultTier: 'awaken',
+    },
+    merchant: {
+        icon: Store,
+        title: 'Open Your Shop',
+        subtitle: 'Choose the plan that fits your business',
+        profileType: 'merchant',
+        tiers: ['manifest', 'transcend'],
+        defaultTier: 'manifest',
+    },
+} as const;
+
+type GetStartedDialogProps = {
+    type: 'merchant' | 'practitioner';
+    onClose: () => void;
+    onContinue: (tier: string, interval: 'monthly' | 'annual') => void;
+    onSwitchType: (type: 'merchant' | 'practitioner') => void;
+};
+
+const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
+    type,
+    onClose,
+    onContinue,
+    onSwitchType,
+}) => {
+    const config = DIALOG_CONFIG[type];
+    const Icon = config.icon;
+    const isPurple = type === 'practitioner';
+    const [selectedTier, setSelectedTier] = useState<string>(config.defaultTier);
+    const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
+    const { data: tiers, isLoading: tiersLoading } = useSubscriptionTiers(config.profileType);
+
+    const availableTiers = tiers?.filter(t => (config.tiers as readonly string[]).includes(t.tier)) || [];
+
+    const selectedTierDef = availableTiers.find(t => t.tier === selectedTier);
+    const price = selectedTierDef
+        ? billingInterval === 'monthly'
+            ? selectedTierDef.monthlyPrice
+            : selectedTierDef.annualPrice
+        : null;
+    const currency = selectedTierDef?.currency || 'USD';
+
+    const formatPrice = (cents: number) => {
+        const amount = cents / 100;
+        return amount % 1 === 0 ? `$${amount}` : `$${amount.toFixed(2)}`;
+    };
+
+    return (
+        <Dialog open onOpenChange={() => onClose()}>
+            <DialogContent data-testid="get-started-dialog" className="sm:max-w-2xl">
+                <DialogHeader>
+                    <div className="flex items-center gap-4">
+                        <div className={`rounded-full p-3.5 ${isPurple ? 'bg-purple-500/20' : 'bg-amber-500/20'}`}>
+                            <Icon className={`h-8 w-8 ${isPurple ? 'text-purple-400' : 'text-amber-400'}`} />
+                        </div>
+                        <div>
+                            <DialogTitle data-testid="get-started-title" className="text-2xl font-bold">{config.title}</DialogTitle>
+                            <DialogDescription className="text-base text-muted-foreground mt-0.5">
+                                {config.subtitle}
+                            </DialogDescription>
+                        </div>
+                    </div>
+                </DialogHeader>
+
+                <div className="space-y-5">
+                    {/* Billing toggle */}
+                    <div
+                        className="flex rounded-lg border p-1"
+                        data-testid="get-started-interval-toggle"
+                    >
+                        <Button
+                            variant="ghost"
+                            data-testid="get-started-monthly-btn"
+                            onClick={() => setBillingInterval('monthly')}
+                            className={`flex-1 ${
+                                billingInterval === 'monthly'
+                                    ? isPurple ? 'bg-purple-600 text-white hover:bg-purple-600 hover:text-white' : 'bg-amber-600 text-white hover:bg-amber-600 hover:text-white'
+                                    : 'text-muted-foreground'
+                            }`}
+                        >
+                            Monthly
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            data-testid="get-started-annual-btn"
+                            onClick={() => setBillingInterval('annual')}
+                            className={`flex-1 ${
+                                billingInterval === 'annual'
+                                    ? isPurple ? 'bg-purple-600 text-white hover:bg-purple-600 hover:text-white' : 'bg-amber-600 text-white hover:bg-amber-600 hover:text-white'
+                                    : 'text-muted-foreground'
+                            }`}
+                        >
+                            Annual
+                        </Button>
+                    </div>
+
+                    {/* Tier cards */}
+                    {tiersLoading ? (
+                        <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                            <LoaderIcon className="h-4 w-4 animate-spin" />
+                            <span className="text-sm">Loading plans...</span>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-4" data-testid="get-started-tier-cards">
+                            {availableTiers.map((tier) => {
+                                const isSelected = tier.tier === selectedTier;
+                                const tierPrice = billingInterval === 'monthly' ? tier.monthlyPrice : tier.annualPrice;
+                                return (
+                                    <Button
+                                        key={tier.tier}
+                                        variant="ghost"
+                                        data-testid={`get-started-tier-${tier.tier}`}
+                                        onClick={() => setSelectedTier(tier.tier)}
+                                        className={`relative rounded-xl border-2 p-5 h-auto w-full items-start justify-start text-left transition-colors ${
+                                            isSelected
+                                                ? isPurple
+                                                    ? 'border-purple-500 bg-purple-500/10 hover:bg-purple-500/10'
+                                                    : 'border-amber-500 bg-amber-500/10 hover:bg-amber-500/10'
+                                                : 'border-white/10 hover:border-white/20 hover:bg-transparent'
+                                        }`}
+                                    >
+                                        <div className="space-y-3 w-full">
+                                            <div className="flex items-baseline justify-between gap-2 flex-nowrap">
+                                                <p className={`text-base font-semibold whitespace-nowrap ${
+                                                    isSelected
+                                                        ? isPurple ? 'text-purple-300' : 'text-amber-300'
+                                                        : 'text-white/90'
+                                                }`}>
+                                                    {tier.name}
+                                                </p>
+                                                <div className="whitespace-nowrap">
+                                                    <span className="text-xl font-bold">{formatPrice(tierPrice)}</span>
+                                                    <span className="text-muted-foreground text-sm">
+                                                        /{billingInterval === 'monthly' ? 'mo' : 'yr'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {(TIER_OUTCOMES[tier.tier] || []).map((outcome, i) => (
+                                                    <p key={i} className="text-sm leading-relaxed text-muted-foreground">
+                                                        <span className={`inline-block mr-1.5 ${isPurple ? 'text-purple-400/70' : 'text-amber-400/70'}`}>&#x2022;</span>
+                                                        {outcome}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </Button>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Currency note */}
+                    {!tiersLoading && price != null && (
+                        <p className="text-[11px] text-muted-foreground/60 text-center">{currency}, taxes included</p>
+                    )}
+
+                    {/* Cross-sell notes */}
+                    {type === 'practitioner' && (
+                        <Button
+                            variant="ghost"
+                            onClick={() => onSwitchType('merchant')}
+                            className="flex items-center gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 h-auto w-full justify-start text-left hover:bg-amber-500/10"
+                        >
+                            <Store className="h-5 w-5 text-amber-400 shrink-0" />
+                            <p className="text-sm text-white/80">
+                                Also thinking of opening a shop? Our shop tiers include a practitioner account.
+                            </p>
+                        </Button>
+                    )}
+                    {type === 'merchant' && (
+                        <Button
+                            variant="ghost"
+                            onClick={() => onSwitchType('practitioner')}
+                            className="flex items-center gap-3 rounded-lg border border-purple-500/20 bg-purple-500/5 px-4 py-3 h-auto w-full justify-start text-left hover:bg-purple-500/10"
+                        >
+                            <Sparkles className="h-5 w-5 text-purple-400 shrink-0" />
+                            <p className="text-sm text-white/80">
+                                Both plans include a practitioner account. Just need to practise? View practitioner plans.
+                            </p>
+                        </Button>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex gap-3">
+                        <Button
+                            variant="outline"
+                            size="lg"
+                            data-testid="get-started-cancel-btn"
+                            onClick={onClose}
+                            className="flex-1"
+                        >
+                            Not Now
+                        </Button>
+                        <Button
+                            size="lg"
+                            data-testid="get-started-continue-btn"
+                            onClick={() => onContinue(selectedTier, billingInterval)}
+                            disabled={tiersLoading}
+                            className={`flex-1 text-white ${
+                                isPurple
+                                    ? 'bg-purple-600 hover:bg-purple-700'
+                                    : 'bg-amber-600 hover:bg-amber-700'
+                            }`}
+                        >
+                            Get Started
+                        </Button>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 };
 

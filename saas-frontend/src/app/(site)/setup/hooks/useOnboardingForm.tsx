@@ -44,8 +44,8 @@ export const onboardingSchema = z.object({
     practitioner: z.object({
         name: z.string().min(2, 'Name must be at least 2 characters'),
         slug: z.string().min(3, 'URL must be at least 3 characters').regex(/^[a-z0-9-]+$/, 'Use only lowercase letters, numbers and hyphens'),
-        headline: z.string().min(10, 'Headline must be at least 10 characters').max(150),
-        bio: z.string().min(50, 'Bio must be at least 50 characters').max(2000),
+        headline: z.string().max(150).optional(),
+        bio: z.string().max(2000).optional(),
         modalities: z.array(z.string()).min(1, 'Select at least one modality'),
         specializations: z.array(z.string()).min(1, 'Select at least one specialization'),
         pronouns: z.string().optional(),
@@ -67,8 +67,8 @@ export const MERCHANT_FIELDS = [
 ] as const;
 
 export const PRACTITIONER_REQUIRED_FIELDS = [
-    'practitioner.name', 'practitioner.slug', 'practitioner.headline',
-    'practitioner.bio', 'practitioner.modalities', 'practitioner.specializations',
+    'practitioner.name', 'practitioner.slug',
+    'practitioner.modalities', 'practitioner.specializations',
 ] as const;
 
 // ── Countries list ──────────────────────────────────────────────────
@@ -148,8 +148,8 @@ export function useOnboardingForm() {
         }
     };
 
-    /** Create vendor via GraphQL mutation. Returns vendor slug. */
-    const createVendor = async (): Promise<string> => {
+    /** Create vendor via GraphQL mutation. Returns { id, slug }. */
+    const createVendor = async (): Promise<{ id: string; slug: string }> => {
         const vals = form.getValues();
         const merchant = vals.merchant!;
         const currency = countryToCurrency[vals.country as keyof typeof countryToCurrency] || 'USD';
@@ -187,11 +187,11 @@ export function useOnboardingForm() {
         });
 
         await updateSession();
-        return vendor.slug;
+        return vendor;
     };
 
-    /** Create practitioner via GraphQL mutation. Returns practitioner slug. */
-    const createPractitioner = async (overrideTier?: string): Promise<string> => {
+    /** Create practitioner via GraphQL mutation. Returns { id, slug }. */
+    const createPractitioner = async (overrideTier?: string): Promise<{ id: string; slug: string }> => {
         const vals = form.getValues();
         const prac = vals.practitioner!;
         const currency = countryToCurrency[vals.country as keyof typeof countryToCurrency] || 'USD';
@@ -215,8 +215,8 @@ export function useOnboardingForm() {
                 email: vals.email,
                 country: vals.country,
                 currency,
-                headline: prac.headline,
-                bio: prac.bio,
+                headline: prac.headline || undefined,
+                bio: prac.bio || undefined,
                 modalities: prac.modalities,
                 specializations: prac.specializations,
                 pronouns: prac.pronouns || undefined,
@@ -232,7 +232,7 @@ export function useOnboardingForm() {
         });
 
         await updateSession();
-        return practitioner.slug;
+        return practitioner;
     };
 
     return {

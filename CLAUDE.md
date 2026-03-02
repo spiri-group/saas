@@ -6,6 +6,25 @@
 - **System Architecture**: See `/docs/` folder for detailed implementation docs
 - **Database Migrations**: See `/graphql-backend/src/db/migrations/`
 
+### Running Tests
+
+From `saas-frontend/`:
+
+```bash
+# Run specific tests by name pattern (preferred)
+yarn test:grep "practitioner signup"
+
+# Run all E2E tests
+yarn test:e2e
+
+# Other useful commands
+yarn test:headed    # Run with browser visible
+yarn test:debug     # Run in debug mode
+yarn test:report    # View last test report
+```
+
+**Always use `yarn test:grep "<pattern>"`** to run specific tests instead of calling `npx playwright test` directly.
+
 ---
 
 ## CRITICAL: Testing in Parallel
@@ -18,6 +37,8 @@ When writing Playwright tests, follow the patterns in `/saas-frontend/tests/TEST
 2. **ALWAYS use `Map<number, State>`** keyed by `testInfo.parallelIndex`
 3. **ALWAYS pass `testInfo` parameter** to access `testInfo.parallelIndex`
 4. **PREFER inline cleanup** over complex state tracking
+5. **AVOID hard navigation** (`page.goto`) — tests should emulate real user behavior. Navigate via UI elements (sidebar links, buttons, menus) instead of jumping directly to URLs. Only use `page.goto` for the initial entry point of a test flow.
+6. **ALWAYS emulate real user behavior** — interact with the UI the same way a user would (clicking buttons, filling forms, navigating menus). **NEVER** use `CustomEvent` dispatch, `page.evaluate()` to trigger internal app events, or other programmatic shortcuts to bypass the UI. Only resort to non-UI approaches if there is genuinely no other way.
 
 ---
 

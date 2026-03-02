@@ -32,8 +32,8 @@ export default function TierSelector({
         return null;
     }
 
-    // Auto-select for practitioner (only Awaken available)
-    if (profileType === 'practitioner' && tiers.length === 1 && !selectedTier) {
+    // Auto-select first practitioner tier if none selected
+    if (profileType === 'practitioner' && tiers.length >= 1 && !selectedTier) {
         onTierChange(tiers[0].tier);
     }
 
@@ -72,7 +72,7 @@ export default function TierSelector({
             <div
                 data-testid="tier-cards-grid"
                 className={`grid gap-6 ${
-                    tiers.length === 1 ? 'max-w-2xl mx-auto' : tiers.length === 2 ? 'grid-cols-1 md:grid-cols-2 max-w-5xl mx-auto' : 'grid-cols-1 md:grid-cols-3 max-w-7xl mx-auto'
+                    tiers.length === 1 ? 'max-w-2xl mx-auto' : tiers.length === 2 ? 'grid-cols-1 md:grid-cols-2 max-w-5xl mx-auto' : tiers.length === 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto' : 'grid-cols-1 md:grid-cols-3 max-w-7xl mx-auto'
                 }`}
             >
                 {tiers.map((tier) => (
@@ -83,7 +83,7 @@ export default function TierSelector({
                         selected={selectedTier === tier.tier}
                         onSelect={onTierChange}
                         badge={tier.tier === 'manifest' ? 'Most Popular' : undefined}
-                        disabled={profileType === 'practitioner' && tier.tier !== 'awaken'}
+                        disabled={profileType === 'practitioner' && tier.tier !== 'awaken' && tier.tier !== 'illuminate'}
                     />
                 ))}
             </div>

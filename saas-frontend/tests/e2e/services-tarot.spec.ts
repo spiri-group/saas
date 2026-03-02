@@ -1,8 +1,10 @@
 import { test, expect, Page, TestInfo } from '@playwright/test';
 import { PractitionerSetupPage } from '../pages/PractitionerSetupPage';
 import { AuthPage } from '../pages/AuthPage';
-import { HomePage } from '../pages/HomePage';
 import { UserSetupPage } from '../pages/UserSetupPage';
+import { OnboardingPage } from '../pages/OnboardingPage';
+import { PurchaseManager } from '../managers/PurchaseManager';
+import { handleConsentGuardIfPresent } from '../utils/test-helpers';
 import {
   getCookiesFromPage,
   registerTestUser,
@@ -27,13 +29,10 @@ let serviceName: string;
 let customerId: string;
 let customerEmail: string;
 let customerCookies: string;
-let orderId: string;
 let deliveryCompleted: boolean = false; // Track if Test 3 successfully delivered
 
 // Per-worker state tracking
 const cookiesPerWorker = new Map<string, string>();
-const practitionerPerWorker = new Map<string, string>();
-const setupCompletedPerWorker = new Map<string, boolean>();
 
 /** Generate unique test email */
 function generateUniqueTestEmail(testInfo: TestInfo): string {
@@ -146,20 +145,19 @@ async function getPractitionerIdFromSlug(page: Page, slug: string): Promise<stri
   }
 }
 
-/** Open My Services create menu for a specific service type */
-async function openMyServicesCreateMenu(page: Page, serviceType: 'Reading' | 'Healing' | 'Coaching') {
+/** Open Services create menu for a specific service type */
+async function openServicesCreateMenu(page: Page, serviceType: 'Reading' | 'Healing' | 'Coaching') {
   await waitForDialogOverlayToClose(page);
 
-  // Click on "My Services" in the sidebar
-  const sideNav = page.locator('[aria-label="practitioner-side-nav"]');
-  const myServicesButton = sideNav.locator('button[aria-label="My Services"]').first();
-  if (await myServicesButton.isVisible({ timeout: 5000 })) {
-    await myServicesButton.click();
+  // Click on "Services" in the sidebar using testid
+  const servicesNav = page.getByTestId('nav-services');
+  if (await servicesNav.isVisible({ timeout: 5000 })) {
+    await servicesNav.click();
     await page.waitForTimeout(1000);
   }
 
   // The menu items are "New Reading", "New Healing", "New Coaching" - not "Create"
-  const newServiceButton = sideNav.locator(`button:has-text("New ${serviceType}"), a:has-text("New ${serviceType}")`).first();
+  const newServiceButton = page.locator(`[role="menuitem"]`).filter({ hasText: `New ${serviceType}` }).first();
   if (await newServiceButton.isVisible({ timeout: 3000 })) {
     await newServiceButton.click();
     await page.waitForLoadState('networkidle');
@@ -225,7 +223,7 @@ test.describe.serial('ASYNC Reading Service - Tarot - Full Customer Journey', ()
     await dismissWelcomeDialog(page);
 
     // Create the Tarot reading service
-    await openMyServicesCreateMenu(page, 'Reading');
+    await openServicesCreateMenu(page, 'Reading');
 
     const timestamp = Date.now();
     serviceName = `3-Card Tarot Reading ${timestamp}`;
@@ -314,34 +312,10 @@ test.describe.serial('ASYNC Reading Service - Tarot - Full Customer Journey', ()
     await page.waitForTimeout(2000);
     console.log('[Test 1] ✓ Moved to Step 4 (Questions)');
 
-    // Step 4: Add a custom question before submitting
+    // Step 4: Questions are optional — skip and submit directly
     await page.waitForTimeout(1000);
 
-    // Click "Add Your First Question" button
-    const addFirstQuestionBtn = dialog.locator('button:has-text("Add Your First Question")');
-    if (await addFirstQuestionBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await addFirstQuestionBtn.click();
-      await page.waitForTimeout(1000);
-      console.log('[Test 1] ✓ Clicked Add Your First Question');
-    }
-
-    // Fill in the custom question text using the data-testid we added
-    const questionTextInput = dialog.locator('[data-testid="question-text-input-0"]');
-    await expect(questionTextInput).toBeVisible({ timeout: 5000 });
-    await questionTextInput.fill('What specific area of your life would you like guidance on?');
-    await page.waitForTimeout(500);
-    console.log('[Test 1] ✓ Filled custom question text');
-
-    // Optionally add a description
-    const questionDescInput = dialog.locator('[data-testid="question-description-input-0"]');
-    if (await questionDescInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await questionDescInput.fill('Please share any relevant context that might help with your reading.');
-      console.log('[Test 1] ✓ Filled question description');
-    }
-
-    await page.waitForTimeout(1000);
-
-    // Now submit the form
+    // Submit the form
     const submitButton = dialog.locator('[data-testid="wizard-submit-btn"]');
     await expect(submitButton).toBeVisible({ timeout: 5000 });
     await submitButton.click();
@@ -375,10 +349,9 @@ test.describe.serial('ASYNC Reading Service - Tarot - Full Customer Journey', ()
     customerEmail = `tarot-customer-${timestamp}-${workerId}-${randomSuffix}@playwright.com`;
 
     try {
-      // Customer signup
+      // Customer signup via unified /setup flow
       console.log('[Test 2] Step 1: Customer signing up...');
       const authPage = new AuthPage(customerPage);
-      const homePage = new HomePage(customerPage);
       const userSetupPage = new UserSetupPage(customerPage);
 
       await customerPage.goto('/');
@@ -388,33 +361,34 @@ test.describe.serial('ASYNC Reading Service - Tarot - Full Customer Journey', ()
       await customerPage.keyboard.type('123456');
       await customerPage.waitForURL('/', { timeout: 15000 });
 
-      // Complete profile if needed
-      try {
-        await homePage.waitForCompleteProfileLink();
-        await homePage.clickCompleteProfile();
-        await expect(customerPage).toHaveURL(/\/u\/.*\/setup/, { timeout: 10000 });
+      // Handle site-level ConsentGuard if present
+      await handleConsentGuardIfPresent(customerPage);
 
-        const url = customerPage.url();
-        const userIdMatch = url.match(/\/u\/([^\/]+)\/setup/);
-        if (userIdMatch) {
-          customerId = userIdMatch[1];
-          console.log(`[Test 2] Customer user ID: ${customerId}`);
-        }
+      // Navigate to unified setup page
+      await customerPage.goto('/setup');
+      await userSetupPage.waitForForm();
 
-        await userSetupPage.fillUserProfile({
-          firstName: 'Tarot',
-          lastName: 'Seeker',
-          phone: '0412345678',
-          address: 'Sydney Opera House',
-          securityQuestion: 'What is your favorite card?',
-          securityAnswer: 'The Star',
-        });
-        await userSetupPage.startBrowsing();
-        await customerPage.waitForURL('/', { timeout: 15000 });
-        console.log('[Test 2] ✓ Customer profile completed');
-      } catch {
-        console.log('[Test 2] Profile already complete, continuing...');
+      // Get user ID from session for cleanup
+      customerId = await customerPage.evaluate(async () => {
+        const response = await fetch('/api/auth/session');
+        const session = await response.json();
+        return session?.user?.id || '';
+      });
+      if (customerId) {
+        console.log(`[Test 2] Customer user ID: ${customerId}`);
       }
+
+      // Fill basic details and click "Start Your Journey"
+      await userSetupPage.fillUserProfile({
+        firstName: 'Tarot',
+        lastName: 'Seeker',
+      });
+      await userSetupPage.startBrowsing();
+
+      // Complete onboarding (spiritual interest selection)
+      const onboardingPage = new OnboardingPage(customerPage);
+      await onboardingPage.completeWithPrimaryOnly('mediumship');
+      console.log('[Test 2] ✓ Customer profile completed');
 
       // Store cookies
       const cookies = await getCookiesFromPage(customerPage);
@@ -426,14 +400,16 @@ test.describe.serial('ASYNC Reading Service - Tarot - Full Customer Journey', ()
         }
       }
 
-      // ===== STEP 2: Navigate to merchant catalogue and find service =====
-      console.log('[Test 2] Step 2: Navigating to merchant catalogue...');
+      // ===== STEP 2: Navigate to practitioner profile and find service =====
+      console.log('[Test 2] Step 2: Navigating to practitioner profile...');
       await customerPage.goto(`/p/${practitionerSlug}`);
       await customerPage.waitForLoadState('networkidle');
-      await customerPage.waitForTimeout(2000);
+      await customerPage.waitForTimeout(3000);
 
-      // Find the service card - it's a Link with aria-label="catalogue-item-{id}"
-      const serviceCard = customerPage.locator(`a[aria-label^="catalogue-item"]:has-text("${serviceName}")`).first();
+      // Find the service card in the services section
+      const servicesSection = customerPage.getByTestId('services-section');
+      await expect(servicesSection).toBeVisible({ timeout: 15000 });
+      const serviceCard = servicesSection.locator(`a[href*="/services/"]`).filter({ hasText: serviceName }).first();
       await expect(serviceCard).toBeVisible({ timeout: 15000 });
       console.log('[Test 2] ✓ Customer found Tarot service');
 
@@ -445,169 +421,27 @@ test.describe.serial('ASYNC Reading Service - Tarot - Full Customer Journey', ()
       await customerPage.waitForTimeout(2000);
       console.log(`[Test 2] ✓ Navigated to service detail page: ${customerPage.url()}`);
 
-      // ===== STEP 3: Add to cart =====
-      console.log('[Test 2] Step 3: Adding to cart...');
-      const addToCartButton = customerPage.locator('button:has-text("Add to Cart")');
-      await expect(addToCartButton).toBeVisible({ timeout: 10000 });
-      await addToCartButton.click();
-      await customerPage.waitForTimeout(2000);
-      console.log('[Test 2] ✓ Added to cart');
-
-      // ===== STEP 4: Navigate to checkout =====
-      // Open the cart drawer by clicking the cart button in the header
-      console.log('[Test 2] Step 4: Opening cart drawer...');
-      const cartButton = customerPage.locator('button[aria-label*="cart" i], button[aria-label*="Shopping" i]').first();
-      await expect(cartButton).toBeVisible({ timeout: 10000 });
-      await cartButton.click();
-      await customerPage.waitForTimeout(1500);
-      console.log('[Test 2] ✓ Opened cart drawer');
-
-      // The checkout button is inside the cart drawer
-      const checkoutButton = customerPage.locator('button:has-text("Checkout")').first();
-      await expect(checkoutButton).toBeVisible({ timeout: 10000 });
-      await checkoutButton.click();
-      await customerPage.waitForTimeout(3000);
-      console.log('[Test 2] ✓ Clicked checkout, waiting for Stripe...');
-
-      // ===== STEP 5: Complete checkout form =====
-      console.log('[Test 2] Step 5: Completing checkout form...');
-
-      // Take screenshot of checkout dialog
-      await customerPage.screenshot({ path: 'test-results/tarot-checkout-dialog.png' });
-
-      // Step 5a: Fill Billing Address (required before payment)
-      // The billing section should be expanded by default
-      const billingSection = customerPage.locator('text=Billing Address').first();
-      if (await billingSection.isVisible({ timeout: 5000 }).catch(() => false)) {
-        console.log('[Test 2] Found billing address section');
-
-        // Always use manual entry for billing (more reliable for tests)
-        const manualToggle = customerPage.locator('text=Enter details manually').first();
-        if (await manualToggle.isVisible({ timeout: 5000 }).catch(() => false)) {
-          await manualToggle.click();
-          console.log('[Test 2] Clicked "Enter details manually"');
-          await customerPage.waitForTimeout(1000); // Give form time to render
-
-          // Wait for manual form to appear
-          const nameInput = customerPage.locator('input[name="manualAddress.name"]');
-          await expect(nameInput).toBeVisible({ timeout: 5000 });
-          console.log('[Test 2] Manual billing form appeared');
-
-          // Fill manual billing address fields
-          await nameInput.fill('Test Customer');
-          await customerPage.locator('input[name="manualAddress.line1"]').fill('123 Test Street');
-          await customerPage.locator('input[name="manualAddress.city"]').fill('Sydney');
-          await customerPage.locator('input[name="manualAddress.postal_code"]').fill('2000');
-          await customerPage.locator('input[name="manualAddress.country"]').fill('AU');
-          console.log('[Test 2] Filled all billing fields');
-
-          const saveButton = customerPage.locator('button:has-text("Save Address")');
-          await expect(saveButton).toBeVisible({ timeout: 5000 });
-          await saveButton.click();
-          await customerPage.waitForTimeout(1500);
-          console.log('[Test 2] ✓ Filled billing address manually');
-        } else {
-          // Fallback: Try Google address search (less reliable due to API)
-          console.log('[Test 2] Manual entry not found, trying Google search...');
-          const addressInput = customerPage.locator('input[placeholder*="Search"], input[placeholder*="address"]').first();
-          if (await addressInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await addressInput.fill('Sydney Opera House, Sydney');
-            await customerPage.waitForTimeout(1500);
-            const suggestion = customerPage.locator('[role="option"]').first();
-            if (await suggestion.isVisible({ timeout: 3000 }).catch(() => false)) {
-              await suggestion.click();
-              await customerPage.waitForTimeout(1500);
-              console.log('[Test 2] ✓ Selected billing address from suggestions');
-            }
-          }
+      // ===== STEP 3: Dismiss cookie banner if present =====
+      const cookieBanner = customerPage.getByTestId('cookie-banner');
+      if (await cookieBanner.isVisible({ timeout: 2000 }).catch(() => false)) {
+        const acceptCookieBtn = customerPage.getByTestId('cookie-accept-btn');
+        if (await acceptCookieBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await acceptCookieBtn.click();
+          await expect(cookieBanner).not.toBeVisible({ timeout: 3000 });
+          console.log('[Test 2] ✓ Dismissed cookie banner');
         }
       }
 
-      await customerPage.screenshot({ path: 'test-results/tarot-after-billing.png' });
-      await customerPage.waitForTimeout(1000);
+      // ===== STEP 4-7: Complete purchase using PurchaseManager =====
+      console.log('[Test 2] Step 3-7: Completing purchase flow...');
+      const purchaseManager = new PurchaseManager(customerPage);
+      const result = await purchaseManager.completePurchaseFromDetailPage(serviceName, {
+        skipBilling: false,
+      });
 
-      // Step 5b: Expand Payment Method section and fill Stripe
-      const paymentSection = customerPage.locator('text=Payment Method').first();
-      if (await paymentSection.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await paymentSection.click();
-        await customerPage.waitForTimeout(2000);
-        console.log('[Test 2] ✓ Expanded payment method section');
+      if (!result.success) {
+        throw new Error(`Purchase failed: ${result.error}`);
       }
-
-      console.log('[Test 2] Filling Stripe payment...');
-      const stripeFrames = customerPage.locator('iframe[name^="__privateStripeFrame"]');
-      await expect(stripeFrames.first()).toBeVisible({ timeout: 15000 });
-      await customerPage.waitForTimeout(2000);
-
-      const frameCount = await stripeFrames.count();
-      console.log(`[Test 2] Found ${frameCount} Stripe iframes`);
-
-      let filledNumber = false;
-      let filledExpiry = false;
-      let filledCvc = false;
-
-      for (let i = 0; i < frameCount; i++) {
-        const frame = customerPage.frameLocator('iframe[name^="__privateStripeFrame"]').nth(i);
-
-        if (!filledNumber) {
-          const numberInput = frame.locator('input[name="number"]');
-          if (await numberInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-            await numberInput.fill('4242424242424242');
-            filledNumber = true;
-            console.log(`[Test 2] ✓ Filled card number in iframe ${i}`);
-          }
-        }
-
-        if (!filledExpiry) {
-          const expiryInput = frame.locator('input[name="expiry"]');
-          if (await expiryInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-            await expiryInput.fill('12/34');
-            filledExpiry = true;
-            console.log(`[Test 2] ✓ Filled expiry in iframe ${i}`);
-          }
-        }
-
-        if (!filledCvc) {
-          const cvcInput = frame.locator('input[name="cvc"]');
-          if (await cvcInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-            await cvcInput.fill('123');
-            filledCvc = true;
-            console.log(`[Test 2] ✓ Filled CVC in iframe ${i}`);
-          }
-        }
-      }
-
-      // Assert all card fields were filled
-      expect(filledNumber).toBe(true);
-      expect(filledExpiry).toBe(true);
-      expect(filledCvc).toBe(true);
-      console.log('[Test 2] ✓ All card details filled');
-
-      // ===== STEP 6: Submit payment =====
-      await customerPage.waitForTimeout(1000);
-      await customerPage.screenshot({ path: 'test-results/tarot-before-pay.png' });
-
-      const payButton = customerPage.locator('button:has-text("Finish & Pay"), button:has-text("Pay"), button:has-text("Complete")').first();
-      await expect(payButton).toBeVisible({ timeout: 5000 });
-
-      // Wait for button to be enabled (all checkout steps complete)
-      await expect(payButton).toBeEnabled({ timeout: 10000 });
-      console.log('[Test 2] ✓ Pay button is enabled');
-
-      await payButton.click();
-      console.log('[Test 2] ✓ Clicked Finish & Pay button');
-      await customerPage.waitForTimeout(10000);
-
-      // ===== STEP 7: Wait for payment confirmation dialog =====
-      // First we should see "Processing Payment" dialog, then "Payment successful"
-      console.log('[Test 2] Waiting for payment confirmation...');
-
-      // Wait for the "Payment successful" dialog (polling will show this after webhook processes)
-      const paymentSuccessDialog = customerPage.locator('text=Payment successful');
-      await expect(paymentSuccessDialog).toBeVisible({ timeout: 60000 });
-      console.log('[Test 2] ✓ Payment successful dialog shown!');
-
-      await customerPage.screenshot({ path: 'test-results/tarot-payment-success.png' });
 
       await customerPage.screenshot({ path: 'test-results/tarot-customer-purchase.png' });
       console.log('[Test 2] ✓ Customer purchase flow completed');
@@ -1037,13 +871,13 @@ Trust in your journey, dear seeker. The cards show a beautiful progression from 
       await customerPage.screenshot({ path: 'test-results/tarot-reading-detail-view.png' });
       console.log('[Test 4] Screenshot taken of reading detail view');
 
-      // Look for "Journal the Cards" button - THIS MUST APPEAR for Tarot readings
-      const journalButton = customerPage.locator('button:has-text("Journal the Cards"), button:has-text("Journal")').first();
+      // Look for "Journal the Cards" button inside the reading detail dialog
+      const journalButton = customerPage.locator('[role="dialog"] button:has-text("Journal the Cards"), [data-state="open"] button:has-text("Journal the Cards")').first();
       const journalBtnVisible = await journalButton.isVisible({ timeout: 5000 }).catch(() => false);
 
       if (!journalBtnVisible) {
         await customerPage.screenshot({ path: 'test-results/tarot-no-journal-button.png' });
-        throw new Error('[Test 4] FAILED: "Journal the Cards" button not visible - this is a Tarot reading, so the button MUST appear');
+        throw new Error('[Test 4] FAILED: "Journal the Cards" button not visible in reading detail dialog');
       }
 
       await journalButton.click();

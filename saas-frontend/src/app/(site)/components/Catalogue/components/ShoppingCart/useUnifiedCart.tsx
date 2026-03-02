@@ -451,9 +451,10 @@ async function clearCartMutation() {
 // Main Hook
 // ============================================================================
 
-export function useUnifiedCart() {
+export function useUnifiedCart(options?: { enabled?: boolean }) {
     const queryClient = useQueryClient();
     const syncInProgressRef = useRef(false);
+    const enabled = options?.enabled ?? true;
 
     // Query backend cart
     const cartQuery = useQuery({
@@ -461,6 +462,7 @@ export function useUnifiedCart() {
         queryFn: fetchCart,
         staleTime: 0,
         refetchOnWindowFocus: true,
+        enabled,
     });
 
     // Sync pending operations when cart loads or comes online

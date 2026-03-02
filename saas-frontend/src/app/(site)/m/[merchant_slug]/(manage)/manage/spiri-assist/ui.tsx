@@ -105,10 +105,10 @@ const SpiriAssistLockedPreview: React.FC = () => {
                     data-testid="spiri-assist-upgrade-btn"
                     className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-3 text-sm font-medium text-white hover:bg-purple-700 transition-colors"
                 >
-                    Upgrade to Manifest
+                    Upgrade to Illuminate
                     <ArrowRight className="h-4 w-4" />
                 </button>
-                <p className="text-xs text-slate-500 mt-3">Available on the Manifest plan and above</p>
+                <p className="text-xs text-slate-500 mt-3">Available on the Illuminate plan and above</p>
             </div>
         </div>
     );

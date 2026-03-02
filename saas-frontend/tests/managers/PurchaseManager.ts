@@ -94,9 +94,27 @@ export class PurchaseManager {
   }
 
   /**
+   * Dismiss cookie banner if present (it intercepts clicks at z-index 90)
+   */
+  async dismissCookieBanner(): Promise<void> {
+    const cookieBanner = this.page.getByTestId('cookie-banner');
+    if (await cookieBanner.isVisible({ timeout: 1000 }).catch(() => false)) {
+      const acceptBtn = this.page.getByTestId('cookie-accept-btn');
+      if (await acceptBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await acceptBtn.click();
+        await expect(cookieBanner).not.toBeVisible({ timeout: 3000 });
+        console.log('[PurchaseManager] Dismissed cookie banner');
+      }
+    }
+  }
+
+  /**
    * Proceed from cart to checkout
    */
   async proceedToCheckout(): Promise<void> {
+    // Dismiss cookie banner if present (it intercepts checkout button clicks)
+    await this.dismissCookieBanner();
+
     // Wait for checkout button (may show "Checkout", "Loading payment ...", or "Error")
     const checkoutBtn = this.page.getByTestId('checkout-btn');
     await expect(checkoutBtn).toBeVisible({ timeout: 10000 });
@@ -275,6 +293,27 @@ export class PurchaseManager {
   }
 
   /**
+   * Accept checkout consent checkboxes (refund policy, payment terms, etc.)
+   */
+  async acceptConsentCheckboxes(): Promise<void> {
+    const consentSection = this.page.getByTestId('checkout-consent-section');
+    if (await consentSection.isVisible({ timeout: 5000 }).catch(() => false)) {
+      // shadcn Checkbox renders as <button role="checkbox">, not native <input>
+      const checkboxes = consentSection.locator('[role="checkbox"]');
+      const count = await checkboxes.count();
+      for (let i = 0; i < count; i++) {
+        const checkbox = checkboxes.nth(i);
+        const isChecked = await checkbox.getAttribute('data-state');
+        if (isChecked !== 'checked') {
+          await checkbox.click();
+          await this.page.waitForTimeout(200);
+        }
+      }
+      console.log(`[PurchaseManager] Accepted ${count} consent checkbox(es)`);
+    }
+  }
+
+  /**
    * Submit payment and wait for success
    * @param timeout - Maximum time to wait for payment confirmation (default: 90s)
    *
@@ -284,7 +323,10 @@ export class PurchaseManager {
    * the frontend won't receive confirmation.
    */
   async submitPayment(timeout: number = 90000): Promise<void> {
-    const payButton = this.page.locator('button:has-text("Finish & Pay"), button:has-text("Pay")').first();
+    // Accept consent checkboxes before submitting
+    await this.acceptConsentCheckboxes();
+
+    const payButton = this.page.getByTestId('finish-pay-btn');
     await expect(payButton).toBeEnabled({ timeout: 10000 });
     await payButton.click();
     console.log('[PurchaseManager] Payment submitted');

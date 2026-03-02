@@ -1,8 +1,16 @@
 'use client'
 
 import { useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import UseMerchantIdFromSlug from '../../../m/_hooks/UseMerchantIdFromSlug';
+import TrialBanner from '@/components/TrialBanner';
+import TrialExpiredDialog from '@/components/TrialExpiredDialog';
 
 export default function PractitionerManageLayout({ children }: { children: React.ReactNode }) {
+    const params = useParams<{ practitioner_slug: string }>();
+    const { data: slugData } = UseMerchantIdFromSlug(params.practitioner_slug);
+    const practitionerId = slugData?.merchantId;
+
     useEffect(() => {
         const root = document.documentElement;
 
@@ -39,5 +47,11 @@ export default function PractitionerManageLayout({ children }: { children: React
         };
     }, []);
 
-    return <div className="min-h-screen bg-slate-900">{children}</div>;
+    return (
+        <div className="min-h-screen bg-slate-900">
+            {practitionerId && <TrialBanner vendorId={practitionerId} />}
+            {practitionerId && <TrialExpiredDialog vendorId={practitionerId} />}
+            {children}
+        </div>
+    );
 }

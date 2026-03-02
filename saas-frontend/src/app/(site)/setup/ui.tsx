@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Form } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { Mail } from 'lucide-react';
@@ -9,6 +10,8 @@ import SpiriLogo from '@/icons/spiri-logo';
 import { SignIn } from '@/components/ux/SignIn';
 
 import { gql } from '@/lib/services/gql';
+import UseUserProfile from '@/hooks/user/UseUserProfile';
+import useReverseGeocoding from '@/components/utils/useReverseGeoCoding';
 import OnboardingShell, { type OnboardingTheme } from './components/OnboardingShell';
 import MarketingPanel from './components/MarketingPanel';
 import StepIndicator from './components/StepIndicator';
@@ -19,6 +22,7 @@ import MerchantProfileStep from './components/MerchantProfileStep';
 import PractitionerProfileStep from './components/PractitionerProfileStep';
 import PractitionerOptionalStep from './components/PractitionerOptionalStep';
 import AlsoPractitionerStep from './components/AlsoPractitionerStep';
+import CardCaptureStep from './components/CardCaptureStep';
 import { useOnboardingForm } from './hooks/useOnboardingForm';
 
 // ── Step identifiers ────────────────────────────────────────────────
@@ -28,6 +32,7 @@ type Step =
     | 'plan'
     | 'consent'
     | 'merchant-profile'
+    | 'card-capture'
     | 'also-practitioner'
     | 'practitioner-profile'
     | 'practitioner-optional';
@@ -47,6 +52,10 @@ function themeForStep(step: Step, branch: Branch, hasReligion?: boolean): Onboar
         if (branch === 'practitioner') return 'purple';
         return 'neutral';
     }
+    if (step === 'card-capture') {
+        if (branch === 'merchant') return 'amber';
+        return 'purple';
+    }
     if (step === 'merchant-profile' || step === 'also-practitioner') return 'amber';
     if (step === 'practitioner-profile' || step === 'practitioner-optional') return 'purple';
     return 'neutral';
@@ -59,6 +68,8 @@ function isFullScreenStep(step: Step): boolean {
 // ── Step labels for indicator ───────────────────────────────────────
 
 function stepLabels(step: Step, branch: Branch): string[] {
+    // Card capture is a standalone step — no indicator
+    if (step === 'card-capture') return [];
     // After merchant clicks "yes" to also create practitioner, show practitioner labels
     if (branch === 'merchant' && (step === 'practitioner-profile' || step === 'practitioner-optional')) {
         return ['Profile', 'Extras'];
@@ -93,16 +104,24 @@ function isCardStep(step: Step): boolean {
 
 export default function SetupUI() {
     const { data: session, status } = useSession();
+    const router = useRouter();
     const isAuthenticated = !!session?.user;
     const isLoading = status === 'loading';
+    const searchParams = useSearchParams();
+    const tierParam = searchParams.get('tier');
+    const intervalParam = searchParams.get('interval') as 'monthly' | 'annual' | null;
 
     const [mounted, setMounted] = useState(false);
     const [step, setStep] = useState<Step>('basic');
     const [branch, setBranch] = useState<Branch>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [createdMerchantSlug, setCreatedMerchantSlug] = useState<string | null>(null);
+    const [createdVendorId, setCreatedVendorId] = useState<string | null>(null);
 
     const { form, initMerchant, initPractitioner, createVendor, createPractitioner } = useOnboardingForm();
+    const { data: userProfile } = UseUserProfile(session?.user?.id ?? '');
+    const detectedCountry = useReverseGeocoding();
+    const didSkipRef = useRef(false);
 
     useEffect(() => { setMounted(true); }, []);
 
@@ -113,9 +132,51 @@ export default function SetupUI() {
         }
     }, [session, form]);
 
+    // Skip redundant steps when profile is already complete
+    useEffect(() => {
+        if (didSkipRef.current) return;
+        if (!session?.user || !userProfile) return;
+        // When tierParam is set (e.g. from upgrade dialog), the user already has a profile —
+        // skip the requiresInput check since the JWT may be stale.
+        if (!tierParam && session.user.requiresInput) return;
+        if (!detectedCountry) return; // Wait for country detection before skipping basic step
+
+        // Pre-fill form from existing profile
+        const country = detectedCountry;
+        form.setValue('firstName', userProfile.firstname || '');
+        form.setValue('lastName', userProfile.lastname || '');
+        form.setValue('email', userProfile.email || session.user.email || '');
+        form.setValue('country', country);
+        if (userProfile.religion?.id) form.setValue('religionId', userProfile.religion.id);
+        if (userProfile.openToOtherExperiences != null) {
+            form.setValue('openToOtherExperiences', userProfile.openToOtherExperiences);
+        }
+
+        if (tierParam) {
+            // Tier was chosen in the GetStartedDialog — skip basic + plan, go to consent
+            form.setValue('subscription.tier', tierParam);
+            if (intervalParam) form.setValue('subscription.billingInterval', intervalParam);
+
+            const newBranch: Branch = tierParam === 'awaken' ? 'practitioner' : 'merchant';
+            setBranch(newBranch);
+            if (newBranch === 'merchant') {
+                initMerchant();
+            } else {
+                initPractitioner();
+            }
+            setStep('consent');
+        } else {
+            // No tier param — skip basic, land on plan selection
+            setStep('plan');
+        }
+
+        didSkipRef.current = true;
+    }, [session, userProfile, detectedCountry, tierParam, intervalParam, form, initMerchant, initPractitioner]);
+
     // ── Step handlers ───────────────────────────────────────────────
 
     const handleBasicBrowse = useCallback(async () => {
+        didSkipRef.current = true; // Prevent skip useEffect from resetting step later
         if (!session?.user?.id) {
             window.location.href = '/';
             return;
@@ -150,6 +211,7 @@ export default function SetupUI() {
     }, [session, form]);
 
     const handleBasicSetupBusiness = useCallback(() => {
+        didSkipRef.current = true; // Prevent skip useEffect from resetting step later
         setStep('plan');
     }, []);
 
@@ -168,8 +230,13 @@ export default function SetupUI() {
     }, [initMerchant, initPractitioner]);
 
     const handleConsentBack = useCallback(() => {
-        setStep('plan');
-    }, []);
+        if (tierParam && session?.user?.id) {
+            // Tier was pre-selected via URL — cancel back to My Journey
+            router.push(`/u/${session.user.id}/space`);
+        } else {
+            setStep('plan');
+        }
+    }, [tierParam, session?.user?.id, router]);
 
     const handleConsentAccepted = useCallback(() => {
         // After consent, go to profile step based on branch
@@ -181,26 +248,46 @@ export default function SetupUI() {
     }, [branch]);
 
     const handlePlanBack = useCallback(() => {
-        setStep('basic');
-    }, []);
+        if (didSkipRef.current && session?.user?.id) {
+            // Basic step was skipped — cancel back to My Journey
+            router.push(`/u/${session.user.id}/space`);
+        } else {
+            setStep('basic');
+        }
+    }, [session?.user?.id, router]);
 
     // Merchant submission
     const handleMerchantSubmit = useCallback(async () => {
+        // Ensure country is set (fallback for skip path where detection resolved late)
+        if (!form.getValues('country') && detectedCountry) {
+            form.setValue('country', detectedCountry);
+        }
+
         setIsSubmitting(true);
         try {
-            const slug = await createVendor();
-            setCreatedMerchantSlug(slug);
-            setStep('also-practitioner');
+            const vendor = await createVendor();
+            setCreatedMerchantSlug(vendor.slug);
+            setCreatedVendorId(vendor.id);
+            setStep('card-capture');
         } catch (error) {
             console.error('Error creating vendor:', error);
             toast.error('Failed to create your shop. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
-    }, [createVendor]);
+    }, [createVendor, form, detectedCountry]);
 
     const handleMerchantBack = useCallback(() => {
         setStep('consent');
+    }, []);
+
+    // Card capture completion (merchant flow)
+    const handleCardCaptureComplete = useCallback(() => {
+        setStep('also-practitioner');
+    }, []);
+
+    const handleCardCaptureSkip = useCallback(() => {
+        setStep('also-practitioner');
     }, []);
 
     // Also-practitioner decision
@@ -233,17 +320,26 @@ export default function SetupUI() {
     }, []);
 
     const handlePractitionerSubmit = useCallback(async () => {
+        // Ensure country is set (fallback for skip path where detection resolved late)
+        if (!form.getValues('country') && detectedCountry) {
+            form.setValue('country', detectedCountry);
+        }
+
         setIsSubmitting(true);
         try {
             // If merchant branch, practitioner gets awaken tier
             const overrideTier = branch === 'merchant' ? 'awaken' : undefined;
-            await createPractitioner(overrideTier);
+            const practitioner = await createPractitioner(overrideTier);
 
-            if (branch === 'merchant' && createdMerchantSlug) {
-                window.location.href = `/m/${createdMerchantSlug}`;
+            if (branch === 'merchant') {
+                // Merchant already did card capture — go straight to redirect
+                if (createdMerchantSlug) {
+                    window.location.href = `/m/${createdMerchantSlug}`;
+                }
             } else {
-                const pracSlug = form.getValues('practitioner.slug');
-                window.location.href = `/p/${pracSlug}`;
+                // Practitioner-only flow — go to card capture
+                setCreatedVendorId(practitioner.id);
+                setStep('card-capture');
             }
         } catch (error) {
             console.error('Error creating practitioner:', error);
@@ -251,7 +347,26 @@ export default function SetupUI() {
         } finally {
             setIsSubmitting(false);
         }
-    }, [branch, createdMerchantSlug, createPractitioner, form]);
+    }, [branch, createdMerchantSlug, createPractitioner, form, detectedCountry]);
+
+    // Card capture completion (practitioner-only flow)
+    const handlePractitionerCardComplete = useCallback(() => {
+        if (branch === 'merchant' && createdMerchantSlug) {
+            window.location.href = `/m/${createdMerchantSlug}`;
+        } else {
+            const pracSlug = form.getValues('practitioner.slug');
+            window.location.href = `/p/${pracSlug}`;
+        }
+    }, [branch, createdMerchantSlug, form]);
+
+    const handlePractitionerCardSkip = useCallback(() => {
+        if (branch === 'merchant' && createdMerchantSlug) {
+            window.location.href = `/m/${createdMerchantSlug}`;
+        } else {
+            const pracSlug = form.getValues('practitioner.slug');
+            window.location.href = `/p/${pracSlug}`;
+        }
+    }, [branch, createdMerchantSlug, form]);
 
     // ── Auth gate ───────────────────────────────────────────────────
 
@@ -341,6 +456,14 @@ export default function SetupUI() {
                     />
                 )}
 
+                {step === 'card-capture' && createdVendorId && (
+                    <CardCaptureStep
+                        vendorId={createdVendorId}
+                        onComplete={branch === 'practitioner' ? handlePractitionerCardComplete : handleCardCaptureComplete}
+                        onSkip={branch === 'practitioner' ? handlePractitionerCardSkip : handleCardCaptureSkip}
+                    />
+                )}
+
                 {step === 'also-practitioner' && (
                     <AlsoPractitionerStep
                         onYes={handleAlsoPractitionerYes}
@@ -373,6 +496,7 @@ export default function SetupUI() {
             isFullScreen={fullScreen}
             isCentered={step === 'basic'}
             marketingContent={<MarketingPanel theme={theme} />}
+            cancelHref={didSkipRef.current && session?.user?.id ? `/u/${session.user.id}/space` : undefined}
         >            {showCard ? (
                 <div
                     className={`flex flex-col rounded-2xl flex-1 min-h-0 transition-all duration-1000 overflow-hidden ${
