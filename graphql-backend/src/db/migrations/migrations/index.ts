@@ -60,6 +60,7 @@ import { migration as migration049 } from "./049_seed_expo_mode_email_templates"
 import { migration as migration050 } from "./050_seed_demo_accounts";
 import { migration as migration051 } from "./051_seed_help_request_categories";
 import { migration as migration052 } from "./052_reseed_payment_link_email_template";
+import { migration as migration053 } from "./053_reseed_live_assist_email_templates";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -115,4 +116,5 @@ export const migrations: Migration[] = [
     migration050,
     migration051,
     migration052,
+    migration053,
 ];
