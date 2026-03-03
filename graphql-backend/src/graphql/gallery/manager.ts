@@ -433,6 +433,7 @@ export class GalleryManager {
             layout: input.layout,
             linkedProducts: input.linkedProducts,
             tags: input.tags,
+            usedBytes: input.usedBytes,
             createdAt: now,
             updatedAt: now
         };

@@ -231,7 +231,7 @@ const GalleryDropZone: React.FC<Props> = ({
       const title = fileName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ').trim();
       
       // Create gallery item immediately
-      await createGalleryItemMutation.mutateAsync({
+      const result = await createGalleryItemMutation.mutateAsync({
         merchantId,
         categoryId: categoryId || undefined,
         albumId: albumId || undefined,
@@ -242,7 +242,11 @@ const GalleryDropZone: React.FC<Props> = ({
         layout: 'single',
         usedBytes: mediaData.sizeBytes
       });
-      
+
+      if (!result?.success) {
+        throw new Error(result?.message || 'Failed to save gallery item');
+      }
+
       setUploadingFiles(prev => prev.map(f => f.id === uploadingFile.id ? { ...f, status: 'completed', progress: 100, mediaData } : f));
       onFileUploaded(mediaData);
       if (onItemCreated) {

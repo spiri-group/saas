@@ -158,7 +158,22 @@ export async function POST(req: Request) {
             filename = filename.replace(/%20/g, "-").replace(/ /g, "-");
 
             const blobClient = containerClient.getBlockBlobClient(`${req.headers.get("relative_path")}/${filename}`);
-            uploadPromises.push(uploadToBlobStorage(await file.arrayBuffer(), blobClient));
+            const arrayBuffer = await file.arrayBuffer();
+            // Set the correct content type so browsers can play videos etc.
+            const contentType = file.type || 'application/octet-stream';
+            uploadPromises.push(
+              blobClient.uploadData(arrayBuffer, {
+                blobHTTPHeaders: { blobContentType: contentType }
+              }).then(async () => {
+                const props = await blobClient.getProperties();
+                return {
+                  relativePath: blobClient.name,
+                  name: blobClient.name.split('/').pop()!,
+                  url: blobClient.url,
+                  sizeBytes: props.contentLength ?? 0
+                };
+              })
+            );
           }
 
         }

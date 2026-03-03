@@ -11,6 +11,7 @@ export const useCreateGalleryItem = () => {
       const response = await gql<{
         createGalleryItem: {
           success: boolean;
+          message?: string;
           galleryItem: {
             id: string;
             type: gallery_item_type_enum;
@@ -27,6 +28,7 @@ export const useCreateGalleryItem = () => {
         mutation CreateGalleryItem($input: CreateGalleryItemInput!) {
           createGalleryItem(input: $input) {
             success
+            message
             galleryItem {
               id
               type
