@@ -289,6 +289,7 @@ jobs:
 
               const commitHtml = commits
                 .slice(-15)
+                .reverse()
                 .map(c => {
                   const hash = c.sha.substring(0, 7);
                   const msg = esc(c.commit.message.split('\n')[0]);
@@ -349,6 +350,7 @@ jobs:
 
               const recentCommits = commits
                 .slice(-5)
+                .reverse()
                 .map(c => `- \`${c.sha.substring(0, 7)}\` ${c.commit.message.split('\n')[0]}`)
                 .join('\n');
 

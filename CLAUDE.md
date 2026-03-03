@@ -1,5 +1,16 @@
 # SpiriVerse Development Guidelines
 
+## CRITICAL: Commit Message Style
+
+**ALWAYS** write commit messages in plain business language. Avoid technical jargon — a non-technical business partner reads these.
+
+| ❌ BAD (technical) | ✅ GOOD (business language) |
+|---|---|
+| Fix cache invalidation causing duplicate entries | Fix gallery showing duplicate uploads |
+| Add RBAC role assignment for storage blob | Grant storage access for preview environments |
+| Override Tailwind preflight max-width on img | Fix profile picture zoom slider |
+| Invalidate React Query cache on mutation | Fix uploaded photos appearing multiple times |
+
 ## Quick Reference
 
 - **Testing Guidelines**: See `/saas-frontend/tests/TESTING_GUIDELINES.md`
