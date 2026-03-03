@@ -735,51 +735,48 @@ export class GalleryManager {
 
     private async incrementVendorStorage(merchantId: string, usedBytes: number, userId: string): Promise<void> {
         try {
-            // Get current vendor record
             const vendor = await this.cosmos.get_record<vendor_type>("Main-Vendor", merchantId, merchantId);
-            
+
             if (vendor) {
                 const currentUsedBytes = vendor.storage?.usedBytes || 0;
                 const newUsedBytes = currentUsedBytes + usedBytes;
+                const ops: any[] = [];
 
-                await this.cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
-                    {
-                        op: "replace",
-                        path: "/storage/usedBytes",
-                        value: newUsedBytes
-                    }
-                ], userId);
-                
+                // Create the storage object first if it doesn't exist
+                if (!vendor.storage) {
+                    ops.push({ op: "add", path: "/storage", value: { usedBytes: newUsedBytes } });
+                } else {
+                    ops.push({ op: "replace", path: "/storage/usedBytes", value: newUsedBytes });
+                }
+
+                await this.cosmos.patch_record("Main-Vendor", merchantId, merchantId, ops, userId);
                 console.log(`Incremented vendor ${merchantId} storage by ${usedBytes} bytes (total: ${newUsedBytes})`);
             }
         } catch (error) {
             console.error(`Failed to increment vendor storage for ${merchantId}:`, error);
-            // Don't throw - gallery item creation should not fail due to storage tracking
         }
     }
 
     private async decrementVendorStorage(merchantId: string, usedBytes: number, userId: string): Promise<void> {
         try {
-            // Get current vendor record
             const vendor = await this.cosmos.get_record<vendor_type>("Main-Vendor", merchantId, merchantId);
 
             if (vendor) {
                 const currentUsedBytes = vendor.storage?.usedBytes || 0;
-                const newUsedBytes = Math.max(0, currentUsedBytes - usedBytes); // Prevent negative values
+                const newUsedBytes = Math.max(0, currentUsedBytes - usedBytes);
+                const ops: any[] = [];
 
-                await this.cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
-                    {
-                        op: "replace",
-                        path: "/storage/usedBytes",
-                        value: newUsedBytes
-                    }
-                ], userId);
+                if (!vendor.storage) {
+                    ops.push({ op: "add", path: "/storage", value: { usedBytes: newUsedBytes } });
+                } else {
+                    ops.push({ op: "replace", path: "/storage/usedBytes", value: newUsedBytes });
+                }
 
+                await this.cosmos.patch_record("Main-Vendor", merchantId, merchantId, ops, userId);
                 console.log(`Decremented vendor ${merchantId} storage by ${usedBytes} bytes (total: ${newUsedBytes})`);
             }
         } catch (error) {
             console.error(`Failed to decrement vendor storage for ${merchantId}:`, error);
-            // Don't throw - gallery item deletion should not fail due to storage tracking
         }
     }
 }

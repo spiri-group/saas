@@ -64,8 +64,7 @@ const MerchantGallery: React.FC<Props> = ({
     const [currentPage, setCurrentPage] = useState(0);
     const ITEMS_PER_PAGE = 15;
 
-    // Phase 1: Aspect ratio & video duration tracking
-    const [aspectRatios, setAspectRatios] = useState<Map<string, number>>(new Map());
+    // Video duration tracking
     const [videoDurations, setVideoDurations] = useState<Map<string, number>>(new Map());
 
     // Phase 2: Search & filter
@@ -151,21 +150,7 @@ const MerchantGallery: React.FC<Props> = ({
         MERCHANT_PLANS[merchantPlan].limits.totalStorageGB
     );
 
-    // Phase 1: Aspect ratio callback
-    const handleImageLoad = useCallback((itemId: string, e: React.SyntheticEvent<HTMLImageElement>) => {
-        const img = e.currentTarget;
-        if (img.naturalWidth && img.naturalHeight) {
-            const ratio = img.naturalWidth / img.naturalHeight;
-            setAspectRatios(prev => {
-                if (prev.get(itemId) === ratio) return prev;
-                const next = new Map(prev);
-                next.set(itemId, ratio);
-                return next;
-            });
-        }
-    }, []);
-
-    // Phase 1: Video duration callback
+    // Video duration callback
     const handleVideoMetadata = useCallback((itemId: string, e: React.SyntheticEvent<HTMLVideoElement>) => {
         const video = e.currentTarget;
         if (video.duration && isFinite(video.duration)) {
@@ -354,16 +339,6 @@ const MerchantGallery: React.FC<Props> = ({
         );
     }
 
-    // Helper: get aspect ratio style for a gallery item
-    const getAspectStyle = (item: gallery_item_type): React.CSSProperties => {
-        const ratio = aspectRatios.get(item.id);
-        if (ratio) {
-            return { aspectRatio: `${ratio}` };
-        }
-        // Default: 4:5 for photos, 16:9 for videos
-        return { aspectRatio: item.type === 'video' ? '16/9' : '4/5' };
-    };
-
     // Render a single gallery card (used in both grid + categories views)
     const renderGalleryCard = (item: gallery_item_type, index: number) => {
         const isSelected = selectedItems.has(item.id);
@@ -371,15 +346,14 @@ const MerchantGallery: React.FC<Props> = ({
         const imgSrc = item.type === 'photo' ? getTileImageUrl(item.url) : undefined;
 
         return (
-            <div key={`existing-${item.id}`} className="relative group mb-4 break-inside-avoid">
+            <div key={`existing-${item.id}`} className="relative group">
+                {/* Thumbnail */}
                 <div
                     className={cn(
-                        'rounded-xl overflow-hidden drop-shadow-lg bg-slate-800/50 cursor-pointer relative',
-                        isSelected && 'ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-900'
+                        'aspect-square rounded-lg overflow-hidden bg-slate-800/50 cursor-pointer relative border border-white/10 transition-all duration-150',
+                        isSelected ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-900' : 'hover:border-white/25'
                     )}
-                    style={getAspectStyle(item)}
                     onClick={(e) => {
-                        // If shift/ctrl held, toggle selection. Otherwise open lightbox.
                         if (e.shiftKey || e.ctrlKey || e.metaKey) {
                             e.preventDefault();
                             toggleItemSelection(item.id, index, e.shiftKey);
@@ -394,7 +368,6 @@ const MerchantGallery: React.FC<Props> = ({
                             alt={item.title}
                             loading="lazy"
                             className="w-full h-full object-cover"
-                            onLoad={(e) => handleImageLoad(item.id, e)}
                         />
                     ) : (
                         <div className="relative w-full h-full">
@@ -407,92 +380,25 @@ const MerchantGallery: React.FC<Props> = ({
                                 onLoadedData={(e) => { (e.target as HTMLVideoElement).currentTime = 0.1; }}
                                 onLoadedMetadata={(e) => handleVideoMetadata(item.id, e)}
                             />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
-                                <Video className="w-8 h-8 text-white drop-shadow-lg" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+                                <div className="bg-black/60 rounded-full p-2">
+                                    <Video className="w-5 h-5 text-white" />
+                                </div>
                             </div>
-                            {/* Video duration badge */}
                             {duration !== undefined && (
-                                <div className="absolute bottom-2 right-2 bg-black/70 text-white text-sm font-medium px-2 py-1 rounded pointer-events-none">
+                                <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs font-medium px-1.5 py-0.5 rounded pointer-events-none">
                                     {formatDuration(duration)}
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* Hover overlay with gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl flex flex-col justify-between p-4 pointer-events-none group-hover:pointer-events-auto">
-                        {/* Top: type badge */}
-                        <div className="flex justify-between items-start">
-                            <Badge variant="secondary" className="bg-white/10 text-white text-sm border-0 pointer-events-none">
-                                {item.type === 'photo' ? <><Camera className="w-4 h-4 mr-1.5" /> Photo</> : <><Video className="w-4 h-4 mr-1.5" /> Video</>}
-                            </Badge>
-                        </div>
-
-                        {/* Bottom: title, description, actions */}
-                        <div>
-                            <p className="text-white text-sm font-medium truncate">{item.title}</p>
-                            {item.description && (
-                                <p className="text-white/80 text-sm line-clamp-2 mt-0.5">{item.description}</p>
-                            )}
-                            <div className="flex items-center gap-2 mt-2.5">
-                                <button
-                                    className="bg-white/10 hover:bg-white/20 text-white rounded-lg p-2 transition-colors"
-                                    onClick={(e) => { e.stopPropagation(); openLightbox(index); }}
-                                    title="View fullscreen"
-                                >
-                                    <Expand className="w-4 h-4" />
-                                </button>
-                                <div onClick={(e) => e.stopPropagation()}>
-                                    <GalleryItemEditor
-                                        merchantId={merchantId}
-                                        existingItem={item}
-                                        onItemSaved={() => {}}
-                                        className="bg-white/10 hover:bg-white/20 text-white rounded-lg !p-2"
-                                    />
-                                </div>
-                                <Popover open={deleteConfirmOpen === item.id} onOpenChange={(open) => !open && setDeleteConfirmOpen(null)}>
-                                    <PopoverTrigger asChild>
-                                        <button
-                                            className="bg-white/10 hover:bg-red-500/40 text-white rounded-lg p-2 transition-colors"
-                                            onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}
-                                            title="Delete"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-80">
-                                        <div className="space-y-3">
-                                            <h3 className="font-medium text-base">Delete Item</h3>
-                                            <p className="text-sm text-slate-400">
-                                                Are you sure you want to delete this item? This action cannot be undone.
-                                            </p>
-                                            <div className="flex gap-2 justify-end">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={(e) => { e.stopPropagation(); setDeleteConfirmOpen(null); }}
-                                                >
-                                                    Cancel
-                                                </Button>
-                                                <Button
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    onClick={(e) => { e.stopPropagation(); confirmDeleteItem(item.id); }}
-                                                    disabled={deleteItemMutation.isPending && deleteConfirmOpen === item.id}
-                                                >
-                                                    {deleteItemMutation.isPending && deleteConfirmOpen === item.id ? 'Deleting...' : 'Delete'}
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Selection checkbox - always visible with subtle bg, prominent when selected */}
+                    {/* Selection checkbox */}
                     <div
-                        className="absolute top-2.5 left-2.5 z-10"
+                        className={cn(
+                            'absolute top-2 left-2 z-10 transition-opacity duration-150',
+                            isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                        )}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <Checkbox
@@ -504,31 +410,56 @@ const MerchantGallery: React.FC<Props> = ({
                     </div>
                 </div>
 
-                {/* Title and Linked Products below card */}
-                <div className="mt-2 space-y-1">
-                    <p className="text-sm font-medium truncate">{item.title}</p>
-                    <div className="flex items-center justify-between">
-                        <p className="text-sm text-slate-300 capitalize">{item.type}</p>
-                        {item.linkedProducts && item.linkedProducts.length > 0 && (
-                            <Badge variant="outline" className="text-sm">
-                                {item.linkedProducts.length} product{item.linkedProducts.length === 1 ? '' : 's'}
-                            </Badge>
-                        )}
-                    </div>
-                    {item.linkedProducts && item.linkedProducts.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                            {item.linkedProducts.slice(0, 2).map(product => (
-                                <Badge key={product.id} variant="secondary" className="text-sm">
-                                    {product.title}
-                                </Badge>
-                            ))}
-                            {item.linkedProducts.length > 2 && (
-                                <Badge variant="secondary" className="text-sm">
-                                    +{item.linkedProducts.length - 2}
-                                </Badge>
-                            )}
+                {/* Title and actions below thumbnail */}
+                <div className="mt-1.5 flex items-center justify-between gap-1">
+                    <p className="text-sm font-medium truncate text-slate-200 flex-1">{item.title}</p>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                            className="text-slate-400 hover:text-white rounded p-1 transition-colors"
+                            onClick={() => openLightbox(index)}
+                            title="View fullscreen"
+                        >
+                            <Expand className="w-3.5 h-3.5" />
+                        </button>
+                        <div onClick={(e) => e.stopPropagation()}>
+                            <GalleryItemEditor
+                                merchantId={merchantId}
+                                existingItem={item}
+                                onItemSaved={() => {}}
+                                className="text-slate-400 hover:text-white rounded !p-1 !h-auto border-0"
+                            />
                         </div>
-                    )}
+                        <Popover open={deleteConfirmOpen === item.id} onOpenChange={(open) => !open && setDeleteConfirmOpen(null)}>
+                            <PopoverTrigger asChild>
+                                <button
+                                    className="text-slate-400 hover:text-red-400 rounded p-1 transition-colors"
+                                    onClick={() => handleDeleteItem(item.id)}
+                                    title="Delete"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent dark className="w-72">
+                                <div className="space-y-3">
+                                    <h3 className="font-medium text-sm text-white">Delete this item?</h3>
+                                    <p className="text-sm text-slate-400">This can&apos;t be undone.</p>
+                                    <div className="flex gap-2 justify-end">
+                                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setDeleteConfirmOpen(null); }}>
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={(e) => { e.stopPropagation(); confirmDeleteItem(item.id); }}
+                                            disabled={deleteItemMutation.isPending && deleteConfirmOpen === item.id}
+                                        >
+                                            {deleteItemMutation.isPending && deleteConfirmOpen === item.id ? 'Deleting...' : 'Delete'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                 </div>
             </div>
         );
@@ -810,7 +741,7 @@ const MerchantGallery: React.FC<Props> = ({
                 </div>
 
                 {/* Main Content - All Items */}
-                <div className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
                     <Card dark className="flex-1 flex flex-col">
                         <CardHeader>
                             <div className="flex justify-between items-center">
@@ -1115,8 +1046,8 @@ const MerchantGallery: React.FC<Props> = ({
                                             </div>
                                         )}
 
-                                        {/* Masonry Grid */}
-                                        <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 flex-1" style={{ minHeight: '500px' }}>
+                                        {/* Grid */}
+                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 flex-1" style={{ minHeight: '500px' }}>
                                             {(() => {
                                                 const allCombined = [
                                                     ...uploadingFiles.map(uf => ({ type: 'uploading' as const, data: uf })),
@@ -1131,7 +1062,7 @@ const MerchantGallery: React.FC<Props> = ({
                                                     if (combinedItem.type === 'uploading') {
                                                         const uploadingFile = combinedItem.data as UploadingFile;
                                                         return (
-                                                            <div key={`uploading-${uploadingFile.id}`} className="relative mb-4 break-inside-avoid">
+                                                            <div key={`uploading-${uploadingFile.id}`} className="relative">
                                                                 <div className="aspect-square rounded-lg overflow-hidden border border-white/10 bg-slate-800/50 flex flex-col items-center justify-center">
                                                                     <div className="text-center p-4">
                                                                         {uploadingFile.file.type.startsWith('video/') ?

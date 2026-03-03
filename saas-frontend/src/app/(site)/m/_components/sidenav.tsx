@@ -265,7 +265,7 @@ const useBL = (props: BLProps) => {
                     icon: <ImageIcon className="w-5 h-5" />,
                     label: "Gallery",
                     dialogId: "Merchant Gallery",
-                    className: "w-[1050px] max-w-[95vw] h-[850px]"
+                    className: "w-[95vw] h-[90vh]"
                 }
             ]
         },
