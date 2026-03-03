@@ -15,6 +15,7 @@ import ConditionalNav from './components/ConditionalNav';
 import ConditionalNavItems from './components/ConditionalNavItems';
 import ConditionalMainWrapper from './components/ConditionalMainWrapper';
 import SacredAnimatedBackground from './components/Home/SacredAnimatedBackground';
+import NavOrbs from './components/NavOrbs';
 import ResolveStripeSuccess from './components/ResolveStripeSuccess';
 import ConsentGuard from './components/ConsentGuard';
 import CookieBanner from './components/CookieBanner';
@@ -42,15 +43,17 @@ export default function SiteLayout({
         <ConditionalNav>
           <div
              style={{}}
-             className="flex flex-row items-center justify-between h-20 w-full fixed z-50 bg-transparent backdrop-blur-sm shadow-xl px-3 border-b border-white/10">
-            <Link href="/">
+             className="flex flex-row items-center justify-between h-20 w-full fixed z-50 bg-slate-950 shadow-xl px-3 border-b border-white/10 overflow-hidden">
+            {/* Orbs layer inside nav — matches global background animation */}
+            <NavOrbs />
+            <Link href="/" className="relative z-10">
               <SpiriLogo height={40} />
             </Link>
               <ConditionalNavItems>
                 <Suspense fallback={null}>
-                  <SearchBar className="flex-grow mx-6" />
+                  <SearchBar className="relative z-10 flex-grow mx-6" />
                 </Suspense>
-                <div className="flex flex-row items-center space-x-2">
+                <div className="relative z-10 flex flex-row items-center space-x-2">
                 <CartIcon />
                 <SignedIn/>
                 </div>
