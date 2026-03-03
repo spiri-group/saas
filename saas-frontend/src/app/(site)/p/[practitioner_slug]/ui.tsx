@@ -4,11 +4,11 @@ import { useState, useRef, useEffect } from "react";
 import { Session } from "next-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { gql } from "@/lib/services/gql";
-import { Star, Heart, MessageCircle, Calendar, CalendarDays, Clock, MapPin, Shield, Award, Sparkles, ShoppingCart, Send, Loader2, Play, ChevronLeft, ChevronRight, Video, Mic, Sun, Pause, Pin, Store, ImageIcon } from "lucide-react";
+import { Star, Heart, MessageCircle, Calendar, CalendarDays, Clock, MapPin, Shield, Award, Sparkles, ShoppingCart, Send, Loader2, Play, Video, Mic, Sun, Pause, Pin, Store, ImageIcon } from "lucide-react";
 import { iconsMapping } from "@/icons/social";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// Card imports removed — sections are now full-width, no card wrappers
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -107,6 +107,20 @@ interface Video {
     };
 }
 
+interface VideoUpdate {
+    id: string;
+    media: {
+        url: string;
+        name?: string;
+        type?: string;
+    };
+    coverPhoto?: {
+        url: string;
+    };
+    caption?: string;
+    postedAt: string;
+}
+
 interface SocialPlatform {
     id: string;
     platform: string;
@@ -139,6 +153,7 @@ interface Practitioner {
         average: number;
     };
     videos?: Video[];
+    videoUpdates?: VideoUpdate[];
     videoSettings?: {
         autoplay: boolean;
         autoplayDelay: number;
@@ -321,6 +336,19 @@ const usePractitionerProfile = (practitionerId: string) => {
                             coverPhoto {
                                 url
                             }
+                        }
+                        videoUpdates {
+                            id
+                            media {
+                                url
+                                name
+                                type
+                            }
+                            coverPhoto {
+                                url
+                            }
+                            caption
+                            postedAt
                         }
                         videoSettings {
                             autoplay
@@ -610,215 +638,95 @@ const useSendMessage = () => {
     });
 };
 
-// Video Section Component
-interface PractitionerVideoSectionProps {
+// Video Stories Dialog — opens from avatar indicator in the hero
+interface VideoStoriesDialogProps {
     videos: Video[];
-    videoSettings?: {
-        autoplay: boolean;
-        autoplayDelay: number;
-    };
     practitionerName: string;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
 }
 
-function PractitionerVideoSection({ videos, videoSettings, practitionerName }: PractitionerVideoSectionProps) {
+function VideoStoriesDialog({ videos, practitionerName, open, onOpenChange }: VideoStoriesDialogProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const [hasAutoPlayed, setHasAutoPlayed] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [showControls, setShowControls] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    // Handle autoplay with delay
-    useEffect(() => {
-        if (videoSettings?.autoplay && videoSettings.autoplayDelay > 0 && !hasAutoPlayed && videoRef.current) {
-            const delay = videoSettings.autoplayDelay * 1000;
-            const timer = setTimeout(() => {
-                if (videoRef.current) {
-                    videoRef.current.play()
-                        .then(() => {
-                            setHasAutoPlayed(true);
-                            setIsPlaying(true);
-                            setShowControls(true);
-                        })
-                        .catch((error) => {
-                            console.log('Autoplay prevented:', error);
-                        });
-                }
-            }, delay);
-            return () => clearTimeout(timer);
-        }
-
-        if (videoSettings?.autoplay && videoSettings.autoplayDelay === 0 && !hasAutoPlayed) {
-            setIsPlaying(true);
-            setShowControls(true);
-            setHasAutoPlayed(true);
-        }
-    }, [videoSettings, hasAutoPlayed]);
-
     const currentVideo = videos[currentIndex];
-    const hasMultipleVideos = videos.length > 1;
+    const hasMultiple = videos.length > 1;
 
-    const goToPrevious = () => {
-        const wasPlaying = isPlaying;
-        setCurrentIndex((prev) => (prev > 0 ? prev - 1 : videos.length - 1));
-        setIsPlaying(false);
-        setShowControls(wasPlaying);
-        setHasAutoPlayed(false);
+    const goNext = () => setCurrentIndex((i) => (i < videos.length - 1 ? i + 1 : 0));
+    const goPrev = () => setCurrentIndex((i) => (i > 0 ? i - 1 : videos.length - 1));
 
-        if (wasPlaying && videoRef.current) {
-            setTimeout(() => {
-                if (videoRef.current) {
-                    videoRef.current.muted = true;
-                    videoRef.current.play().then(() => {
-                        setIsPlaying(true);
-                        setShowControls(true);
-                        if (videoRef.current) videoRef.current.muted = false;
-                    }).catch(err => {
-                        console.log('Autoplay blocked:', err);
-                        setIsPlaying(false);
-                    });
-                }
-            }, 100);
-        }
-    };
-
-    const goToNext = () => {
-        const wasPlaying = isPlaying;
-        setCurrentIndex((prev) => (prev < videos.length - 1 ? prev + 1 : 0));
-        setIsPlaying(false);
-        setShowControls(wasPlaying);
-        setHasAutoPlayed(false);
-
-        if (wasPlaying && videoRef.current) {
-            setTimeout(() => {
-                if (videoRef.current) {
-                    videoRef.current.muted = true;
-                    videoRef.current.play().then(() => {
-                        setIsPlaying(true);
-                        setShowControls(true);
-                        if (videoRef.current) videoRef.current.muted = false;
-                    }).catch(err => {
-                        console.log('Autoplay blocked:', err);
-                        setIsPlaying(false);
-                    });
-                }
-            }, 100);
-        }
-    };
-
-    const handlePlayClick = () => {
-        if (videoRef.current) {
-            if (isPlaying) {
-                videoRef.current.pause();
-                setIsPlaying(false);
-            } else {
-                videoRef.current.play();
-                setIsPlaying(true);
-                setShowControls(true);
-            }
-        }
-    };
-
-    const handleVideoEnded = () => {
-        setIsPlaying(false);
-        setShowControls(false);
-    };
-
-    const autoplayEnabled = videoSettings?.autoplay || false;
-    const autoplayDelay = videoSettings?.autoplayDelay || 0;
+    // Reset index when dialog opens
+    useEffect(() => {
+        if (open) setCurrentIndex(0);
+    }, [open]);
 
     return (
-        <Card className="mt-6 backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="video-section">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                    <Video className="w-5 h-5 text-indigo-600" />
-                    Video Introduction
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="flex justify-center">
-                    <div className="relative w-full max-w-[280px] group cursor-pointer">
-                        <video
-                            ref={videoRef}
-                            src={currentVideo.media.url}
-                            controls={showControls}
-                            muted={!isPlaying}
-                            loop={autoplayEnabled}
-                            playsInline
-                            autoPlay={autoplayEnabled && autoplayDelay === 0}
-                            className={`w-full rounded-lg ${!isPlaying && currentVideo.coverPhoto ? 'invisible' : 'visible'}`}
-                            style={{ aspectRatio: '9/16' }}
-                            preload="metadata"
-                            onEnded={handleVideoEnded}
-                        >
-                            Your browser does not support the video tag.
-                        </video>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="!w-[calc(55vh*9/16)] !max-w-[75vw] !max-h-[calc(55vh+3rem)] p-0 bg-black border-white/10 overflow-hidden flex flex-col" data-testid="video-stories-dialog">
+                <DialogHeader className="sr-only">
+                    <DialogTitle>{practitionerName}&apos;s Video Updates</DialogTitle>
+                    <DialogDescription>Watch video updates from {practitionerName}</DialogDescription>
+                </DialogHeader>
 
-                        {/* Cover photo overlay */}
-                        {!isPlaying && currentVideo.coverPhoto && (
-                            <div
-                                className="absolute inset-0 rounded-lg overflow-hidden"
-                                onClick={handlePlayClick}
-                            >
-                                <img
-                                    src={currentVideo.coverPhoto.url}
-                                    alt={`${practitionerName} video`}
-                                    className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                                    <div className="bg-white/90 group-hover:bg-white rounded-full p-4 transform group-hover:scale-110 transition-transform shadow-lg">
-                                        <Play className="h-8 w-8 text-indigo-600 fill-indigo-600" />
-                                    </div>
+                {/* Video */}
+                <div className="relative">
+                    {/* Progress bars */}
+                    {hasMultiple && (
+                        <div className="absolute top-3 left-3 right-3 z-20 flex gap-1.5">
+                            {videos.map((_, i) => (
+                                <div key={i} className="flex-1 h-1 rounded-full bg-white/20">
+                                    <div className={`h-full rounded-full transition-all ${i <= currentIndex ? 'bg-white' : 'bg-transparent'}`} />
                                 </div>
-                            </div>
-                        )}
+                            ))}
+                        </div>
+                    )}
 
-                        {/* Play button overlay when no cover photo */}
-                        {!isPlaying && !currentVideo.coverPhoto && (
-                            <div
-                                className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors rounded-lg"
-                                onClick={handlePlayClick}
-                            >
-                                <div className="bg-white/90 group-hover:bg-white rounded-full p-4 transform group-hover:scale-110 transition-transform shadow-lg">
-                                    <Play className="h-8 w-8 text-indigo-600 fill-indigo-600" />
-                                </div>
-                            </div>
-                        )}
+                    <video
+                        ref={videoRef}
+                        key={currentVideo.media.url}
+                        src={currentVideo.media.url}
+                        controls
+                        autoPlay
+                        playsInline
+                        className="w-full max-h-[55vh] object-cover bg-black"
+                        onEnded={() => { if (hasMultiple) goNext(); }}
+                    />
 
-                        {/* Navigation arrows for multiple videos */}
-                        {hasMultipleVideos && (
-                            <>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
-                                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors z-10"
-                                    aria-label="Previous video"
-                                >
-                                    <ChevronLeft className="h-5 w-5" />
-                                </button>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); goToNext(); }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors z-10"
-                                    aria-label="Next video"
-                                >
-                                    <ChevronRight className="h-5 w-5" />
-                                </button>
-                                <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-                                    {currentIndex + 1} / {videos.length}
-                                </div>
-                            </>
-                        )}
+                    {/* Tap zones for prev/next */}
+                    {hasMultiple && (
+                        <>
+                            <div className="absolute inset-y-0 left-0 w-1/4 z-10 cursor-pointer" onClick={goPrev} />
+                            <div className="absolute inset-y-0 right-0 w-1/4 z-10 cursor-pointer" onClick={goNext} />
+                        </>
+                    )}
 
-                        {/* Caption overlay */}
-                        {currentVideo.media.description && (
-                            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 via-black/50 to-transparent rounded-b-lg pointer-events-none">
-                                <p className="text-white text-sm font-medium leading-relaxed drop-shadow-lg">
-                                    {currentVideo.media.description}
-                                </p>
+                    {/* Caption */}
+                    {currentVideo.media.description && (
+                        <div className="absolute bottom-4 inset-x-0 px-4 z-10 pointer-events-none">
+                            <div className="bg-black/50 backdrop-blur-sm rounded-lg px-4 py-2">
+                                <p className="text-white text-sm">{currentVideo.media.description}</p>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
+
+                    {/* Counter */}
+                    {hasMultiple && (
+                        <div className="absolute top-8 right-3 z-20 text-white/60 text-xs">
+                            {currentIndex + 1} / {videos.length}
+                        </div>
+                    )}
                 </div>
-            </CardContent>
-        </Card>
+
+                {/* Close button — big, at the bottom */}
+                <button
+                    onClick={() => onOpenChange(false)}
+                    className="w-full py-3 text-white/70 hover:text-white hover:bg-white/10 transition-colors text-sm font-medium border-t border-white/10"
+                >
+                    Close
+                </button>
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -859,15 +767,9 @@ function AudioIntroSection({ audioIntro, practitionerName }: AudioIntroSectionPr
     };
 
     return (
-        <Card className="mt-6 backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="audio-intro-section">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                    <Mic className="w-5 h-5 text-indigo-600" />
-                    Meet {practitionerName}
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-center space-x-4 bg-gradient-to-r from-indigo-100/60 to-indigo-100/60 rounded-lg p-4 border border-indigo-100">
+        <section className="py-8 md:py-10" data-testid="audio-intro-section">
+            <div className="px-4 md:px-8 lg:px-12">
+                <div className="flex items-center space-x-4 bg-white/5 border border-white/10 rounded-2xl p-5">
                     <audio
                         ref={audioRef}
                         src={audioIntro.url}
@@ -878,7 +780,7 @@ function AudioIntroSection({ audioIntro, practitionerName }: AudioIntroSectionPr
                     <button
                         type="button"
                         onClick={togglePlay}
-                        className="w-14 h-14 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 rounded-full transition-colors flex-shrink-0 shadow-lg"
+                        className="w-14 h-14 flex items-center justify-center bg-indigo-500 hover:bg-indigo-400 rounded-full transition-colors flex-shrink-0 shadow-lg"
                     >
                         {isPlaying ? (
                             <Pause className="h-6 w-6 text-white" />
@@ -887,24 +789,27 @@ function AudioIntroSection({ audioIntro, practitionerName }: AudioIntroSectionPr
                         )}
                     </button>
                     <div className="flex-grow">
-                        <p className="text-sm font-medium text-slate-700 mb-2">Voice Introduction</p>
-                        <div className="w-full bg-indigo-200 rounded-full h-2 mb-1">
+                        <p className="text-sm font-medium text-white/80 mb-2">
+                            <Mic className="w-4 h-4 text-indigo-400 inline-block mr-1.5 -mt-0.5" />
+                            Meet {practitionerName}
+                        </p>
+                        <div className="w-full bg-white/10 rounded-full h-2 mb-1">
                             <div
-                                className="bg-indigo-600 h-2 rounded-full transition-all"
+                                className="bg-indigo-400 h-2 rounded-full transition-all"
                                 style={{ width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }}
                             />
                         </div>
-                        <div className="flex justify-between text-xs text-slate-500">
+                        <div className="flex justify-between text-xs text-white/40">
                             <span>{formatTime(currentTime)}</span>
                             <span>{formatTime(duration)}</span>
                         </div>
                     </div>
                 </div>
-                <p className="text-sm text-slate-500 mt-2">
+                <p className="text-sm text-white/40 mt-3 text-center">
                     Listen to {practitionerName}&apos;s voice introduction to get a sense of their energy and style.
                 </p>
-            </CardContent>
-        </Card>
+            </div>
+        </section>
     );
 }
 
@@ -971,25 +876,23 @@ function OracleMessageSection({ oracleMessage, practitionerName }: OracleMessage
     };
 
     return (
-        <Card className="mt-6 backdrop-blur-xl bg-gradient-to-br from-amber-50/70 to-orange-50/70 shadow-xl border border-white/20 border-t-4 border-t-amber-400" data-testid="oracle-message-section">
-            <CardHeader className="pb-2">
-                <CardTitle className="flex items-center justify-between text-lg">
-                    <div className="flex items-center gap-2">
-                        <Sun className="w-5 h-5 text-amber-500" />
-                        <span className="text-amber-800">Daily Oracle</span>
+        <section className="border-y border-amber-500/20 bg-gradient-to-r from-amber-950/30 via-amber-900/20 to-amber-950/30" data-testid="oracle-message-section">
+            <div className="px-4 md:px-8 lg:px-12 py-6">
+                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                        <Sun className="w-5 h-5 text-amber-400" />
+                        <span className="text-amber-300 font-semibold">Daily Oracle</span>
+                        <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs">
+                            {getTimeRemaining()} remaining
+                        </Badge>
                     </div>
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-xs">
-                        {getTimeRemaining()} remaining
-                    </Badge>
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <p className="text-sm text-amber-700/80">
-                    Today&apos;s message from {practitionerName}, shared at {formatPostedTime()}
-                </p>
+                    <p className="text-sm text-amber-200/60">
+                        Today&apos;s message from {practitionerName}, shared at {formatPostedTime()}
+                    </p>
+                </div>
 
-                {/* Audio player with TikTok-style caption overlay */}
-                <div className="relative bg-gradient-to-r from-amber-100/80 to-orange-100/80 rounded-lg p-4 border border-amber-200">
+                {/* Audio player */}
+                <div className="relative mt-4 bg-white/5 border border-amber-500/20 rounded-xl p-4">
                     <audio
                         ref={audioRef}
                         src={oracleMessage.audio.url}
@@ -1002,42 +905,42 @@ function OracleMessageSection({ oracleMessage, practitionerName }: OracleMessage
                         <button
                             type="button"
                             onClick={togglePlay}
-                            className="w-14 h-14 flex items-center justify-center bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-full transition-all flex-shrink-0 shadow-lg"
+                            className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 rounded-full transition-all flex-shrink-0 shadow-lg"
                         >
                             {isPlaying ? (
-                                <Pause className="h-6 w-6 text-white" />
+                                <Pause className="h-5 w-5 text-white" />
                             ) : (
-                                <Play className="h-6 w-6 text-white ml-0.5" />
+                                <Play className="h-5 w-5 text-white ml-0.5" />
                             )}
                         </button>
                         <div className="flex-grow">
-                            <p className="text-sm font-medium text-amber-800 mb-2">Listen to Today&apos;s Oracle</p>
-                            <div className="w-full bg-amber-200 rounded-full h-2 mb-1">
+                            <p className="text-sm font-medium text-amber-200 mb-2">Listen to Today&apos;s Oracle</p>
+                            <div className="w-full bg-white/10 rounded-full h-2 mb-1">
                                 <div
                                     className="bg-gradient-to-r from-amber-500 to-orange-500 h-2 rounded-full transition-all"
                                     style={{ width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }}
                                 />
                             </div>
-                            <div className="flex justify-between text-xs text-amber-600">
+                            <div className="flex justify-between text-xs text-amber-400/60">
                                 <span>{formatTime(currentTime)}</span>
                                 <span>{formatTime(duration)}</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Caption overlay - shows during playback like TikTok */}
+                    {/* Caption overlay - shows during playback */}
                     {oracleMessage.message && isPlaying && (
-                        <div className="absolute inset-x-4 bottom-16 pointer-events-none animate-in fade-in duration-300">
-                            <div className="bg-black/70 backdrop-blur-sm rounded-lg px-4 py-3">
-                                <p className="text-white text-sm font-medium text-center leading-relaxed">
+                        <div className="mt-3 animate-in fade-in duration-300">
+                            <div className="bg-black/40 backdrop-blur-sm rounded-lg px-4 py-3">
+                                <p className="text-amber-100 text-sm font-medium text-center leading-relaxed">
                                     {oracleMessage.message}
                                 </p>
                             </div>
                         </div>
                     )}
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+        </section>
     );
 }
 
@@ -1054,15 +957,13 @@ function PractitionerGallerySection({ items, practitionerId, slug }: Practitione
     const hasMore = items.length > PREVIEW_COUNT;
 
     return (
-        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="gallery-section">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                    <ImageIcon className="w-5 h-5 text-indigo-600" />
+        <section className="py-12 md:py-16 bg-slate-900/50" data-testid="gallery-section">
+            <div className="px-4 md:px-8 lg:px-12">
+                <h2 className="text-2xl md:text-4xl font-bold text-white mb-8 text-center">
+                    <ImageIcon className="w-6 h-6 md:w-7 md:h-7 text-indigo-400 inline-block mr-3 -mt-1" />
                     Gallery
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" style={{ '--border': 'rgba(255, 255, 255, 0.1)' } as React.CSSProperties}>
                     {displayItems.map((item) => (
                         <div key={item.id} data-testid={`gallery-item-${item.id}`}>
                             <GalleryTile
@@ -1073,19 +974,19 @@ function PractitionerGallerySection({ items, practitionerId, slug }: Practitione
                     ))}
                 </div>
                 {hasMore && (
-                    <div className="flex justify-center mt-4">
+                    <div className="flex justify-center mt-8">
                         <Link
                             href={`/p/${slug}/gallery`}
                             data-testid="gallery-view-all-btn"
                         >
-                            <Button variant="outline">
+                            <Button variant="outline" className="border-white/20 text-white/80 hover:bg-white/10 hover:text-white">
                                 View all {items.length} items
                             </Button>
                         </Link>
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </section>
     );
 }
 
@@ -1127,6 +1028,9 @@ export default function PractitionerProfileContent({
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [conversation?.messages]);
+
+    // Video stories state
+    const [videoStoriesOpen, setVideoStoriesOpen] = useState(false);
 
     // Ref for services section
     const servicesRef = useRef<HTMLDivElement>(null);
@@ -1182,16 +1086,35 @@ export default function PractitionerProfileContent({
 
     if (error || !practitioner) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 flex items-center justify-center">
                 <div className="text-center">
-                    <h1 className="text-2xl font-semibold text-slate-800 mb-2">Practitioner not found</h1>
-                    <p className="text-slate-600">This practitioner profile may have been removed or is not yet public.</p>
+                    <h1 className="text-2xl font-semibold text-white mb-2">Practitioner not found</h1>
+                    <p className="text-white/60">This practitioner profile may have been removed or is not yet public.</p>
                 </div>
             </div>
         );
     }
 
     const profile = practitioner.practitioner;
+
+    // Build video list — prefer videoUpdates, fall back to legacy videos
+    const videoUpdateVideos: Video[] = (practitioner.videoUpdates || [])
+        .filter(v => v.media?.url && !v.media.url.endsWith('/'))
+        .map(v => ({
+            media: { url: v.media.url, description: v.caption || undefined },
+            coverPhoto: v.coverPhoto?.url ? { url: v.coverPhoto.url } : undefined,
+        }));
+    const legacyVideos: Video[] = (practitioner.videos || [])
+        .filter(v => v.media?.url && !v.media.url.endsWith('/'));
+    const allVideos = videoUpdateVideos.length > 0 ? videoUpdateVideos : legacyVideos;
+
+    // Check if any video update was posted in the last 3 days
+    const hasRecentVideoUpdate = (practitioner.videoUpdates || []).some(v => {
+        if (!v.postedAt) return false;
+        const postedDate = new Date(v.postedAt);
+        const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+        return postedDate > threeDaysAgo;
+    });
 
     return (
         <>
@@ -1204,640 +1127,656 @@ export default function PractitionerProfileContent({
                 />
             )}
             <div className={`min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 ${isOwner ? 'md:ml-[200px]' : ''}`}>
-                {/* Hero Banner */}
-                <div className={`relative overflow-hidden ${practitioner.banner?.url ? 'h-28 md:h-36' : 'h-0'}`}>
-                {practitioner.banner?.url ? (
-                    <Image
-                        src={practitioner.banner.url}
-                        alt={practitioner.name}
-                        fill
-                        className="object-cover"
-                    />
-                ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-700 via-indigo-600 to-slate-800" />
-                )}
-                <div className="absolute inset-0 bg-black/40" />
-            </div>
+                {/* Hero Section */}
+                <div className="relative h-[40vh] md:h-[45vh] lg:h-[50vh] overflow-hidden">
+                    {/* Background */}
+                    {practitioner.banner?.url ? (
+                        <>
+                            <Image
+                                src={practitioner.banner.url}
+                                alt={practitioner.name}
+                                fill
+                                className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/20" />
+                        </>
+                    ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-900 to-purple-950" />
+                    )}
 
-            {/* Profile Content */}
-            <div className={`mx-auto px-4 md:px-8 lg:px-12 relative z-10 pb-16 ${practitioner.banner?.url ? '-mt-12' : ''}`}>
-                {/* Profile Header Card */}
-                <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-2xl border border-white/20">
-                    <CardContent className="p-8">
-                        <div className="flex flex-col md:flex-row gap-6">
-                            {/* Avatar */}
-                            <div className="flex-shrink-0">
-                                <Avatar className="w-32 h-32 border-4 border-white shadow-xl" data-testid="practitioner-profile-avatar">
-                                    <AvatarImage src={practitioner.logo?.url || practitioner.thumbnail?.image?.media?.url} alt={practitioner.name} data-testid="practitioner-profile-avatar-img" />
-                                    <AvatarFallback className="text-3xl bg-indigo-100 text-indigo-700" data-testid="practitioner-profile-avatar-fallback">
-                                        {practitioner.name?.slice(0, 2).toUpperCase()}
-                                    </AvatarFallback>
-                                </Avatar>
-                            </div>
+                    {/* Profile info overlay — positioned at bottom of hero */}
+                    <div className="absolute inset-x-0 bottom-0 z-10">
+                        <div className="px-4 md:px-8 lg:px-12 pb-8">
+                            <div className="flex flex-col sm:flex-row gap-5 items-start">
+                                {/* Avatar */}
+                                <div className="flex-shrink-0">
+                                    <Avatar className="w-24 h-24 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-2xl border-2 border-white/20 shadow-2xl" data-testid="practitioner-profile-avatar">
+                                        <AvatarImage src={practitioner.logo?.url || practitioner.thumbnail?.image?.media?.url} alt={practitioner.name} className="rounded-2xl" data-testid="practitioner-profile-avatar-img" />
+                                        <AvatarFallback className="text-3xl md:text-5xl bg-indigo-900 text-indigo-300 rounded-2xl" data-testid="practitioner-profile-avatar-fallback">
+                                            {practitioner.name?.slice(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                </div>
 
-                            {/* Info */}
-                            <div className="flex-1">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-                                            {practitioner.name}
-                                        </h1>
-                                        {profile?.pronouns && (
-                                            <span className="text-sm text-slate-500">({profile.pronouns})</span>
-                                        )}
-                                        <p className="text-lg text-indigo-700 mt-1">{profile?.headline}</p>
+                                {/* Info */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                                        <div>
+                                            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
+                                                {practitioner.name}
+                                            </h1>
+                                            {profile?.pronouns && (
+                                                <span className="text-sm text-white/50">({profile.pronouns})</span>
+                                            )}
+                                            {profile?.headline && (
+                                                <p className="text-lg md:text-xl lg:text-2xl text-white/80 mt-1">{profile.headline}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Verification badges */}
+                                        <div className="flex gap-2 flex-shrink-0">
+                                            {profile?.verification?.practitionerVerified && (
+                                                <Badge className="bg-white/10 text-white/80 border-white/20">
+                                                    <Shield className="w-3 h-3 mr-1" />
+                                                    Verified
+                                                </Badge>
+                                            )}
+                                            {profile?.verification?.badges?.includes('FEATURED') && (
+                                                <Badge className="bg-white/10 text-white/80 border-white/20">
+                                                    <Award className="w-3 h-3 mr-1" />
+                                                    Featured
+                                                </Badge>
+                                            )}
+                                        </div>
                                     </div>
 
-                                    {/* Verification badges */}
-                                    <div className="flex gap-2">
-                                        {profile?.verification?.practitionerVerified && (
-                                            <Badge variant="secondary" className="bg-green-100 text-green-700">
-                                                <Shield className="w-3 h-3 mr-1" />
-                                                Verified
-                                            </Badge>
+                                    {/* Stats */}
+                                    <div className="flex flex-wrap gap-4 mt-3 text-sm text-white/70">
+                                        {practitioner.readingRating && practitioner.readingRating.total_count > 0 && (
+                                            <div className="flex items-center gap-1">
+                                                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                                                <span className="font-semibold text-white">{practitioner.readingRating.average.toFixed(1)}</span>
+                                                <span>({practitioner.readingRating.total_count} reviews)</span>
+                                            </div>
                                         )}
-                                        {profile?.verification?.badges?.includes('FEATURED') && (
-                                            <Badge variant="secondary" className="bg-amber-100 text-amber-700">
-                                                <Award className="w-3 h-3 mr-1" />
-                                                Featured
-                                            </Badge>
+                                        {profile?.yearsExperience && (
+                                            <div className="flex items-center gap-1">
+                                                <Clock className="w-4 h-4 text-indigo-400" />
+                                                <span>{profile.yearsExperience} years experience</span>
+                                            </div>
+                                        )}
+                                        {practitioner.country && (
+                                            <div className="flex items-center gap-1">
+                                                <MapPin className="w-4 h-4 text-indigo-400" />
+                                                <span>{practitioner.country}</span>
+                                            </div>
                                         )}
                                     </div>
-                                </div>
 
-                                {/* Stats */}
-                                <div className="flex flex-wrap gap-4 mt-4 text-sm text-slate-600">
-                                    {practitioner.readingRating && practitioner.readingRating.total_count > 0 && (
-                                        <div className="flex items-center gap-1">
-                                            <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                                            <span className="font-semibold">{practitioner.readingRating.average.toFixed(1)}</span>
-                                            <span>({practitioner.readingRating.total_count} reviews)</span>
-                                        </div>
-                                    )}
-                                    {profile?.yearsExperience && (
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="w-4 h-4 text-indigo-500" />
-                                            <span>{profile.yearsExperience} years experience</span>
-                                        </div>
-                                    )}
-                                    {practitioner.country && (
-                                        <div className="flex items-center gap-1">
-                                            <MapPin className="w-4 h-4 text-indigo-500" />
-                                            <span>{practitioner.country}</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Availability */}
-                                <div className="mt-4">
-                                    {profile?.acceptingNewClients ? (
-                                        <Badge className="bg-green-100 text-green-700 border-green-200">
-                                            <Sparkles className="w-3 h-3 mr-1" />
-                                            Accepting New Clients
-                                        </Badge>
-                                    ) : (
-                                        <Badge variant="secondary" className="bg-slate-100 text-slate-600">
-                                            Not Accepting New Clients
-                                        </Badge>
-                                    )}
-                                    {profile?.responseTime && (
-                                        <span className="ml-2 text-sm text-slate-500">
-                                            Usually responds within {profile.responseTime}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* CTA Buttons */}
-                                <div className="flex flex-wrap gap-3 mt-6">
-                                    <Button
-                                        className="bg-indigo-600 hover:bg-indigo-700"
-                                        onClick={handleBookReading}
-                                        data-testid="book-reading-btn"
-                                    >
-                                        <Calendar className="w-4 h-4 mr-2" />
-                                        Book a Reading
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="border-slate-300 text-slate-700 bg-white hover:bg-slate-50"
-                                        onClick={() => setMessageDialogOpen(true)}
-                                        data-testid="send-message-btn"
-                                    >
-                                        <MessageCircle className="w-4 h-4 mr-2" />
-                                        Send Message
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        onClick={handleFollowToggle}
-                                        disabled={!isAuthenticated || isFollowPending || isFollowingLoading}
-                                        data-testid="follow-btn"
-                                        title={!isAuthenticated ? 'Login to follow' : undefined}
-                                    >
-                                        {isFollowPending ? (
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    {/* Availability */}
+                                    <div className="mt-3">
+                                        {profile?.acceptingNewClients ? (
+                                            <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
+                                                <Sparkles className="w-3 h-3 mr-1" />
+                                                Accepting New Clients
+                                            </Badge>
                                         ) : (
-                                            <Heart className={`w-4 h-4 mr-2 ${isFollowing ? 'fill-red-500 text-red-500' : ''}`} />
+                                            <Badge className="bg-white/10 text-white/50 border-white/10">
+                                                Not Accepting New Clients
+                                            </Badge>
                                         )}
-                                        {isFollowing ? 'Following' : 'Follow'}
-                                    </Button>
-                                </div>
-
-                                {/* Social Links */}
-                                {practitioner.social && practitioner.social.platforms && practitioner.social.platforms.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-4" data-testid="social-links">
-                                        {practitioner.social.platforms.map((social) => (
-                                            <a
-                                                key={social.id}
-                                                href={social.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="hover:opacity-80 transition-opacity"
-                                                title={social.handle || social.platform}
-                                                data-testid={`social-link-${social.platform}`}
-                                            >
-                                                {practitioner.social?.style === 'solid' ? (
-                                                    <div className="p-2 rounded-lg bg-white/50 hover:bg-white/70 transition-colors">
-                                                        {iconsMapping[social.platform]?.('solid')}
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-2">
-                                                        {iconsMapping[social.platform]?.('outline')}
-                                                    </div>
-                                                )}
-                                            </a>
-                                        ))}
+                                        {profile?.responseTime && (
+                                            <span className="ml-2 text-sm text-white/50">
+                                                Usually responds within {profile.responseTime}
+                                            </span>
+                                        )}
                                     </div>
-                                )}
+
+                                    {/* CTA Buttons */}
+                                    <div className="flex flex-wrap gap-3 mt-5">
+                                        <Button
+                                            className="bg-white text-indigo-900 hover:bg-white/90 font-semibold"
+                                            onClick={handleBookReading}
+                                            data-testid="book-reading-btn"
+                                        >
+                                            <Calendar className="w-4 h-4 mr-2" />
+                                            Book a Reading
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="border-white/30 text-white hover:bg-white/10 bg-transparent"
+                                            onClick={() => setMessageDialogOpen(true)}
+                                            data-testid="send-message-btn"
+                                        >
+                                            <MessageCircle className="w-4 h-4 mr-2" />
+                                            Send Message
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            className="text-white/80 hover:text-white hover:bg-white/10"
+                                            onClick={handleFollowToggle}
+                                            disabled={!isAuthenticated || isFollowPending || isFollowingLoading}
+                                            data-testid="follow-btn"
+                                            title={!isAuthenticated ? 'Login to follow' : undefined}
+                                        >
+                                            {isFollowPending ? (
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            ) : (
+                                                <Heart className={`w-4 h-4 mr-2 ${isFollowing ? 'fill-red-500 text-red-500' : ''}`} />
+                                            )}
+                                            {isFollowing ? 'Following' : 'Follow'}
+                                        </Button>
+                                    </div>
+
+                                    {/* Social Links */}
+                                    {practitioner.social && practitioner.social.platforms && practitioner.social.platforms.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mt-4" data-testid="social-links">
+                                            {practitioner.social.platforms.map((social) => (
+                                                <a
+                                                    key={social.id}
+                                                    href={social.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="hover:opacity-80 transition-opacity"
+                                                    title={social.handle || social.platform}
+                                                    data-testid={`social-link-${social.platform}`}
+                                                >
+                                                    {practitioner.social?.style === 'solid' ? (
+                                                        <div className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+                                                            {iconsMapping[social.platform]?.('solid')}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="p-2 text-white/70 hover:text-white transition-colors">
+                                                            {iconsMapping[social.platform]?.('outline')}
+                                                        </div>
+                                                    )}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Video Updates — compact preview strip in hero */}
+                                    {allVideos.length > 0 && (
+                                        <div className="flex items-center gap-3 mt-4" data-testid="video-section">
+                                            <button
+                                                onClick={() => setVideoStoriesOpen(true)}
+                                                className="relative flex items-center gap-3 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl px-4 py-2.5 transition-colors group"
+                                            >
+                                                {hasRecentVideoUpdate && (
+                                                    <span className="absolute -top-2 -right-2 flex items-center gap-1 bg-green-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 shadow-lg animate-pulse">
+                                                        <span className="relative flex h-1.5 w-1.5">
+                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75" />
+                                                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-200" />
+                                                        </span>
+                                                        New
+                                                    </span>
+                                                )}
+                                                <div className="flex -space-x-2">
+                                                    {allVideos.slice(0, 3).map((video, i) => (
+                                                        <div key={i} className="w-10 h-10 rounded-lg overflow-hidden border-2 border-slate-950 flex-shrink-0 relative">
+                                                            {video.coverPhoto ? (
+                                                                <img src={video.coverPhoto.url} alt="" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <div className="w-full h-full bg-gradient-to-br from-indigo-800 to-purple-800 flex items-center justify-center">
+                                                                    <Video className="w-4 h-4 text-white/40" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Play className="w-4 h-4 text-white/70 fill-white/70 group-hover:text-white group-hover:fill-white transition-colors" />
+                                                    <span className="text-sm text-white/70 group-hover:text-white transition-colors">
+                                                        {allVideos.length === 1 ? 'Video Update' : `${allVideos.length} Video Updates`}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
-                {/* Two Column Layout for Desktop */}
-                <div className="mt-6 lg:grid lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] lg:gap-8">
-                    {/* Main Column - Services, Videos, About, Training, Reviews */}
-                    <div className="space-y-6">
-                        {/* Available Services */}
-                        {services && services.filter(s => s != null).length > 0 && (
-                            <Card ref={servicesRef} className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="services-section">
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2 text-lg">
-                                        <ShoppingCart className="w-5 h-5 text-indigo-600" />
-                                        Available Services
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        {services.filter(s => s != null).map((service) => (
-                                            <Link
-                                                key={service.id}
-                                                href={`/p/${slug}/services/${service.slug || service.id}`}
-                                                className="block"
-                                            >
-                                                <div className="border rounded-lg p-4 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer bg-white/60 h-full">
-                                                    <div className="flex gap-4">
-                                                        {service.thumbnail?.image?.media?.url && (
-                                                            <div className="flex-shrink-0 w-20 h-20 relative rounded-md overflow-hidden">
-                                                                <Image
-                                                                    src={service.thumbnail.image.media.url}
-                                                                    alt={service.name}
-                                                                    fill
-                                                                    className="object-cover"
-                                                                />
-                                                            </div>
+                {/* === FULL-WIDTH SECTIONS — single column flow === */}
+
+                {/* Oracle Message Strip */}
+                {profile?.oracleMessage && (
+                    <OracleMessageSection
+                        oracleMessage={profile.oracleMessage}
+                        practitionerName={practitioner.name}
+                    />
+                )}
+
+                {/* Audio Introduction */}
+                {profile?.audioIntro && (
+                    <AudioIntroSection
+                        audioIntro={profile.audioIntro}
+                        practitionerName={practitioner.name}
+                    />
+                )}
+
+                {/* Services Section */}
+                {services && services.filter(s => s != null).length > 0 && (
+                    <section ref={servicesRef} className="py-12 md:py-16 bg-slate-900/50" data-testid="services-section">
+                        <div className="px-4 md:px-8 lg:px-12">
+                            <h2 className="text-2xl md:text-4xl font-bold text-white mb-8 text-center">
+                                <ShoppingCart className="w-6 h-6 md:w-7 md:h-7 text-indigo-400 inline-block mr-3 -mt-1" />
+                                Available Services
+                            </h2>
+                            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                                {services.filter(s => s != null).map((service) => {
+                                    const imageUrl = service.thumbnail?.image?.media?.url;
+                                    const hasImage = imageUrl && !imageUrl.endsWith('/');
+                                    return (
+                                    <Link
+                                        key={service.id}
+                                        href={`/p/${slug}/services/${service.slug || service.id}`}
+                                        className="block group"
+                                    >
+                                        <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden hover:border-indigo-400/30 hover:bg-white/[0.07] transition-all h-full flex flex-col">
+                                            {/* Service image — only shown when a real image URL exists */}
+                                            {hasImage && (
+                                                <div className="relative h-48 overflow-hidden flex-shrink-0">
+                                                    <Image
+                                                        src={imageUrl}
+                                                        alt={service.name}
+                                                        fill
+                                                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className={`p-5 flex flex-col flex-1 ${!hasImage ? 'justify-center' : ''}`}>
+                                                <h4 className="text-lg font-semibold text-white truncate">{service.name}</h4>
+                                                {service.description && (
+                                                    <div className="text-sm text-white/60 line-clamp-2 mt-1" dangerouslySetInnerHTML={{ __html: service.description }} />
+                                                )}
+                                                <div className="flex items-center gap-3 mt-3">
+                                                    {service.pricing?.fixedPrice && (
+                                                        <span className="text-xl font-bold text-indigo-300">
+                                                            ${(service.pricing.fixedPrice.amount / 100).toFixed(2)}
+                                                        </span>
+                                                    )}
+                                                    {service.category && (
+                                                        <Badge className="bg-white/10 text-white/60 border-white/10 text-xs">
+                                                            {service.category}
+                                                        </Badge>
+                                                    )}
+                                                    {service.turnaroundDays && (
+                                                        <span className="text-xs text-white/40">
+                                                            {service.turnaroundDays} day delivery
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* Gallery Section */}
+                {galleryItems && galleryItems.length > 0 && (
+                    <PractitionerGallerySection
+                        items={galleryItems}
+                        practitionerId={practitionerId}
+                        slug={slug}
+                    />
+                )}
+
+                {/* About + Modalities — two-column layout */}
+                <section className="py-12 md:py-16">
+                    <div className="px-4 md:px-8 lg:px-12">
+                        <div className="grid lg:grid-cols-[1fr_2fr] gap-12 lg:gap-16">
+                            {/* Left — Modalities & Specializations */}
+                            {((profile?.modalities && profile.modalities.length > 0) || (profile?.specializations && profile.specializations.length > 0)) && (
+                                <div className="lg:sticky lg:top-8 lg:self-start">
+                                    <h2 className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-6">
+                                        Services & Specializations
+                                    </h2>
+
+                                    {profile?.modalities && profile.modalities.length > 0 && (
+                                        <div className="mb-6">
+                                            <p className="text-xs uppercase tracking-wider text-white/40 mb-3">Modalities</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {profile.modalities.map((mod) => (
+                                                    <Badge key={mod} className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30">
+                                                        {MODALITY_LABELS[mod] || mod}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {profile?.specializations && profile.specializations.length > 0 && (
+                                        <div>
+                                            <p className="text-xs uppercase tracking-wider text-white/40 mb-3">Specializations</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {profile.specializations.map((spec) => (
+                                                    <Badge key={spec} className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+                                                        {SPECIALIZATION_LABELS[spec] || spec}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Training & Credentials — nested under modalities */}
+                                    {profile?.training && profile.training.length > 0 && (
+                                        <div className="mt-8 pt-8 border-t border-white/10">
+                                            <h3 className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-5">
+                                                <Award className="w-4 h-4 text-indigo-400 inline-block mr-2 -mt-0.5" />
+                                                Training & Credentials
+                                            </h3>
+                                            <div className="space-y-4">
+                                                {profile.training.map((cred) => (
+                                                    <div key={cred.id} className="border-l-2 border-indigo-400/30 pl-4">
+                                                        <h4 className="font-medium text-white text-sm">{cred.title}</h4>
+                                                        {cred.institution && (
+                                                            <p className="text-xs text-white/60">{cred.institution}</p>
                                                         )}
-                                                        <div className="flex-1 min-w-0">
-                                                            <h4 className="font-medium text-slate-900 truncate">{service.name}</h4>
-                                                            {service.description && (
-                                                                <div className="text-sm text-slate-600 line-clamp-2 mt-1" dangerouslySetInnerHTML={{ __html: service.description }} />
-                                                            )}
-                                                            <div className="flex items-center gap-3 mt-2">
-                                                                {service.pricing?.fixedPrice && (
-                                                                    <span className="text-indigo-700 font-semibold">
-                                                                        ${(service.pricing.fixedPrice.amount / 100).toFixed(2)}
-                                                                    </span>
-                                                                )}
-                                                                {service.category && (
-                                                                    <Badge variant="secondary" className="text-xs">
-                                                                        {service.category}
-                                                                    </Badge>
-                                                                )}
-                                                                {service.turnaroundDays && (
-                                                                    <span className="text-xs text-slate-500">
-                                                                        {service.turnaroundDays} day delivery
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
+                                                        {cred.year && (
+                                                            <p className="text-xs text-white/40">{cred.year}</p>
+                                                        )}
+                                                        {cred.description && (
+                                                            <p className="text-xs text-white/60 mt-1">{cred.description}</p>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Right — About the medium */}
+                            {(profile?.bio || profile?.spiritualJourney || profile?.approach || profile?.whatToExpect) && (
+                                <div>
+                                    <h2 className="text-2xl md:text-4xl font-bold text-white mb-8">
+                                        About {practitioner.name}
+                                    </h2>
+                                    <div className="space-y-8">
+                                        {profile?.bio && (
+                                            <div>
+                                                <p className="text-lg md:text-xl text-white/70 whitespace-pre-line leading-relaxed">{profile.bio}</p>
+                                            </div>
+                                        )}
+
+                                        {profile?.spiritualJourney && (
+                                            <div>
+                                                <h3 className="text-xl md:text-2xl font-semibold text-white/90 mb-3">My Spiritual Journey</h3>
+                                                <p className="text-white/60 whitespace-pre-line leading-relaxed">{profile.spiritualJourney}</p>
+                                            </div>
+                                        )}
+
+                                        {profile?.approach && (
+                                            <div>
+                                                <h3 className="text-xl md:text-2xl font-semibold text-white/90 mb-3">My Approach</h3>
+                                                <p className="text-white/60 whitespace-pre-line leading-relaxed">{profile.approach}</p>
+                                            </div>
+                                        )}
+
+                                        {profile?.whatToExpect && (
+                                            <div>
+                                                <h3 className="text-xl md:text-2xl font-semibold text-white/90 mb-3">What to Expect</h3>
+                                                <p className="text-white/60 whitespace-pre-line leading-relaxed">{profile.whatToExpect}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Reviews Section */}
+                <section className="py-12 md:py-16 bg-indigo-950/50" data-testid="reviews-section">
+                    <div className="px-4 md:px-8 lg:px-12">
+                        {(practitioner.readingRating && practitioner.readingRating.total_count > 0) || (reviews && reviews.length > 0) ? (
+                            <div>
+                                {/* Rating Summary */}
+                                {practitioner.readingRating && practitioner.readingRating.total_count > 0 && (
+                                    <div className="text-center mb-10">
+                                        <div className="text-5xl md:text-6xl font-bold text-white mb-2">
+                                            {practitioner.readingRating.average.toFixed(1)}
+                                        </div>
+                                        <div className="flex items-center gap-1 justify-center mb-2">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <Star
+                                                    key={star}
+                                                    className={`w-5 h-5 ${
+                                                        star <= Math.round(practitioner.readingRating!.average)
+                                                            ? 'text-amber-400 fill-amber-400'
+                                                            : 'text-white/20'
+                                                    }`}
+                                                />
+                                            ))}
+                                        </div>
+                                        <p className="text-sm text-white/50">
+                                            Based on {practitioner.readingRating.total_count} {practitioner.readingRating.total_count === 1 ? 'review' : 'reviews'}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <h2 className="text-2xl md:text-4xl font-bold text-white mb-8 text-center">
+                                    What Clients Say
+                                </h2>
+
+                                {/* Pinned Testimonials */}
+                                {reviews && reviews.length > 0 && profile?.pinnedReviewIds && profile.pinnedReviewIds.length > 0 && (
+                                    <div className="grid gap-5 sm:grid-cols-2 mb-8" data-testid="pinned-testimonials">
+                                        {reviews.filter(r => profile.pinnedReviewIds?.includes(r.id)).map((review) => (
+                                            <div key={review.id} className="relative rounded-2xl bg-white/5 border border-white/10 p-6">
+                                                <div className="absolute -top-3 -left-2">
+                                                    <div className="bg-indigo-500 rounded-full p-1.5">
+                                                        <Pin className="w-3 h-3 text-white" />
                                                     </div>
                                                 </div>
-                                            </Link>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {/* Video Section */}
-                        {practitioner.videos && practitioner.videos.length > 0 && (
-                            <PractitionerVideoSection
-                                videos={practitioner.videos}
-                                videoSettings={practitioner.videoSettings}
-                                practitionerName={practitioner.name}
-                            />
-                        )}
-
-                        {/* Gallery Section */}
-                        {galleryItems && galleryItems.length > 0 && (
-                            <PractitionerGallerySection
-                                items={galleryItems}
-                                practitionerId={practitionerId}
-                                slug={slug}
-                            />
-                        )}
-
-                        {/* About */}
-                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
-                            <CardHeader>
-                                <CardTitle className="text-lg">About {practitioner.name}</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                {profile?.bio && (
-                                    <div>
-                                        <p className="text-slate-700 whitespace-pre-line">{profile.bio}</p>
-                                    </div>
-                                )}
-
-                                {profile?.spiritualJourney && (
-                                    <div>
-                                        <h4 className="text-sm font-medium text-slate-700 mb-2">My Spiritual Journey</h4>
-                                        <p className="text-slate-600 whitespace-pre-line">{profile.spiritualJourney}</p>
-                                    </div>
-                                )}
-
-                                {profile?.approach && (
-                                    <div>
-                                        <h4 className="text-sm font-medium text-slate-700 mb-2">My Approach</h4>
-                                        <p className="text-slate-600 whitespace-pre-line">{profile.approach}</p>
-                                    </div>
-                                )}
-
-                                {profile?.whatToExpect && (
-                                    <div>
-                                        <h4 className="text-sm font-medium text-slate-700 mb-2">What to Expect</h4>
-                                        <p className="text-slate-600 whitespace-pre-line">{profile.whatToExpect}</p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* Training & Credentials */}
-                        {profile?.training && profile.training.length > 0 && (
-                            <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2 text-lg">
-                                        <Award className="w-5 h-5 text-indigo-600" />
-                                        Training & Credentials
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4">
-                                        {profile.training.map((cred) => (
-                                            <div key={cred.id} className="border-l-2 border-indigo-200 pl-4">
-                                                <h4 className="font-medium text-slate-800">{cred.title}</h4>
-                                                {cred.institution && (
-                                                    <p className="text-sm text-slate-600">{cred.institution}</p>
+                                                <div className="text-4xl text-indigo-400/30 font-serif leading-none mb-3">&ldquo;</div>
+                                                {review.headline && (
+                                                    <h4 className="font-medium text-white mb-2">{review.headline}</h4>
                                                 )}
-                                                {cred.year && (
-                                                    <p className="text-xs text-slate-500">{cred.year}</p>
-                                                )}
-                                                {cred.description && (
-                                                    <p className="text-sm text-slate-600 mt-1">{cred.description}</p>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {/* Reviews Section */}
-                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="reviews-section">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Star className="w-5 h-5 text-indigo-600" />
-                                    Client Reviews
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {(practitioner.readingRating && practitioner.readingRating.total_count > 0) || (reviews && reviews.length > 0) ? (
-                                    <div className="space-y-4">
-                                        {/* Rating Summary */}
-                                        {practitioner.readingRating && practitioner.readingRating.total_count > 0 && (
-                                            <div className="flex items-center gap-4 p-4 bg-indigo-100/50 rounded-lg">
-                                                <div className="text-4xl font-bold text-indigo-700">
-                                                    {practitioner.readingRating.average.toFixed(1)}
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center gap-1">
+                                                <p className="text-white/60 text-sm leading-relaxed">{review.text}</p>
+                                                <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
+                                                    <div className="flex items-center gap-2">
+                                                        <Avatar className="w-7 h-7">
+                                                            <AvatarFallback className="bg-indigo-500/20 text-indigo-300 text-xs">
+                                                                {review.userName?.slice(0, 2).toUpperCase() || 'AN'}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <span className="text-sm font-medium text-white/70">
+                                                            {review.userName || 'Anonymous'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-0.5">
                                                         {[1, 2, 3, 4, 5].map((star) => (
                                                             <Star
                                                                 key={star}
-                                                                className={`w-5 h-5 ${
-                                                                    star <= Math.round(practitioner.readingRating!.average)
-                                                                        ? 'text-amber-500 fill-amber-500'
-                                                                        : 'text-slate-300'
+                                                                className={`w-3.5 h-3.5 ${
+                                                                    star <= review.rating
+                                                                        ? 'text-amber-400 fill-amber-400'
+                                                                        : 'text-white/20'
                                                                 }`}
                                                             />
                                                         ))}
                                                     </div>
-                                                    <p className="text-sm text-slate-600 mt-1">
-                                                        Based on {practitioner.readingRating.total_count} {practitioner.readingRating.total_count === 1 ? 'review' : 'reviews'}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Unpinned Reviews */}
+                                {reviews && reviews.length > 0 && (
+                                    <div className="space-y-4">
+                                        {reviews.filter(r => !profile?.pinnedReviewIds?.includes(r.id)).map((review) => (
+                                            <div key={review.id} className="border-b border-white/10 pb-4 last:border-0 last:pb-0">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <Avatar className="w-7 h-7">
+                                                            <AvatarFallback className="bg-indigo-500/20 text-indigo-300 text-xs">
+                                                                {review.userName?.slice(0, 2).toUpperCase() || 'AN'}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <span className="text-sm font-medium text-white/70">
+                                                            {review.userName || 'Anonymous'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-0.5">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <Star
+                                                                key={star}
+                                                                className={`w-3.5 h-3.5 ${
+                                                                    star <= review.rating
+                                                                        ? 'text-amber-400 fill-amber-400'
+                                                                        : 'text-white/20'
+                                                                }`}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                {review.headline && (
+                                                    <h4 className="font-medium text-white mb-1">{review.headline}</h4>
+                                                )}
+                                                <p className="text-white/60 text-sm">{review.text}</p>
+                                                <p className="text-xs text-white/30 mt-2">
+                                                    {new Date(review.createdAt).toLocaleDateString('en-AU', {
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric'
+                                                    })}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8">
+                                <Star className="w-12 h-12 text-white/10 mx-auto mb-3" />
+                                <p className="text-white/50">No reviews yet</p>
+                                <p className="text-sm text-white/30 mt-1">
+                                    Be the first to book a reading and leave a review!
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                {/* Linked Shopfronts */}
+                {profile?.linkedShopfronts && profile.linkedShopfronts.length > 0 && (
+                    <section className="py-12 md:py-16" data-testid="shopfronts-section">
+                        <div className="px-4 md:px-8 lg:px-12">
+                            <h2 className="text-2xl md:text-4xl font-bold text-white mb-8 text-center">
+                                <Store className="w-6 h-6 md:w-7 md:h-7 text-amber-400 inline-block mr-3 -mt-1" />
+                                My Shops
+                            </h2>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {profile.linkedShopfronts
+                                    .sort((a, b) => a.displayOrder - b.displayOrder)
+                                    .map((shop) => (
+                                        <Link
+                                            key={shop.merchantId}
+                                            href={`/m/${shop.merchantSlug}`}
+                                            className="group block"
+                                            data-testid={`shop-link-${shop.merchantId}`}
+                                        >
+                                            <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-amber-400/30 hover:bg-white/[0.07] transition-all">
+                                                {shop.merchantLogo ? (
+                                                    <img
+                                                        src={shop.merchantLogo}
+                                                        alt={shop.merchantName}
+                                                        className="h-12 w-12 rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="h-12 w-12 rounded-full bg-amber-500/20 flex items-center justify-center">
+                                                        <Store className="h-5 w-5 text-amber-400" />
+                                                    </div>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-medium text-white group-hover:text-amber-300 transition-colors truncate">
+                                                        {shop.merchantName}
                                                     </p>
+                                                    <p className="text-xs text-white/40">View shop &rarr;</p>
                                                 </div>
                                             </div>
-                                        )}
+                                        </Link>
+                                    ))}
+                            </div>
+                        </div>
+                    </section>
+                )}
 
-                                        {/* Pinned Testimonials */}
-                                        {reviews && reviews.length > 0 && profile?.pinnedReviewIds && profile.pinnedReviewIds.length > 0 && (
-                                            <div className="space-y-3" data-testid="pinned-testimonials">
-                                                <div className="flex items-center gap-2 text-sm text-indigo-600 font-medium">
-                                                    <Pin className="w-4 h-4" />
-                                                    <span>Highlighted Reviews</span>
+                {/* Upcoming Events */}
+                {events && events.length > 0 && (
+                    <section className="py-12 md:py-16 bg-slate-900/50" data-testid="events-section">
+                        <div className="px-4 md:px-8 lg:px-12">
+                            <h2 className="text-2xl md:text-4xl font-bold text-white mb-8 text-center">
+                                <CalendarDays className="w-6 h-6 md:w-7 md:h-7 text-indigo-400 inline-block mr-3 -mt-1" />
+                                Upcoming Events
+                            </h2>
+                            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                                {events.slice(0, 6).map((event) => {
+                                    const startDate = new Date(event.startAt);
+                                    const endDate = new Date(event.endAt);
+                                    const isSameDay = startDate.toDateString() === endDate.toDateString();
+
+                                    return (
+                                        <div
+                                            key={event.id}
+                                            className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden hover:border-indigo-400/30 transition-colors"
+                                        >
+                                            {event.landscapeImage?.image?.media?.url ? (
+                                                <div className="relative h-40 overflow-hidden">
+                                                    <img
+                                                        src={event.landscapeImage.image.media.url}
+                                                        alt={event.title}
+                                                        className="w-full h-full object-cover"
+                                                    />
                                                 </div>
-                                                {reviews.filter(r => profile.pinnedReviewIds?.includes(r.id)).map((review) => (
-                                                    <div key={review.id} className="relative border-2 border-indigo-200 bg-indigo-50/50 rounded-lg p-4">
-                                                        <div className="absolute -top-2 -left-2">
-                                                            <div className="bg-indigo-500 rounded-full p-1">
-                                                                <Pin className="w-3 h-3 text-white" />
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <Avatar className="w-8 h-8">
-                                                                    <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs">
-                                                                        {review.userName?.slice(0, 2).toUpperCase() || 'AN'}
-                                                                    </AvatarFallback>
-                                                                </Avatar>
-                                                                <span className="font-medium text-slate-700">
-                                                                    {review.userName || 'Anonymous'}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex items-center gap-1">
-                                                                {[1, 2, 3, 4, 5].map((star) => (
-                                                                    <Star
-                                                                        key={star}
-                                                                        className={`w-4 h-4 ${
-                                                                            star <= review.rating
-                                                                                ? 'text-amber-500 fill-amber-500'
-                                                                                : 'text-slate-300'
-                                                                        }`}
-                                                                    />
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                        {review.headline && (
-                                                            <h4 className="font-medium text-slate-800 mb-1">{review.headline}</h4>
-                                                        )}
-                                                        <p className="text-slate-600 text-sm">{review.text}</p>
-                                                        <p className="text-xs text-slate-400 mt-2">
-                                                            {new Date(review.createdAt).toLocaleDateString('en-AU', {
-                                                                year: 'numeric',
-                                                                month: 'long',
-                                                                day: 'numeric'
-                                                            })}
-                                                        </p>
-                                                    </div>
-                                                ))}
+                                            ) : (
+                                                <div className="h-40 bg-gradient-to-br from-indigo-900/50 to-purple-900/50 flex items-center justify-center">
+                                                    <CalendarDays className="w-10 h-10 text-white/20" />
+                                                </div>
+                                            )}
+                                            <div className="p-4">
+                                                <h4 className="font-semibold text-white truncate">{event.title}</h4>
+                                                <div className="flex items-center gap-1.5 text-sm text-white/60 mt-1.5">
+                                                    <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                                                    <span>
+                                                        {startDate.toLocaleDateString('en-AU', {
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}
+                                                        {!isSameDay && ` - ${endDate.toLocaleDateString('en-AU', {
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}`}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        )}
-
-                                        {/* Individual Reviews */}
-                                        {reviews && reviews.length > 0 && (
-                                            <div className="space-y-4">
-                                                {reviews.filter(r => !profile?.pinnedReviewIds?.includes(r.id)).map((review) => (
-                                                    <div key={review.id} className="border-b border-slate-200/50 pb-4 last:border-0 last:pb-0">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <Avatar className="w-8 h-8">
-                                                                    <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs">
-                                                                        {review.userName?.slice(0, 2).toUpperCase() || 'AN'}
-                                                                    </AvatarFallback>
-                                                                </Avatar>
-                                                                <span className="font-medium text-slate-700">
-                                                                    {review.userName || 'Anonymous'}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex items-center gap-1">
-                                                                {[1, 2, 3, 4, 5].map((star) => (
-                                                                    <Star
-                                                                        key={star}
-                                                                        className={`w-4 h-4 ${
-                                                                            star <= review.rating
-                                                                                ? 'text-amber-500 fill-amber-500'
-                                                                                : 'text-slate-300'
-                                                                        }`}
-                                                                    />
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                        {review.headline && (
-                                                            <h4 className="font-medium text-slate-800 mb-1">{review.headline}</h4>
-                                                        )}
-                                                        <p className="text-slate-600 text-sm">{review.text}</p>
-                                                        <p className="text-xs text-slate-400 mt-2">
-                                                            {new Date(review.createdAt).toLocaleDateString('en-AU', {
-                                                                year: 'numeric',
-                                                                month: 'long',
-                                                                day: 'numeric'
-                                                            })}
-                                                        </p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-8">
-                                        <Star className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                                        <p className="text-slate-500">No reviews yet</p>
-                                        <p className="text-sm text-slate-400 mt-1">
-                                            Be the first to book a reading and leave a review!
-                                        </p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Sidebar Column - Oracle, Audio, Modalities, Shops, Events */}
-                    <div className="space-y-6 mt-6 lg:mt-0 lg:sticky lg:top-6 lg:self-start">
-                        {/* Daily Oracle Message */}
-                        {profile?.oracleMessage && (
-                            <OracleMessageSection
-                                oracleMessage={profile.oracleMessage}
-                                practitionerName={practitioner.name}
-                            />
-                        )}
-
-                        {/* Audio Introduction */}
-                        {profile?.audioIntro && (
-                            <AudioIntroSection
-                                audioIntro={profile.audioIntro}
-                                practitionerName={practitioner.name}
-                            />
-                        )}
-
-                        {/* Modalities & Specializations */}
-                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Star className="w-5 h-5 text-indigo-600" />
-                                    Services & Specializations
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {profile?.modalities && profile.modalities.length > 0 && (
-                                    <div>
-                                        <h4 className="text-sm font-medium text-slate-700 mb-2">Modalities</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {profile.modalities.map((mod) => (
-                                                <Badge key={mod} variant="secondary" className="bg-indigo-100 text-indigo-700">
-                                                    {MODALITY_LABELS[mod] || mod}
-                                                </Badge>
-                                            ))}
                                         </div>
-                                    </div>
-                                )}
+                                    );
+                                })}
+                            </div>
+                            {events.length > 6 && (
+                                <p className="text-sm text-white/40 mt-6 text-center">
+                                    +{events.length - 6} more events
+                                </p>
+                            )}
+                        </div>
+                    </section>
+                )}
 
-                                {profile?.specializations && profile.specializations.length > 0 && (
-                                    <div>
-                                        <h4 className="text-sm font-medium text-slate-700 mb-2">Specializations</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {profile.specializations.map((spec) => (
-                                                <Badge key={spec} variant="secondary" className="bg-indigo-100 text-indigo-700">
-                                                    {SPECIALIZATION_LABELS[spec] || spec}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* Linked Shopfronts */}
-                        {profile?.linkedShopfronts && profile.linkedShopfronts.length > 0 && (
-                            <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="shopfronts-section">
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="flex items-center gap-2 text-lg">
-                                        <Store className="w-5 h-5 text-amber-600" />
-                                        My Shops
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-3">
-                                        {profile.linkedShopfronts
-                                            .sort((a, b) => a.displayOrder - b.displayOrder)
-                                            .map((shop) => (
-                                                <Link
-                                                    key={shop.merchantId}
-                                                    href={`/m/${shop.merchantSlug}`}
-                                                    className="group block"
-                                                    data-testid={`shop-link-${shop.merchantId}`}
-                                                >
-                                                    <div className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-amber-300 hover:bg-amber-50/50 transition-all">
-                                                        {shop.merchantLogo ? (
-                                                            <img
-                                                                src={shop.merchantLogo}
-                                                                alt={shop.merchantName}
-                                                                className="h-10 w-10 rounded-full object-cover"
-                                                            />
-                                                        ) : (
-                                                            <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
-                                                                <Store className="h-5 w-5 text-amber-600" />
-                                                            </div>
-                                                        )}
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="font-medium text-slate-800 group-hover:text-amber-700 transition-colors truncate text-sm">
-                                                                {shop.merchantName}
-                                                            </p>
-                                                            <p className="text-xs text-slate-500">View shop →</p>
-                                                        </div>
-                                                    </div>
-                                                </Link>
-                                            ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {/* Upcoming Events */}
-                        {events && events.length > 0 && (
-                            <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="events-section">
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="flex items-center gap-2 text-lg">
-                                        <CalendarDays className="w-5 h-5 text-indigo-600" />
-                                        Upcoming Events
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-3">
-                                        {events.slice(0, 3).map((event) => {
-                                            const startDate = new Date(event.startAt);
-                                            const endDate = new Date(event.endAt);
-                                            const isSameDay = startDate.toDateString() === endDate.toDateString();
-
-                                            return (
-                                                <div
-                                                    key={event.id}
-                                                    className="flex gap-3 p-3 rounded-lg border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
-                                                >
-                                                    {event.landscapeImage?.image?.media?.url ? (
-                                                        <div className="flex-shrink-0 w-16 h-12 relative rounded-md overflow-hidden">
-                                                            <img
-                                                                src={event.landscapeImage.image.media.url}
-                                                                alt={event.title}
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex-shrink-0 w-16 h-12 rounded-md bg-indigo-100 flex items-center justify-center">
-                                                            <CalendarDays className="w-5 h-5 text-indigo-400" />
-                                                        </div>
-                                                    )}
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="font-medium text-slate-900 truncate text-sm">{event.title}</h4>
-                                                        <div className="flex items-center gap-1 text-xs text-slate-600 mt-0.5">
-                                                            <Calendar className="w-3 h-3 flex-shrink-0" />
-                                                            <span>
-                                                                {startDate.toLocaleDateString('en-AU', {
-                                                                    month: 'short',
-                                                                    day: 'numeric'
-                                                                })}
-                                                                {!isSameDay && ` - ${endDate.toLocaleDateString('en-AU', {
-                                                                    month: 'short',
-                                                                    day: 'numeric'
-                                                                })}`}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    {events.length > 3 && (
-                                        <p className="text-xs text-slate-500 mt-3 text-center">
-                                            +{events.length - 3} more events
-                                        </p>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        )}
-                    </div>
-                </div>
+                {/* Bottom spacer */}
+                <div className="h-16" />
             </div>
 
-            {/* Message Dialog with Conversation History */}
+            {/* Message Dialog with Conversation History — NO CHANGES to dialog styling */}
             <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
                 <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col" data-testid="conversation-dialog">
                     <DialogHeader>
@@ -1930,7 +1869,16 @@ export default function PractitionerProfileContent({
                     </div>
                 </DialogContent>
             </Dialog>
-            </div>
+
+            {/* Video Stories Dialog */}
+            {allVideos.length > 0 && (
+                <VideoStoriesDialog
+                    videos={allVideos}
+                    practitionerName={practitioner.name}
+                    open={videoStoriesOpen}
+                    onOpenChange={setVideoStoriesOpen}
+                />
+            )}
         </>
     );
 }
@@ -1938,71 +1886,69 @@ export default function PractitionerProfileContent({
 function ProfileSkeleton() {
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900">
-            <div className="h-64 md:h-80 bg-indigo-950/50 animate-pulse" />
-            <div className="mx-auto px-4 md:px-8 lg:px-12 -mt-32 relative z-10 pb-16">
-                {/* Header Card Skeleton */}
-                <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-2xl border border-white/20">
-                    <CardContent className="p-8">
-                        <div className="flex flex-col md:flex-row gap-6">
-                            <div className="w-32 h-32 rounded-full bg-white/30 animate-pulse" />
-                            <div className="flex-1 space-y-4">
-                                <div className="h-8 w-64 bg-white/30 rounded animate-pulse" />
-                                <div className="h-6 w-96 bg-white/30 rounded animate-pulse" />
+            {/* Hero skeleton */}
+            <div className="relative h-[40vh] md:h-[45vh] bg-indigo-950/50 animate-pulse">
+                <div className="absolute inset-x-0 bottom-0">
+                    <div className="px-4 md:px-8 lg:px-12 pb-8">
+                        <div className="flex gap-5 items-end">
+                            <div className="w-24 h-24 md:w-36 md:h-36 rounded-2xl bg-white/10 animate-pulse flex-shrink-0" />
+                            <div className="flex-1 space-y-3 pb-2">
+                                <div className="h-10 w-64 bg-white/10 rounded animate-pulse" />
+                                <div className="h-6 w-96 bg-white/10 rounded animate-pulse" />
                                 <div className="flex gap-4">
-                                    <div className="h-4 w-24 bg-white/30 rounded animate-pulse" />
-                                    <div className="h-4 w-24 bg-white/30 rounded animate-pulse" />
+                                    <div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
+                                    <div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
                                 </div>
                                 <div className="flex gap-3">
-                                    <div className="h-10 w-32 bg-white/30 rounded animate-pulse" />
-                                    <div className="h-10 w-32 bg-white/30 rounded animate-pulse" />
+                                    <div className="h-10 w-36 bg-white/10 rounded animate-pulse" />
+                                    <div className="h-10 w-36 bg-white/10 rounded animate-pulse" />
                                 </div>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
-
-                {/* Two Column Layout Skeleton */}
-                <div className="mt-6 lg:grid lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] lg:gap-8">
-                    {/* Main Column Skeleton */}
-                    <div className="space-y-6">
-                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
-                            <CardContent className="p-6">
-                                <div className="h-6 w-40 bg-white/30 rounded animate-pulse mb-4" />
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="h-32 bg-white/30 rounded animate-pulse" />
-                                    <div className="h-32 bg-white/30 rounded animate-pulse" />
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
-                            <CardContent className="p-6 space-y-3">
-                                <div className="h-6 w-32 bg-white/30 rounded animate-pulse" />
-                                <div className="h-4 w-full bg-white/30 rounded animate-pulse" />
-                                <div className="h-4 w-full bg-white/30 rounded animate-pulse" />
-                                <div className="h-4 w-3/4 bg-white/30 rounded animate-pulse" />
-                            </CardContent>
-                        </Card>
                     </div>
+                </div>
+            </div>
 
-                    {/* Sidebar Skeleton */}
-                    <div className="space-y-6 mt-6 lg:mt-0">
-                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
-                            <CardContent className="p-6 space-y-3">
-                                <div className="h-6 w-40 bg-white/30 rounded animate-pulse" />
-                                <div className="flex flex-wrap gap-2">
-                                    <div className="h-6 w-20 bg-white/30 rounded animate-pulse" />
-                                    <div className="h-6 w-24 bg-white/30 rounded animate-pulse" />
-                                    <div className="h-6 w-16 bg-white/30 rounded animate-pulse" />
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
-                            <CardContent className="p-6 space-y-3">
-                                <div className="h-6 w-32 bg-white/30 rounded animate-pulse" />
-                                <div className="h-16 w-full bg-white/30 rounded animate-pulse" />
-                            </CardContent>
-                        </Card>
+            {/* Services section skeleton */}
+            <div className="py-12 md:py-16 bg-slate-900/50">
+                <div className="px-4 md:px-8 lg:px-12">
+                    <div className="h-8 w-56 bg-white/10 rounded animate-pulse mx-auto mb-8" />
+                    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
+                            <div className="h-48 bg-white/5 animate-pulse" />
+                            <div className="p-5 space-y-3">
+                                <div className="h-5 w-40 bg-white/10 rounded animate-pulse" />
+                                <div className="h-4 w-full bg-white/10 rounded animate-pulse" />
+                                <div className="h-6 w-20 bg-white/10 rounded animate-pulse" />
+                            </div>
+                        </div>
+                        <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
+                            <div className="h-48 bg-white/5 animate-pulse" />
+                            <div className="p-5 space-y-3">
+                                <div className="h-5 w-40 bg-white/10 rounded animate-pulse" />
+                                <div className="h-4 w-full bg-white/10 rounded animate-pulse" />
+                                <div className="h-6 w-20 bg-white/10 rounded animate-pulse" />
+                            </div>
+                        </div>
+                        <div className="hidden lg:block rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
+                            <div className="h-48 bg-white/5 animate-pulse" />
+                            <div className="p-5 space-y-3">
+                                <div className="h-5 w-40 bg-white/10 rounded animate-pulse" />
+                                <div className="h-4 w-full bg-white/10 rounded animate-pulse" />
+                                <div className="h-6 w-20 bg-white/10 rounded animate-pulse" />
+                            </div>
+                        </div>
                     </div>
+                </div>
+            </div>
+
+            {/* About section skeleton */}
+            <div className="py-12 md:py-16">
+                <div className="px-4 md:px-8 lg:px-12 space-y-4">
+                    <div className="h-8 w-48 bg-white/10 rounded animate-pulse" />
+                    <div className="h-4 w-full bg-white/10 rounded animate-pulse" />
+                    <div className="h-4 w-full bg-white/10 rounded animate-pulse" />
+                    <div className="h-4 w-3/4 bg-white/10 rounded animate-pulse" />
                 </div>
             </div>
         </div>
