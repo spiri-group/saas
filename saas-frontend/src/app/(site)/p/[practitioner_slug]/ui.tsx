@@ -727,10 +727,10 @@ function PractitionerVideoSection({ videos, videoSettings, practitionerName }: P
     const autoplayDelay = videoSettings?.autoplayDelay || 0;
 
     return (
-        <Card className="mt-6 backdrop-blur-xl bg-white/95 shadow-xl border-0" data-testid="video-section">
+        <Card className="mt-6 backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="video-section">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                    <Video className="w-5 h-5 text-purple-600" />
+                    <Video className="w-5 h-5 text-indigo-600" />
                     Video Introduction
                 </CardTitle>
             </CardHeader>
@@ -766,7 +766,7 @@ function PractitionerVideoSection({ videos, videoSettings, practitionerName }: P
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
                                     <div className="bg-white/90 group-hover:bg-white rounded-full p-4 transform group-hover:scale-110 transition-transform shadow-lg">
-                                        <Play className="h-8 w-8 text-purple-600 fill-purple-600" />
+                                        <Play className="h-8 w-8 text-indigo-600 fill-indigo-600" />
                                     </div>
                                 </div>
                             </div>
@@ -779,7 +779,7 @@ function PractitionerVideoSection({ videos, videoSettings, practitionerName }: P
                                 onClick={handlePlayClick}
                             >
                                 <div className="bg-white/90 group-hover:bg-white rounded-full p-4 transform group-hover:scale-110 transition-transform shadow-lg">
-                                    <Play className="h-8 w-8 text-purple-600 fill-purple-600" />
+                                    <Play className="h-8 w-8 text-indigo-600 fill-indigo-600" />
                                 </div>
                             </div>
                         )}
@@ -859,15 +859,15 @@ function AudioIntroSection({ audioIntro, practitionerName }: AudioIntroSectionPr
     };
 
     return (
-        <Card className="mt-6 backdrop-blur-xl bg-white/95 shadow-xl border-0" data-testid="audio-intro-section">
+        <Card className="mt-6 backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="audio-intro-section">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                    <Mic className="w-5 h-5 text-purple-600" />
+                    <Mic className="w-5 h-5 text-indigo-600" />
                     Meet {practitionerName}
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="flex items-center space-x-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg p-4 border border-purple-100">
+                <div className="flex items-center space-x-4 bg-gradient-to-r from-indigo-100/60 to-indigo-100/60 rounded-lg p-4 border border-indigo-100">
                     <audio
                         ref={audioRef}
                         src={audioIntro.url}
@@ -878,7 +878,7 @@ function AudioIntroSection({ audioIntro, practitionerName }: AudioIntroSectionPr
                     <button
                         type="button"
                         onClick={togglePlay}
-                        className="w-14 h-14 flex items-center justify-center bg-purple-600 hover:bg-purple-700 rounded-full transition-colors flex-shrink-0 shadow-lg"
+                        className="w-14 h-14 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 rounded-full transition-colors flex-shrink-0 shadow-lg"
                     >
                         {isPlaying ? (
                             <Pause className="h-6 w-6 text-white" />
@@ -888,9 +888,9 @@ function AudioIntroSection({ audioIntro, practitionerName }: AudioIntroSectionPr
                     </button>
                     <div className="flex-grow">
                         <p className="text-sm font-medium text-slate-700 mb-2">Voice Introduction</p>
-                        <div className="w-full bg-purple-200 rounded-full h-2 mb-1">
+                        <div className="w-full bg-indigo-200 rounded-full h-2 mb-1">
                             <div
-                                className="bg-purple-600 h-2 rounded-full transition-all"
+                                className="bg-indigo-600 h-2 rounded-full transition-all"
                                 style={{ width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }}
                             />
                         </div>
@@ -971,7 +971,7 @@ function OracleMessageSection({ oracleMessage, practitionerName }: OracleMessage
     };
 
     return (
-        <Card className="mt-6 backdrop-blur-xl bg-gradient-to-br from-amber-50/95 to-orange-50/95 shadow-xl border-0 border-t-4 border-t-amber-400" data-testid="oracle-message-section">
+        <Card className="mt-6 backdrop-blur-xl bg-gradient-to-br from-amber-50/70 to-orange-50/70 shadow-xl border border-white/20 border-t-4 border-t-amber-400" data-testid="oracle-message-section">
             <CardHeader className="pb-2">
                 <CardTitle className="flex items-center justify-between text-lg">
                     <div className="flex items-center gap-2">
@@ -1054,10 +1054,10 @@ function PractitionerGallerySection({ items, practitionerId, slug }: Practitione
     const hasMore = items.length > PREVIEW_COUNT;
 
     return (
-        <Card className="backdrop-blur-xl bg-white/95 shadow-xl border-0" data-testid="gallery-section">
+        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="gallery-section">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                    <ImageIcon className="w-5 h-5 text-purple-600" />
+                    <ImageIcon className="w-5 h-5 text-indigo-600" />
                     Gallery
                 </CardTitle>
             </CardHeader>
@@ -1203,7 +1203,7 @@ export default function PractitionerProfileContent({
                     practitionerSlug={slug}
                 />
             )}
-            <div className={`min-h-screen bg-gradient-to-b from-violet-950 via-purple-900 to-slate-900 ${isOwner ? 'md:ml-[200px]' : ''}`}>
+            <div className={`min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 ${isOwner ? 'md:ml-[200px]' : ''}`}>
                 {/* Hero Banner */}
                 <div className={`relative overflow-hidden ${practitioner.banner?.url ? 'h-28 md:h-36' : 'h-0'}`}>
                 {practitioner.banner?.url ? (
@@ -1214,7 +1214,7 @@ export default function PractitionerProfileContent({
                         className="object-cover"
                     />
                 ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-700" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-700 via-indigo-600 to-slate-800" />
                 )}
                 <div className="absolute inset-0 bg-black/40" />
             </div>
@@ -1222,14 +1222,14 @@ export default function PractitionerProfileContent({
             {/* Profile Content */}
             <div className={`mx-auto px-4 md:px-8 lg:px-12 relative z-10 pb-16 ${practitioner.banner?.url ? '-mt-12' : ''}`}>
                 {/* Profile Header Card */}
-                <Card className="backdrop-blur-xl bg-white/95 shadow-2xl border-0">
+                <Card className="backdrop-blur-xl bg-white/70 shadow-2xl border border-white/20">
                     <CardContent className="p-8">
                         <div className="flex flex-col md:flex-row gap-6">
                             {/* Avatar */}
                             <div className="flex-shrink-0">
                                 <Avatar className="w-32 h-32 border-4 border-white shadow-xl" data-testid="practitioner-profile-avatar">
                                     <AvatarImage src={practitioner.logo?.url || practitioner.thumbnail?.image?.media?.url} alt={practitioner.name} data-testid="practitioner-profile-avatar-img" />
-                                    <AvatarFallback className="text-3xl bg-purple-100 text-purple-700" data-testid="practitioner-profile-avatar-fallback">
+                                    <AvatarFallback className="text-3xl bg-indigo-100 text-indigo-700" data-testid="practitioner-profile-avatar-fallback">
                                         {practitioner.name?.slice(0, 2).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
@@ -1245,7 +1245,7 @@ export default function PractitionerProfileContent({
                                         {profile?.pronouns && (
                                             <span className="text-sm text-slate-500">({profile.pronouns})</span>
                                         )}
-                                        <p className="text-lg text-purple-700 mt-1">{profile?.headline}</p>
+                                        <p className="text-lg text-indigo-700 mt-1">{profile?.headline}</p>
                                     </div>
 
                                     {/* Verification badges */}
@@ -1276,13 +1276,13 @@ export default function PractitionerProfileContent({
                                     )}
                                     {profile?.yearsExperience && (
                                         <div className="flex items-center gap-1">
-                                            <Clock className="w-4 h-4 text-purple-500" />
+                                            <Clock className="w-4 h-4 text-indigo-500" />
                                             <span>{profile.yearsExperience} years experience</span>
                                         </div>
                                     )}
                                     {practitioner.country && (
                                         <div className="flex items-center gap-1">
-                                            <MapPin className="w-4 h-4 text-purple-500" />
+                                            <MapPin className="w-4 h-4 text-indigo-500" />
                                             <span>{practitioner.country}</span>
                                         </div>
                                     )}
@@ -1310,7 +1310,7 @@ export default function PractitionerProfileContent({
                                 {/* CTA Buttons */}
                                 <div className="flex flex-wrap gap-3 mt-6">
                                     <Button
-                                        className="bg-purple-600 hover:bg-purple-700"
+                                        className="bg-indigo-600 hover:bg-indigo-700"
                                         onClick={handleBookReading}
                                         data-testid="book-reading-btn"
                                     >
@@ -1356,7 +1356,7 @@ export default function PractitionerProfileContent({
                                                 data-testid={`social-link-${social.platform}`}
                                             >
                                                 {practitioner.social?.style === 'solid' ? (
-                                                    <div className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors">
+                                                    <div className="p-2 rounded-lg bg-white/50 hover:bg-white/70 transition-colors">
                                                         {iconsMapping[social.platform]?.('solid')}
                                                     </div>
                                                 ) : (
@@ -1379,10 +1379,10 @@ export default function PractitionerProfileContent({
                     <div className="space-y-6">
                         {/* Available Services */}
                         {services && services.filter(s => s != null).length > 0 && (
-                            <Card ref={servicesRef} className="backdrop-blur-xl bg-white/95 shadow-xl border-0" data-testid="services-section">
+                            <Card ref={servicesRef} className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="services-section">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-lg">
-                                        <ShoppingCart className="w-5 h-5 text-purple-600" />
+                                        <ShoppingCart className="w-5 h-5 text-indigo-600" />
                                         Available Services
                                     </CardTitle>
                                 </CardHeader>
@@ -1394,7 +1394,7 @@ export default function PractitionerProfileContent({
                                                 href={`/p/${slug}/services/${service.slug || service.id}`}
                                                 className="block"
                                             >
-                                                <div className="border rounded-lg p-4 hover:border-purple-300 hover:shadow-md transition-all cursor-pointer bg-white h-full">
+                                                <div className="border rounded-lg p-4 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer bg-white/80 h-full">
                                                     <div className="flex gap-4">
                                                         {service.thumbnail?.image?.media?.url && (
                                                             <div className="flex-shrink-0 w-20 h-20 relative rounded-md overflow-hidden">
@@ -1413,7 +1413,7 @@ export default function PractitionerProfileContent({
                                                             )}
                                                             <div className="flex items-center gap-3 mt-2">
                                                                 {service.pricing?.fixedPrice && (
-                                                                    <span className="text-purple-700 font-semibold">
+                                                                    <span className="text-indigo-700 font-semibold">
                                                                         ${(service.pricing.fixedPrice.amount / 100).toFixed(2)}
                                                                     </span>
                                                                 )}
@@ -1457,7 +1457,7 @@ export default function PractitionerProfileContent({
                         )}
 
                         {/* About */}
-                        <Card className="backdrop-blur-xl bg-white/95 shadow-xl border-0">
+                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
                             <CardHeader>
                                 <CardTitle className="text-lg">About {practitioner.name}</CardTitle>
                             </CardHeader>
@@ -1493,17 +1493,17 @@ export default function PractitionerProfileContent({
 
                         {/* Training & Credentials */}
                         {profile?.training && profile.training.length > 0 && (
-                            <Card className="backdrop-blur-xl bg-white/95 shadow-xl border-0">
+                            <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-lg">
-                                        <Award className="w-5 h-5 text-purple-600" />
+                                        <Award className="w-5 h-5 text-indigo-600" />
                                         Training & Credentials
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-4">
                                         {profile.training.map((cred) => (
-                                            <div key={cred.id} className="border-l-2 border-purple-200 pl-4">
+                                            <div key={cred.id} className="border-l-2 border-indigo-200 pl-4">
                                                 <h4 className="font-medium text-slate-800">{cred.title}</h4>
                                                 {cred.institution && (
                                                     <p className="text-sm text-slate-600">{cred.institution}</p>
@@ -1522,10 +1522,10 @@ export default function PractitionerProfileContent({
                         )}
 
                         {/* Reviews Section */}
-                        <Card className="backdrop-blur-xl bg-white/95 shadow-xl border-0" data-testid="reviews-section">
+                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="reviews-section">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Star className="w-5 h-5 text-purple-600" />
+                                    <Star className="w-5 h-5 text-indigo-600" />
                                     Client Reviews
                                 </CardTitle>
                             </CardHeader>
@@ -1534,8 +1534,8 @@ export default function PractitionerProfileContent({
                                     <div className="space-y-4">
                                         {/* Rating Summary */}
                                         {practitioner.readingRating && practitioner.readingRating.total_count > 0 && (
-                                            <div className="flex items-center gap-4 p-4 bg-purple-50 rounded-lg">
-                                                <div className="text-4xl font-bold text-purple-700">
+                                            <div className="flex items-center gap-4 p-4 bg-indigo-100/50 rounded-lg">
+                                                <div className="text-4xl font-bold text-indigo-700">
                                                     {practitioner.readingRating.average.toFixed(1)}
                                                 </div>
                                                 <div>
@@ -1561,21 +1561,21 @@ export default function PractitionerProfileContent({
                                         {/* Pinned Testimonials */}
                                         {reviews && reviews.length > 0 && profile?.pinnedReviewIds && profile.pinnedReviewIds.length > 0 && (
                                             <div className="space-y-3" data-testid="pinned-testimonials">
-                                                <div className="flex items-center gap-2 text-sm text-purple-600 font-medium">
+                                                <div className="flex items-center gap-2 text-sm text-indigo-600 font-medium">
                                                     <Pin className="w-4 h-4" />
                                                     <span>Highlighted Reviews</span>
                                                 </div>
                                                 {reviews.filter(r => profile.pinnedReviewIds?.includes(r.id)).map((review) => (
-                                                    <div key={review.id} className="relative border-2 border-purple-200 bg-purple-50/50 rounded-lg p-4">
+                                                    <div key={review.id} className="relative border-2 border-indigo-200 bg-indigo-50/50 rounded-lg p-4">
                                                         <div className="absolute -top-2 -left-2">
-                                                            <div className="bg-purple-500 rounded-full p-1">
+                                                            <div className="bg-indigo-500 rounded-full p-1">
                                                                 <Pin className="w-3 h-3 text-white" />
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center justify-between mb-2">
                                                             <div className="flex items-center gap-2">
                                                                 <Avatar className="w-8 h-8">
-                                                                    <AvatarFallback className="bg-purple-100 text-purple-700 text-xs">
+                                                                    <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs">
                                                                         {review.userName?.slice(0, 2).toUpperCase() || 'AN'}
                                                                     </AvatarFallback>
                                                                 </Avatar>
@@ -1616,11 +1616,11 @@ export default function PractitionerProfileContent({
                                         {reviews && reviews.length > 0 && (
                                             <div className="space-y-4">
                                                 {reviews.filter(r => !profile?.pinnedReviewIds?.includes(r.id)).map((review) => (
-                                                    <div key={review.id} className="border-b border-slate-100 pb-4 last:border-0 last:pb-0">
+                                                    <div key={review.id} className="border-b border-slate-200/50 pb-4 last:border-0 last:pb-0">
                                                         <div className="flex items-center justify-between mb-2">
                                                             <div className="flex items-center gap-2">
                                                                 <Avatar className="w-8 h-8">
-                                                                    <AvatarFallback className="bg-purple-100 text-purple-700 text-xs">
+                                                                    <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs">
                                                                         {review.userName?.slice(0, 2).toUpperCase() || 'AN'}
                                                                     </AvatarFallback>
                                                                 </Avatar>
@@ -1689,10 +1689,10 @@ export default function PractitionerProfileContent({
                         )}
 
                         {/* Modalities & Specializations */}
-                        <Card className="backdrop-blur-xl bg-white/95 shadow-xl border-0">
+                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Star className="w-5 h-5 text-purple-600" />
+                                    <Star className="w-5 h-5 text-indigo-600" />
                                     Services & Specializations
                                 </CardTitle>
                             </CardHeader>
@@ -1702,7 +1702,7 @@ export default function PractitionerProfileContent({
                                         <h4 className="text-sm font-medium text-slate-700 mb-2">Modalities</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {profile.modalities.map((mod) => (
-                                                <Badge key={mod} variant="secondary" className="bg-purple-100 text-purple-700">
+                                                <Badge key={mod} variant="secondary" className="bg-indigo-100 text-indigo-700">
                                                     {MODALITY_LABELS[mod] || mod}
                                                 </Badge>
                                             ))}
@@ -1715,7 +1715,7 @@ export default function PractitionerProfileContent({
                                         <h4 className="text-sm font-medium text-slate-700 mb-2">Specializations</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {profile.specializations.map((spec) => (
-                                                <Badge key={spec} variant="secondary" className="bg-violet-100 text-violet-700">
+                                                <Badge key={spec} variant="secondary" className="bg-indigo-100 text-indigo-700">
                                                     {SPECIALIZATION_LABELS[spec] || spec}
                                                 </Badge>
                                             ))}
@@ -1727,7 +1727,7 @@ export default function PractitionerProfileContent({
 
                         {/* Linked Shopfronts */}
                         {profile?.linkedShopfronts && profile.linkedShopfronts.length > 0 && (
-                            <Card className="backdrop-blur-xl bg-white/95 shadow-xl border-0" data-testid="shopfronts-section">
+                            <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="shopfronts-section">
                                 <CardHeader className="pb-3">
                                     <CardTitle className="flex items-center gap-2 text-lg">
                                         <Store className="w-5 h-5 text-amber-600" />
@@ -1773,10 +1773,10 @@ export default function PractitionerProfileContent({
 
                         {/* Upcoming Events */}
                         {events && events.length > 0 && (
-                            <Card className="backdrop-blur-xl bg-white/95 shadow-xl border-0" data-testid="events-section">
+                            <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="events-section">
                                 <CardHeader className="pb-3">
                                     <CardTitle className="flex items-center gap-2 text-lg">
-                                        <CalendarDays className="w-5 h-5 text-purple-600" />
+                                        <CalendarDays className="w-5 h-5 text-indigo-600" />
                                         Upcoming Events
                                     </CardTitle>
                                 </CardHeader>
@@ -1790,7 +1790,7 @@ export default function PractitionerProfileContent({
                                             return (
                                                 <div
                                                     key={event.id}
-                                                    className="flex gap-3 p-3 rounded-lg border border-slate-200 hover:border-purple-200 hover:bg-purple-50/30 transition-colors"
+                                                    className="flex gap-3 p-3 rounded-lg border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
                                                 >
                                                     {event.landscapeImage?.image?.media?.url ? (
                                                         <div className="flex-shrink-0 w-16 h-12 relative rounded-md overflow-hidden">
@@ -1801,8 +1801,8 @@ export default function PractitionerProfileContent({
                                                             />
                                                         </div>
                                                     ) : (
-                                                        <div className="flex-shrink-0 w-16 h-12 rounded-md bg-purple-100 flex items-center justify-center">
-                                                            <CalendarDays className="w-5 h-5 text-purple-400" />
+                                                        <div className="flex-shrink-0 w-16 h-12 rounded-md bg-indigo-100 flex items-center justify-center">
+                                                            <CalendarDays className="w-5 h-5 text-indigo-400" />
                                                         </div>
                                                     )}
                                                     <div className="flex-1 min-w-0">
@@ -1844,7 +1844,7 @@ export default function PractitionerProfileContent({
                         <DialogTitle className="flex items-center gap-2">
                             <Avatar className="w-8 h-8">
                                 <AvatarImage src={practitioner.logo?.url} alt={practitioner.name} />
-                                <AvatarFallback className="bg-purple-100 text-purple-700 text-xs">
+                                <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs">
                                     {practitioner.name?.slice(0, 2).toUpperCase()}
                                 </AvatarFallback>
                             </Avatar>
@@ -1861,7 +1861,7 @@ export default function PractitionerProfileContent({
                     <div className="flex-1 min-h-[300px] max-h-[400px] overflow-y-auto border rounded-lg p-4 bg-slate-50" data-testid="messages-container">
                         {conversationLoading ? (
                             <div className="flex items-center justify-center h-full">
-                                <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+                                <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
                             </div>
                         ) : conversation?.messages && conversation.messages.length > 0 ? (
                             <div className="space-y-3">
@@ -1877,11 +1877,11 @@ export default function PractitionerProfileContent({
                                                 className={`max-w-[80%] rounded-lg px-4 py-2 ${
                                                     isFromPractitioner
                                                         ? 'bg-white border border-slate-200 text-slate-800'
-                                                        : 'bg-purple-600 text-white'
+                                                        : 'bg-indigo-600 text-white'
                                                 }`}
                                             >
                                                 <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                                                <p className={`text-xs mt-1 ${isFromPractitioner ? 'text-slate-400' : 'text-purple-200'}`}>
+                                                <p className={`text-xs mt-1 ${isFromPractitioner ? 'text-slate-400' : 'text-indigo-200'}`}>
                                                     {formatMessageTime(msg.sentAt)}
                                                 </p>
                                             </div>
@@ -1937,24 +1937,24 @@ export default function PractitionerProfileContent({
 
 function ProfileSkeleton() {
     return (
-        <div className="min-h-screen bg-gradient-to-b from-violet-950 via-purple-900 to-slate-900">
-            <div className="h-64 md:h-80 bg-purple-800/50 animate-pulse" />
+        <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900">
+            <div className="h-64 md:h-80 bg-indigo-950/50 animate-pulse" />
             <div className="mx-auto px-4 md:px-8 lg:px-12 -mt-32 relative z-10 pb-16">
                 {/* Header Card Skeleton */}
-                <Card className="backdrop-blur-xl bg-white/95 shadow-2xl border-0">
+                <Card className="backdrop-blur-xl bg-white/70 shadow-2xl border border-white/20">
                     <CardContent className="p-8">
                         <div className="flex flex-col md:flex-row gap-6">
-                            <div className="w-32 h-32 rounded-full bg-slate-200 animate-pulse" />
+                            <div className="w-32 h-32 rounded-full bg-white/30 animate-pulse" />
                             <div className="flex-1 space-y-4">
-                                <div className="h-8 w-64 bg-slate-200 rounded animate-pulse" />
-                                <div className="h-6 w-96 bg-slate-200 rounded animate-pulse" />
+                                <div className="h-8 w-64 bg-white/30 rounded animate-pulse" />
+                                <div className="h-6 w-96 bg-white/30 rounded animate-pulse" />
                                 <div className="flex gap-4">
-                                    <div className="h-4 w-24 bg-slate-200 rounded animate-pulse" />
-                                    <div className="h-4 w-24 bg-slate-200 rounded animate-pulse" />
+                                    <div className="h-4 w-24 bg-white/30 rounded animate-pulse" />
+                                    <div className="h-4 w-24 bg-white/30 rounded animate-pulse" />
                                 </div>
                                 <div className="flex gap-3">
-                                    <div className="h-10 w-32 bg-slate-200 rounded animate-pulse" />
-                                    <div className="h-10 w-32 bg-slate-200 rounded animate-pulse" />
+                                    <div className="h-10 w-32 bg-white/30 rounded animate-pulse" />
+                                    <div className="h-10 w-32 bg-white/30 rounded animate-pulse" />
                                 </div>
                             </div>
                         </div>
@@ -1965,41 +1965,41 @@ function ProfileSkeleton() {
                 <div className="mt-6 lg:grid lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] lg:gap-8">
                     {/* Main Column Skeleton */}
                     <div className="space-y-6">
-                        <Card className="backdrop-blur-xl bg-white/95 shadow-xl border-0">
+                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
                             <CardContent className="p-6">
-                                <div className="h-6 w-40 bg-slate-200 rounded animate-pulse mb-4" />
+                                <div className="h-6 w-40 bg-white/30 rounded animate-pulse mb-4" />
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="h-32 bg-slate-200 rounded animate-pulse" />
-                                    <div className="h-32 bg-slate-200 rounded animate-pulse" />
+                                    <div className="h-32 bg-white/30 rounded animate-pulse" />
+                                    <div className="h-32 bg-white/30 rounded animate-pulse" />
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card className="backdrop-blur-xl bg-white/95 shadow-xl border-0">
+                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
                             <CardContent className="p-6 space-y-3">
-                                <div className="h-6 w-32 bg-slate-200 rounded animate-pulse" />
-                                <div className="h-4 w-full bg-slate-200 rounded animate-pulse" />
-                                <div className="h-4 w-full bg-slate-200 rounded animate-pulse" />
-                                <div className="h-4 w-3/4 bg-slate-200 rounded animate-pulse" />
+                                <div className="h-6 w-32 bg-white/30 rounded animate-pulse" />
+                                <div className="h-4 w-full bg-white/30 rounded animate-pulse" />
+                                <div className="h-4 w-full bg-white/30 rounded animate-pulse" />
+                                <div className="h-4 w-3/4 bg-white/30 rounded animate-pulse" />
                             </CardContent>
                         </Card>
                     </div>
 
                     {/* Sidebar Skeleton */}
                     <div className="space-y-6 mt-6 lg:mt-0">
-                        <Card className="backdrop-blur-xl bg-white/95 shadow-xl border-0">
+                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
                             <CardContent className="p-6 space-y-3">
-                                <div className="h-6 w-40 bg-slate-200 rounded animate-pulse" />
+                                <div className="h-6 w-40 bg-white/30 rounded animate-pulse" />
                                 <div className="flex flex-wrap gap-2">
-                                    <div className="h-6 w-20 bg-slate-200 rounded animate-pulse" />
-                                    <div className="h-6 w-24 bg-slate-200 rounded animate-pulse" />
-                                    <div className="h-6 w-16 bg-slate-200 rounded animate-pulse" />
+                                    <div className="h-6 w-20 bg-white/30 rounded animate-pulse" />
+                                    <div className="h-6 w-24 bg-white/30 rounded animate-pulse" />
+                                    <div className="h-6 w-16 bg-white/30 rounded animate-pulse" />
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card className="backdrop-blur-xl bg-white/95 shadow-xl border-0">
+                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
                             <CardContent className="p-6 space-y-3">
-                                <div className="h-6 w-32 bg-slate-200 rounded animate-pulse" />
-                                <div className="h-16 w-full bg-slate-200 rounded animate-pulse" />
+                                <div className="h-6 w-32 bg-white/30 rounded animate-pulse" />
+                                <div className="h-16 w-full bg-white/30 rounded animate-pulse" />
                             </CardContent>
                         </Card>
                     </div>

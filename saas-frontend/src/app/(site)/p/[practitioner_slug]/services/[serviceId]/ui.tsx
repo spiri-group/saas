@@ -279,7 +279,7 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-b from-violet-950 via-purple-900 to-slate-900 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 flex items-center justify-center">
                 <div className="text-white">Loading service details...</div>
             </div>
         );
@@ -287,7 +287,7 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
 
     if (error || !service) {
         return (
-            <div className="min-h-screen bg-gradient-to-b from-violet-950 via-purple-900 to-slate-900 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 flex items-center justify-center">
                 <div className="text-center">
                     <h1 className="text-2xl font-semibold text-white mb-2">Service not found</h1>
                     <p className="text-slate-300 mb-4">This service may have been removed or is not available.</p>
@@ -304,7 +304,7 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
 
     const getCategoryBadgeColor = (category: string) => {
         switch (category) {
-            case "READING": return "bg-purple-500/20 text-purple-300 border-purple-500/30";
+            case "READING": return "bg-indigo-500/20 text-indigo-300 border-indigo-500/30";
             case "HEALING": return "bg-green-500/20 text-green-300 border-green-500/30";
             case "COACHING": return "bg-blue-500/20 text-blue-300 border-blue-500/30";
             default: return "bg-gray-500/20 text-gray-300 border-gray-500/30";
@@ -339,18 +339,18 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
     const totalPrice = calculateTotalPrice();
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-violet-950 via-purple-900 to-slate-900">
+        <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900">
             <div className="mx-auto px-4 md:px-8 lg:px-12 py-8">
                 {/* Back Link */}
                 <Link
                     href={`/p/${practitionerSlug}`}
-                    className="inline-flex items-center text-purple-300 hover:text-white mb-6 transition-colors"
+                    className="inline-flex items-center text-indigo-300 hover:text-white mb-6 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back to {service.vendor.name}&apos;s Profile
                 </Link>
 
-                <Panel className="backdrop-blur-xl bg-white/95 shadow-2xl border-0">
+                <Panel className="backdrop-blur-xl bg-white/70 shadow-2xl border border-white/20">
                     <PanelHeader className="mb-4">
                         <div className="flex items-center justify-between">
                             <div className="flex-1">
@@ -365,7 +365,7 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                 <PanelDescription className="flex flex-row gap-1 items-center">
                                     <span className="text-slate-500">Offered by</span>
                                     <span className="font-bold text-slate-700">{service.vendor.name}</span>
-                                    <Link href={`/p/${practitionerSlug}`} className="text-sm text-purple-600 hover:underline">
+                                    <Link href={`/p/${practitionerSlug}`} className="text-sm text-indigo-600 hover:underline">
                                         View Profile
                                     </Link>
                                 </PanelDescription>
@@ -393,8 +393,8 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                             </div>
 
                             {service.deliveryMode === "ASYNC" && service.turnaroundDays && (
-                                <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 border border-purple-200">
-                                    <Clock className="w-5 h-5 text-purple-600" />
+                                <div className="flex items-center gap-2 p-3 rounded-lg bg-indigo-50 border border-indigo-200">
+                                    <Clock className="w-5 h-5 text-indigo-600" />
                                     <span className="text-slate-700">
                                         Typical delivery: {service.turnaroundDays} {service.turnaroundDays === 1 ? 'day' : 'days'}
                                     </span>
@@ -407,7 +407,7 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                     <ul className="space-y-2">
                                         {service.deliveryFormats.map((format, idx) => (
                                             <li key={idx} className="flex items-start gap-2">
-                                                <FileText className="w-4 h-4 mt-0.5 text-purple-600" />
+                                                <FileText className="w-4 h-4 mt-0.5 text-indigo-600" />
                                                 <div>
                                                     <div className="text-slate-700 font-medium">{format.format}</div>
                                                     {format.description && (
@@ -496,8 +496,8 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                 <CardContent className="space-y-4">
                                     {/* Fixed Price */}
                                     {service.pricing.type === "FIXED" && service.pricing.fixedPrice && (
-                                        <div className="p-4 rounded-lg border border-purple-200 bg-purple-50" data-testid="service-price">
-                                            <div className="text-2xl font-bold text-purple-700">
+                                        <div className="p-4 rounded-lg border border-indigo-200 bg-indigo-50" data-testid="service-price">
+                                            <div className="text-2xl font-bold text-indigo-700">
                                                 <CurrencySpan value={service.pricing.fixedPrice} withAnimation={false} />
                                             </div>
                                             <div className="text-sm text-slate-500">Fixed Price</div>
@@ -513,8 +513,8 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                                     key={idx}
                                                     className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                                                         selectedPackage === idx
-                                                            ? 'border-purple-500 bg-purple-50'
-                                                            : 'border-slate-200 hover:border-purple-300'
+                                                            ? 'border-indigo-500 bg-indigo-50'
+                                                            : 'border-slate-200 hover:border-indigo-300'
                                                     }`}
                                                     onClick={() => setSelectedPackage(idx)}
                                                     data-testid={`package-option-${idx}`}
@@ -531,7 +531,7 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <div className="font-bold text-purple-700">
+                                                        <div className="font-bold text-indigo-700">
                                                             <CurrencySpan value={pkg.price} withAnimation={false} />
                                                         </div>
                                                     </div>
@@ -542,8 +542,8 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
 
                                     {/* Hourly Rate */}
                                     {service.pricing.type === "HOURLY" && service.pricing.hourlyRate && (
-                                        <div className="p-4 rounded-lg border border-purple-200 bg-purple-50" data-testid="service-price">
-                                            <div className="text-2xl font-bold text-purple-700">
+                                        <div className="p-4 rounded-lg border border-indigo-200 bg-indigo-50" data-testid="service-price">
+                                            <div className="text-2xl font-bold text-indigo-700">
                                                 <CurrencySpan value={service.pricing.hourlyRate} withAnimation={false} />
                                             </div>
                                             <div className="text-sm text-slate-500">Per Hour</div>
@@ -574,7 +574,7 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                                                         <div className="text-sm text-slate-500">{addOn.description}</div>
                                                                     )}
                                                                 </div>
-                                                                <div className="text-sm font-semibold text-purple-700">
+                                                                <div className="text-sm font-semibold text-indigo-700">
                                                                     +<CurrencySpan value={addOn.price} withAnimation={false} />
                                                                 </div>
                                                             </div>
@@ -671,17 +671,17 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-center">
                                             <span className="font-semibold text-slate-700">Total</span>
-                                            <span className="text-2xl font-bold text-purple-700">
+                                            <span className="text-2xl font-bold text-indigo-700">
                                                 <CurrencySpan value={totalPrice} withAnimation={false} />
                                             </span>
                                         </div>
 
                                         {/* Birth Chart Gate for Astrology Readings */}
                                         {needsBirthChart ? (
-                                            <Alert className="border-purple-300 bg-purple-50">
-                                                <Stars className="h-4 w-4 text-purple-600" />
-                                                <AlertTitle className="text-purple-800">Birth Chart Required</AlertTitle>
-                                                <AlertDescription className="text-purple-700">
+                                            <Alert className="border-indigo-300 bg-indigo-50">
+                                                <Stars className="h-4 w-4 text-indigo-600" />
+                                                <AlertTitle className="text-indigo-800">Birth Chart Required</AlertTitle>
+                                                <AlertDescription className="text-indigo-700">
                                                     This astrology reading requires your birth chart. Please set up your birth chart first to continue.
                                                 </AlertDescription>
                                                 <Link href={`/u/${userId}/space/astrology/birth-chart?autoSetup=MEDIUMSHIP`}>
@@ -723,7 +723,7 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                             </Button>
                                         ) : (
                                             <Button
-                                                className="w-full bg-purple-600 hover:bg-purple-700"
+                                                className="w-full bg-indigo-600 hover:bg-indigo-700"
                                                 size="lg"
                                                 onClick={handleAddToCart}
                                                 disabled={isAddingService}

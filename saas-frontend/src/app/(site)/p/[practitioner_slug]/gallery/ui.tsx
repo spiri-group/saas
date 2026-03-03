@@ -60,16 +60,16 @@ export default function PractitionerGalleryPage({ practitionerId, slug }: Practi
     const { data: galleryItems, isLoading } = usePractitionerGallery(practitionerId);
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-violet-950 via-purple-900 to-slate-900">
+        <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900">
             {/* Compact header */}
             {/* Content */}
             <div className="mx-auto px-4 md:px-8 lg:px-12 relative z-10 pb-16">
-                <Card className="backdrop-blur-xl bg-white/95 shadow-2xl border-0">
+                <Card className="backdrop-blur-xl bg-white/70 shadow-2xl border border-white/20">
                     <CardHeader>
                         <div className="flex items-center gap-4">
                             <Link
                                 href={`/p/${slug}`}
-                                className="flex items-center gap-1 text-sm text-purple-700 hover:text-purple-900 transition-colors"
+                                className="flex items-center gap-1 text-sm text-indigo-700 hover:text-indigo-900 transition-colors"
                                 data-testid="gallery-back-link"
                             >
                                 <ArrowLeft className="w-4 h-4" />
@@ -77,7 +77,7 @@ export default function PractitionerGalleryPage({ practitionerId, slug }: Practi
                             </Link>
                         </div>
                         <CardTitle className="flex items-center gap-2 text-lg mt-2">
-                            <ImageIcon className="w-5 h-5 text-purple-600" />
+                            <ImageIcon className="w-5 h-5 text-indigo-600" />
                             Gallery
                             {galleryItems && (
                                 <span className="text-sm font-normal text-muted-foreground">
