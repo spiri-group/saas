@@ -4,9 +4,10 @@ import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ZoomIn, ZoomOut, MoveRight, Eye, Trash2 } from "lucide-react";
+import { ZoomIn, ZoomOut, MoveRight, Eye, Trash2, Contrast, Thermometer, Moon, ScanLine, Sparkles, Grid3x3, Download, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 /**
  * DetectiveZoom
@@ -55,7 +56,42 @@ export type Evidence = {
   zoom: number;
   /** timestamp when captured */
   timestamp: number;
+  /** vision mode active when captured */
+  mode: string;
+  /** investigator notes */
+  notes: string;
 };
+
+type VisionMode = {
+  id: string;
+  name: string;
+  shortName: string;
+  filter: string;
+  borderColor: string;
+  glowColor: string;
+  key: string;
+  icon: string;
+};
+
+const VISION_MODES: VisionMode[] = [
+  { id: "normal", name: "Normal", shortName: "NRM", filter: "none", borderColor: "rgba(255,255,255,0.9)", glowColor: "rgba(255,255,255,0.3)", key: "1", icon: "Eye" },
+  { id: "negative", name: "Negative", shortName: "NEG", filter: "invert(1)", borderColor: "rgba(200,220,255,0.9)", glowColor: "rgba(200,220,255,0.5)", key: "2", icon: "Contrast" },
+  { id: "thermal", name: "Thermal", shortName: "THR", filter: "saturate(3) hue-rotate(180deg) contrast(1.2)", borderColor: "rgba(255,160,50,0.9)", glowColor: "rgba(255,160,50,0.5)", key: "3", icon: "Thermometer" },
+  { id: "nightvision", name: "Night Vision", shortName: "NVS", filter: "brightness(1.8) contrast(1.2) saturate(0.3) sepia(1) hue-rotate(70deg)", borderColor: "rgba(50,255,100,0.9)", glowColor: "rgba(50,255,100,0.5)", key: "4", icon: "Moon" },
+  { id: "edgedetect", name: "Edge Detect", shortName: "EDG", filter: "contrast(6) brightness(0.6) grayscale(1)", borderColor: "rgba(255,255,255,0.9)", glowColor: "rgba(255,255,255,0.4)", key: "5", icon: "ScanLine" },
+  { id: "spiritspectrum", name: "Spirit Spectrum", shortName: "SPC", filter: "saturate(4) contrast(1.5)", borderColor: "rgba(180,100,255,0.9)", glowColor: "rgba(180,100,255,0.5)", key: "6", icon: "Sparkles" },
+];
+
+const MODE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  Eye, Contrast, Thermometer, Moon, ScanLine, Sparkles,
+};
+
+/** Get the grid coordinate label (e.g. "D7") from normalized 0-1 position */
+function getGridCoord(nx: number, ny: number): string {
+  const col = Math.min(9, Math.floor(nx * 10));
+  const row = Math.min(9, Math.floor(ny * 10));
+  return `${String.fromCharCode(65 + col)}${row + 1}`;
+}
 
 interface DetectiveZoomProps {
   src: string;
@@ -71,9 +107,15 @@ interface DetectiveZoomProps {
   minZoom?: number;
   maxZoom?: number;
   callouts?: Callout[];
+  /** dark mode styling for use inside dark dialogs */
+  dark?: boolean;
 }
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
+// Persist user preferences across component remounts (image navigation)
+let _persistedGrid = false;
+let _persistedMode = "normal";
 
 export default function DetectiveZoom({
   src,
@@ -86,6 +128,7 @@ export default function DetectiveZoom({
   minZoom = 1.25,
   maxZoom = 8,
   callouts = [],
+  dark = false,
 }: DetectiveZoomProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -99,6 +142,24 @@ export default function DetectiveZoom({
   const [activeEvidence, setActiveEvidence] = useState<string | null>(null);
   const [clickCount, setClickCount] = useState<number>(0);
   const [evidenceZoom, setEvidenceZoom] = useState<number>(defaultZoom);
+  const [activeMode, setActiveMode] = useState<string>(_persistedMode);
+  const [showGrid, setShowGrid] = useState(_persistedGrid);
+  const [hudTime, setHudTime] = useState(() => new Date());
+
+  const currentMode = useMemo(
+    () => VISION_MODES.find(m => m.id === activeMode) ?? VISION_MODES[0],
+    [activeMode]
+  );
+
+  // Persist grid and mode preferences across image navigation
+  useEffect(() => { _persistedGrid = showGrid; }, [showGrid]);
+  useEffect(() => { _persistedMode = activeMode; }, [activeMode]);
+
+  // Running clock for the found-footage HUD
+  useEffect(() => {
+    const interval = setInterval(() => setHudTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const onTouch = () => setIsTouch(true);
@@ -206,21 +267,51 @@ export default function DetectiveZoom({
     return `${-px}px ${-py}px`;
   }, [cursor, zoom, naturalSize, lensSize]);
 
+  // Normalized cursor position relative to image (0-1) for grid coordinate
+  const normalizedCursor = useMemo(() => {
+    if (!containerRef.current) return { nx: 0.5, ny: 0.5 };
+    const rect = containerRef.current.getBoundingClientRect();
+    const containerAspect = rect.width / rect.height;
+    const imageAspect = naturalSize.w / naturalSize.h;
+    let displayWidth: number, displayHeight: number, offsetX = 0, offsetY = 0;
+    if (containerAspect > imageAspect) {
+      displayHeight = rect.height;
+      displayWidth = displayHeight * imageAspect;
+      offsetX = (rect.width - displayWidth) / 2;
+    } else {
+      displayWidth = rect.width;
+      displayHeight = displayWidth / imageAspect;
+      offsetY = (rect.height - displayHeight) / 2;
+    }
+    const nx = Math.max(0, Math.min(1, (cursor.x - offsetX) / displayWidth));
+    const ny = Math.max(0, Math.min(1, (cursor.y - offsetY) / displayHeight));
+    return { nx, ny };
+  }, [cursor, naturalSize]);
+
+  const gridCoord = useMemo(
+    () => getGridCoord(normalizedCursor.nx, normalizedCursor.ny),
+    [normalizedCursor]
+  );
+
+  const isNonNormal = activeMode !== "normal";
+
   const lensStyle: React.CSSProperties = useMemo(() => ({
     width: lensSize,
     height: lensSize,
     borderRadius: "9999px",
-    position: "absolute",
-    pointerEvents: "none",
-    transform: `translate(${cursor.x - lensSize / 2}px, ${cursor.y - lensSize / 2}px)`,
+    pointerEvents: "none" as const,
     backgroundImage: `url(${src})`,
     backgroundRepeat: "no-repeat",
     backgroundSize: bgSize,
     backgroundPosition: bgPos,
-    boxShadow: "0 6px 20px rgba(0,0,0,0.35)",
-    border: "2px solid rgba(255,255,255,0.9)",
+    filter: currentMode.filter,
+    border: `2px solid ${currentMode.borderColor}`,
+    // Static shadow when normal, let animation handle it when non-normal
+    boxShadow: isNonNormal ? undefined : "0 6px 20px rgba(0,0,0,0.35)",
     backdropFilter: "none",
-  }), [cursor, lensSize, src, bgSize, bgPos]);
+    // CSS variable for spectral-pulse animation
+    "--pulse-color": currentMode.glowColor,
+  } as React.CSSProperties), [lensSize, src, bgSize, bgPos, currentMode, isNonNormal]);
 
   // Removed pinch to zoom functionality
 
@@ -254,13 +345,16 @@ export default function DetectiveZoom({
     const normalizedX = Math.max(0, Math.min(1, imageX / displayWidth));
     const normalizedY = Math.max(0, Math.min(1, imageY / displayHeight));
     
+    const coord = getGridCoord(normalizedX, normalizedY);
     const newEvidence: Evidence = {
       id: `evidence-${Date.now()}`,
-      label: `Evidence ${evidence.length + 1}`,
+      label: `Evidence ${evidence.length + 1} [${coord}]`,
       x: normalizedX,
       y: normalizedY,
       zoom,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      mode: activeMode,
+      notes: "",
     };
     
     setEvidence(prev => [...prev, newEvidence]);
@@ -290,9 +384,78 @@ export default function DetectiveZoom({
 
   const inc = () => setZoom(z => clamp(parseFloat((z + 0.25).toFixed(2)), minZoom, maxZoom));
   const dec = () => setZoom(z => clamp(parseFloat((z - 0.25).toFixed(2)), minZoom, maxZoom));
-  
+
   const incEvidence = () => setEvidenceZoom(z => clamp(parseFloat((z + 0.25).toFixed(2)), minZoom, maxZoom));
   const decEvidence = () => setEvidenceZoom(z => clamp(parseFloat((z - 0.25).toFixed(2)), minZoom, maxZoom));
+
+  useKeyboardShortcuts({
+    shortcuts: [
+      { key: '=', action: activeEvidence ? incEvidence : inc, description: 'Zoom in' },
+      { key: '+', action: activeEvidence ? incEvidence : inc, description: 'Zoom in' },
+      { key: '-', action: activeEvidence ? decEvidence : dec, description: 'Zoom out' },
+      { key: 'e', action: captureEvidence, description: 'Capture evidence' },
+      { key: 'g', action: () => setShowGrid(v => !v), description: 'Toggle grid overlay' },
+      ...VISION_MODES.map(m => ({
+        key: m.key,
+        action: () => setActiveMode(m.id),
+        description: `${m.name} mode`,
+      })),
+    ],
+  });
+
+  // .ecto file export/import
+  const ectoInputRef = useRef<HTMLInputElement | null>(null);
+
+  const exportEcto = useCallback(() => {
+    if (evidence.length === 0) {
+      toast.info("No evidence to export");
+      return;
+    }
+    const payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      image: { src, alt, width, height },
+      mode: activeMode,
+      grid: showGrid,
+      evidence,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `investigation-${new Date().toISOString().slice(0, 10)}.ecto`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${evidence.length} evidence item${evidence.length === 1 ? "" : "s"}`);
+  }, [evidence, src, alt, width, height, activeMode, showGrid]);
+
+  const importEcto = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        if (!data.version || !Array.isArray(data.evidence)) {
+          toast.error("Invalid .ecto file");
+          return;
+        }
+        // Warn if the file was saved from a different image
+        if (data.image?.src && data.image.src !== src) {
+          toast.warning("This investigation was from a different image — evidence pins may not align", {
+            duration: 5000,
+          });
+        }
+        setEvidence(data.evidence);
+        setClickCount(data.evidence.length);
+        if (data.mode) setActiveMode(data.mode);
+        if (data.grid !== undefined) setShowGrid(data.grid);
+        setActiveEvidence(null);
+        toast.success(`Loaded ${data.evidence.length} evidence item${data.evidence.length === 1 ? "" : "s"}`);
+      } catch {
+        toast.error("Could not read .ecto file");
+      }
+    };
+    reader.readAsText(file);
+  }, [src]);
 
   // Build callout absolute rect styles
   const calloutRects = useMemo(() => callouts.map(c => ({
@@ -331,56 +494,110 @@ export default function DetectiveZoom({
     return evidence.map(e => {
       // Use evidenceZoom for active evidence, otherwise use the original zoom
       const currentZoom = activeEvidence === e.id ? evidenceZoom : e.zoom;
+      const evidenceMode = VISION_MODES.find(m => m.id === e.mode) ?? VISION_MODES[0];
       return {
         ...e,
+        evidenceMode,
         insetBg: {
           backgroundImage: `url(${src})`,
           backgroundRepeat: "no-repeat",
           backgroundSize: `${displayWidth * currentZoom}px ${displayHeight * currentZoom}px`,
           // Center the evidence point in the inset viewer
           backgroundPosition: `${-(e.x * displayWidth * currentZoom - 150)}px ${-(e.y * displayHeight * currentZoom - 150)}px`,
+          filter: evidenceMode.filter,
         } as React.CSSProperties,
       };
     });
   }, [evidence, src, naturalSize, activeEvidence, evidenceZoom]);
 
+  const muted = dark ? "text-white/50" : "text-muted-foreground";
+  const cardBg = dark ? "bg-transparent" : "bg-card";
+  const panelBg = dark ? "bg-white/5" : "bg-card";
+  const panelBorder = dark ? "border-white/10" : "border";
+  const surfaceBg = dark ? "bg-white/5" : "bg-black/5";
+  const btnVariant = dark ? "ghost" as const : "outline" as const;
+  const btnClass = dark ? "text-white hover:bg-white/10 border-white/20" : "";
+
   return (
-    <Card className={"w-full max-w-full shadow-lg border-0 " + (className ?? "")}> 
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-xl">Inspector</CardTitle>
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            "hidden md:flex items-center gap-2 transition-opacity",
-            activeEvidence ? "opacity-50" : "opacity-100"
-          )}>
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-xs text-muted-foreground">Lens Zoom</span>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" onClick={dec} aria-label="Zoom out lens"><ZoomOut className="w-4 h-4" /></Button>
-                <div className="w-40">
-                  <Slider
-                    value={[zoom]}
-                    min={minZoom}
-                    max={maxZoom}
-                    step={0.05}
-                    onValueChange={(v) => setZoom(v[0]!)}
-                    aria-label="Lens Zoom"
-                  />
+    <Card className={cn("w-full max-w-full shadow-lg border-0 flex flex-col overflow-hidden", cardBg, className)}>
+      <CardHeader className="flex flex-col gap-3 pb-2 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <CardTitle className={cn("text-xl", dark && "text-white")}>Spectral Analysis</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "hidden md:flex items-center gap-2 transition-opacity",
+              activeEvidence ? "opacity-50" : "opacity-100"
+            )}>
+              <div className="flex flex-col items-center gap-1">
+                <span className={cn("text-xs", muted)}>Lens Zoom</span>
+                <div className="flex items-center gap-2">
+                  <Button variant={btnVariant} size="icon" className={btnClass} onClick={dec} aria-label="Zoom out lens"><ZoomOut className="w-4 h-4" /></Button>
+                  <div className="w-40">
+                    <Slider
+                      value={[zoom]}
+                      min={minZoom}
+                      max={maxZoom}
+                      step={0.05}
+                      onValueChange={(v) => setZoom(v[0]!)}
+                      aria-label="Lens Zoom"
+                    />
+                  </div>
+                  <Button variant={btnVariant} size="icon" className={btnClass} onClick={inc} aria-label="Zoom in lens"><ZoomIn className="w-4 h-4" /></Button>
                 </div>
-                <Button variant="outline" size="icon" onClick={inc} aria-label="Zoom in lens"><ZoomIn className="w-4 h-4" /></Button>
               </div>
             </div>
+            <Badge variant="secondary" className={cn("text-xs", dark && "bg-white/10 text-white")}>{zoom.toFixed(2)}×</Badge>
           </div>
-          <Badge variant="secondary" className="text-xs">{zoom.toFixed(2)}×</Badge>
+        </div>
+        {/* Vision Mode Selector */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {VISION_MODES.map(m => {
+            const Icon = MODE_ICONS[m.icon];
+            const isActive = activeMode === m.id;
+            return (
+              <Button
+                key={m.id}
+                variant={isActive ? "default" : btnVariant}
+                size="sm"
+                className={cn(
+                  "h-7 px-2 text-xs gap-1",
+                  isActive
+                    ? "bg-purple-600 hover:bg-purple-700 text-white"
+                    : btnClass
+                )}
+                onClick={() => setActiveMode(m.id)}
+                title={`${m.name} (${m.key})`}
+              >
+                {Icon && <Icon className="w-3 h-3" />}
+                {m.shortName}
+              </Button>
+            );
+          })}
+          <div className={cn("w-px h-5 mx-1", dark ? "bg-white/20" : "bg-border")} />
+          <Button
+            variant={showGrid ? "default" : btnVariant}
+            size="sm"
+            className={cn(
+              "h-7 px-2 text-xs gap-1",
+              showGrid
+                ? "bg-purple-600 hover:bg-purple-700 text-white"
+                : btnClass
+            )}
+            onClick={() => setShowGrid(v => !v)}
+            title="Grid overlay (G)"
+          >
+            <Grid3x3 className="w-3 h-3" />
+            Grid
+          </Button>
         </div>
       </CardHeader>
 
-      <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-6 items-start">
+      <CardContent className="flex-1 min-h-0 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-6 items-stretch h-full">
           {/* Image & overlay */}
           <div
             ref={containerRef}
-            className="relative w-full overflow-hidden rounded-2xl border bg-black/5 select-none"
+            className={cn("relative w-full overflow-hidden rounded-2xl select-none", panelBorder, surfaceBg)}
             style={{ aspectRatio: `${width} / ${height}` }}
             onMouseMove={onMove}
             onTouchMove={onMove}
@@ -395,7 +612,8 @@ export default function DetectiveZoom({
               alt={alt ?? "Detective zoom image"}
               fill
               sizes="100vw"
-              className="object-contain"
+              className="object-contain transition-[filter] duration-300"
+              style={{ filter: currentMode.filter }}
               onLoadingComplete={(el) => {
                 // next/image passes the img element as HTMLElement
                 const img = (el as unknown as HTMLImageElement);
@@ -403,6 +621,53 @@ export default function DetectiveZoom({
                 handleImageLoad();
               }}
             />
+
+            {/* Grid overlay with coordinate labels */}
+            {showGrid && (
+              <div className="absolute inset-0 pointer-events-none z-10">
+                {/* Grid lines */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(to right, rgba(168,85,247,0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(168,85,247,0.2) 1px, transparent 1px)",
+                    backgroundSize: "10% 10%",
+                  }}
+                />
+                {/* Column labels (A-J) along the top */}
+                {Array.from({ length: 10 }, (_, i) => (
+                  <div
+                    key={`col-${i}`}
+                    className="absolute text-[10px] font-bold leading-none"
+                    style={{
+                      left: `${i * 10 + 5}%`,
+                      top: 4,
+                      transform: "translateX(-50%)",
+                      color: "rgba(168,85,247,0.7)",
+                      textShadow: "0 1px 2px rgba(0,0,0,0.8)",
+                    }}
+                  >
+                    {String.fromCharCode(65 + i)}
+                  </div>
+                ))}
+                {/* Row labels (1-10) along the left */}
+                {Array.from({ length: 10 }, (_, i) => (
+                  <div
+                    key={`row-${i}`}
+                    className="absolute text-[10px] font-bold leading-none"
+                    style={{
+                      top: `${i * 10 + 5}%`,
+                      left: 4,
+                      transform: "translateY(-50%)",
+                      color: "rgba(168,85,247,0.7)",
+                      textShadow: "0 1px 2px rgba(0,0,0,0.8)",
+                    }}
+                  >
+                    {i + 1}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Callout overlays */}
             {calloutRects.map(c => (
@@ -425,28 +690,118 @@ export default function DetectiveZoom({
               </button>
             ))}
 
+            {/* Evidence pins on image */}
+            {evidence.map((ev, idx) => (
+              <button
+                key={ev.id}
+                type="button"
+                className={cn(
+                  "absolute z-10 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold transition-all -translate-x-1/2 -translate-y-1/2",
+                  activeEvidence === ev.id
+                    ? "bg-purple-500 text-white ring-2 ring-purple-300 scale-125"
+                    : "bg-white/90 text-black hover:scale-110 border border-black/20"
+                )}
+                style={{ left: `${ev.x * 100}%`, top: `${ev.y * 100}%` }}
+                onClick={(e) => { e.stopPropagation(); setActiveEvidence(activeEvidence === ev.id ? null : ev.id); }}
+                title={ev.label}
+              >
+                {idx + 1}
+              </button>
+            ))}
+
             {/* Hover/tap magnifier lens */}
             {showLens && (
-              <div aria-hidden className="pointer-events-none" style={lensStyle} />
+              <div aria-hidden className="pointer-events-none" style={{ position: "absolute", left: 0, top: 0, transform: `translate(${cursor.x - lensSize / 2}px, ${cursor.y - lensSize / 2}px)`, zIndex: 20 }}>
+                <div
+                  className={cn(isNonNormal && "animate-spectral-pulse")}
+                  style={lensStyle}
+                />
+                {/* Grid coordinate + mode label below lens */}
+                <div className="text-center mt-1 pointer-events-none flex items-center justify-center gap-2">
+                  {showGrid && (
+                    <span className="text-xs font-bold text-purple-400" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
+                      {gridCoord}
+                    </span>
+                  )}
+                  {isNonNormal && (
+                    <span
+                      className="text-xs font-bold"
+                      style={{ color: currentMode.borderColor, textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
+                    >
+                      {currentMode.shortName}
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
+
+            {/* Found-footage camera HUD overlay */}
+            <div className="absolute inset-0 pointer-events-none z-10 spectral-scanlines">
+              {/* Timestamp — top-right */}
+              <div className="absolute top-3 right-3 text-[10px] font-mono text-white/60" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}>
+                {hudTime.toLocaleTimeString('en-US', { hour12: false })}
+              </div>
+
+              {/* Mode readout — bottom-left */}
+              <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: currentMode.borderColor, textShadow: "0 0 4px rgba(0,0,0,0.8)" }}>
+                  {currentMode.name}
+                </span>
+              </div>
+
+            </div>
           </div>
 
           {/* Side panel: Evidence Viewer */}
-          <div className="hidden lg:block">
-            <div>
-              <div className="rounded-2xl border p-4 bg-card shadow-sm h-full flex flex-col">
+          <div className="hidden lg:block min-h-0 max-h-full overflow-hidden">
+            <div className="h-full">
+              <div className={cn("rounded-2xl p-4 shadow-sm h-full flex flex-col overflow-hidden", panelBorder, panelBg)}>
                 <div className="flex items-center justify-between mb-3">
-                  <div className="font-medium">Evidence Viewer</div>
-                  {(activeEvidence || activeCallout) && (
-                    <Badge variant="outline">
-                      {activeEvidence 
-                        ? evidence.find(e => e.id === activeEvidence)?.label
-                        : activeCallout
-                      }
-                    </Badge>
-                  )}
+                  <div className={cn("font-medium", dark && "text-white")}>Evidence Viewer</div>
+                  <div className="flex items-center gap-1.5">
+                    {(activeEvidence || activeCallout) && (
+                      <Badge variant="outline" className={cn("mr-1", dark && "border-white/20 text-white")}>
+                        {activeEvidence
+                          ? evidence.find(e => e.id === activeEvidence)?.label
+                          : activeCallout
+                        }
+                      </Badge>
+                    )}
+                    <Button
+                      variant={btnVariant}
+                      size="sm"
+                      className={cn("h-7 px-2 text-xs gap-1", btnClass)}
+                      onClick={() => ectoInputRef.current?.click()}
+                      title="Load .ecto investigation file"
+                    >
+                      <Upload className="w-3 h-3" />
+                      Load
+                    </Button>
+                    <Button
+                      variant={btnVariant}
+                      size="sm"
+                      className={cn("h-7 px-2 text-xs gap-1", btnClass)}
+                      onClick={exportEcto}
+                      disabled={evidence.length === 0}
+                      title="Save investigation as .ecto file"
+                    >
+                      <Download className="w-3 h-3" />
+                      Save
+                    </Button>
+                  </div>
                 </div>
-                <div className="relative w-full rounded-xl overflow-hidden border bg-black/5 flex-1 min-h-[300px]">
+                <input
+                  ref={ectoInputRef}
+                  type="file"
+                  accept=".ecto"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) importEcto(file);
+                    e.target.value = "";
+                  }}
+                />
+                <div className={cn("relative w-full rounded-xl overflow-hidden flex-1 min-h-[300px]", panelBorder, surfaceBg)}>
                   {activeEvidence ? (
                     (() => {
                       const e = evidenceInsets.find(x => x.id === activeEvidence)!;
@@ -462,40 +817,43 @@ export default function DetectiveZoom({
                       );
                     })()
                   ) : (
-                    <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground text-center px-4">
+                    <div className={cn("absolute inset-0 grid place-items-center text-sm text-center px-4", muted)}>
                       {clickCount < 3 ? (
                         "Click anywhere to capture evidence"
                       ) : (
-                        <>Hold <kbd className="px-1 py-0.5 rounded bg-muted">Ctrl</kbd> and click to capture evidence</>
+                        <>Hold <kbd className={cn("px-1 py-0.5 rounded", dark ? "bg-white/10" : "bg-muted")}>Ctrl</kbd> and click to capture evidence</>
                       )}
                     </div>
                   )}
                 </div>
-                <div className={cn(
-                  "mt-4 p-2 rounded-md transition-colors",
-                  activeEvidence ? "bg-primary/5 border border-primary/20" : "bg-muted/30"
-                )}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={cn(
-                      "text-xs font-medium",
-                      activeEvidence ? "text-primary" : "text-muted-foreground"
-                    )}>
-                      {activeEvidence ? "Active Evidence Zoom" : "Evidence Zoom"}
-                    </span>
-                    <Badge variant={activeEvidence ? "default" : "outline"} className="text-xs">
-                      {evidenceZoom.toFixed(2)}×
-                    </Badge>
+                {/* Evidence Notes */}
+                {activeEvidence && (
+                  <div className="mt-3">
+                    <label className={cn("text-xs font-medium mb-1 block", dark ? "text-purple-300" : "text-primary")}>
+                      Investigation Notes
+                    </label>
+                    <textarea
+                      className={cn(
+                        "w-full text-xs rounded-md p-2 resize-none focus:outline-none focus:ring-1",
+                        dark
+                          ? "bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:ring-purple-500/50"
+                          : "bg-muted/30 border text-foreground placeholder:text-muted-foreground focus:ring-primary/50"
+                      )}
+                      rows={2}
+                      placeholder="Describe what you see..."
+                      value={evidence.find(e => e.id === activeEvidence)?.notes ?? ""}
+                      onChange={(e) => {
+                        setEvidence(prev => prev.map(ev =>
+                          ev.id === activeEvidence ? { ...ev, notes: e.target.value } : ev
+                        ));
+                      }}
+                    />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={decEvidence} 
-                      disabled={!activeEvidence}
-                      aria-label="Zoom out evidence"
-                    >
-                      <ZoomOut className="w-4 h-4" />
-                    </Button>
+                )}
+
+                {activeEvidence && (
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <Button variant={btnVariant} size="sm" className={cn("h-6 w-6 p-0", btnClass)} onClick={decEvidence}><ZoomOut className="w-3 h-3" /></Button>
                     <Slider
                       value={[evidenceZoom]}
                       min={minZoom}
@@ -503,52 +861,63 @@ export default function DetectiveZoom({
                       step={0.05}
                       onValueChange={(v) => setEvidenceZoom(v[0]!)}
                       aria-label="Evidence Zoom"
-                      disabled={!activeEvidence}
+                      className="flex-1"
                     />
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={incEvidence} 
-                      disabled={!activeEvidence}
-                      aria-label="Zoom in evidence"
-                    >
-                      <ZoomIn className="w-4 h-4" />
-                    </Button>
+                    <Button variant={btnVariant} size="sm" className={cn("h-6 w-6 p-0", btnClass)} onClick={incEvidence}><ZoomIn className="w-3 h-3" /></Button>
+                    <span className={cn("text-[10px] tabular-nums w-10 text-right", dark ? "text-white/50" : "text-muted-foreground")}>{evidenceZoom.toFixed(1)}×</span>
                   </div>
-                </div>
-                
+                )}
+
                 {/* Evidence List */}
                 {evidence.length > 0 && (
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-medium">Captured Evidence</h4>
-                      <Badge variant="secondary" className="text-xs">{evidence.length}</Badge>
+                  <div className={cn("mt-4 pt-4 min-h-0 flex flex-col flex-1", dark ? "border-t border-white/10" : "border-t")}>
+                    <div className="flex items-center justify-between mb-2 flex-shrink-0">
+                      <h4 className={cn("text-sm font-medium", dark && "text-white")}>Captured Evidence</h4>
+                      <Badge variant="secondary" className={cn("text-xs", dark && "bg-white/10 text-white")}>{evidence.length}</Badge>
                     </div>
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    <div className="space-y-2 min-h-0 flex-1 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: dark ? "rgba(255,255,255,0.2) transparent" : "rgba(0,0,0,0.2) transparent" }}>
                       {evidence.map((item) => (
                         <div
                           key={item.id}
                           className={cn(
-                            "flex items-center justify-between p-2 rounded-md border cursor-pointer transition-colors",
-                            activeEvidence === item.id 
-                              ? "bg-primary/10 border-primary/20" 
-                              : "hover:bg-muted/50"
+                            "flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors",
+                            dark
+                              ? activeEvidence === item.id
+                                ? "bg-purple-500/10 border border-purple-500/20"
+                                : "border border-white/10 hover:bg-white/10"
+                              : activeEvidence === item.id
+                                ? "bg-primary/10 border border-primary/20"
+                                : "border hover:bg-muted/50"
                           )}
                           onClick={() => setActiveEvidence(activeEvidence === item.id ? null : item.id)}
                         >
                           <div className="flex items-center space-x-2 min-w-0">
-                            <Eye className="w-3 h-3 text-muted-foreground" />
+                            <Eye className={cn("w-3 h-3", muted)} />
                             <div className="min-w-0">
-                              <p className="text-xs font-medium truncate">{item.label}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {item.zoom.toFixed(1)}× zoom
-                              </p>
+                              <p className={cn("text-xs font-medium truncate", dark && "text-white")}>{item.label}</p>
+                              <div className={cn("flex items-center gap-1.5 text-xs", muted)}>
+                                <span>{item.zoom.toFixed(1)}× zoom</span>
+                                {item.mode && item.mode !== "normal" && (() => {
+                                  const m = VISION_MODES.find(v => v.id === item.mode);
+                                  return m ? (
+                                    <span
+                                      className="px-1 py-0.5 rounded text-[10px] font-bold leading-none"
+                                      style={{ backgroundColor: m.glowColor, color: "#000" }}
+                                    >
+                                      {m.shortName}
+                                    </span>
+                                  ) : null;
+                                })()}
+                              </div>
+                              {item.notes && (
+                                <p className={cn("text-[10px] truncate max-w-[140px] italic", muted)}>{item.notes}</p>
+                              )}
                             </div>
                           </div>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
+                            className={cn("h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive", dark && "text-white/40 hover:text-red-400")}
                             onClick={(e) => {
                               e.stopPropagation();
                               setEvidence(prev => prev.filter(e => e.id !== item.id));
@@ -565,12 +934,12 @@ export default function DetectiveZoom({
                     </div>
                   </div>
                 )}
-                
-                <p className="text-xs text-muted-foreground mt-2">
+
+                <p className={cn("text-xs mt-2", muted)}>
                   Tip: {clickCount < 3 ? (
                     "Click anywhere to capture evidence."
                   ) : (
-                    <>Hold <kbd className="px-1 py-0.5 rounded bg-muted">Ctrl</kbd> and click to capture evidence.</>
+                    <>Hold <kbd className={cn("px-1 py-0.5 rounded", dark ? "bg-white/10" : "bg-muted")}>Ctrl</kbd> and click to capture evidence.</>
                   )}
                 </p>
               </div>

@@ -15,6 +15,7 @@ import Image from "next/image";
 import { useInfiniteGalleryItems } from '@/app/(site)/m/_components/Gallery/hooks/UseGalleryItems';
 import { getDialogImageUrl, getFullscreenImageUrl, getTileImageUrl } from '@/app/(site)/m/_components/Gallery/utils/imageVariants';
 import DetectiveZoom from '@/app/(site)/m/_components/Gallery/components/DetectiveZoom';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.ogg', '.mov', '.avi'];
 const isImageUrl = (url?: string) => !isNullOrWhiteSpace(url) && !VIDEO_EXTENSIONS.some(ext => url!.toLowerCase().endsWith(ext));
@@ -206,6 +207,58 @@ const GalleryTile: React.FC<GalleryTileProps> = ({ item, merchantBranding, class
     const dialogImageUrl = getDialogImageUrl(imageUrl);
     const fullscreenImageUrl = getFullscreenImageUrl(imageUrl);
 
+    // Keyboard shortcuts for fullscreen modal
+    const navigatePrev = useCallback(() => {
+        if (relatedItems.length === 0) return;
+        const allItems = [currentItem, ...relatedItems];
+        const currentIndex = allItems.findIndex(i => i.id === currentItem.id);
+
+        // When in spectral mode, skip videos and find the next image
+        if (showFullscreenDetective) {
+            for (let i = 1; i < allItems.length; i++) {
+                const idx = (currentIndex - i + allItems.length) % allItems.length;
+                if (allItems[idx].type !== 'video') {
+                    setCurrentItem(allItems[idx]);
+                    return;
+                }
+            }
+            return; // No images found
+        }
+
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : allItems.length - 1;
+        setCurrentItem(allItems[prevIndex]);
+    }, [currentItem, relatedItems, showFullscreenDetective]);
+
+    const navigateNext = useCallback(() => {
+        if (relatedItems.length === 0) return;
+        const allItems = [currentItem, ...relatedItems];
+        const currentIndex = allItems.findIndex(i => i.id === currentItem.id);
+
+        // When in spectral mode, skip videos and find the next image
+        if (showFullscreenDetective) {
+            for (let i = 1; i < allItems.length; i++) {
+                const idx = (currentIndex + i) % allItems.length;
+                if (allItems[idx].type !== 'video') {
+                    setCurrentItem(allItems[idx]);
+                    return;
+                }
+            }
+            return; // No images found
+        }
+
+        const nextIndex = currentIndex < allItems.length - 1 ? currentIndex + 1 : 0;
+        setCurrentItem(allItems[nextIndex]);
+    }, [currentItem, relatedItems, showFullscreenDetective]);
+
+    useKeyboardShortcuts({
+        shortcuts: [
+            { key: 's', action: () => { if (!isVideo) { setShowFullscreenDetective(prev => !prev); if (!showFullscreen) setShowFullscreen(true); } }, description: 'Toggle Spectral Analysis' },
+            { key: 'ArrowLeft', action: navigatePrev, description: 'Previous item' },
+            { key: 'ArrowRight', action: navigateNext, description: 'Next item' },
+        ],
+        enabled: showPreview || showFullscreen,
+    });
+
     const tileStyle = {
         backgroundColor: merchantBranding ? `rgba(var(--merchant-brand), 0.05)` : 'transparent',
         borderColor: merchantBranding ? `rgba(var(--merchant-brand), 0.2)` : 'var(--border)'
@@ -319,6 +372,7 @@ const GalleryTile: React.FC<GalleryTileProps> = ({ item, merchantBranding, class
                                 {isVideo ? (
                                     <div className="rounded-lg overflow-hidden flex-1 min-h-0">
                                         <VideoPlayer
+                                            key={currentItem.id}
                                             src={currentItem.url}
                                             poster={currentItem.thumbnailUrl}
                                             className="w-full h-full"
@@ -328,16 +382,16 @@ const GalleryTile: React.FC<GalleryTileProps> = ({ item, merchantBranding, class
                                         />
                                     </div>
                                 ) : (
-                                    <div className="h-0 grow flex items-center justify-center relative group">
+                                    <div className="h-0 grow relative group">
                                         <img
                                             src={dialogImageUrl}
                                             alt={currentItem.title}
-                                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                                            className="absolute inset-0 w-full h-full object-contain"
                                         />
                                         <Button
                                             variant="secondary"
                                             size="sm"
-                                            className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white border-white/20"
+                                            className="absolute top-3 right-3 z-10 bg-black/50 hover:bg-black/70 text-white border-white/20"
                                             onClick={() => {
                                                 setShowFullscreenDetective(true);
                                                 setShowFullscreen(true);
@@ -603,10 +657,55 @@ const GalleryTile: React.FC<GalleryTileProps> = ({ item, merchantBranding, class
                             </div>
                         )}
 
+                        {/* Keyboard shortcuts legend */}
+                        <div className="absolute bottom-4 right-4 z-50">
+                            <div className="bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-3 text-white/60 text-xs">
+                                {!isVideo && (
+                                    <span className="flex items-center gap-1">
+                                        <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/80 font-mono">S</kbd>
+                                        Spectral
+                                    </span>
+                                )}
+                                {relatedItems.length > 0 && (
+                                    <span className="flex items-center gap-1">
+                                        <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/80 font-mono">&larr;</kbd>
+                                        <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/80 font-mono">&rarr;</kbd>
+                                        Navigate
+                                    </span>
+                                )}
+                                {showFullscreenDetective && (
+                                    <>
+                                        <span className="flex items-center gap-1">
+                                            <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/80 font-mono">1-6</kbd>
+                                            Modes
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/80 font-mono">G</kbd>
+                                            Grid
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/80 font-mono">+</kbd>
+                                            <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/80 font-mono">-</kbd>
+                                            Zoom
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/80 font-mono">E</kbd>
+                                            Evidence
+                                        </span>
+                                    </>
+                                )}
+                                <span className="flex items-center gap-1">
+                                    <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/80 font-mono">Esc</kbd>
+                                    Close
+                                </span>
+                            </div>
+                        </div>
+
                         {/* Fullscreen content */}
                         {isVideo ? (
                             <div className="w-full h-full max-w-5xl">
                                 <VideoPlayer
+                                    key={currentItem.id}
                                     src={currentItem.url}
                                     poster={currentItem.thumbnailUrl}
                                     className="w-full h-full"
@@ -615,25 +714,48 @@ const GalleryTile: React.FC<GalleryTileProps> = ({ item, merchantBranding, class
                                     autoplay={false}
                                 />
                             </div>
-                        ) : showFullscreenDetective ? (
-                            <div className="w-full h-full p-4">
-                                <DetectiveZoom
-                                    src={fullscreenImageUrl}
-                                    alt={currentItem.title}
-                                    width={1920}
-                                    height={1080}
-                                    lensSize={280}
-                                    defaultZoom={3}
-                                    maxZoom={10}
-                                    className="h-full border-0 shadow-none"
-                                />
-                            </div>
                         ) : (
-                            <img
-                                src={fullscreenImageUrl}
-                                alt={currentItem.title}
-                                className="max-w-full max-h-full object-contain"
-                            />
+                            <>
+                                {/* Normal image layer */}
+                                <div className={cn(
+                                    "absolute inset-0 flex items-center justify-center transition-opacity duration-700",
+                                    showFullscreenDetective ? "opacity-0 pointer-events-none" : "opacity-100"
+                                )}>
+                                    <img
+                                        src={fullscreenImageUrl}
+                                        alt={currentItem.title}
+                                        className="max-w-full max-h-full object-contain"
+                                    />
+                                </div>
+
+                                {/* Detective zoom layer */}
+                                <div className={cn(
+                                    "absolute inset-0 p-4 transition-opacity duration-700",
+                                    showFullscreenDetective ? "opacity-100" : "opacity-0 pointer-events-none"
+                                )}>
+                                    {showFullscreen && (
+                                        <DetectiveZoom
+                                            key={currentItem.id}
+                                            src={fullscreenImageUrl}
+                                            alt={currentItem.title}
+                                            width={1920}
+                                            height={1080}
+                                            lensSize={280}
+                                            defaultZoom={3}
+                                            maxZoom={10}
+                                            dark={true}
+                                            className="h-full border-0 shadow-none"
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Scan line animation on activate */}
+                                {showFullscreenDetective && (
+                                    <div className="absolute inset-0 pointer-events-none z-40 animate-scan-once overflow-hidden">
+                                        <div className="absolute inset-y-0 w-1 bg-gradient-to-r from-transparent via-purple-400/80 to-transparent shadow-[0_0_30px_10px_rgba(168,85,247,0.4)]" />
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </DialogContent>
