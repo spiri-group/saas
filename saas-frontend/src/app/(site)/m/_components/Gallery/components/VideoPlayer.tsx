@@ -14,6 +14,7 @@ type Props = {
     muted?: boolean;
     loop?: boolean;
     poster?: string;
+    contain?: boolean;
     onPlay?: () => void;
     onPause?: () => void;
     onEnded?: () => void;
@@ -23,9 +24,10 @@ const VideoPlayer: React.FC<Props> = ({
     src, 
     className, 
     autoplay = false, 
-    controls = true, 
-    muted = false, 
+    controls = true,
+    muted = false,
     loop = false,
+    contain = false,
     poster,
     onPlay,
     onPause,
@@ -124,7 +126,7 @@ const VideoPlayer: React.FC<Props> = ({
                 ref={videoRef}
                 src={src}
                 poster={poster}
-                className="w-full h-full object-cover"
+                className={cn("w-full h-full", contain ? "object-contain" : "object-cover")}
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
                 onEnded={handleEnded}

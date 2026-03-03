@@ -1196,6 +1196,7 @@ const MerchantGallery: React.FC<Props> = ({
                                         src={lightboxItem.url}
                                         className="max-w-full max-h-full w-auto h-auto"
                                         autoplay
+                                        contain
                                     />
                                 ) : (
                                     <img
