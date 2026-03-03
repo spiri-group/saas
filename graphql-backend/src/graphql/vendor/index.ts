@@ -3302,6 +3302,10 @@ const resolvers = {
             };
         }
     },
+    PractitionerVerification: {
+        identityVerified: (parent: any) => parent.identityVerified ?? false,
+        practitionerVerified: (parent: any) => parent.practitionerVerified ?? false,
+    },
     VendorUser: {
         vendor: async (parent: any, _: any, context: serverContext) => {
             return await context.dataSources.cosmos.get_record("Main-Vendor", parent.vendorId, parent.vendorId)

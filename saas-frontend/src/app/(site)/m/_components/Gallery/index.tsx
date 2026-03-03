@@ -922,7 +922,7 @@ const MerchantGallery: React.FC<Props> = ({
                                                         <h3 className="text-lg font-semibold">Category: {category.name}</h3>
                                                         <Badge variant="outline">{categoryItems.length} items</Badge>
                                                     </div>
-                                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
                                                         {categoryItems.slice(0, 12).map((item) => (
                                                             <div key={item.id} className="relative group">
                                                                 <div className="aspect-square rounded-lg overflow-hidden border border-white/10 bg-slate-800/50">
@@ -1047,7 +1047,7 @@ const MerchantGallery: React.FC<Props> = ({
                                         )}
 
                                         {/* Grid */}
-                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 flex-1" style={{ minHeight: '500px' }}>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 flex-1" style={{ minHeight: '500px' }}>
                                             {(() => {
                                                 const allCombined = [
                                                     ...uploadingFiles.map(uf => ({ type: 'uploading' as const, data: uf })),
@@ -1194,7 +1194,7 @@ const MerchantGallery: React.FC<Props> = ({
                                 ) : lightboxItem.type === 'video' ? (
                                     <VideoPlayer
                                         src={lightboxItem.url}
-                                        className="max-w-full max-h-full w-auto h-auto"
+                                        className="w-full h-full"
                                         autoplay
                                         contain
                                     />

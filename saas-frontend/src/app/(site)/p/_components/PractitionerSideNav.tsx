@@ -234,7 +234,7 @@ const useBL = (props: BLProps) => {
                     icon: <ImageIcon className="w-5 h-5" />,
                     label: "Gallery",
                     dialogId: "Practitioner Gallery",
-                    className: "w-[1050px] max-w-[95vw] h-[850px]"
+                    className: "w-[95vw] max-w-[95vw] h-[90vh] bg-slate-900 backdrop-blur-none"
                 },
                 {
                     icon: <Link className="w-5 h-5" />,

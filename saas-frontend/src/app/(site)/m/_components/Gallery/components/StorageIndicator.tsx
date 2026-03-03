@@ -8,7 +8,8 @@ import { HardDrive, AlertTriangle, CheckCircle } from 'lucide-react';
 import {
   StorageUsage,
   getStorageWarningLevel,
-  getStorageWarningColor
+  getStorageWarningColor,
+  formatStorageSize
 } from '../utils/storageUtils';
 
 interface Props {
@@ -50,10 +51,10 @@ const StorageIndicator: React.FC<Props> = ({
         <div className="space-y-2">
           <div className="flex justify-between items-center text-sm">
             <span className={colorClass}>
-              {storageUsage.usedGB} GB used
+              {formatStorageSize(storageUsage.usedGB)} used
             </span>
             <span className="text-slate-400">
-              {storageUsage.totalGB} GB total
+              {formatStorageSize(storageUsage.totalGB)} total
             </span>
           </div>
 
@@ -68,7 +69,7 @@ const StorageIndicator: React.FC<Props> = ({
 
           <div className="flex justify-between items-center text-xs text-slate-500">
             <span>{storageUsage.usedPercentage}% used</span>
-            <span>{storageUsage.remainingGB} GB remaining</span>
+            <span>{formatStorageSize(storageUsage.remainingGB)} remaining</span>
           </div>
 
           {warningLevel === 'critical' && (

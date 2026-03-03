@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Session } from "next-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { gql } from "@/lib/services/gql";
-import { Star, Heart, MessageCircle, Calendar, CalendarDays, Clock, MapPin, Shield, Award, Sparkles, ShoppingCart, Send, Loader2, Play, ChevronLeft, ChevronRight, Video, Mic, Sun, Pause, Pin, Store } from "lucide-react";
+import { Star, Heart, MessageCircle, Calendar, CalendarDays, Clock, MapPin, Shield, Award, Sparkles, ShoppingCart, Send, Loader2, Play, ChevronLeft, ChevronRight, Video, Mic, Sun, Pause, Pin, Store, ImageIcon } from "lucide-react";
 import { iconsMapping } from "@/icons/social";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useIsFollowing, useFollowMerchant, useUnfollowMerchant } from "../../m/_hooks/UseFollow";
 import PractitionerSideNav from "../_components/PractitionerSideNav";
+import { GalleryTile } from "@/components/ux/GalleryTiles";
+import { gallery_item_type } from "@/utils/spiriverse";
 
 interface PractitionerProfile {
     pronouns?: string;
@@ -468,6 +470,49 @@ const usePractitionerEvents = (practitionerId: string) => {
                 { vendorId: practitionerId }
             );
             return response.vendorEvents || [];
+        },
+        enabled: !!practitionerId,
+    });
+};
+
+const usePractitionerGallery = (practitionerId: string) => {
+    return useQuery({
+        queryKey: ['practitioner-gallery', practitionerId],
+        queryFn: async () => {
+            const response = await gql<{
+                catalogueGalleryItems: gallery_item_type[];
+            }>(`
+                query GetPractitionerGallery($merchantId: ID!, $limit: Int) {
+                    catalogueGalleryItems(merchantId: $merchantId, limit: $limit) {
+                        id
+                        type
+                        title
+                        description
+                        url
+                        thumbnailUrl
+                        layout
+                        groupId
+                        categoryId
+                        linkedProducts {
+                            id
+                            title
+                            thumbnailUrl
+                            price {
+                                amount
+                                currency
+                            }
+                        }
+                        tags
+                        ref {
+                            id
+                            partition
+                            container
+                        }
+                        createdAt
+                    }
+                }
+            `, { merchantId: practitionerId, limit: 30 });
+            return response.catalogueGalleryItems || [];
         },
         enabled: !!practitionerId,
     });
@@ -996,6 +1041,54 @@ function OracleMessageSection({ oracleMessage, practitionerName }: OracleMessage
     );
 }
 
+// Gallery Section Component
+interface PractitionerGallerySectionProps {
+    items: gallery_item_type[];
+    practitionerId: string;
+    slug: string;
+}
+
+function PractitionerGallerySection({ items, practitionerId, slug }: PractitionerGallerySectionProps) {
+    const PREVIEW_COUNT = 8;
+    const displayItems = items.slice(0, PREVIEW_COUNT);
+    const hasMore = items.length > PREVIEW_COUNT;
+
+    return (
+        <Card className="backdrop-blur-xl bg-white/95 shadow-xl border-0" data-testid="gallery-section">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                    <ImageIcon className="w-5 h-5 text-purple-600" />
+                    Gallery
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    {displayItems.map((item) => (
+                        <div key={item.id} data-testid={`gallery-item-${item.id}`}>
+                            <GalleryTile
+                                item={item}
+                                merchantId={practitionerId}
+                            />
+                        </div>
+                    ))}
+                </div>
+                {hasMore && (
+                    <div className="flex justify-center mt-4">
+                        <Link
+                            href={`/p/${slug}/gallery`}
+                            data-testid="gallery-view-all-btn"
+                        >
+                            <Button variant="outline">
+                                View all {items.length} items
+                            </Button>
+                        </Link>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function PractitionerProfileContent({
     session,
     practitionerId,
@@ -1008,6 +1101,7 @@ export default function PractitionerProfileContent({
     const { data: services } = usePractitionerServices(practitionerId);
     const { data: reviews } = usePractitionerReviews(practitionerId);
     const { data: events } = usePractitionerEvents(practitionerId);
+    const { data: galleryItems } = usePractitionerGallery(practitionerId);
 
     // Follow state
     const { data: isFollowing, isLoading: isFollowingLoading } = useIsFollowing(practitionerId);
@@ -1350,6 +1444,15 @@ export default function PractitionerProfileContent({
                                 videos={practitioner.videos}
                                 videoSettings={practitioner.videoSettings}
                                 practitionerName={practitioner.name}
+                            />
+                        )}
+
+                        {/* Gallery Section */}
+                        {galleryItems && galleryItems.length > 0 && (
+                            <PractitionerGallerySection
+                                items={galleryItems}
+                                practitionerId={practitionerId}
+                                slug={slug}
                             />
                         )}
 

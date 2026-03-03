@@ -429,6 +429,7 @@ const RootControllerNode: React.FC<{
                 if (action.type == "dialog") {
                     setShowDialog(action.dialog);
                     setDialogClassName(action.dialogClassName);
+
                     // we also need to dispatch an event to close any navs
                     setActivePath([]);
                 } else if (action.type == "link") {
@@ -455,6 +456,7 @@ const RootControllerNode: React.FC<{
                 if (action.type == "dialog") {
                     setShowDialog(action.dialog);
                     setDialogClassName(action.dialogClassName);
+
                     // we also need to dispatch an event to close any navs
                     setActivePath([]);
                 } else if (action.type == "link") {
