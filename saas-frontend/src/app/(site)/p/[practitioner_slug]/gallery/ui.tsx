@@ -62,13 +62,8 @@ export default function PractitionerGalleryPage({ practitionerId, slug }: Practi
     return (
         <div className="min-h-screen bg-gradient-to-b from-violet-950 via-purple-900 to-slate-900">
             {/* Compact header */}
-            <div className="relative overflow-hidden h-32 md:h-40">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-700" />
-                <div className="absolute inset-0 bg-black/40" />
-            </div>
-
             {/* Content */}
-            <div className="mx-auto px-4 md:px-8 lg:px-12 relative z-10 pb-16 -mt-16">
+            <div className="mx-auto px-4 md:px-8 lg:px-12 relative z-10 pb-16">
                 <Card className="backdrop-blur-xl bg-white/95 shadow-2xl border-0">
                     <CardHeader>
                         <div className="flex items-center gap-4">

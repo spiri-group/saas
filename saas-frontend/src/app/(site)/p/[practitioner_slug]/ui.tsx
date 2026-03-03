@@ -1205,7 +1205,7 @@ export default function PractitionerProfileContent({
             )}
             <div className={`min-h-screen bg-gradient-to-b from-violet-950 via-purple-900 to-slate-900 ${isOwner ? 'md:ml-[200px]' : ''}`}>
                 {/* Hero Banner */}
-                <div className={`relative overflow-hidden ${practitioner.banner?.url ? 'h-64 md:h-80' : 'h-32 md:h-40'}`}>
+                <div className={`relative overflow-hidden ${practitioner.banner?.url ? 'h-28 md:h-36' : 'h-0'}`}>
                 {practitioner.banner?.url ? (
                     <Image
                         src={practitioner.banner.url}
@@ -1220,7 +1220,7 @@ export default function PractitionerProfileContent({
             </div>
 
             {/* Profile Content */}
-            <div className={`mx-auto px-4 md:px-8 lg:px-12 relative z-10 pb-16 ${practitioner.banner?.url ? '-mt-32' : '-mt-16'}`}>
+            <div className={`mx-auto px-4 md:px-8 lg:px-12 relative z-10 pb-16 ${practitioner.banner?.url ? '-mt-12' : ''}`}>
                 {/* Profile Header Card */}
                 <Card className="backdrop-blur-xl bg-white/95 shadow-2xl border-0">
                     <CardContent className="p-8">
