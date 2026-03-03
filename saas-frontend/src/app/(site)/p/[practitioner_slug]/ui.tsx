@@ -727,7 +727,7 @@ function PractitionerVideoSection({ videos, videoSettings, practitionerName }: P
     const autoplayDelay = videoSettings?.autoplayDelay || 0;
 
     return (
-        <Card className="mt-6 backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="video-section">
+        <Card className="mt-6 backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="video-section">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                     <Video className="w-5 h-5 text-indigo-600" />
@@ -859,7 +859,7 @@ function AudioIntroSection({ audioIntro, practitionerName }: AudioIntroSectionPr
     };
 
     return (
-        <Card className="mt-6 backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="audio-intro-section">
+        <Card className="mt-6 backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="audio-intro-section">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                     <Mic className="w-5 h-5 text-indigo-600" />
@@ -1054,7 +1054,7 @@ function PractitionerGallerySection({ items, practitionerId, slug }: Practitione
     const hasMore = items.length > PREVIEW_COUNT;
 
     return (
-        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="gallery-section">
+        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="gallery-section">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                     <ImageIcon className="w-5 h-5 text-indigo-600" />
@@ -1222,7 +1222,7 @@ export default function PractitionerProfileContent({
             {/* Profile Content */}
             <div className={`mx-auto px-4 md:px-8 lg:px-12 relative z-10 pb-16 ${practitioner.banner?.url ? '-mt-12' : ''}`}>
                 {/* Profile Header Card */}
-                <Card className="backdrop-blur-xl bg-white/70 shadow-2xl border border-white/20">
+                <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-2xl border border-white/20">
                     <CardContent className="p-8">
                         <div className="flex flex-col md:flex-row gap-6">
                             {/* Avatar */}
@@ -1379,7 +1379,7 @@ export default function PractitionerProfileContent({
                     <div className="space-y-6">
                         {/* Available Services */}
                         {services && services.filter(s => s != null).length > 0 && (
-                            <Card ref={servicesRef} className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="services-section">
+                            <Card ref={servicesRef} className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="services-section">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-lg">
                                         <ShoppingCart className="w-5 h-5 text-indigo-600" />
@@ -1394,7 +1394,7 @@ export default function PractitionerProfileContent({
                                                 href={`/p/${slug}/services/${service.slug || service.id}`}
                                                 className="block"
                                             >
-                                                <div className="border rounded-lg p-4 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer bg-white/80 h-full">
+                                                <div className="border rounded-lg p-4 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer bg-white/60 h-full">
                                                     <div className="flex gap-4">
                                                         {service.thumbnail?.image?.media?.url && (
                                                             <div className="flex-shrink-0 w-20 h-20 relative rounded-md overflow-hidden">
@@ -1457,7 +1457,7 @@ export default function PractitionerProfileContent({
                         )}
 
                         {/* About */}
-                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
+                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
                             <CardHeader>
                                 <CardTitle className="text-lg">About {practitioner.name}</CardTitle>
                             </CardHeader>
@@ -1493,7 +1493,7 @@ export default function PractitionerProfileContent({
 
                         {/* Training & Credentials */}
                         {profile?.training && profile.training.length > 0 && (
-                            <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
+                            <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-lg">
                                         <Award className="w-5 h-5 text-indigo-600" />
@@ -1522,7 +1522,7 @@ export default function PractitionerProfileContent({
                         )}
 
                         {/* Reviews Section */}
-                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="reviews-section">
+                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="reviews-section">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-lg">
                                     <Star className="w-5 h-5 text-indigo-600" />
@@ -1689,7 +1689,7 @@ export default function PractitionerProfileContent({
                         )}
 
                         {/* Modalities & Specializations */}
-                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
+                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-lg">
                                     <Star className="w-5 h-5 text-indigo-600" />
@@ -1727,7 +1727,7 @@ export default function PractitionerProfileContent({
 
                         {/* Linked Shopfronts */}
                         {profile?.linkedShopfronts && profile.linkedShopfronts.length > 0 && (
-                            <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="shopfronts-section">
+                            <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="shopfronts-section">
                                 <CardHeader className="pb-3">
                                     <CardTitle className="flex items-center gap-2 text-lg">
                                         <Store className="w-5 h-5 text-amber-600" />
@@ -1773,7 +1773,7 @@ export default function PractitionerProfileContent({
 
                         {/* Upcoming Events */}
                         {events && events.length > 0 && (
-                            <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20" data-testid="events-section">
+                            <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20" data-testid="events-section">
                                 <CardHeader className="pb-3">
                                     <CardTitle className="flex items-center gap-2 text-lg">
                                         <CalendarDays className="w-5 h-5 text-indigo-600" />
@@ -1941,7 +1941,7 @@ function ProfileSkeleton() {
             <div className="h-64 md:h-80 bg-indigo-950/50 animate-pulse" />
             <div className="mx-auto px-4 md:px-8 lg:px-12 -mt-32 relative z-10 pb-16">
                 {/* Header Card Skeleton */}
-                <Card className="backdrop-blur-xl bg-white/70 shadow-2xl border border-white/20">
+                <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-2xl border border-white/20">
                     <CardContent className="p-8">
                         <div className="flex flex-col md:flex-row gap-6">
                             <div className="w-32 h-32 rounded-full bg-white/30 animate-pulse" />
@@ -1965,7 +1965,7 @@ function ProfileSkeleton() {
                 <div className="mt-6 lg:grid lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] lg:gap-8">
                     {/* Main Column Skeleton */}
                     <div className="space-y-6">
-                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
+                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
                             <CardContent className="p-6">
                                 <div className="h-6 w-40 bg-white/30 rounded animate-pulse mb-4" />
                                 <div className="grid gap-4 sm:grid-cols-2">
@@ -1974,7 +1974,7 @@ function ProfileSkeleton() {
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
+                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
                             <CardContent className="p-6 space-y-3">
                                 <div className="h-6 w-32 bg-white/30 rounded animate-pulse" />
                                 <div className="h-4 w-full bg-white/30 rounded animate-pulse" />
@@ -1986,7 +1986,7 @@ function ProfileSkeleton() {
 
                     {/* Sidebar Skeleton */}
                     <div className="space-y-6 mt-6 lg:mt-0">
-                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
+                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
                             <CardContent className="p-6 space-y-3">
                                 <div className="h-6 w-40 bg-white/30 rounded animate-pulse" />
                                 <div className="flex flex-wrap gap-2">
@@ -1996,7 +1996,7 @@ function ProfileSkeleton() {
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card className="backdrop-blur-xl bg-white/70 shadow-xl border border-white/20">
+                        <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-xl border border-white/20">
                             <CardContent className="p-6 space-y-3">
                                 <div className="h-6 w-32 bg-white/30 rounded animate-pulse" />
                                 <div className="h-16 w-full bg-white/30 rounded animate-pulse" />

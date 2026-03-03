@@ -64,7 +64,7 @@ export default function PractitionerGalleryPage({ practitionerId, slug }: Practi
             {/* Compact header */}
             {/* Content */}
             <div className="mx-auto px-4 md:px-8 lg:px-12 relative z-10 pb-16">
-                <Card className="backdrop-blur-xl bg-white/70 shadow-2xl border border-white/20">
+                <Card className="backdrop-blur-xl bg-indigo-50/70 shadow-2xl border border-white/20">
                     <CardHeader>
                         <div className="flex items-center gap-4">
                             <Link

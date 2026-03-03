@@ -350,7 +350,7 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                     Back to {service.vendor.name}&apos;s Profile
                 </Link>
 
-                <Panel className="backdrop-blur-xl bg-white/70 shadow-2xl border border-white/20">
+                <Panel className="backdrop-blur-xl bg-indigo-50/70 shadow-2xl border border-white/20">
                     <PanelHeader className="mb-4">
                         <div className="flex items-center justify-between">
                             <div className="flex-1">
