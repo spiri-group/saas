@@ -17,7 +17,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useIsFollowing, useFollowMerchant, useUnfollowMerchant } from "../../m/_hooks/UseFollow";
 import PractitionerSideNav from "../_components/PractitionerSideNav";
-import { GalleryTile } from "@/components/ux/GalleryTiles";
+import { GalleryTile, MediaThumbnail } from "@/components/ux/GalleryTiles";
 import { gallery_item_type } from "@/utils/spiriverse";
 
 interface PractitionerProfile {
@@ -663,7 +663,7 @@ function VideoStoriesDialog({ videos, practitionerName, open, onOpenChange }: Vi
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="!w-[calc(55vh*9/16)] !max-w-[75vw] !max-h-[calc(55vh+3rem)] p-0 bg-black border-white/10 overflow-hidden flex flex-col" data-testid="video-stories-dialog">
+            <DialogContent className="!w-[85vw] sm:!w-[calc(55vh*9/16)] sm:!max-w-[75vw] !max-h-[calc(55vh+3rem)] p-0 bg-black border-white/10 overflow-hidden flex flex-col" data-testid="video-stories-dialog">
                 <DialogHeader className="sr-only">
                     <DialogTitle>{practitionerName}&apos;s Video Updates</DialogTitle>
                     <DialogDescription>Watch video updates from {practitionerName}</DialogDescription>
@@ -1128,212 +1128,215 @@ export default function PractitionerProfileContent({
             )}
             <div className={`min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 ${isOwner ? 'md:ml-[200px]' : ''}`}>
                 {/* Hero Section */}
-                <div className="relative h-[40vh] md:h-[45vh] lg:h-[50vh] overflow-hidden">
-                    {/* Background */}
-                    {practitioner.banner?.url ? (
-                        <>
-                            <Image
-                                src={practitioner.banner.url}
-                                alt={practitioner.name}
-                                fill
-                                className="object-cover"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/20" />
-                        </>
-                    ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-900 to-purple-950" />
-                    )}
+                <div className="relative">
+                    {/* Background — fixed height, overflow hidden for image containment */}
+                    <div className="h-[30vh] md:h-[45vh] lg:h-[50vh] overflow-hidden">
+                        {practitioner.banner?.url ? (
+                            <>
+                                <Image
+                                    src={practitioner.banner.url}
+                                    alt={practitioner.name}
+                                    fill
+                                    className="object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/20" />
+                            </>
+                        ) : (
+                            <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-900 to-purple-950" />
+                        )}
+                    </div>
 
-                    {/* Profile info overlay — positioned at bottom of hero */}
-                    <div className="absolute inset-x-0 bottom-0 z-10">
-                        <div className="px-4 md:px-8 lg:px-12 pb-8">
-                            <div className="flex flex-col sm:flex-row gap-5 items-start">
-                                {/* Avatar */}
-                                <div className="flex-shrink-0">
-                                    <Avatar className="w-24 h-24 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-2xl border-2 border-white/20 shadow-2xl" data-testid="practitioner-profile-avatar">
-                                        <AvatarImage src={practitioner.logo?.url || practitioner.thumbnail?.image?.media?.url} alt={practitioner.name} className="rounded-2xl" data-testid="practitioner-profile-avatar-img" />
-                                        <AvatarFallback className="text-3xl md:text-5xl bg-indigo-900 text-indigo-300 rounded-2xl" data-testid="practitioner-profile-avatar-fallback">
-                                            {practitioner.name?.slice(0, 2).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
+                    {/* Profile info — overlaps hero with negative margin, flows naturally on mobile */}
+                    <div className="relative z-10 -mt-20 md:-mt-56 lg:-mt-72 px-4 md:px-8 lg:px-12 pb-6 md:pb-8">
+                        <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-start">
+                            {/* Avatar */}
+                            <div className="flex-shrink-0">
+                                <Avatar className="w-20 h-20 sm:w-24 sm:h-24 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-2xl border-2 border-white/20 shadow-2xl" data-testid="practitioner-profile-avatar">
+                                    <AvatarImage src={practitioner.logo?.url || practitioner.thumbnail?.image?.media?.url} alt={practitioner.name} className="rounded-2xl" data-testid="practitioner-profile-avatar-img" />
+                                    <AvatarFallback className="text-2xl sm:text-3xl md:text-5xl bg-indigo-900 text-indigo-300 rounded-2xl" data-testid="practitioner-profile-avatar-fallback">
+                                        {practitioner.name?.slice(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                                    <div>
+                                        <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
+                                            {practitioner.name}
+                                        </h1>
+                                        {profile?.pronouns && (
+                                            <span className="text-sm text-white/50">({profile.pronouns})</span>
+                                        )}
+                                        {profile?.headline && (
+                                            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/80 mt-1">{profile.headline}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Verification badges */}
+                                    <div className="flex gap-2 flex-shrink-0">
+                                        {profile?.verification?.practitionerVerified && (
+                                            <Badge className="bg-white/10 text-white/80 border-white/20">
+                                                <Shield className="w-3 h-3 mr-1" />
+                                                Verified
+                                            </Badge>
+                                        )}
+                                        {profile?.verification?.badges?.includes('FEATURED') && (
+                                            <Badge className="bg-white/10 text-white/80 border-white/20">
+                                                <Award className="w-3 h-3 mr-1" />
+                                                Featured
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </div>
 
-                                {/* Info */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                                        <div>
-                                            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
-                                                {practitioner.name}
-                                            </h1>
-                                            {profile?.pronouns && (
-                                                <span className="text-sm text-white/50">({profile.pronouns})</span>
-                                            )}
-                                            {profile?.headline && (
-                                                <p className="text-lg md:text-xl lg:text-2xl text-white/80 mt-1">{profile.headline}</p>
-                                            )}
+                                {/* Stats */}
+                                <div className="flex flex-wrap gap-3 sm:gap-4 mt-2 sm:mt-3 text-sm text-white/70">
+                                    {practitioner.readingRating && practitioner.readingRating.total_count > 0 && (
+                                        <div className="flex items-center gap-1">
+                                            <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                                            <span className="font-semibold text-white">{practitioner.readingRating.average.toFixed(1)}</span>
+                                            <span>({practitioner.readingRating.total_count} reviews)</span>
                                         </div>
-
-                                        {/* Verification badges */}
-                                        <div className="flex gap-2 flex-shrink-0">
-                                            {profile?.verification?.practitionerVerified && (
-                                                <Badge className="bg-white/10 text-white/80 border-white/20">
-                                                    <Shield className="w-3 h-3 mr-1" />
-                                                    Verified
-                                                </Badge>
-                                            )}
-                                            {profile?.verification?.badges?.includes('FEATURED') && (
-                                                <Badge className="bg-white/10 text-white/80 border-white/20">
-                                                    <Award className="w-3 h-3 mr-1" />
-                                                    Featured
-                                                </Badge>
-                                            )}
+                                    )}
+                                    {profile?.yearsExperience && (
+                                        <div className="flex items-center gap-1">
+                                            <Clock className="w-4 h-4 text-indigo-400" />
+                                            <span>{profile.yearsExperience} years experience</span>
                                         </div>
-                                    </div>
+                                    )}
+                                    {practitioner.country && (
+                                        <div className="flex items-center gap-1">
+                                            <MapPin className="w-4 h-4 text-indigo-400" />
+                                            <span>{practitioner.country}</span>
+                                        </div>
+                                    )}
+                                </div>
 
-                                    {/* Stats */}
-                                    <div className="flex flex-wrap gap-4 mt-3 text-sm text-white/70">
-                                        {practitioner.readingRating && practitioner.readingRating.total_count > 0 && (
-                                            <div className="flex items-center gap-1">
-                                                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                                                <span className="font-semibold text-white">{practitioner.readingRating.average.toFixed(1)}</span>
-                                                <span>({practitioner.readingRating.total_count} reviews)</span>
-                                            </div>
-                                        )}
-                                        {profile?.yearsExperience && (
-                                            <div className="flex items-center gap-1">
-                                                <Clock className="w-4 h-4 text-indigo-400" />
-                                                <span>{profile.yearsExperience} years experience</span>
-                                            </div>
-                                        )}
-                                        {practitioner.country && (
-                                            <div className="flex items-center gap-1">
-                                                <MapPin className="w-4 h-4 text-indigo-400" />
-                                                <span>{practitioner.country}</span>
-                                            </div>
-                                        )}
-                                    </div>
+                                {/* Availability */}
+                                <div className="mt-2 sm:mt-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                    {profile?.acceptingNewClients ? (
+                                        <Badge className="bg-green-500/20 text-green-300 border-green-500/30 w-fit">
+                                            <Sparkles className="w-3 h-3 mr-1" />
+                                            Accepting New Clients
+                                        </Badge>
+                                    ) : (
+                                        <Badge className="bg-white/10 text-white/50 border-white/10 w-fit">
+                                            Not Accepting New Clients
+                                        </Badge>
+                                    )}
+                                    {profile?.responseTime && (
+                                        <span className="text-sm text-white/50">
+                                            Usually responds within {profile.responseTime}
+                                        </span>
+                                    )}
+                                </div>
 
-                                    {/* Availability */}
-                                    <div className="mt-3">
-                                        {profile?.acceptingNewClients ? (
-                                            <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
-                                                <Sparkles className="w-3 h-3 mr-1" />
-                                                Accepting New Clients
-                                            </Badge>
+                                {/* CTA Buttons */}
+                                <div className="flex flex-wrap gap-2 sm:gap-3 mt-4 sm:mt-5">
+                                    <Button
+                                        className="bg-white text-indigo-900 hover:bg-white/90 font-semibold"
+                                        onClick={handleBookReading}
+                                        data-testid="book-reading-btn"
+                                    >
+                                        <Calendar className="w-4 h-4 mr-2" />
+                                        Book a Reading
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="border-white/30 text-white hover:bg-white/10 bg-transparent"
+                                        onClick={() => setMessageDialogOpen(true)}
+                                        data-testid="send-message-btn"
+                                    >
+                                        <MessageCircle className="w-4 h-4 mr-2" />
+                                        Send Message
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        className="text-white/80 hover:text-white hover:bg-white/10"
+                                        onClick={handleFollowToggle}
+                                        disabled={!isAuthenticated || isFollowPending || isFollowingLoading}
+                                        data-testid="follow-btn"
+                                        title={!isAuthenticated ? 'Login to follow' : undefined}
+                                    >
+                                        {isFollowPending ? (
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                         ) : (
-                                            <Badge className="bg-white/10 text-white/50 border-white/10">
-                                                Not Accepting New Clients
-                                            </Badge>
+                                            <Heart className={`w-4 h-4 mr-2 ${isFollowing ? 'fill-red-500 text-red-500' : ''}`} />
                                         )}
-                                        {profile?.responseTime && (
-                                            <span className="ml-2 text-sm text-white/50">
-                                                Usually responds within {profile.responseTime}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* CTA Buttons */}
-                                    <div className="flex flex-wrap gap-3 mt-5">
-                                        <Button
-                                            className="bg-white text-indigo-900 hover:bg-white/90 font-semibold"
-                                            onClick={handleBookReading}
-                                            data-testid="book-reading-btn"
-                                        >
-                                            <Calendar className="w-4 h-4 mr-2" />
-                                            Book a Reading
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            className="border-white/30 text-white hover:bg-white/10 bg-transparent"
-                                            onClick={() => setMessageDialogOpen(true)}
-                                            data-testid="send-message-btn"
-                                        >
-                                            <MessageCircle className="w-4 h-4 mr-2" />
-                                            Send Message
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            className="text-white/80 hover:text-white hover:bg-white/10"
-                                            onClick={handleFollowToggle}
-                                            disabled={!isAuthenticated || isFollowPending || isFollowingLoading}
-                                            data-testid="follow-btn"
-                                            title={!isAuthenticated ? 'Login to follow' : undefined}
-                                        >
-                                            {isFollowPending ? (
-                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            ) : (
-                                                <Heart className={`w-4 h-4 mr-2 ${isFollowing ? 'fill-red-500 text-red-500' : ''}`} />
-                                            )}
-                                            {isFollowing ? 'Following' : 'Follow'}
-                                        </Button>
-                                    </div>
-
-                                    {/* Social Links */}
-                                    {practitioner.social && practitioner.social.platforms && practitioner.social.platforms.length > 0 && (
-                                        <div className="flex flex-wrap gap-2 mt-4" data-testid="social-links">
-                                            {practitioner.social.platforms.map((social) => (
-                                                <a
-                                                    key={social.id}
-                                                    href={social.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="hover:opacity-80 transition-opacity"
-                                                    title={social.handle || social.platform}
-                                                    data-testid={`social-link-${social.platform}`}
-                                                >
-                                                    {practitioner.social?.style === 'solid' ? (
-                                                        <div className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
-                                                            {iconsMapping[social.platform]?.('solid')}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="p-2 text-white/70 hover:text-white transition-colors">
-                                                            {iconsMapping[social.platform]?.('outline')}
-                                                        </div>
-                                                    )}
-                                                </a>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* Video Updates — compact preview strip in hero */}
-                                    {allVideos.length > 0 && (
-                                        <div className="flex items-center gap-3 mt-4" data-testid="video-section">
-                                            <button
-                                                onClick={() => setVideoStoriesOpen(true)}
-                                                className="relative flex items-center gap-3 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl px-4 py-2.5 transition-colors group"
-                                            >
-                                                {hasRecentVideoUpdate && (
-                                                    <span className="absolute -top-2 -right-2 flex items-center gap-1 bg-green-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 shadow-lg animate-pulse">
-                                                        <span className="relative flex h-1.5 w-1.5">
-                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75" />
-                                                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-200" />
-                                                        </span>
-                                                        New
-                                                    </span>
-                                                )}
-                                                <div className="flex -space-x-2">
-                                                    {allVideos.slice(0, 3).map((video, i) => (
-                                                        <div key={i} className="w-10 h-10 rounded-lg overflow-hidden border-2 border-slate-950 flex-shrink-0 relative">
-                                                            {video.coverPhoto ? (
-                                                                <img src={video.coverPhoto.url} alt="" className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                <div className="w-full h-full bg-gradient-to-br from-indigo-800 to-purple-800 flex items-center justify-center">
-                                                                    <Video className="w-4 h-4 text-white/40" />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Play className="w-4 h-4 text-white/70 fill-white/70 group-hover:text-white group-hover:fill-white transition-colors" />
-                                                    <span className="text-sm text-white/70 group-hover:text-white transition-colors">
-                                                        {allVideos.length === 1 ? 'Video Update' : `${allVideos.length} Video Updates`}
-                                                    </span>
-                                                </div>
-                                            </button>
-                                        </div>
-                                    )}
+                                        {isFollowing ? 'Following' : 'Follow'}
+                                    </Button>
                                 </div>
+
+                                {/* Social Links */}
+                                {practitioner.social && practitioner.social.platforms && practitioner.social.platforms.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-3 sm:mt-4" data-testid="social-links">
+                                        {practitioner.social.platforms.map((social) => (
+                                            <a
+                                                key={social.id}
+                                                href={social.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="hover:opacity-80 transition-opacity"
+                                                title={social.handle || social.platform}
+                                                data-testid={`social-link-${social.platform}`}
+                                            >
+                                                {practitioner.social?.style === 'solid' ? (
+                                                    <div className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+                                                        {iconsMapping[social.platform]?.('solid')}
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-2 text-white/70 hover:text-white transition-colors">
+                                                        {iconsMapping[social.platform]?.('outline')}
+                                                    </div>
+                                                )}
+                                            </a>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Video Updates — compact preview strip in hero */}
+                                {allVideos.length > 0 && (
+                                    <div className="flex items-center gap-3 mt-3 sm:mt-4" data-testid="video-section">
+                                        <button
+                                            onClick={() => setVideoStoriesOpen(true)}
+                                            className="relative flex items-center gap-3 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 transition-colors group"
+                                        >
+                                            {hasRecentVideoUpdate && (
+                                                <span className="absolute -top-2 -right-2 flex items-center gap-1 bg-green-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 shadow-lg animate-pulse">
+                                                    <span className="relative flex h-1.5 w-1.5">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75" />
+                                                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-200" />
+                                                    </span>
+                                                    New
+                                                </span>
+                                            )}
+                                            <div className="flex -space-x-2">
+                                                {allVideos.slice(0, 3).map((video, i) => (
+                                                    <div key={i} className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden border-2 border-slate-950 flex-shrink-0 relative">
+                                                        <MediaThumbnail
+                                                            item={{
+                                                                type: 'video',
+                                                                url: video.media.url,
+                                                                thumbnailUrl: video.coverPhoto?.url,
+                                                                title: video.media.description || 'Video update',
+                                                            }}
+                                                            className="w-full h-full object-cover"
+                                                            showPlayIcon={false}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Play className="w-4 h-4 text-white/70 fill-white/70 group-hover:text-white group-hover:fill-white transition-colors" />
+                                                <span className="text-xs sm:text-sm text-white/70 group-hover:text-white transition-colors">
+                                                    {allVideos.length === 1 ? 'Video Update' : `${allVideos.length} Video Updates`}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1887,22 +1890,21 @@ function ProfileSkeleton() {
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900">
             {/* Hero skeleton */}
-            <div className="relative h-[40vh] md:h-[45vh] bg-indigo-950/50 animate-pulse">
-                <div className="absolute inset-x-0 bottom-0">
-                    <div className="px-4 md:px-8 lg:px-12 pb-8">
-                        <div className="flex gap-5 items-end">
-                            <div className="w-24 h-24 md:w-36 md:h-36 rounded-2xl bg-white/10 animate-pulse flex-shrink-0" />
-                            <div className="flex-1 space-y-3 pb-2">
-                                <div className="h-10 w-64 bg-white/10 rounded animate-pulse" />
-                                <div className="h-6 w-96 bg-white/10 rounded animate-pulse" />
-                                <div className="flex gap-4">
-                                    <div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
-                                    <div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
-                                </div>
-                                <div className="flex gap-3">
-                                    <div className="h-10 w-36 bg-white/10 rounded animate-pulse" />
-                                    <div className="h-10 w-36 bg-white/10 rounded animate-pulse" />
-                                </div>
+            <div className="relative">
+                <div className="h-[30vh] md:h-[45vh] bg-indigo-950/50 animate-pulse" />
+                <div className="relative z-10 -mt-16 md:-mt-28 px-4 md:px-8 lg:px-12 pb-6">
+                    <div className="flex flex-col sm:flex-row gap-4 items-start">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-36 md:h-36 rounded-2xl bg-white/10 animate-pulse flex-shrink-0" />
+                        <div className="flex-1 space-y-3 min-w-0">
+                            <div className="h-8 sm:h-10 w-48 sm:w-64 bg-white/10 rounded animate-pulse" />
+                            <div className="h-5 sm:h-6 w-full max-w-xs sm:max-w-sm bg-white/10 rounded animate-pulse" />
+                            <div className="flex gap-4">
+                                <div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
+                                <div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
+                            </div>
+                            <div className="flex gap-2 sm:gap-3">
+                                <div className="h-10 w-32 sm:w-36 bg-white/10 rounded animate-pulse" />
+                                <div className="h-10 w-32 sm:w-36 bg-white/10 rounded animate-pulse" />
                             </div>
                         </div>
                     </div>

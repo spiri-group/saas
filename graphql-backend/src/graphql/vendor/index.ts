@@ -1948,6 +1948,32 @@ const resolvers = {
                 vendor: await context.dataSources.cosmos.get_record("Main-Vendor", args.vendorId, args.vendorId)
             };
         },
+        delete_vendor_video_update: async (_: any, args: { vendorId: string, videoUpdateId: string }, context: serverContext) => {
+            if (context.userId == null) throw "User must be present for this call";
+
+            await protect_via_merchant_access(context.dataSources.cosmos, context.userId, args.vendorId);
+
+            const vendor = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", args.vendorId, args.vendorId);
+            if (!vendor) {
+                throw new GraphQLError(`Vendor with ID ${args.vendorId} not found`, {
+                    extensions: { code: 'NOT_FOUND' },
+                });
+            }
+
+            const videoUpdates = (vendor.videoUpdates || []).filter((v: any) => v.id !== args.videoUpdateId);
+
+            const container = await context.dataSources.cosmos.get_container("Main-Vendor");
+            await container.item(args.vendorId, args.vendorId).patch([
+                { op: "set", path: "/videoUpdates", value: videoUpdates }
+            ]);
+
+            return {
+                code: "200",
+                success: true,
+                message: `Video update deleted successfully`,
+                vendor: await context.dataSources.cosmos.get_record("Main-Vendor", args.vendorId, args.vendorId)
+            };
+        },
         update_teamMembers: async (_: any, args: any, context: serverContext) => {
             // this endpoint assumes that we can update via replacing the entire team member list
             if (context.userId == null) throw "User must be present for this call";

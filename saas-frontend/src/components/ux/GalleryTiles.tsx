@@ -884,4 +884,4 @@ const GalleryGridTile: React.FC<GalleryGridTileProps> = ({ items, merchantBrandi
     );
 };
 
-export { GalleryTile, GalleryGridTile };
+export { GalleryTile, GalleryGridTile, MediaThumbnail };
