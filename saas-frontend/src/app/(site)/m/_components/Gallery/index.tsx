@@ -1226,6 +1226,15 @@ const MerchantGallery: React.FC<Props> = ({
                         <DialogDescription>Viewing gallery item in fullscreen</DialogDescription>
                     </DialogHeader>
 
+                    {/* Close button */}
+                    <button
+                        className="absolute top-4 right-4 z-30 bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 transition-colors"
+                        onClick={() => { setLightboxOpen(false); setLightboxDetectiveMode(false); }}
+                        title="Close"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+
                     {lightboxItem && (
                         <div className="flex-1 flex items-center justify-center relative min-h-0 overflow-hidden">
                             {/* Previous button */}

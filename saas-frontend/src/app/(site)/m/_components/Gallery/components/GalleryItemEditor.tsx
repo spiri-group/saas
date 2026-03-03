@@ -128,9 +128,8 @@ const GalleryItemEditor: React.FC<Props> = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className={className}>
-          <Edit3 className="w-4 h-4 mr-2" />
-          Update
+        <Button variant="outline" size="icon" className={className} title="Update">
+          <Edit3 className="w-4 h-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-[95vw] w-full md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">

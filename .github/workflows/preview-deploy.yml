@@ -182,6 +182,7 @@ jobs:
               --registry-identity "$IDENTITY_ID" \
               --env-vars \
                 AZURE_CLIENT_ID="$IDENTITY_CLIENT_ID" \
+                AZURE_STORAGE_ACCOUNT="stspvappdev002" \
                 EnvInformation="appNameShort=spv&name=dev&index=002" \
                 AUTH_SECRET="${{ steps.secrets.outputs.NEXTAUTH_SECRET }}" \
                 AUTH_URL="https://${APP_NAME}.${{ steps.cae.outputs.default_domain }}" \
@@ -201,6 +202,7 @@ jobs:
               --revision-suffix "sha-${SHORT_SHA}" \
               --set-env-vars \
                 AZURE_CLIENT_ID="$IDENTITY_CLIENT_ID" \
+                AZURE_STORAGE_ACCOUNT="stspvappdev002" \
                 EnvInformation="appNameShort=spv&name=dev&index=002" \
                 AUTH_SECRET="${{ steps.secrets.outputs.NEXTAUTH_SECRET }}" \
                 AUTH_URL="https://${APP_NAME}.${{ steps.cae.outputs.default_domain }}" \
