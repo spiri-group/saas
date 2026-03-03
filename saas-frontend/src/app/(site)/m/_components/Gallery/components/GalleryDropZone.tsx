@@ -170,8 +170,8 @@ const GalleryDropZone: React.FC<Props> = ({
             output: 'image/webp',
             variants: JSON.stringify([
               { suffix: 'tile', width: 380, height: 380, fit: 'cover' },
-              { suffix: 'dialog', width: 1280, height: 720, fit: 'contain' },
-              { suffix: 'fullscreen', width: 1920, height: 1080, fit: 'contain' },
+              { suffix: 'dialog', width: 1280, height: 720, fit: 'inside' },
+              { suffix: 'fullscreen', width: 1920, height: 1080, fit: 'inside' },
             ]),
           }),
         } as any,

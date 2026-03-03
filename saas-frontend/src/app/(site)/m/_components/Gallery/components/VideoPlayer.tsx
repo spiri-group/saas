@@ -144,14 +144,12 @@ const VideoPlayer: React.FC<Props> = ({
                     {/* Play/Pause Button - Center */}
                     {!isPlaying && (
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <Button
-                                size="lg"
-                                variant="secondary"
-                                className="rounded-full w-16 h-16"
+                            <div
+                                className="rounded-full w-16 h-16 bg-black/50 hover:bg-black/70 backdrop-blur-sm flex items-center justify-center cursor-pointer"
                                 onClick={togglePlay}
                             >
-                                <Play className="w-8 h-8 ml-1" />
-                            </Button>
+                                <Play className="w-8 h-8 ml-1 text-white fill-white" />
+                            </div>
                         </div>
                     )}
 
