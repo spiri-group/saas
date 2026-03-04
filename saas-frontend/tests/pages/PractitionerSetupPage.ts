@@ -149,6 +149,8 @@ export class PractitionerSetupPage extends BasePage {
     await this.page.locator('[aria-label="input-login-otp"]').click();
     await this.page.keyboard.type('123456');
     await this.page.waitForURL('/', { timeout: 15000 });
+    // Wait for auth session to be fully established before navigating
+    await this.page.waitForLoadState('networkidle');
 
     // ── Step 2: Handle site-level ConsentGuard ──
     await handleConsentGuardIfPresent(this.page);
@@ -271,6 +273,8 @@ export class PractitionerSetupPage extends BasePage {
     await this.page.locator('[aria-label="input-login-otp"]').click();
     await this.page.keyboard.type('123456');
     await this.page.waitForURL('/', { timeout: 15000 });
+    // Wait for auth session to be fully established before navigating
+    await this.page.waitForLoadState('networkidle');
 
     // ── Step 2: Handle site-level ConsentGuard ──
     await handleConsentGuardIfPresent(this.page);

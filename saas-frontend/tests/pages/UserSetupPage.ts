@@ -35,10 +35,19 @@ export class UserSetupPage extends BasePage {
   }
 
   /**
-   * Wait for the basic details form to be visible
+   * Wait for the basic details form to be visible.
+   * The /setup page is a server component that returns empty when the session
+   * hasn't propagated yet. If the form doesn't appear, reload to retry with
+   * the now-established session cookie.
    */
   async waitForForm() {
-    await expect(this.page.locator(this.selectors.firstNameInput)).toBeVisible({ timeout: 10000 });
+    const formInput = this.page.locator(this.selectors.firstNameInput);
+    const visible = await formInput.isVisible({ timeout: 10000 }).catch(() => false);
+    if (!visible) {
+      console.log('[Setup] Form not visible — reloading to pick up session cookie');
+      await this.page.reload({ waitUntil: 'networkidle' });
+    }
+    await expect(formInput).toBeVisible({ timeout: 15000 });
   }
 
   /**

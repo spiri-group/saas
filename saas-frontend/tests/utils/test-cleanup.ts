@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import { gql } from '@/lib/services/gql';
 import axios from 'axios';
+import { randomUUID } from 'crypto';
 
 /**
  * Test Cleanup Utilities
@@ -391,7 +392,7 @@ export async function addTestLocation(
   locationName: string = 'Test Location'
 ): Promise<boolean> {
   try {
-    const locationId = `loc-${Date.now()}`;
+    const locationId = randomUUID();
     await gqlDirect(
       `mutation UpdateMerchantLocations($merchantId: ID!, $locations: [MerchantLocationInput]!) {
         update_merchant_locations(merchantId: $merchantId, locations: $locations) {
@@ -406,7 +407,7 @@ export async function addTestLocation(
             id: locationId,
             title: locationName,
             address: {
-              id: `addr-${Date.now()}`,
+              id: randomUUID(),
               formattedAddress: '1 Test Street, Sydney NSW 2000, Australia',
               components: {
                 city: 'Sydney',

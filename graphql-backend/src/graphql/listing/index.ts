@@ -464,6 +464,7 @@ const resolvers = {
               return skus;
             } else if (parent.type == "PRODUCT") {
                 const product = parent as product_type
+                if (!product.variants?.length) return [];
                 const skus =
                     product.variants.flatMap((variant) => ({
                         id: variant.id,

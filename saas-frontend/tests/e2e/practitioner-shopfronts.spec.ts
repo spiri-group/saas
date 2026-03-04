@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+import { deflateSync } from 'zlib';
 import { PractitionerSetupPage } from '../pages/PractitionerSetupPage';
 import {
     clearTestEntityRegistry,
@@ -7,20 +8,118 @@ import {
     cleanupTestUsers,
     cleanupTestPractitioners,
     cleanupTestMerchants,
+    completeStripeTestOnboarding,
+    getVendorIdFromSlug,
+    addTestLocation,
 } from '../utils/test-cleanup';
 
 // Store cookies per test worker
 const cookiesPerWorker = new Map<number, string>();
 
 /**
+ * Helper to wait for any dialog overlay to close
+ */
+async function waitForDialogOverlayToClose(page: Page) {
+    const dialogOverlay = page.locator('[data-state="open"][aria-hidden="true"].fixed.inset-0');
+    try {
+        await dialogOverlay.waitFor({ state: 'hidden', timeout: 10000 });
+    } catch {
+        // No overlay present, continue
+    }
+}
+
+/**
+ * Helper to scroll an element into view and click it using JavaScript.
+ * Bypasses Playwright's viewport checks which fail on tall dialogs.
+ */
+async function scrollAndClick(page: Page, locator: ReturnType<Page['locator']>) {
+    await locator.evaluate((el) => {
+        el.scrollIntoView({ behavior: 'instant', block: 'center' });
+        (el as HTMLElement).click();
+    });
+    await page.waitForTimeout(300);
+}
+
+/**
+ * Create a valid PNG image buffer programmatically.
+ * Generates a 100x100 solid-colour image that passes server-side vips/sharp processing.
+ */
+function createValidPngBuffer(): Buffer {
+    const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+
+    function crc32(buf: Buffer): number {
+        let c = 0xffffffff;
+        for (const b of buf) {
+            c ^= b;
+            for (let j = 0; j < 8; j++) {
+                c = (c >>> 1) ^ ((c & 1) ? 0xedb88320 : 0);
+            }
+        }
+        return (c ^ 0xffffffff) >>> 0;
+    }
+
+    function chunk(type: string, data: Buffer): Buffer {
+        const len = Buffer.alloc(4);
+        len.writeUInt32BE(data.length);
+        const t = Buffer.from(type, 'ascii');
+        const crc = Buffer.alloc(4);
+        crc.writeUInt32BE(crc32(Buffer.concat([t, data])));
+        return Buffer.concat([len, t, data, crc]);
+    }
+
+    // IHDR: 100x100, 8-bit RGB
+    const ihdr = Buffer.alloc(13);
+    ihdr.writeUInt32BE(100, 0);
+    ihdr.writeUInt32BE(100, 4);
+    ihdr[8] = 8;  // bit depth
+    ihdr[9] = 2;  // color type RGB
+
+    // Image data: 100 rows × (1 filter byte + 300 RGB bytes)
+    const raw = Buffer.alloc(100 * 301);
+    for (let y = 0; y < 100; y++) {
+        raw[y * 301] = 0; // filter: none
+        for (let x = 0; x < 100; x++) {
+            const i = y * 301 + 1 + x * 3;
+            raw[i] = 100;     // R
+            raw[i + 1] = 50;  // G
+            raw[i + 2] = 150; // B
+        }
+    }
+
+    return Buffer.concat([
+        signature,
+        chunk('IHDR', ihdr),
+        chunk('IDAT', deflateSync(raw)),
+        chunk('IEND', Buffer.alloc(0)),
+    ]);
+}
+
+/**
+ * Helper to upload a test thumbnail image.
+ */
+async function uploadTestThumbnail(page: Page) {
+    const pngBuffer = createValidPngBuffer();
+    const fileInput = page.locator('input[type="file"]').first();
+    await fileInput.setInputFiles({
+        name: 'test-product-thumbnail.png',
+        mimeType: 'image/png',
+        buffer: pngBuffer,
+    });
+    console.log('[Test] Uploading thumbnail image...');
+    await page.waitForTimeout(6000);
+    console.log('[Test] Thumbnail upload complete');
+}
+
+/**
  * Practitioner Shopfronts Tests
  *
  * Tests the ability for practitioners to link their merchant shops
- * to their practitioner profile.
+ * to their practitioner profile, including listing a product.
  *
  * Flow:
  * 1. Create user + practitioner (via unified onboarding)
  * 2. Create merchant (same user)
+ * 2b. Set up prerequisites + list a product in the merchant shop
  * 3. Link merchant to practitioner via management page
  * 4. Verify shop appears on public profile
  * 5. Unlink and verify removal
@@ -52,7 +151,7 @@ test.afterAll(async ({}, testInfo) => {
 
 test.describe('Practitioner Shopfronts', () => {
     test('should link and unlink merchant shopfront to practitioner profile', async ({ page }, testInfo) => {
-        test.setTimeout(420000); // 7 minutes for full flow
+        test.setTimeout(720000); // 12 minutes for full flow (includes product creation with all variant fields)
 
         const timestamp = Date.now();
         const randomSuffix = Math.random().toString(36).substring(2, 8);
@@ -175,19 +274,286 @@ test.describe('Practitioner Shopfronts', () => {
         registerTestMerchant({ slug: merchantSlug, email: testEmail }, workerId);
         console.log('[Test] Step 2 complete: Merchant created');
 
-        // Close welcome dialog if present
-        const welcomeDialog = page.locator('[role="dialog"]:has-text("Welcome")');
-        if (await welcomeDialog.isVisible({ timeout: 3000 }).catch(() => false)) {
-            const dismissButton = page.locator('[role="dialog"] button').first();
-            if (await dismissButton.isVisible()) {
-                await dismissButton.click();
-                await page.waitForTimeout(1000);
-            }
-        }
-
         // Update cookies
         const updatedCookies = await getCookiesFromPage(page);
         if (updatedCookies) cookiesPerWorker.set(workerId, updatedCookies);
+
+        // === STEP 2b: SET UP PRODUCT PREREQUISITES & LIST A PRODUCT ===
+        console.log('[Test] Step 2b: Setting up product prerequisites and listing a product...');
+        const productName = `Test Product ${timestamp}`;
+        const cookiesForApi = updatedCookies || cookies;
+
+        // 2b.1: Resolve merchant ID + set up prerequisites via API
+        console.log('[Test] Step 2b.1: Setting up location and Stripe onboarding via API...');
+        let merchantId: string | null = null;
+        if (cookiesForApi) {
+            merchantId = await getVendorIdFromSlug(merchantSlug, cookiesForApi);
+            if (merchantId) {
+                // Add location (prerequisite for product creation)
+                await addTestLocation(merchantId, cookiesForApi, 'Test Store');
+                console.log('[Test] Location added via API');
+
+                // Complete Stripe onboarding (prerequisite for listing products)
+                const onboardingResult = await completeStripeTestOnboarding(merchantId, cookiesForApi);
+                if (onboardingResult.success) {
+                    console.log('[Test] Stripe onboarding completed successfully');
+                } else {
+                    console.log('[Test] Stripe onboarding warning:', onboardingResult.message);
+                }
+            } else {
+                console.log('[Test] Could not resolve merchant ID from slug');
+            }
+        }
+
+        // Reload to pick up new location + Stripe status
+        await page.reload();
+        await page.waitForLoadState('networkidle');
+        await page.waitForTimeout(2000);
+
+        // Dismiss welcome dialog if present (click "Customise your profile")
+        const welcomeBtn = page.locator('button:has-text("Customise your profile")');
+        if (await welcomeBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+            await welcomeBtn.click();
+            await page.waitForTimeout(1000);
+        }
+        await waitForDialogOverlayToClose(page);
+
+        // 2b.3: Open product creation dialog via sidebar: Catalogue → New Product
+        console.log('[Test] Step 2b.3: Opening product creation dialog...');
+        const catalogueMenu = page.locator('button[aria-label="Catalogue"]');
+        await catalogueMenu.waitFor({ state: 'visible', timeout: 10000 });
+        await catalogueMenu.click();
+        await page.waitForTimeout(500);
+        const newProductItem = page.locator('button[aria-label="New Product"]');
+        await newProductItem.waitFor({ state: 'visible', timeout: 5000 });
+        await newProductItem.click();
+
+        const productDialog = page.locator('[role="dialog"]:not([aria-hidden="true"])');
+        await expect(productDialog).toBeVisible({ timeout: 10000 });
+
+        // 2b.4: Step 1 — Product Details
+        console.log('[Test] Step 2b.4: Filling product details...');
+        await expect(page.locator('text=Product Details')).toBeVisible({ timeout: 5000 });
+
+        await page.fill('input[name="name"]', productName);
+        await page.waitForTimeout(500);
+
+        // Select category via the hierarchical picker dialog
+        const categoryCombobox = page.locator('button[role="combobox"]:has-text("Select a category")');
+        if (await categoryCombobox.isVisible({ timeout: 3000 }).catch(() => false)) {
+            await categoryCombobox.click();
+            // Wait for the Select Category dialog to open
+            const categoryDialog = page.locator('[role="dialog"]:has-text("Select Category")');
+            await expect(categoryDialog).toBeVisible({ timeout: 5000 });
+            // Click the first category item (auto-selects and closes dialog)
+            const firstCategoryItem = categoryDialog.locator('text=Crystals & Gemstones');
+            await expect(firstCategoryItem).toBeVisible({ timeout: 5000 });
+            await firstCategoryItem.click();
+            await page.waitForTimeout(500);
+            console.log('[Test] Category selected: Crystals & Gemstones');
+        }
+
+        // Check "No refunds" checkbox (avoids needing refund policy setup)
+        const noRefundsCheckbox = page.locator('#no-refunds-checkbox');
+        if (await noRefundsCheckbox.isVisible({ timeout: 3000 }).catch(() => false)) {
+            await scrollAndClick(page, noRefundsCheckbox);
+        }
+
+        // Wait for "Sold From" location to auto-populate (locations query must load first)
+        const soldFromCombo = productDialog.locator('button[role="combobox"]:has-text("Test Store")');
+        const locationLoaded = await soldFromCombo.isVisible({ timeout: 10000 }).catch(() => false);
+        if (!locationLoaded) {
+            // Location didn't auto-select — manually select it
+            const locationPicker = productDialog.locator('button[role="combobox"]:has-text("Select locations")');
+            if (await locationPicker.isVisible({ timeout: 3000 }).catch(() => false)) {
+                await locationPicker.click();
+                await page.waitForTimeout(500);
+                const locationOption = page.locator('[cmdk-item]').first();
+                await locationOption.click();
+                await page.waitForTimeout(500);
+                console.log('[Test] Manually selected location');
+            }
+        } else {
+            console.log('[Test] Location auto-selected: Test Store');
+        }
+
+        // Upload test thumbnail
+        await uploadTestThumbnail(page);
+
+        // Click Next to proceed to Pricing Strategy (use exact match to avoid "Next slide" button)
+        const nextButton = page.getByRole('button', { name: 'Next', exact: true });
+        await scrollAndClick(page, nextButton);
+        await page.waitForTimeout(2000);
+
+        // 2b.5: Step 2 — Pricing Strategy
+        console.log('[Test] Step 2b.5: Selecting pricing strategy...');
+        await expect(page.locator('text=Pricing Strategy')).toBeVisible({ timeout: 5000 });
+
+        const strategySelect = page.locator('button[role="combobox"]:has-text("Choose your pricing goal")');
+        if (await strategySelect.isVisible({ timeout: 5000 }).catch(() => false)) {
+            await strategySelect.click();
+            await page.waitForTimeout(500);
+            const volumeOption = page.locator('[role="option"]:has-text("Sell more units")');
+            await volumeOption.click();
+            await page.waitForTimeout(500);
+        }
+
+        // Click Next to proceed to Variants
+        await scrollAndClick(page, nextButton);
+        await page.waitForTimeout(2000);
+
+        // 2b.6: Step 3 — Variants (fill ALL required fields)
+        console.log('[Test] Step 2b.6: Filling variant details...');
+        await expect(page.locator('text=Product Variants')).toBeVisible({ timeout: 5000 });
+
+        // Variant name defaults to "Variant 1" (passes min(1) validation)
+
+        // 6a: Fill variant code (required, min 1 char)
+        const codeInput = productDialog.locator('input[placeholder="Code"]');
+        await codeInput.scrollIntoViewIfNeeded();
+        await codeInput.fill('TEST-001');
+        console.log('[Test] Filled variant code');
+
+        // 6b: Add description via popover (required, countWords > 0)
+        const addDescBtn = productDialog.locator('button:has-text("Add Description")');
+        await addDescBtn.scrollIntoViewIfNeeded();
+        await addDescBtn.click();
+        await page.waitForTimeout(1000);
+        // RichTextInput uses Lexical with ContentEditable
+        const richTextEditor = page.locator('[contenteditable="true"]').first();
+        await richTextEditor.click();
+        await page.keyboard.type('Test product description for automated testing.');
+        await page.waitForTimeout(500);
+        const finishDescBtn = page.locator('button:has-text("Finish and Confirm")');
+        await scrollAndClick(page, finishDescBtn);
+        await page.waitForTimeout(500);
+        console.log('[Test] Added description');
+
+        // 6c: Add image via popover (required, min 1 image)
+        const imagesBtn = productDialog.locator('button').filter({ hasText: /^Images/ }).first();
+        await imagesBtn.scrollIntoViewIfNeeded();
+        await imagesBtn.click();
+        await page.waitForTimeout(1000);
+        // Upload image via FileUploader's file input
+        const variantPngBuffer = createValidPngBuffer();
+        const variantFileInput = page.locator('input[type="file"]').first();
+        await variantFileInput.setInputFiles({
+            name: 'test-variant-image.png',
+            mimeType: 'image/png',
+            buffer: variantPngBuffer,
+        });
+        console.log('[Test] Uploading variant image...');
+        await page.waitForTimeout(8000); // Wait for upload + processing
+        const finishImgBtn = page.locator('button:has-text("Finish & Confirm")');
+        await scrollAndClick(page, finishImgBtn);
+        await page.waitForTimeout(500);
+        console.log('[Test] Added variant image');
+
+        // 6d: Select HS Code (required - opens dialog within product dialog)
+        const hsCodeBtn = productDialog.locator('button:has-text("Select HS Code")');
+        await hsCodeBtn.scrollIntoViewIfNeeded();
+        await hsCodeBtn.click();
+        const hsDialog = page.locator('[role="dialog"]:has-text("Select Harmonized System Code")');
+        await expect(hsDialog).toBeVisible({ timeout: 5000 });
+        // Search for "gemstone" to get real HS code results
+        const hsSearchInput = hsDialog.locator('input[placeholder="Search HS Codes..."]');
+        await hsSearchInput.fill('gemstone');
+        await page.waitForTimeout(3000); // Wait for debounced search + API response
+        // Click the first HS code result (CarouselItem with cursor-pointer, has formatted code text)
+        const hsCodeResults = hsDialog.locator('span.text-slate-500');
+        const firstHsResult = hsCodeResults.first();
+        if (await firstHsResult.isVisible({ timeout: 5000 }).catch(() => false)) {
+            // Click the parent CarouselItem (the clickable element)
+            await firstHsResult.locator('..').click();
+            await page.waitForTimeout(500);
+            console.log('[Test] Clicked HS code result');
+        } else {
+            console.log('[Test] WARNING: No HS code results found for "gemstone"');
+        }
+        const confirmHsBtn = hsDialog.locator('button:has-text("Confirm and Close")');
+        await scrollAndClick(page, confirmHsBtn);
+        await page.waitForTimeout(500);
+        console.log('[Test] Selected HS Code');
+
+        // 6e: Select Country of Manufacture (required, min 1 char)
+        const comManufacture = productDialog.locator('button[role="combobox"]:has-text("Country of Manufacture")');
+        await comManufacture.scrollIntoViewIfNeeded();
+        await comManufacture.click();
+        await page.waitForTimeout(500);
+        // Type in the search input that appears in the combobox popover
+        const mfgSearchInput = page.locator('input[placeholder="Search ..."]').last();
+        await mfgSearchInput.fill('Australia');
+        await page.waitForTimeout(500);
+        // Click the matching result
+        const mfgResult = page.locator('[cmdk-item]').filter({ hasText: 'Australia' }).first();
+        await mfgResult.click();
+        await page.waitForTimeout(500);
+        console.log('[Test] Selected Country of Manufacture');
+
+        // 6f: Select Country of Origin (required, min 1 char)
+        const comOrigin = productDialog.locator('button[role="combobox"]:has-text("Country of Origin")');
+        await comOrigin.scrollIntoViewIfNeeded();
+        await comOrigin.click();
+        await page.waitForTimeout(500);
+        const originSearchInput = page.locator('input[placeholder="Search ..."]').last();
+        await originSearchInput.fill('Australia');
+        await page.waitForTimeout(500);
+        const originResult = page.locator('[cmdk-item]').filter({ hasText: 'Australia' }).first();
+        await originResult.click();
+        await page.waitForTimeout(500);
+        console.log('[Test] Selected Country of Origin');
+
+        // 6g: Fill landed cost (required, amount > 0)
+        // CurrencyInput renders <input type="text" inputmode="decimal"> with NO name attr.
+        // There are exactly 2 such inputs: landedCost and sellingPrice (both show "$0.00").
+        // The landed cost one comes first in DOM order.
+        const currencyInputs = productDialog.locator('input[type="text"][inputmode="decimal"]:not([name])');
+        const landedCostInput = currencyInputs.first();
+        await landedCostInput.scrollIntoViewIfNeeded();
+        await landedCostInput.click(); // onFocus selects all text
+        await page.waitForTimeout(300);
+        await page.keyboard.type('10.00');
+        await page.waitForTimeout(1500); // Wait for 1000ms debounce
+        console.log('[Test] Filled landed cost');
+
+        // 6h: Fill available stock (required, min 1)
+        const stockInput = productDialog.locator('input[name="variants.0.qty_soh"]');
+        await stockInput.scrollIntoViewIfNeeded();
+        await stockInput.fill('100');
+        await page.waitForTimeout(500);
+        console.log('[Test] Filled stock quantity');
+
+        // Wait for auto-pricing calculation (triggered by landed cost + strategy)
+        await page.waitForTimeout(3000);
+        console.log('[Test] Waited for auto-pricing calculation');
+
+        // Click "List Product" (button is at bottom of 900px dialog, outside 720px viewport)
+        console.log('[Test] Submitting product...');
+        const listButton = page.locator('button:has-text("List Product")');
+        await listButton.focus();
+        await page.keyboard.press('Enter');
+        console.log('[Test] Pressed Enter on List Product button');
+
+        // Wait for the dialog to switch to ListProductSuccess ("Product Created!")
+        const productCreatedHeading = page.locator('h2:has-text("Product Created!")');
+        await expect(productCreatedHeading).toBeVisible({ timeout: 30000 });
+        console.log('[Test] Product created successfully — success dialog visible');
+
+        // Close the success dialog by clicking "Back to Profile"
+        await page.waitForTimeout(1000);
+        const backToProfileBtn = page.locator('button:has-text("Back to Profile")');
+        await expect(backToProfileBtn).toBeVisible({ timeout: 5000 });
+        await scrollAndClick(page, backToProfileBtn);
+        console.log('[Test] Clicked "Back to Profile"');
+        await page.waitForLoadState('networkidle');
+        await page.waitForTimeout(3000);
+
+        // 2b.7: Verify product appears on merchant shop page
+        // Draft products are visible to the logged-in merchant owner
+        console.log('[Test] Step 2b.7: Verifying product appears on merchant shop page...');
+        const productOnShopPage = page.locator(`text=${productName}`);
+        await expect(productOnShopPage).toBeVisible({ timeout: 20000 });
+        console.log('[Test] Step 2b complete: Product listed and visible on merchant shop page');
 
         // === STEP 3: NAVIGATE TO SHOPFRONTS MANAGEMENT ===
         console.log('[Test] Step 3: Navigating to shopfronts management...');
