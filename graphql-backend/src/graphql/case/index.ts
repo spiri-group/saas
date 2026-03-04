@@ -311,11 +311,17 @@ const resolvers = {
                 }
                 
                 // create the order
+                const orderId = uuidv4();
                 const order = {
-                    id: uuidv4(),
+                    id: orderId,
+                    orderId: orderId,
+                    docType: "ORDER",
                     code: await generate_order_no(customerEmail, context.dataSources.cosmos),
                     userId: context.userId,
                     customerEmail,
+                    forObject: { id: item.id, partition: [item.id], container: "Main-Cases" },
+                    target: "CASE-CREATE",
+                    digitalOnly: true,
                     lines,
                     payments: [],
                     ttl
