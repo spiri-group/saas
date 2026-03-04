@@ -1,6 +1,6 @@
 import { DialogProps } from "@radix-ui/react-dialog"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { gql } from "@/lib/services/gql"
 import Spinner from "@/components/ui/spinner"
@@ -27,48 +27,78 @@ const useBL = (props) => {
         },
         group: `case-${props.trackingCode}`
     })
-    
+
+    const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const fetchCaseStatus = useCallback(async () => {
+        const tracking_code = props.trackingCode
+
+        const resp = await gql<{
+            case: {
+                caseStatus: string,
+                contact: {
+                    email: string
+                }
+            }
+        }>( `query get_caseStatus($tracking_code: ID) {
+                case(trackingCode: $tracking_code) {
+                    id,
+                    caseStatus,
+                    contact {
+                        email
+                    }
+                }
+            }
+            `,
+            {
+                tracking_code
+            }
+        )
+
+        caseStatus.set({
+            id: tracking_code,
+            status: resp.case.caseStatus,
+            contact: resp.case.contact
+        })
+
+        return resp.case.caseStatus
+    }, [props.trackingCode])
+
     useEffect(() => {
         const process = async () => {
-            const tracking_code = props.trackingCode
+            const status = await fetchCaseStatus()
 
-            const resp = await gql<{
-                case: {
-                    caseStatus: string,
-                    contact: {
-                        email: string
-                    }
-                }
-            }>( `query get_caseStatus($tracking_code: ID) {
-                    case(trackingCode: $tracking_code) {
-                        id,
-                        caseStatus,
-                        contact { 
-                            email
+            // If still CREATED, poll every 5 seconds as fallback for SignalR
+            if (status === "CREATED") {
+                pollIntervalRef.current = setInterval(async () => {
+                    try {
+                        const updatedStatus = await fetchCaseStatus()
+                        if (updatedStatus !== "CREATED" && pollIntervalRef.current) {
+                            clearInterval(pollIntervalRef.current)
+                            pollIntervalRef.current = null
                         }
+                    } catch (error) {
+                        console.error('[CaseCreateDialog] Error polling case status:', error)
                     }
-                }
-                `,
-                {
-                    tracking_code
-                }
-            )
-
-            caseStatus.set({
-                id: tracking_code,
-                status: resp.case.caseStatus,
-                contact: resp.case.contact
-            })
+                }, 5000)
+            }
         }
 
         process();
-    }, [])
+
+        return () => {
+            if (pollIntervalRef.current) {
+                clearInterval(pollIntervalRef.current)
+                pollIntervalRef.current = null
+            }
+        }
+    }, [fetchCaseStatus])
 
     return {
         ready: caseStatus.get != null,
         case: caseStatus.get,
     }
-    
+
 }
 
 const CaseCreateDialog : React.FC<Props> = (props) => {

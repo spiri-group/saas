@@ -23,7 +23,7 @@ import CaseReleaseDialog from "./components/CaseReleaseDialog";
 import CaseCloseDialog from "./components/CaseCloseDialog";
 import { SignalRProvider } from "@/components/utils/SignalRProvider";
 import CancelDialogButton from "@/components/ux/CancelDialogButton";
-import UseReligiousOptions from "@/shared/hooks/UseReligiousOptions";
+import HierarchicalReligionPicker from "@/components/ux/HierarchicalReligionPicker";
 import PhoneInput from "@/components/ux/PhoneInput";
 import SpiriAssistLogo from "@/icons/spiri-assist-logo";
 import UseContactMe from "../SignedIn/_hooks/UseContactMe";
@@ -48,8 +48,6 @@ const useBL = (props) => {
     const { form, page, moveBack, submit, selectedStripeDetails, mutationStatus } = UseUpsertCase(caseUrgencyFeeOptions.data, props.caseDetails, props.me)
     const caseCategoriesQuery = UseCaseCategory()
     const unitQuery = UseCaseUnit()
-    const religionQuery = UseReligiousOptions()
-
     const search_case = async (tracking_code: string) => {
         const resp = await gql<{
             case: {
@@ -85,7 +83,6 @@ const useBL = (props) => {
         values: form.getValues(),
         categoryOptions: caseCategoriesQuery.data == null ? [] : caseCategoriesQuery.data.map((o) => ({ id: o.id, value: o.defaultLabel })),
         unitOptions: unitQuery.data == null ? [] : unitQuery.data.map((o) => ({ id: o.id, value: o.defaultLabel })),
-        religionOptions: religionQuery.data == null ? [] : religionQuery.data.map((o) => ({ id: o.id, value: o.defaultLabel })),
         caseUrgencyFeeOptions: caseUrgencyFeeOptions.data == null ? [] : caseUrgencyFeeOptions.data,
         search_case
     }
@@ -102,6 +99,7 @@ export const HelpRequestFormUI : React.FC<Props> = (props) => {
     bl.form.watch("selectedUrgencyFee")
 
     return (
+        <>
         <Form {...bl.form}>
             <DialogHeader>
             {mode === 'create' ? (
@@ -126,8 +124,7 @@ export const HelpRequestFormUI : React.FC<Props> = (props) => {
                                 Your only steps away from getting help
                             </p>
                         </div>
-                        {   bl.categoryOptions.length > 0 &&
-                            bl.religionOptions.length > 0 && (
+                        {   bl.categoryOptions.length > 0 && (
                             <div className="flex flex-col">
                                 <div className="space-y-2 mb-3">
                                     <span className="text-sm font-medium">Contact details</span>
@@ -206,16 +203,12 @@ export const HelpRequestFormUI : React.FC<Props> = (props) => {
                                             render={({field}) => {
                                                 return (
                                                     <FormItem>
+                                                        <FormLabel>Religion</FormLabel>
                                                         <FormControl>
-                                                            <ComboBox
-                                                                {...field}
-                                                                withSearch={true}
-                                                                aria-label={"combobox-case-religion"}
-                                                                items={bl.religionOptions}
-                                                                objectName="Religion"
-                                                                fieldMapping={{
-                                                                    keyColumn: "id",
-                                                                    labelColumn: "value"
+                                                            <HierarchicalReligionPicker
+                                                                selectedReligionId={field.value?.id}
+                                                                onReligionSelect={(id, label) => {
+                                                                    field.onChange(id ? { id, value: label } : { id: "", value: "" });
                                                                 }}
                                                             />
                                                         </FormControl>
@@ -340,7 +333,8 @@ export const HelpRequestFormUI : React.FC<Props> = (props) => {
                                                 {bl.caseUrgencyFeeOptions.map((o, ix) => {
                                                     return (
                                                         <FormControl key={o.id}>
-                                                            <div className={cn(!isNullOrUndefined(field.value) && o.defaultVariant!.id === field.value.id ? "bg-primary bg-opacity-60" : "bg-white", "p-2 rounded-md cursor-pointer flex justify-between items-center")}
+                                                            <div data-testid={`urgency-option-${o.id}`}
+                                                                className={cn(!isNullOrUndefined(field.value) && o.defaultVariant!.id === field.value.id ? "bg-primary bg-opacity-60" : "bg-white", "p-2 rounded-md cursor-pointer flex justify-between items-center")}
                                                                 onClick={() => field.onChange({
                                                                     ...o.defaultVariant,
                                                                     name: o.name
@@ -391,21 +385,6 @@ export const HelpRequestFormUI : React.FC<Props> = (props) => {
                         </div>
                     </div>    
                 )}
-                {   bl.page === 5 &&
-                    <>
-                        {bl.selectedStripeDetails != null && (
-                            <div className="flex flex-col">
-                                <StripePayment
-                                    type="SETUP"
-                                    onCancel={() => {}}
-                                    onAlter={() => {}}
-                                    stripeAccountId={bl.selectedStripeDetails.accountId}
-                                    clientSecret={bl.selectedStripeDetails.setupIntentSecret}
-                                />
-                            </div>
-                        )}
-                    </>
-                }
                 {   bl.page !== 5 && (
                     <>
                         <div className="flex flex-row justify-between mt-2 text-xs md:mt-4 text-base">
@@ -419,11 +398,11 @@ export const HelpRequestFormUI : React.FC<Props> = (props) => {
                                         Next
                                     </Button>
                                 ) : (
-                                    <Button 
+                                    <Button
                                         variant={bl.status.button.variant}
-                                        disabled={bl.status.formState === "processing"} 
+                                        disabled={bl.status.formState === "processing"}
                                         type="submit" aria-label={`button-${mode === 'create' ? 'create' : 'update'}-case`}>
-                                        {bl.status.formState === "idle" ? 
+                                        {bl.status.formState === "idle" ?
                                             (mode === 'create' ? 'Continue - payment' : 'Update') :
                                             bl.status.button.title
                                         }
@@ -435,6 +414,23 @@ export const HelpRequestFormUI : React.FC<Props> = (props) => {
                 )}
             </form>
         </Form>
+        {   bl.page === 5 &&
+            <>
+                {bl.selectedStripeDetails != null && (
+                    <div className="flex flex-col">
+                        <StripePayment
+                            type="SETUP"
+                            digitalOnly
+                            onCancel={() => {}}
+                            onAlter={() => {}}
+                            stripeAccountId={bl.selectedStripeDetails.accountId}
+                            clientSecret={bl.selectedStripeDetails.setupIntentSecret}
+                        />
+                    </div>
+                )}
+            </>
+        }
+        </>
     )
 }
 

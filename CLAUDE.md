@@ -11,6 +11,18 @@
 | Override Tailwind preflight max-width on img | Fix profile picture zoom slider |
 | Invalidate React Query cache on mutation | Fix uploaded photos appearing multiple times |
 
+## CRITICAL: Stripe Webhooks Run on Azure, Not Locally
+
+**Stripe webhooks are NEVER processed locally.** They always hit the **deployed Azure Function** at `func-spiriverse-server-dev-002.azurewebsites.net/api/payments`. When debugging webhook issues:
+
+1. **Check the Stripe Dashboard** → Developers → Webhooks → click the endpoint → view attempted events and response codes
+2. **Check Azure Function logs** — not local console output. Use `az monitor` or the Azure Portal to view function invocation logs
+3. **The local dev server does NOT receive webhooks** — Stripe sends them to the deployed Azure endpoint, which shares the same Cosmos DB
+
+If a webhook-dependent flow isn't working (e.g., case status stuck at CREATED), the issue is in the **deployed** function code, not local.
+
+---
+
 ## Quick Reference
 
 - **Testing Guidelines**: See `/saas-frontend/tests/TESTING_GUIDELINES.md`

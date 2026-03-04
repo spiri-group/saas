@@ -4,7 +4,7 @@ import { choice_type, choice_option_type, choice_config_type, choice_node_type, 
 import { generate_human_friendly_id } from "../../utils/functions";
 
 export const resolve_optionid = async ({ field, optionId, defaultLocale }:  { field: string, optionId: string, defaultLocale: string }, {dataSources}: serverContext) => {
-    const choice = await dataSources.cosmos.get_record<choice_type>("System-Settings", field, field)
+    const choice = await dataSources.cosmos.get_record<choice_type>("System-Settings", field, "choice-config")
     const option = choice.options.find(opt => opt.id == optionId)
     if (option == null) throw `Could not find a choice for option Id ${optionId}`
     if (option.localizations.filter(x => x.locale == defaultLocale).length != 1) throw `Whilst a choice exists, there is no value for the default Locale of ${defaultLocale}`;

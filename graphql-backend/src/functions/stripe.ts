@@ -109,29 +109,36 @@ export async function payments(request: HttpRequest, context: InvocationContext)
         })
     }
   } catch (error) {
-    context.error(`Error processing webhook: ${error.message}`, error);
+    // Handle both Error objects and thrown strings
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    context.error(`Error processing webhook: ${errorMessage}`, error);
 
     // Create platform alert for webhook failure (if services are available)
     if (services?.cosmos) {
-      await createPlatformAlertDirect(services.cosmos, {
-        alertType: AlertType.WEBHOOK_FAILURE,
-        severity: AlertSeverity.CRITICAL,
-        title: `Stripe Webhook Handler Failed: ${event?.type || 'unknown'}`,
-        message: error.message || 'An error occurred while processing the Stripe webhook',
-        context: {
-          errorMessage: error.message,
-          stackTrace: error.stack,
-          additionalData: {
-            eventType: event?.type,
-            eventId: event?.id,
-            eventObject: event?.data?.object ? JSON.stringify(event.data.object).substring(0, 500) : undefined
+      try {
+        await createPlatformAlertDirect(services.cosmos, {
+          alertType: AlertType.WEBHOOK_FAILURE,
+          severity: AlertSeverity.CRITICAL,
+          title: `Stripe Webhook Handler Failed: ${event?.type || 'unknown'}`,
+          message: errorMessage,
+          context: {
+            errorMessage,
+            stackTrace: errorStack,
+            additionalData: {
+              eventType: event?.type,
+              eventId: event?.id,
+              eventObject: event?.data?.object ? JSON.stringify(event.data.object).substring(0, 500) : undefined
+            }
+          },
+          source: {
+            component: 'stripe-webhook-handler',
+            environment: process.env.AZURE_FUNCTIONS_ENVIRONMENT || 'production'
           }
-        },
-        source: {
-          component: 'stripe-webhook-handler',
-          environment: process.env.AZURE_FUNCTIONS_ENVIRONMENT || 'production'
-        }
-      });
+        });
+      } catch (alertError) {
+        context.error(`Failed to create platform alert: ${alertError}`);
+      }
     }
 
     return {
@@ -139,7 +146,7 @@ export async function payments(request: HttpRequest, context: InvocationContext)
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         success: false,
-        message: !isNullOrWhiteSpace(error.message) ? error.message : "An error occurred while processing the webhook"
+        message: errorMessage
       })
     }
   }

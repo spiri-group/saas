@@ -636,6 +636,35 @@ export async function queryTestEntities(auth: string) {
   }
 }
 
+// Store created test cases for cleanup per worker
+const testCasesPerWorker = new Map<number, Set<string>>();
+
+/**
+ * Register a test case for cleanup
+ */
+export function registerTestCase(caseId: string, workerId: number = 0) {
+  if (!testCasesPerWorker.has(workerId)) {
+    testCasesPerWorker.set(workerId, new Set());
+  }
+  testCasesPerWorker.get(workerId)!.add(caseId);
+}
+
+/**
+ * Clean up test cases — no purge mutation exists for cases,
+ * so cases with test TTL will auto-expire. Log for visibility.
+ */
+export async function cleanupTestCases(_cookies: string, workerId: number = 0) {
+  const caseIds = testCasesPerWorker.get(workerId);
+  if (!caseIds?.size) return;
+
+  console.log(`[Cleanup] ${caseIds.size} test case(s) created — cases will auto-expire via TTL`);
+  for (const caseId of caseIds) {
+    console.log(`[Cleanup] Test case: ${caseId}`);
+  }
+
+  testCasesPerWorker.delete(workerId);
+}
+
 /**
  * Export alias for gqlDirect as executeGraphQL for clearer naming in tests
  */

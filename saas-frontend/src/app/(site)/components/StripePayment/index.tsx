@@ -376,10 +376,10 @@ const useBL = (props: BLProps) => {
         generateSalesTax,
         generateShipments,
         step2: {
-          isLoading: props.digitalOnly ? salesTax == null : shipments == null || salesTax == null,
-          isReadyToFinish: 
+          isLoading: props.digitalOnly ? (props.orderRef ? salesTax == null : false) : shipments == null || salesTax == null,
+          isReadyToFinish:
             props.digitalOnly
-              ? (billingAddress != null && salesTax != null)
+              ? (billingAddress != null && (salesTax != null || !props.orderRef))
               : (shipments != null && shipments.every(x => !isNullOrUndefined(x.selectedCarrierAndService)))
                 && (billingAddress != null && shippingAddress != null)
                 && salesTax != null

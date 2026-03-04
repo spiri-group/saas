@@ -21,6 +21,7 @@ import { Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerT
 
 type BLProps = {
     caseId: string
+    trackingCode?: string
 }
 
 type Props = BLProps & {
@@ -29,7 +30,7 @@ type Props = BLProps & {
 
 const useBL = (props: BLProps) => {
 
-    const caseDetails = UseCaseDetails(props.caseId)
+    const caseDetails = UseCaseDetails(props.trackingCode ? "" : props.caseId, props.trackingCode)
     const caseInteractions = UseCaseInteractions(props.caseId, ["ACTIVITY"])
     const caseApplications = UseCaseApplications(undefined, props.caseId)
     const reqReleaseCase = UseRequestReleaseCase(props.caseId)

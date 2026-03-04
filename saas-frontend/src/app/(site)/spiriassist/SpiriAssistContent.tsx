@@ -9,6 +9,11 @@ import SpiriAssistLogo from "@/icons/spiri-assist-logo"
 import SacredAnimatedBackground from "../components/Home/SacredAnimatedBackground"
 import { HelpRequestFormUI } from "../components/HelpRequest"
 import UseContactMe from "../components/SignedIn/_hooks/UseContactMe"
+import CaseCreateDialog from "../components/HelpRequest/components/CaseCreateDialog"
+import { SignalRProvider } from "@/components/utils/SignalRProvider"
+import { gql } from "@/lib/services/gql"
+import { useSearchParams, usePathname, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import {
   ArrowLeft,
   ArrowRight,
@@ -132,6 +137,49 @@ function SubmitCaseButton() {
 }
 
 export default function SpiriAssistContent() {
+  const params = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  const [showCaseDialog, setShowCaseDialog] = useState(false)
+
+  // Handle Stripe redirect after payment completion
+  useEffect(() => {
+    const process = async () => {
+      if (params != null) {
+        if (params.has("redirect_status") && params.get("redirect_status") === "succeeded") {
+          const setupIntentId = params.get("setup_intent")
+          try {
+            const resp = await gql<{
+              setUpIntentTarget: {
+                forObject: { id: string },
+                target: string
+              }
+            }>(`query setup_intent_for($stripeSetupIntentId: String!) {
+              setUpIntentTarget(id: $stripeSetupIntentId) {
+                forObject { id }
+                target
+              }
+            }`, { stripeSetupIntentId: setupIntentId })
+
+            if (resp.setUpIntentTarget.target === "CASE-CREATE") {
+              router.replace(`${pathname}?create_case_status=suceeded&case_tracking_code=${resp.setUpIntentTarget.forObject.id}`)
+            }
+          } catch (error) {
+            console.error('[SpiriAssist] Error resolving setup intent:', error)
+          }
+        } else if (params.has("create_case_status")) {
+          setShowCaseDialog(true)
+        }
+      }
+    }
+    process()
+  }, [params, router, pathname])
+
+  const closeCaseDialog = () => {
+    router.replace(pathname)
+    setShowCaseDialog(false)
+  }
+
   return (
     <div className="relative min-h-screen bg-slate-950">
       <SacredAnimatedBackground />
@@ -381,6 +429,17 @@ export default function SpiriAssistContent() {
           </div>
         </div>
       </footer>
+
+      {/* Case creation success dialog after Stripe redirect */}
+      {params?.has("case_tracking_code") && params.get("case_tracking_code") != null && (
+        <SignalRProvider userId={params.get("case_tracking_code") as string}>
+          <CaseCreateDialog
+            open={showCaseDialog}
+            close_dialog={closeCaseDialog}
+            trackingCode={params.get("case_tracking_code") as string}
+          />
+        </SignalRProvider>
+      )}
     </div>
   )
 }

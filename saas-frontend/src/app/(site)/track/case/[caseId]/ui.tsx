@@ -11,7 +11,7 @@ type Props = BLProps
 const UI: React.FC<Props> = (props) => {
     
     return (
-        <ViewCase caseId={props.caseId} />
+        <ViewCase caseId={props.caseId} trackingCode={props.caseId} />
     )
 }
 
