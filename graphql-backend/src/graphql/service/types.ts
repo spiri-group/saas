@@ -47,10 +47,12 @@ export type serviceAddOn_type = {
 export type serviceQuestion_type = {
     id: string,
     question: string,
-    type: "TEXT" | "TEXTAREA" | "SELECT" | "MULTISELECT",
+    type: "TEXT" | "TEXTAREA" | "SELECT" | "MULTISELECT" | "SHORT_TEXT" | "LONG_TEXT" | "MULTIPLE_CHOICE" | "CHECKBOXES" | "DROPDOWN" | "DATE" | "NUMBER" | "EMAIL" | "RATING" | "LINEAR_SCALE" | "YES_NO" | "PHONE" | "TIME" | "PHOTO",
     options?: string[],
     required: boolean,
-    placeholder?: string
+    placeholder?: string,
+    description?: string,
+    scaleMax?: number
 }
 
 export type servicePricing_type = {

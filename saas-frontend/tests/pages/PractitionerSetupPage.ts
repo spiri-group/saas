@@ -149,8 +149,25 @@ export class PractitionerSetupPage extends BasePage {
     await this.page.locator('[aria-label="input-login-otp"]').click();
     await this.page.keyboard.type('123456');
     await this.page.waitForURL('/', { timeout: 15000 });
-    // Wait for auth session to be fully established before navigating
     await this.page.waitForLoadState('networkidle');
+
+    // Poll session API to confirm auth is fully established server-side
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await this.page.waitForTimeout(1500);
+      const sessionText = await this.page.evaluate(async () => {
+        try {
+          const resp = await fetch('/api/auth/session');
+          return await resp.text();
+        } catch { return 'error'; }
+      });
+      if (sessionText && sessionText !== 'null' && sessionText !== '{}' && sessionText !== 'error') {
+        console.log(`[PractitionerSetup] Auth session confirmed on attempt ${attempt + 1}`);
+        break;
+      }
+      if (attempt === 19) {
+        throw new Error('Auth session did not establish within 30 seconds');
+      }
+    }
 
     // ── Step 2: Handle site-level ConsentGuard ──
     await handleConsentGuardIfPresent(this.page);
@@ -273,8 +290,25 @@ export class PractitionerSetupPage extends BasePage {
     await this.page.locator('[aria-label="input-login-otp"]').click();
     await this.page.keyboard.type('123456');
     await this.page.waitForURL('/', { timeout: 15000 });
-    // Wait for auth session to be fully established before navigating
     await this.page.waitForLoadState('networkidle');
+
+    // Poll session API to confirm auth is fully established server-side
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await this.page.waitForTimeout(1500);
+      const sessionText = await this.page.evaluate(async () => {
+        try {
+          const resp = await fetch('/api/auth/session');
+          return await resp.text();
+        } catch { return 'error'; }
+      });
+      if (sessionText && sessionText !== 'null' && sessionText !== '{}' && sessionText !== 'error') {
+        console.log(`[PractitionerSetup] Auth session confirmed on attempt ${attempt + 1}`);
+        break;
+      }
+      if (attempt === 19) {
+        throw new Error('Auth session did not establish within 30 seconds');
+      }
+    }
 
     // ── Step 2: Handle site-level ConsentGuard ──
     await handleConsentGuardIfPresent(this.page);

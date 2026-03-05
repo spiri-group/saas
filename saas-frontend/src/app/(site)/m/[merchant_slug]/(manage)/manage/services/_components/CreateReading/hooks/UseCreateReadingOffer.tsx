@@ -57,9 +57,9 @@ type QuestionOption = {
   label: string;
 };
 
-type PreReadingQuestion = {
+type ServiceQuestion = {
   id: string;
-  type: "SHORT_TEXT" | "LONG_TEXT" | "MULTIPLE_CHOICE" | "CHECKBOXES" | "DROPDOWN" | "DATE" | "NUMBER" | "EMAIL" | "RATING" | "LINEAR_SCALE" | "YES_NO" | "PHONE" | "TIME";
+  type: "SHORT_TEXT" | "LONG_TEXT" | "MULTIPLE_CHOICE" | "CHECKBOXES" | "DROPDOWN" | "DATE" | "NUMBER" | "EMAIL" | "RATING" | "LINEAR_SCALE" | "YES_NO" | "PHONE" | "TIME" | "PHOTO";
   question: string;
   description?: string;
   required: boolean;
@@ -87,7 +87,7 @@ interface CreateReadingOfferSchema {
   includePullCardSummary: boolean;
   includeVoiceNote: boolean;
   thumbnail?: ThumbnailData;
-  preReadingQuestions?: PreReadingQuestion[];
+  questionnaire?: ServiceQuestion[];
   targetTimezones?: string[];
   requiresConsultation: boolean;
   scheduleId?: string; // Optional: Associate with specific availability schedule
@@ -119,7 +119,8 @@ export const useCreateReadingOffer = (merchantId: string) => {
       includeVoiceNote: false,
       targetTimezones: [],
       requiresConsultation: false,
-      scheduleId: undefined
+      scheduleId: undefined,
+      questionnaire: []
     }
   });
 
@@ -216,6 +217,13 @@ export const useCreateReadingOffer = (merchantId: string) => {
           targetTimezones: data.targetTimezones,
           requiresConsultation: data.requiresConsultation,
           scheduleId: data.scheduleId,
+          questionnaire: (data.questionnaire || []).map(q => ({
+            id: q.id,
+            question: q.question,
+            type: q.type,
+            required: q.required,
+            ...(q.options && { options: q.options.map(o => o.label) }),
+          })),
           readingOptions: {
             readingType: data.readingType,
             includePullCardSummary: data.includePullCardSummary,
@@ -227,7 +235,6 @@ export const useCreateReadingOffer = (merchantId: string) => {
             requiresBirthTime: data.requiresBirthTime,
             focusAreas: data.focusAreas,
             customReadingDetails: data.customReadingDetails,
-            preReadingQuestions: data.preReadingQuestions
           }
         }
       });

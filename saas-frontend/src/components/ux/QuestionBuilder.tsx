@@ -52,6 +52,7 @@ import {
     ToggleLeft,
     Phone,
     Clock,
+    Camera,
 } from "lucide-react";
 import { getModulesForReadingType } from "./IntakeModules";
 
@@ -69,7 +70,8 @@ export type QuestionType =
     | "LINEAR_SCALE"
     | "YES_NO"
     | "PHONE"
-    | "TIME";
+    | "TIME"
+    | "PHOTO";
 
 export type QuestionOption = {
     id: string;
@@ -107,6 +109,7 @@ const QUESTION_TYPES: Array<{ value: QuestionType; label: string; icon: React.Co
     { value: "YES_NO", label: "Yes / No", icon: ToggleLeft },
     { value: "PHONE", label: "Phone", icon: Phone },
     { value: "TIME", label: "Time", icon: Clock },
+    { value: "PHOTO", label: "Photo Upload", icon: Camera },
 ];
 
 // Sortable question card wrapper
@@ -273,6 +276,7 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                         key={type.value}
                         type="button"
                         onClick={() => addQuestion(type.value)}
+                        data-testid={`add-question-type-${type.value}`}
                         className={cn(
                             "flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left transition-colors",
                             dark
@@ -354,7 +358,7 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                     <div className="flex items-center justify-center gap-3">
                         <Popover open={addPickerOpen} onOpenChange={setAddPickerOpen}>
                             <PopoverTrigger asChild>
-                                <Button type="button">
+                                <Button type="button" data-testid="add-question-btn">
                                     <Plus className="h-4 w-4 mr-2" />
                                     Add Question
                                 </Button>
@@ -642,7 +646,7 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                 <div className="flex items-center gap-3">
                     <Popover open={addPickerOpen} onOpenChange={setAddPickerOpen}>
                         <PopoverTrigger asChild>
-                            <Button type="button" variant="outline" className="flex-1">
+                            <Button type="button" variant="outline" className="flex-1" data-testid="add-question-btn">
                                 <Plus className="h-4 w-4 mr-2" />
                                 Add Question
                             </Button>
@@ -773,6 +777,12 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                                     )}
                                     {q.type === "TIME" && (
                                         <Input type="time" disabled />
+                                    )}
+                                    {q.type === "PHOTO" && (
+                                        <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center text-slate-400">
+                                            <Camera className="h-8 w-8 mx-auto mb-2" />
+                                            <p className="text-sm">Client will upload a photo here</p>
+                                        </div>
                                     )}
                                 </div>
                             ))

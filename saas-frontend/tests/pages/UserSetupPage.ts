@@ -42,11 +42,15 @@ export class UserSetupPage extends BasePage {
    */
   async waitForForm() {
     const formInput = this.page.locator(this.selectors.firstNameInput);
-    const visible = await formInput.isVisible({ timeout: 10000 }).catch(() => false);
-    if (!visible) {
-      console.log('[Setup] Form not visible — reloading to pick up session cookie');
+
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const visible = await formInput.isVisible({ timeout: 10000 }).catch(() => false);
+      if (visible) return;
+
+      await this.page.waitForTimeout(2000);
       await this.page.reload({ waitUntil: 'networkidle' });
     }
+
     await expect(formInput).toBeVisible({ timeout: 15000 });
   }
 

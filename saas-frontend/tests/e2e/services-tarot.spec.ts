@@ -167,7 +167,7 @@ async function openServicesCreateMenu(page: Page, serviceType: 'Reading' | 'Heal
 
 /** Upload test thumbnail */
 async function uploadTestThumbnail(page: Page) {
-  const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAYAAAB5fY51AAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAOwgAADsIBFShKgAAAABl0RVh0U29mdHdhcmUAcGFpbnQubmV0IDQuMC4xMkMEa+wAAAGfSURBVHic7dMxAQAACAOgaf+/OxODI0AisBIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLECvoALPIAO/BwANgAAAAASUVORK5CYII=';
+  const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAtElEQVR4nO3QUQkAIBTAwBfdeMaygj8yhIMFGDdrti6b/OCjYMGClQcLFqw8WLBg5cGCBSsPFixYebBgwcqDBQtWHixYsPJgwYKVBwsWrDxYsGDlwYIFKw8WLFh5sGDByoMFC1YeLFiw8mDBgpUHCxasPFiwYOXBggUrDxYsWHmwYMHKgwULVh4sWLDyYMGClQcLFqw8WLBg5cGCBSsPFixYebBgwcqDBQtWHixYsPJgwXrTAcZgD2/Jbw1KAAAAAElFTkSuQmCC';
   const pngBuffer = Buffer.from(pngBase64, 'base64');
   const fileInput = page.locator('input[type="file"]').first();
   await fileInput.setInputFiles({
@@ -324,11 +324,10 @@ test.describe.serial('ASYNC Reading Service - Tarot - Full Customer Journey', ()
 
     // Verify service appears in catalogue
     await page.goto(`/p/${practitionerSlug}`);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('domcontentloaded');
 
     const serviceCard = page.locator(`text=${serviceName}`).first();
-    await expect(serviceCard).toBeVisible({ timeout: 10000 });
+    await expect(serviceCard).toBeVisible({ timeout: 15000 });
     console.log('[Test 1] ✓ Tarot service visible in catalogue!');
   });
 

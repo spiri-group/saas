@@ -23,6 +23,7 @@ import UseServiceDetails from "./hooks/UseServiceDetails";
 import UseAddServiceToCart from "./hooks/UseAddServiceToCart";
 import { useBirthChart } from "@/app/(site)/u/[userId]/space/astrology/_hooks/useBirthChart";
 import { Clock, FileText, Package, Stars, AlertCircle } from "lucide-react";
+import QuestionnaireRenderer from "@/components/ux/QuestionnaireRenderer";
 
 type BLProps = {
     merchantId: string,
@@ -361,74 +362,11 @@ const UI: React.FC<Props> = (props) => {
                                         <Separator />
                                         <div className="space-y-3">
                                             <Label>Intake Questionnaire</Label>
-                                            {service.questionnaire.map((q) => (
-                                                <div key={q.id} className="space-y-2">
-                                                    <Label htmlFor={q.id}>
-                                                        {q.question}
-                                                        {q.required && <span className="text-red-500 ml-1">*</span>}
-                                                    </Label>
-
-                                                    {q.type === "TEXT" && (
-                                                        <Input
-                                                            id={q.id}
-                                                            value={(bl.questionnaire.responses[q.id] as string) || ''}
-                                                            onChange={(e) => bl.questionnaire.setResponse(q.id, e.target.value)}
-                                                            required={q.required}
-                                                        />
-                                                    )}
-
-                                                    {q.type === "TEXTAREA" && (
-                                                        <Textarea
-                                                            id={q.id}
-                                                            value={(bl.questionnaire.responses[q.id] as string) || ''}
-                                                            onChange={(e) => bl.questionnaire.setResponse(q.id, e.target.value)}
-                                                            required={q.required}
-                                                            rows={4}
-                                                        />
-                                                    )}
-
-                                                    {q.type === "SELECT" && q.options && (
-                                                        <Select
-                                                            value={(bl.questionnaire.responses[q.id] as string) || ''}
-                                                            onValueChange={(value) => bl.questionnaire.setResponse(q.id, value)}
-                                                        >
-                                                            <SelectTrigger id={q.id}>
-                                                                <SelectValue placeholder="Select an option" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {q.options.map((option) => (
-                                                                    <SelectItem key={option} value={option}>
-                                                                        {option}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    )}
-
-                                                    {q.type === "MULTISELECT" && q.options && (
-                                                        <div className="space-y-2">
-                                                            {q.options.map((option) => (
-                                                                <div key={option} className="flex items-center gap-2">
-                                                                    <Checkbox
-                                                                        id={`${q.id}-${option}`}
-                                                                        checked={((bl.questionnaire.responses[q.id] as string[]) || []).includes(option)}
-                                                                        onCheckedChange={(checked) => {
-                                                                            const current = (bl.questionnaire.responses[q.id] as string[]) || [];
-                                                                            const updated = checked
-                                                                                ? [...current, option]
-                                                                                : current.filter(x => x !== option);
-                                                                            bl.questionnaire.setResponse(q.id, updated);
-                                                                        }}
-                                                                    />
-                                                                    <Label htmlFor={`${q.id}-${option}`} className="font-normal">
-                                                                        {option}
-                                                                    </Label>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
+                                            <QuestionnaireRenderer
+                                                questions={service.questionnaire}
+                                                responses={bl.questionnaire.responses}
+                                                onResponseChange={bl.questionnaire.setResponse}
+                                            />
                                         </div>
                                     </>
                                 )}

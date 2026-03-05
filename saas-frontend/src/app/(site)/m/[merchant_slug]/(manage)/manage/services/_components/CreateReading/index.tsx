@@ -653,13 +653,13 @@ const CreateReading: React.FC<Props> = (props) => {
                         </div>
                     )}
 
-                    {/* Step 4: Pre-Reading Questions (Optional) */}
+                    {/* Step 4: Intake Questionnaire (Optional) */}
                     {bl.currentStep === 4 && (
                         <div className="space-y-4">
                             <QuestionBuilder
                                 dark
                                 control={bl.form.control}
-                                name="preReadingQuestions"
+                                name="questionnaire"
                                 readingType={bl.form.watch('readingType')}
                             />
                         </div>

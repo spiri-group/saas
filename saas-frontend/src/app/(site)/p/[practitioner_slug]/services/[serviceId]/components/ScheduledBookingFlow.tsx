@@ -5,9 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -17,6 +15,7 @@ import { Calendar, Clock, Video, MapPin, Car, ChevronLeft, ChevronRight, Loader2
 import { useAvailableSlots } from "../hooks/UseAvailableSlots";
 import { useBookScheduledService, BookScheduledServiceInput } from "../hooks/UseBookScheduledService";
 import { toast } from "sonner";
+import QuestionnaireRenderer from "@/components/ux/QuestionnaireRenderer";
 
 interface DeliveryMethodsConfig {
     online?: { enabled: boolean; defaultMeetingLink?: string };
@@ -39,9 +38,11 @@ interface ServicePricing {
 interface ServiceQuestion {
     id: string;
     question: string;
-    type: "TEXT" | "TEXTAREA" | "SELECT" | "MULTISELECT";
+    type: "TEXT" | "TEXTAREA" | "SELECT" | "MULTISELECT" | "SHORT_TEXT" | "LONG_TEXT" | "MULTIPLE_CHOICE" | "CHECKBOXES" | "DROPDOWN" | "DATE" | "NUMBER" | "EMAIL" | "RATING" | "LINEAR_SCALE" | "YES_NO" | "PHONE" | "TIME" | "PHOTO";
     required: boolean;
     options?: string[];
+    description?: string;
+    scaleMax?: number;
 }
 
 interface ServiceAddOn {
@@ -597,76 +598,11 @@ export default function ScheduledBookingFlow({
             {questionnaire && questionnaire.length > 0 && (
                 <div className="space-y-3">
                     <Label className="text-slate-700">Intake Questionnaire</Label>
-                    {questionnaire.map((q) => (
-                        <div key={q.id} className="space-y-2">
-                            <Label htmlFor={q.id}>
-                                {q.question}
-                                {q.required && <span className="text-red-500 ml-1">*</span>}
-                            </Label>
-
-                            {q.type === "TEXT" && (
-                                <Input
-                                    id={q.id}
-                                    value={(questionnaireResponses[q.id] as string) || ''}
-                                    onChange={(e) => setQuestionResponse(q.id, e.target.value)}
-                                    required={q.required}
-                                    data-testid={`questionnaire-${q.id}`}
-                                />
-                            )}
-
-                            {q.type === "TEXTAREA" && (
-                                <Textarea
-                                    id={q.id}
-                                    value={(questionnaireResponses[q.id] as string) || ''}
-                                    onChange={(e) => setQuestionResponse(q.id, e.target.value)}
-                                    required={q.required}
-                                    rows={4}
-                                    data-testid={`questionnaire-${q.id}`}
-                                />
-                            )}
-
-                            {q.type === "SELECT" && q.options && (
-                                <Select
-                                    value={(questionnaireResponses[q.id] as string) || ''}
-                                    onValueChange={(value) => setQuestionResponse(q.id, value)}
-                                >
-                                    <SelectTrigger id={q.id} data-testid={`questionnaire-${q.id}`}>
-                                        <SelectValue placeholder="Select an option" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {q.options.map((option) => (
-                                            <SelectItem key={option} value={option}>
-                                                {option}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-
-                            {q.type === "MULTISELECT" && q.options && (
-                                <div className="space-y-2">
-                                    {q.options.map((option) => (
-                                        <div key={option} className="flex items-center gap-2">
-                                            <Checkbox
-                                                id={`${q.id}-${option}`}
-                                                checked={((questionnaireResponses[q.id] as string[]) || []).includes(option)}
-                                                onCheckedChange={(checked) => {
-                                                    const current = (questionnaireResponses[q.id] as string[]) || [];
-                                                    const updated = checked
-                                                        ? [...current, option]
-                                                        : current.filter(x => x !== option);
-                                                    setQuestionResponse(q.id, updated);
-                                                }}
-                                            />
-                                            <Label htmlFor={`${q.id}-${option}`} className="font-normal">
-                                                {option}
-                                            </Label>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                    <QuestionnaireRenderer
+                        questions={questionnaire}
+                        responses={questionnaireResponses}
+                        onResponseChange={setQuestionResponse}
+                    />
                 </div>
             )}
 

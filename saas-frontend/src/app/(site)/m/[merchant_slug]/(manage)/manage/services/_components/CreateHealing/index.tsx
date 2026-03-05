@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { escape_key } from "@/lib/functions";
 import { Heart } from "lucide-react";
+import QuestionBuilder from "@/components/ux/QuestionBuilder";
 import { useCreateHealingOffer } from "./hooks/UseCreateHealingOffer";
 import { Label } from "@/components/ui/label";
 import TargetTimezoneSelector from "@/components/scheduling/TargetTimezoneSelector";
@@ -297,6 +298,11 @@ const CreateHealing: React.FC<Props> = (props) => {
                             />
                         </div>
                     )}
+
+                    <QuestionBuilder
+                        control={bl.form.control}
+                        name="questionnaire"
+                    />
                 </div>
 
                 <div className="flex flex-row items-center space-x-2 p-4 mt-4 border-t border-slate-700/30">

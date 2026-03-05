@@ -96,6 +96,8 @@ type ServiceQuestion {
   options: [String]
   required: Boolean!
   placeholder: String
+  description: String
+  scaleMax: Int
 }
 
 type ReadingServiceOptions {

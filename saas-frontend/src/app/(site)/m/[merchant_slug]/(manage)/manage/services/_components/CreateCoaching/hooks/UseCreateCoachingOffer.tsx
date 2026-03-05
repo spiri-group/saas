@@ -3,6 +3,16 @@ import { gql } from '@/lib/services/gql';
 import { useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 
+type ServiceQuestion = {
+  id: string;
+  type: string;
+  question: string;
+  description?: string;
+  required: boolean;
+  options?: Array<{ id: string; label: string }>;
+  scaleMax?: number;
+};
+
 interface CreateCoachingOfferSchema {
   id: string;
   merchantId: string;
@@ -19,6 +29,7 @@ interface CreateCoachingOfferSchema {
   targetTimezones?: string[];
   requiresConsultation: boolean;
   scheduleId?: string;
+  questionnaire?: ServiceQuestion[];
 }
 
 export const useCreateCoachingOffer = (merchantId: string) => {
@@ -40,7 +51,8 @@ export const useCreateCoachingOffer = (merchantId: string) => {
       includeWorkbook: false,
       targetTimezones: [],
       requiresConsultation: false,
-      scheduleId: undefined
+      scheduleId: undefined,
+      questionnaire: []
     }
   });
 
@@ -85,6 +97,13 @@ export const useCreateCoachingOffer = (merchantId: string) => {
           targetTimezones: data.targetTimezones,
           requiresConsultation: data.requiresConsultation,
           scheduleId: data.scheduleId,
+          questionnaire: (data.questionnaire || []).map(q => ({
+            id: q.id,
+            question: q.question,
+            type: q.type,
+            required: q.required,
+            ...(q.options && { options: q.options.map(o => o.label) }),
+          })),
           coachingOptions: {
             coachingType: data.coachingType,
             includeJournal: data.includeJournal,

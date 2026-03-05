@@ -166,13 +166,13 @@ const ViewCase: React.FC<Props> = (props) => {
                                 </div>
                             </PanelHeader>
                             <PanelContent className="flex flex-col flex-grow">
-                                <span>{bl.caseDetails.get.code}</span>
+                                <span data-testid="case-code">{bl.caseDetails.get.code}</span>
                                 <div className="flex flex-row">
                                     <span> {bl.caseDetails.get.category.defaultLabel} </span>
-                                    <span className="font-bold ml-auto"> {bl.caseDetails.get.caseStatus} </span>
+                                    <span data-testid="case-status" className="font-bold ml-auto"> {bl.caseDetails.get.caseStatus} </span>
                                 </div>
                                 { bl.caseDetails.get.caseStatus != "NEW" ?
-                                    <span className="text-sm"> Managed by: {bl.caseDetails.get.merchants.map(x => x.name).join(",")} </span>
+                                    <span data-testid="managed-by" className="text-sm"> Managed by: {bl.caseDetails.get.merchants.map(x => x.name).join(",")} </span>
                                     : <></>
                                 }
                                 <Accordion type="single" collapsible className="w-full">
@@ -251,7 +251,7 @@ const ViewCase: React.FC<Props> = (props) => {
                             : (
                                 <Panel className="flex-grow">
                                     <PanelContent className="w-full h-full flex flex-col space-y-4 items-center justify-center">
-                                        <p className="prose-xl w-80 text-center"> We are currently searching our network of Spiritual Investigators we hope to secure some applications for your review soon.</p>
+                                        <p data-testid="awaiting-applications" className="prose-xl w-80 text-center"> We are currently searching our network of Spiritual Investigators we hope to secure some applications for your review soon.</p>
                                         <span className="prose-xl">Stay tuned!</span>
                                     </PanelContent>
                                 </Panel>
