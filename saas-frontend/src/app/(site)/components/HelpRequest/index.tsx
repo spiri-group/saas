@@ -420,7 +420,6 @@ export const HelpRequestFormUI : React.FC<Props> = (props) => {
                     <div className="flex flex-col">
                         <StripePayment
                             type="SETUP"
-                            digitalOnly
                             onCancel={() => {}}
                             onAlter={() => {}}
                             stripeAccountId={bl.selectedStripeDetails.accountId}
