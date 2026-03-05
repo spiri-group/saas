@@ -9,10 +9,11 @@ import { randomUUID } from 'crypto';
  */
 
 // Use Next.js GraphQL proxy for test cleanup (it handles auth automatically)
-// Always use the test server port (3002) regardless of env vars
-// The env vars may point to the main dev server (3000), but tests run on 3002
+// When BASE_URL is set (external env like preview), use that instead of localhost
 const TEST_SERVER_PORT = process.env.TEST_SERVER_PORT || '3002';
-const GRAPHQL_PROXY = `http://localhost:${TEST_SERVER_PORT}/api/graphql`;
+const GRAPHQL_PROXY = process.env.BASE_URL
+  ? `${process.env.BASE_URL.replace(/\/$/, '')}/api/graphql`
+  : `http://localhost:${TEST_SERVER_PORT}/api/graphql`;
 
 /**
  * Call GraphQL via Next.js proxy with session cookies

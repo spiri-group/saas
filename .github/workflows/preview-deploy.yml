@@ -184,6 +184,7 @@ jobs:
                 AZURE_CLIENT_ID="$IDENTITY_CLIENT_ID" \
                 AZURE_STORAGE_ACCOUNT="stspvappdev002" \
                 EnvInformation="appNameShort=spv&name=dev&index=002" \
+                ALLOW_TEST_AUTH="true" \
                 AUTH_SECRET="${{ steps.secrets.outputs.NEXTAUTH_SECRET }}" \
                 AUTH_URL="https://${APP_NAME}.${{ steps.cae.outputs.default_domain }}" \
                 AUTH_AZURE_ACCESS_KEY="${{ steps.secrets.outputs.AUTH_AZURE_ACCESS_KEY }}" \
@@ -204,6 +205,7 @@ jobs:
                 AZURE_CLIENT_ID="$IDENTITY_CLIENT_ID" \
                 AZURE_STORAGE_ACCOUNT="stspvappdev002" \
                 EnvInformation="appNameShort=spv&name=dev&index=002" \
+                ALLOW_TEST_AUTH="true" \
                 AUTH_SECRET="${{ steps.secrets.outputs.NEXTAUTH_SECRET }}" \
                 AUTH_URL="https://${APP_NAME}.${{ steps.cae.outputs.default_domain }}" \
                 AUTH_AZURE_ACCESS_KEY="${{ steps.secrets.outputs.AUTH_AZURE_ACCESS_KEY }}" \

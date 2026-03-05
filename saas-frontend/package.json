@@ -20,7 +20,9 @@
     "test:report": "playwright show-report",
     "test:codegen": "playwright codegen localhost:3000",
     "test:e2e": "playwright test tests/e2e/ --reporter=list",
-    "test:grep": "playwright test --reporter=list --project=chromium --grep"
+    "test:grep": "playwright test --reporter=list --project=chromium --grep",
+    "test:remote": "cross-env playwright test --reporter=list --project=chromium --grep",
+    "test:remote:headed": "cross-env playwright test --headed --project=chromium --grep"
   },
   "dependencies": {
     "@auth/azure-tables-adapter": "^1.9.0",
@@ -128,6 +130,7 @@
     "@typescript-eslint/eslint-plugin": "^8.32.0",
     "@typescript-eslint/parser": "^8.32.0",
     "autoprefixer": "^10.4.21",
+    "cross-env": "^10.1.0",
     "csv-parse": "^5.6.0",
     "dotenv": "^17.2.3",
     "eslint": "^9.26.0",

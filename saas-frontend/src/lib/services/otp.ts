@@ -54,11 +54,14 @@ const MAX_GENERATIONS = process.env.NODE_ENV === "development" ? 50 : 3;
 // Test mode helpers
 // ---------------------------------------------------------------------------
 
+const isTestAuthAllowed = () =>
+    process.env.NODE_ENV !== 'production' || process.env.ALLOW_TEST_AUTH === 'true';
+
 const isTestEmail = (email: string) =>
-    process.env.NODE_ENV !== 'production' && email.toLowerCase().endsWith('@playwright.com');
+    isTestAuthAllowed() && email.toLowerCase().endsWith('@playwright.com');
 
 const isTestPhone = (phone: string) =>
-    process.env.NODE_ENV !== 'production' && phone.replace(/\s/g, '').startsWith('+61400000');
+    isTestAuthAllowed() && phone.replace(/\s/g, '').startsWith('+61400000');
 
 const DEMO_EMAILS = [
     "awaken@spirigroup.com",
