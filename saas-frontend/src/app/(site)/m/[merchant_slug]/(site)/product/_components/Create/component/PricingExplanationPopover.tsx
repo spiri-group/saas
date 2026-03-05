@@ -190,12 +190,12 @@ const PricingExplanationPopover: React.FC<PricingExplanationPopoverProps> = ({
       'volume': (
         <div className="space-y-3">
           <p>You&apos;ve got <span className="text-blue-600 font-semibold">{s(stock, 'unit')} ready to move</span>.</p>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="bg-green-900/20 border border-green-700/30 rounded-lg p-3">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-700">{formatCurrency(totalProfit, currency)}</div>
-              <div className="text-sm font-semibold text-green-600">Total Profit</div>
-              <div className="text-xs text-green-600 mt-1">{formatCurrency(perUnitProfit, currency)} per unit × {stock} units</div>
-              <div className="text-xs text-gray-500 mt-1">Sales: {formatCurrency(totalRevenue, currency)}</div>
+              <div className="text-2xl font-bold text-green-400">{formatCurrency(totalProfit, currency)}</div>
+              <div className="text-sm font-semibold text-green-400">Total Profit</div>
+              <div className="text-xs text-green-400 mt-1">{formatCurrency(perUnitProfit, currency)} per unit × {stock} units</div>
+              <div className="text-xs text-slate-400 mt-1">Sales: {formatCurrency(totalRevenue, currency)}</div>
             </div>
           </div>
           <p><span className="text-orange-600 font-semibold">Heads-up:</span> with only {formatCurrency(perUnitProfit, currency)} per unit, about <span className="font-semibold">~{refundsToZeroProfit}</span> {refundsToZeroProfit === 1 ? 'refund' : 'refunds'} would erase total profit.</p>
@@ -207,12 +207,12 @@ const PricingExplanationPopover: React.FC<PricingExplanationPopoverProps> = ({
       'unit-profit': (
         <div className="space-y-3">
           <p><span className="text-blue-600 font-semibold">Every unit nets {formatCurrency(perUnitProfit, currency)} profit</span>.</p>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="bg-green-900/20 border border-green-700/30 rounded-lg p-3">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-700">{formatCurrency(totalProfit, currency)}</div>
-              <div className="text-sm font-semibold text-green-600">Total Profit</div>
-              <div className="text-xs text-green-600 mt-1">{formatCurrency(perUnitProfit, currency)} per unit × {stock} units</div>
-              <div className="text-xs text-gray-500 mt-1">Sales: {formatCurrency(totalRevenue, currency)}</div>
+              <div className="text-2xl font-bold text-green-400">{formatCurrency(totalProfit, currency)}</div>
+              <div className="text-sm font-semibold text-green-400">Total Profit</div>
+              <div className="text-xs text-green-400 mt-1">{formatCurrency(perUnitProfit, currency)} per unit × {stock} units</div>
+              <div className="text-xs text-slate-400 mt-1">Sales: {formatCurrency(totalRevenue, currency)}</div>
             </div>
           </div>
           <p><span className="text-blue-600">Coverage check:</span> your profit pool can absorb about <span className="font-semibold">~{refundsToZeroProfit}</span> {refundsToZeroProfit === 1 ? 'refund' : 'refunds'} before profit hits zero. If refunds rise past ~<span className="font-semibold">{expectedRefunds}</span>, profit may dip.</p>
@@ -224,12 +224,12 @@ const PricingExplanationPopover: React.FC<PricingExplanationPopoverProps> = ({
       'inventory': (
         <div className="space-y-3">
           <p>You&apos;ve got <span className="text-amber-600 font-semibold">{s(stock, 'unit')} sitting on the shelf</span>.</p>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="bg-green-900/20 border border-green-700/30 rounded-lg p-3">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-700">{formatCurrency(totalProfit, currency)}</div>
-              <div className="text-sm font-semibold text-green-600">Total Profit</div>
-              <div className="text-xs text-green-600 mt-1">{formatCurrency(perUnitProfit, currency)} per unit × {stock} units</div>
-              <div className="text-xs text-gray-500 mt-1">Sales: {formatCurrency(totalRevenue, currency)}</div>
+              <div className="text-2xl font-bold text-green-400">{formatCurrency(totalProfit, currency)}</div>
+              <div className="text-sm font-semibold text-green-400">Total Profit</div>
+              <div className="text-xs text-green-400 mt-1">{formatCurrency(perUnitProfit, currency)} per unit × {stock} units</div>
+              <div className="text-xs text-slate-400 mt-1">Sales: {formatCurrency(totalRevenue, currency)}</div>
             </div>
           </div>
           <p><span className="text-amber-600 font-semibold">Trade-off:</span> slimmer cushion, faster clearance. Prioritises cash flow over max margin.</p>
@@ -241,12 +241,12 @@ const PricingExplanationPopover: React.FC<PricingExplanationPopoverProps> = ({
       'premium': (
         <div className="space-y-3">
           <p>This price <span className="text-purple-600 font-semibold">signals premium quality</span> and leans into value.</p>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="bg-green-900/20 border border-green-700/30 rounded-lg p-3">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-700">{formatCurrency(totalProfit, currency)}</div>
-              <div className="text-sm font-semibold text-green-600">Total Profit</div>
-              <div className="text-xs text-green-600 mt-1">{formatCurrency(perUnitProfit, currency)} per unit × {stock} units</div>
-              <div className="text-xs text-gray-500 mt-1">Sales: {formatCurrency(totalRevenue, currency)}</div>
+              <div className="text-2xl font-bold text-green-400">{formatCurrency(totalProfit, currency)}</div>
+              <div className="text-sm font-semibold text-green-400">Total Profit</div>
+              <div className="text-xs text-green-400 mt-1">{formatCurrency(perUnitProfit, currency)} per unit × {stock} units</div>
+              <div className="text-xs text-slate-400 mt-1">Sales: {formatCurrency(totalRevenue, currency)}</div>
             </div>
           </div>
           <p><span className="text-purple-600">Premium advantage:</span> you’d need roughly <span className="font-semibold">~{refundsToZeroProfit}</span> {refundsToZeroProfit === 1 ? 'refund' : 'refunds'} to wipe out profit. The typical rate is about <span className="font-semibold">~{expectedRefunds}</span>, so you’re well covered.</p>
@@ -257,17 +257,17 @@ const PricingExplanationPopover: React.FC<PricingExplanationPopoverProps> = ({
 
       'risk-averse': (
         <div className="space-y-3">
-          <p><span className="text-green-600 font-semibold">Safety-first play</span>.</p>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <p><span className="text-green-400 font-semibold">Safety-first play</span>.</p>
+          <div className="bg-green-900/20 border border-green-700/30 rounded-lg p-3">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-700">{formatCurrency(totalProfit, currency)}</div>
-              <div className="text-sm font-semibold text-green-600">Total Profit</div>
-              <div className="text-xs text-green-600 mt-1">{formatCurrency(perUnitProfit, currency)} per unit × {stock} units</div>
-              <div className="text-xs text-gray-500 mt-1">Sales: {formatCurrency(totalRevenue, currency)}</div>
+              <div className="text-2xl font-bold text-green-400">{formatCurrency(totalProfit, currency)}</div>
+              <div className="text-sm font-semibold text-green-400">Total Profit</div>
+              <div className="text-xs text-green-400 mt-1">{formatCurrency(perUnitProfit, currency)} per unit × {stock} units</div>
+              <div className="text-xs text-slate-400 mt-1">Sales: {formatCurrency(totalRevenue, currency)}</div>
             </div>
           </div>
-          <p><span className="text-green-600">Safety net:</span> even if refunds climb from ~{expectedRefunds} toward <span className="font-semibold">~{refundsToZeroProfit}</span>, margins aim to keep you in the green.</p>
-          <p><span className="text-slate-700 font-semibold">The steady, sleep-well-at-night option</span>.</p>
+          <p><span className="text-green-400">Safety net:</span> even if refunds climb from ~{expectedRefunds} toward <span className="font-semibold">~{refundsToZeroProfit}</span>, margins aim to keep you in the green.</p>
+          <p><span className="text-slate-300 font-semibold">The steady, sleep-well-at-night option</span>.</p>
           <p className="text-xs text-muted-foreground italic">I&apos;ll keep finding ways to stay safe while protecting returns.</p>
         </div>
       )

@@ -28,7 +28,7 @@ const ListProductSuccess: React.FC<{ forObject: recordref_type }> = ({ forObject
     return (
         <DialogContent className="sm:max-w-md">
             <DialogHeader className="flex flex-col items-center text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mb-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-900/30 mb-4">
                     <CheckCircle2 className="h-6 w-6 text-green-600" />
                 </div>
                 <h2 className="text-lg font-semibold">Product Created!</h2>
@@ -36,16 +36,16 @@ const ListProductSuccess: React.FC<{ forObject: recordref_type }> = ({ forObject
             <DialogDescription className="text-center space-y-3">
                 <p>Your product has been saved successfully.</p>
                 {!isLive ? (
-                    <div className="flex items-center justify-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                        <EyeOff className="h-4 w-4 text-amber-600" />
-                        <span className="text-sm text-amber-800">
+                    <div className="flex items-center justify-center gap-2 p-3 bg-amber-900/20 border border-amber-700/30 rounded-lg">
+                        <EyeOff className="h-4 w-4 text-amber-400" />
+                        <span className="text-sm text-amber-400">
                             This product is currently in <strong>draft</strong> and not visible to customers.
                         </span>
                     </div>
                 ) : (
-                    <div className="flex items-center justify-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <Eye className="h-4 w-4 text-green-600" />
-                        <span className="text-sm text-green-800">
+                    <div className="flex items-center justify-center gap-2 p-3 bg-green-900/20 border border-green-700/30 rounded-lg">
+                        <Eye className="h-4 w-4 text-green-400" />
+                        <span className="text-sm text-green-400">
                             Your product is now <strong>live</strong> and visible to customers!
                         </span>
                     </div>

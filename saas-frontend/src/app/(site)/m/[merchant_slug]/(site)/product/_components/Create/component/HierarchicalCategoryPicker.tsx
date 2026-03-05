@@ -130,8 +130,8 @@ const HierarchicalCategoryPicker: React.FC<HierarchicalCategoryPickerProps> = ({
       <div key={node.id} className="select-none">
         <div
           className={cn(
-            "group flex items-center space-x-2 p-2 rounded-lg transition-colors cursor-pointer hover:bg-slate-100",
-            isSelected && "bg-blue-50 border-l-2 border-blue-500"
+            "group flex items-center space-x-2 p-2 rounded-lg transition-colors cursor-pointer hover:bg-slate-800",
+            isSelected && "bg-blue-900/20 border-l-2 border-blue-500"
           )}
           style={{ paddingLeft: `${level * 16 + 8}px` }}
           onClick={() => handleCategoryClick(node)}
@@ -139,16 +139,16 @@ const HierarchicalCategoryPicker: React.FC<HierarchicalCategoryPickerProps> = ({
           {/* Expand/Collapse Icon */}
           {hasChildren ? (
             <div
-              className="p-1 h-6 w-6 flex items-center justify-center hover:bg-slate-200 rounded"
+              className="p-1 h-6 w-6 flex items-center justify-center hover:bg-slate-700 rounded"
               onClick={(e) => {
                 e.stopPropagation();
                 toggleExpand(node.id);
               }}
             >
               {isExpanded ? (
-                <ChevronDown className="h-4 w-4 text-slate-600" />
+                <ChevronDown className="h-4 w-4 text-slate-400" />
               ) : (
-                <ChevronRight className="h-4 w-4 text-slate-600" />
+                <ChevronRight className="h-4 w-4 text-slate-400" />
               )}
             </div>
           ) : (
@@ -170,7 +170,7 @@ const HierarchicalCategoryPicker: React.FC<HierarchicalCategoryPickerProps> = ({
 
           {/* Category Label */}
           <div className="flex-1 flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-900">{node.label}</span>
+            <span className="text-sm font-medium text-white">{node.label}</span>
             {isSelected && <Check className="h-4 w-4 text-blue-500" />}
           </div>
         </div>
@@ -231,15 +231,15 @@ const HierarchicalCategoryPicker: React.FC<HierarchicalCategoryPickerProps> = ({
 
           {/* Selected Category Display */}
           {selectedCategory && (
-            <div className="flex items-center justify-between p-2 bg-blue-50 rounded border">
-              <span className="text-sm font-medium text-blue-900 truncate">
+            <div className="flex items-center justify-between p-2 bg-blue-900/20 rounded border">
+              <span className="text-sm font-medium text-blue-300 truncate">
                 Selected: {selectedCategory.path}
               </span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={clearSelection}
-                className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                className="h-6 w-6 p-0 text-blue-400 hover:text-blue-300"
               >
                 ×
               </Button>

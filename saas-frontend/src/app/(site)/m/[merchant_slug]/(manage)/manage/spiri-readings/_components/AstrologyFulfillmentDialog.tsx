@@ -142,7 +142,7 @@ const AstrologyFulfillmentDialog: React.FC<AstrologyFulfillmentDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] w-full md:max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700" data-testid="astrology-fulfillment-dialog">
+      <DialogContent className="max-w-[95vw] w-full md:max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto" data-testid="astrology-fulfillment-dialog">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
             <Star className="w-5 h-5 text-purple-400" />
