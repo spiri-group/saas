@@ -100,7 +100,7 @@ const useBL = (props: BLProps) => {
             href: `/p/${practitionerSlug}/manage/messages`,
             testId: "nav-messages"
         },
-        {
+        ...(features.canSellServices ? [{
             label: "Services",
             icon: <BookOpen className="w-5 h-5" />,
             testId: "nav-services",
@@ -125,7 +125,7 @@ const useBL = (props: BLProps) => {
                     className: "w-[870px] max-w-[95vw] h-[700px]"
                 },
                 {
-                    type: "divider",
+                    type: "divider" as const,
                     label: ""
                 },
                 {
@@ -143,13 +143,13 @@ const useBL = (props: BLProps) => {
                     label: "Client Orders",
                     href: `/p/${practitionerSlug}/manage/services/orders`
                 }
-            ],
-        },
+            ] as NavOption[],
+        }] as NavOption[] : [] as NavOption[]),
         {
             label: "Schedule",
             icon: <CalendarDays className="w-5 h-5" />,
             testId: "nav-schedule",
-            description: "Bookings, Availability, Events",
+            description: features.canCreateEvents ? "Bookings, Availability, Events" : "Bookings & Availability",
             navOptions: [
                 {
                     icon: <Calendar className="w-5 h-5" />,
@@ -161,13 +161,13 @@ const useBL = (props: BLProps) => {
                     label: "Availability",
                     href: `/p/${practitionerSlug}/manage/availability`
                 },
-                {
+                ...(features.canCreateEvents ? [{
                     icon: <CalendarDays className="w-5 h-5 text-purple-400" />,
                     label: "Events",
                     dialogId: "Manage Events",
                     className: "w-[1000px] max-w-[95vw] h-[850px]"
-                }
-            ],
+                }] : []),
+            ] as NavOption[],
         },
         {
             label: "Profile",
@@ -224,12 +224,12 @@ const useBL = (props: BLProps) => {
                     type: "divider",
                     label: "Media"
                 },
-                {
+                ...(features.hasVideoUpdates ? [{
                     icon: <Video className="w-5 h-5" />,
                     label: "Video Update",
                     dialogId: "Edit Video",
                     className: "w-[900px] max-w-[95vw]"
-                },
+                }] : []),
                 {
                     icon: <ImageIcon className="w-5 h-5" />,
                     label: "Gallery",
@@ -249,7 +249,7 @@ const useBL = (props: BLProps) => {
                     className: "w-[600px] max-w-[95vw]"
                 },
                 {
-                    type: "divider",
+                    type: "divider" as const,
                     label: "Engagement"
                 },
                 {
@@ -264,11 +264,12 @@ const useBL = (props: BLProps) => {
                     dialogId: "Edit Pinned Reviews",
                     className: "w-[700px] max-w-[95vw]"
                 },
-            ],
+            ] as NavOption[],
         },
         // Feature items — unlocked ones appear inline, locked ones grouped under a divider at the bottom
         ...(() => {
             const featureItems = [
+                { label: "Services", icon: <BookOpen className="w-5 h-5" />, testId: "nav-services-locked", href: `/p/${practitionerSlug}/manage/services`, dialogId: "Upgrade Services", unlocked: features.canSellServices },
                 { label: "Payment Links", icon: <Receipt className="w-5 h-5" />, testId: "nav-payment-links", href: `/p/${practitionerSlug}/manage/payment-links`, dialogId: "Upgrade Payment Links", unlocked: features.hasPaymentLinks },
                 { label: "Live Assist", icon: <Radio className="w-5 h-5" />, testId: "nav-live-assist", href: `/p/${practitionerSlug}/manage/live-assist`, dialogId: "Upgrade Live Assist", unlocked: features.hasLiveAssist },
                 { label: "Expo Mode", icon: <Store className="w-5 h-5" />, testId: "nav-expo-mode", href: `/p/${practitionerSlug}/manage/expo-mode`, dialogId: "Upgrade Expo Mode", unlocked: features.hasExpoMode },
@@ -358,10 +359,11 @@ const useBL = (props: BLProps) => {
             // Shop upgrade dialog for Awaken/Illuminate tiers
             "Shop Upgrade": (onClose) => <ShopUpgradeDialog vendorId={practitionerId} currentTier={tier || 'awaken'} onClose={onClose} />,
             // Feature upgrade dialogs for gated nav items
+            "Upgrade Services": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Services" targetTier="awaken" targetTierName="Awaken" onClose={onClose} benefits={["Create and sell readings, healings, and coaching", "Accept payments from clients", "Manage bookings and availability"]} />,
             "Upgrade Payment Links": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Payment Links" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Send payment links via email", "Collect payments at expos and events", "Track payment status and history"]} />,
             "Upgrade Live Assist": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Live Assist" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Go live on any platform", "Collect requests and payments in real-time", "Track revenue and session stats"]} />,
             "Upgrade Expo Mode": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Expo Mode" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Create popup shops with QR codes", "Take payments at expos and markets", "Track inventory in real-time"]} />,
-            "Upgrade SpiriAssist": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="SpiriAssist" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Browse and apply to paranormal cases", "Submit proposals with your own pricing", "Manage investigations end-to-end"]} />,
+            "Upgrade SpiriAssist": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="SpiriAssist" targetTier="directory" targetTierName="Directory" onClose={onClose} benefits={["Browse and apply to paranormal cases", "Submit proposals with your own pricing", "Manage investigations end-to-end"]} />,
         }
         : {};
 
