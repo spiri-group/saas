@@ -187,7 +187,7 @@ const useBL = (props: BLProps) => {
                     href: `/m/${merchantSlug}/manage/featuring`,
                     disabled: !canHostPractitioners,
                     disabledReason: "Host featured practitioners on your storefront",
-                    requiredTier: "transcend",
+                    requiredTier: "manifest",
                 },
                 {
                     type: "divider",
@@ -276,7 +276,7 @@ const useBL = (props: BLProps) => {
             testId: "nav-payment-links",
             disabled: !features.hasPaymentLinks,
             disabledReason: "Send payment links and collect payments",
-            requiredTier: "manifest",
+            requiredTier: "illuminate",
         },
         {
             icon: <Package className="w-5 h-5" />,
@@ -352,7 +352,7 @@ const useBL = (props: BLProps) => {
             href: `/m/${merchantSlug}/manage/spiri-assist`,
             disabled: !hasSpiriAssist,
             disabledReason: "Paranormal investigations with SpiriAssist",
-            requiredTier: "illuminate",
+            requiredTier: "directory",
         },
     ]
 

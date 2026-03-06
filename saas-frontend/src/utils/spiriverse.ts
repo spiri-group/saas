@@ -4731,7 +4731,7 @@ export type plan_type =  {
   name: string
 }
 
-export type subscription_tier = 'awaken' | 'illuminate' | 'manifest' | 'transcend'
+export type subscription_tier = 'directory' | 'awaken' | 'illuminate' | 'manifest' | 'transcend'
 
 export type billing_status = 'pendingFirstBilling' | 'trial' | 'active' | 'suspended' | 'cancelled'
 
