@@ -4,7 +4,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { gql } from "@/lib/services/gql";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { message_type, recordref_type } from "@/utils/spiriverse";
 import { v4 as uuid } from "uuid";
 import { MediaSchema } from "@/shared/schemas/media";
@@ -23,12 +23,12 @@ export const messageSchema = z.object({
 })
 
 const UseCreateMessage = (
-    forObject?: recordref_type, 
-    deliverTo?: { userId: string, mode: string }, 
-    vendorId?: string, 
+    forObject?: recordref_type,
+    deliverTo?: { userId: string, mode: string },
+    vendorId?: string,
     replyTo?: recordref_type
-    // onMessageSent?: (message: message_type) => void
 ) => {
+    const queryClient = useQueryClient();
 
     const form = useForm<z.infer<typeof messageSchema>>({
         resolver: zodResolver(messageSchema),
@@ -116,11 +116,14 @@ const UseCreateMessage = (
                     return resp.create_message.chat;
                 }
             },
-            onSuccess: async () => {
-                // queryClient.setQueryData(["message-for-object", replyTo != null ? replyTo : forObject], (old: message_type[]) => {
-                //     if (old == undefined) return [data];
-                //     return [data, ...old];
-                // });
+            onSuccess: async (data) => {
+                const cacheKey = replyTo != null ? replyTo : forObject;
+                if (data) {
+                    queryClient.setQueryData(["message-for-object", cacheKey], (old: message_type[] | undefined) => {
+                        if (old == undefined) return [data];
+                        return [...old, data];
+                    });
+                }
             }
         }) 
     }

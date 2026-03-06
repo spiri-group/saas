@@ -2,7 +2,7 @@ import { gql } from '@/lib/services/gql';
 import { useForm } from 'react-hook-form';
 import { media_type, vendor_type } from '@/utils/spiriverse';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { omit } from '@/lib/functions';
+import { omit, mergeDeepWithClone } from '@/lib/functions';
 
 export type UpdatePractitionerVideoFormSchema = {
     id: string;
@@ -71,7 +71,12 @@ const useEditPractitionerVideo = (practitionerId: string) => {
 
             return response.post_vendor_video_update.vendor;
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
+            // Merge returned video data into existing cache to avoid wiping logo/profile info
+            queryClient.setQueryData(['practitioner-profile', practitionerId], (oldData: any) => {
+                if (!oldData) return data;
+                return mergeDeepWithClone(oldData, data);
+            });
             queryClient.invalidateQueries({ queryKey: ['practitioner-profile', practitionerId] });
             queryClient.invalidateQueries({ queryKey: ['my-feed'] });
             // Reset form after successful upload
