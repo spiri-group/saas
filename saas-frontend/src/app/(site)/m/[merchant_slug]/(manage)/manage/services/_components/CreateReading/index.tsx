@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { escape_key } from "@/lib/functions";
-import { useCreateReadingOffer } from "./hooks/UseCreateReadingOffer";
+import { useCreateReadingOffer, type ExistingServiceData } from "./hooks/UseCreateReadingOffer";
 import { Label } from "@/components/ui/label";
 import { StepIndicator } from "@/components/ui/step-indicator";
 import ThumbnailBuilder from "@/components/ux/ThumbnailBuilder";
@@ -17,13 +17,15 @@ import VisuallyHidden from "@/components/ux/VisuallyHidden";
 
 type BLProps = {
     merchantId: string;
+    editingService?: ExistingServiceData;
+    onClose?: () => void;
 }
 
 const useBL = (props: BLProps) => {
     const router = useRouter();
     const params = useParams();
     const merchant_slug = params.merchant_slug as string;
-    const { form, mutation } = useCreateReadingOffer(props.merchantId);
+    const { form, mutation, isEditing } = useCreateReadingOffer(props.merchantId, props.editingService);
     const [currentStep, setCurrentStep] = useState(1);
 
     const serviceId = form.watch('id');
@@ -117,6 +119,7 @@ const useBL = (props: BLProps) => {
     return {
         form,
         mutation,
+        isEditing,
         currentStep,
         setCurrentStep,
         handleNext,
@@ -126,10 +129,13 @@ const useBL = (props: BLProps) => {
         mockUploadVideo,
         mockUploadCollageImage,
         submit: async (values: any) => {
-            console.log('Form submitted', { currentStep, values });
             await mutation.mutateAsync(values);
-            escape_key();
-            router.push(`/m/${merchant_slug}/manage/services`);
+            if (props.onClose) {
+                props.onClose();
+            } else {
+                escape_key();
+                router.push(`/m/${merchant_slug}/manage/services`);
+            }
         }
     };
 }
@@ -142,8 +148,8 @@ const CreateReading: React.FC<Props> = (props) => {
     return (
         <DialogContent className="w-[1000px] max-w-[95vw] h-[800px] flex flex-col overflow-hidden">
             <VisuallyHidden>
-                <DialogTitle>Create Your Reading Offer</DialogTitle>
-                <DialogDescription>Fill in the form to create a new reading service.</DialogDescription>
+                <DialogTitle>{bl.isEditing ? 'Edit Your Reading Offer' : 'Create Your Reading Offer'}</DialogTitle>
+                <DialogDescription>{bl.isEditing ? 'Update your reading service details.' : 'Fill in the form to create a new reading service.'}</DialogDescription>
             </VisuallyHidden>
 
             {/* Progress indicator with close button */}
@@ -160,8 +166,12 @@ const CreateReading: React.FC<Props> = (props) => {
                     onStepClick={bl.setCurrentStep}
                 />
                 <Button variant="outline" onClick={() => {
-                    const event = new CustomEvent('close-dialog');
-                    window.dispatchEvent(event);
+                    if (props.onClose) {
+                        props.onClose();
+                    } else {
+                        const event = new CustomEvent('close-dialog');
+                        window.dispatchEvent(event);
+                    }
                 }}>
                     ✕ Close
                 </Button>
@@ -701,7 +711,10 @@ const CreateReading: React.FC<Props> = (props) => {
                                 disabled={bl.mutation.isPending}
                                 data-testid="wizard-submit-btn"
                             >
-                                {bl.mutation.isPending ? 'Creating Reading Offer...' : '✨ Create Reading Offer'}
+                                {bl.mutation.isPending
+                                    ? (bl.isEditing ? 'Saving Changes...' : 'Creating Reading Offer...')
+                                    : (bl.isEditing ? 'Save Changes' : 'Create Reading Offer')
+                                }
                             </Button>
                         )}
                     </div>

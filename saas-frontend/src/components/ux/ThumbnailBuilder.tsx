@@ -117,6 +117,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
   const [stampText, setStampText] = useState("NEW");
   const [stampBgColor, setStampBgColor] = useState("#dc2626");
   const [stampTextColor, setStampTextColor] = useState("#ffffff");
+  const [stampPopoverOpen, setStampPopoverOpen] = useState(false);
   const [titleText, setTitleText] = useState("");
   const [hoverDescription, setHoverDescription] = useState("");
 
@@ -922,9 +923,9 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                         </div>
                       </div>
 
-                  {/* Stamp Controls - Popover - Fixed position anchor */}
+                  {/* Stamp Controls */}
                   <div className="relative">
-                    <Popover modal>
+                    <Popover open={stampPopoverOpen} onOpenChange={setStampPopoverOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           type="button"
@@ -932,7 +933,6 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                           size="sm"
                           className="w-full"
                           onClick={() => {
-                            // Enable stamp when opening for the first time
                             if (!stampEnabled) {
                               setStampEnabled(true);
                               field.onChange({
@@ -951,20 +951,21 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                           {stampEnabled ? `Stamp: ${stampText}` : "Add Stamp Badge"}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-80" align="center" side="bottom" sideOffset={5}>
+                      <PopoverContent className="w-80" align="center" side="bottom" sideOffset={5}
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                      >
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
                             <h4 className="font-semibold text-sm">Stamp Badge</h4>
-                            <PopoverTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </PopoverTrigger>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => setStampPopoverOpen(false)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
 
                           <div>
@@ -981,8 +982,10 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                                 field.onChange({
                                   ...field.value,
                                   stamp: {
-                                    ...field.value.stamp,
-                                    text: e.target.value
+                                    text: e.target.value,
+                                    enabled: true,
+                                    bgColor: stampBgColor,
+                                    textColor: stampTextColor
                                   }
                                 });
                               }}
@@ -1005,7 +1008,8 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                                     field.onChange({
                                       ...field.value,
                                       stamp: {
-                                        ...field.value.stamp,
+                                        text: stampText,
+                                        enabled: true,
                                         bgColor: combo.bgColor,
                                         textColor: combo.textColor
                                       }
@@ -1032,6 +1036,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                               size="sm"
                               onClick={() => {
                                 setStampEnabled(false);
+                                setStampPopoverOpen(false);
                                 field.onChange({
                                   ...field.value,
                                   stamp: {
@@ -1042,9 +1047,9 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                                   }
                                 });
                               }}
-                              className="flex-1"
+                              className="flex-1 text-red-400 hover:text-red-300"
                             >
-                              Remove
+                              Remove Stamp
                             </Button>
                           </div>
                         </div>

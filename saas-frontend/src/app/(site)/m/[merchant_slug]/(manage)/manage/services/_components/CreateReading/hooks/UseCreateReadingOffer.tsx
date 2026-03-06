@@ -90,15 +90,136 @@ interface CreateReadingOfferSchema {
   questionnaire?: ServiceQuestion[];
   targetTimezones?: string[];
   requiresConsultation: boolean;
-  scheduleId?: string; // Optional: Associate with specific availability schedule
+  scheduleId?: string;
 }
 
-export const useCreateReadingOffer = (merchantId: string) => {
+export type ExistingServiceData = {
+  id: string;
+  name: string;
+  category: string;
+  deliveryMode: string;
+  description: string;
+  thumbnail?: any;
+  pricing?: {
+    type: string;
+    fixedPrice?: { amount: number; currency: string };
+  };
+  turnaroundDays?: number;
+  deliveryFormats?: { format: string }[];
+  targetTimezones?: string[];
+  questionnaire?: {
+    id: string;
+    question: string;
+    type: string;
+    required: boolean;
+    options?: string[];
+    description?: string;
+    scaleMax?: number;
+  }[];
+  readingOptions?: {
+    readingType?: string;
+    includePullCardSummary?: boolean;
+    includeVoiceNote?: boolean;
+    deckUsed?: string;
+    availableTopics?: string;
+    astrologyReadingTypes?: string[];
+    houseSystem?: string;
+    requiresBirthTime?: boolean;
+    focusAreas?: string;
+    customReadingDetails?: string;
+  };
+  healingOptions?: any;
+  coachingOptions?: any;
+};
+
+function mapQuestionnaireFromApi(questions?: ExistingServiceData['questionnaire']): ServiceQuestion[] {
+  if (!questions) return [];
+  return questions.map(q => ({
+    id: q.id,
+    question: q.question,
+    type: q.type as ServiceQuestion['type'],
+    required: q.required,
+    description: q.description,
+    scaleMax: q.scaleMax,
+    options: q.options?.map((opt, i) => ({ id: `opt-${i}`, label: opt })),
+  }));
+}
+
+function stripThumbnailUrls(thumbnail?: ThumbnailData): ThumbnailData | undefined {
+  if (!thumbnail) return undefined;
+
+  let result = { ...thumbnail };
+
+  if (result.image?.media) {
+    result = {
+      ...result,
+      image: {
+        ...result.image,
+        media: omit(result.image.media, ['url']) as any
+      }
+    };
+  }
+
+  if (result.dynamicMode?.video?.media) {
+    result = {
+      ...result,
+      dynamicMode: {
+        ...result.dynamicMode,
+        video: {
+          ...result.dynamicMode.video,
+          media: omit(result.dynamicMode.video.media, ['url']) as any
+        }
+      }
+    };
+  }
+
+  if (result.dynamicMode?.collage?.images) {
+    result = {
+      ...result,
+      dynamicMode: {
+        ...result.dynamicMode,
+        collage: {
+          ...result.dynamicMode.collage,
+          images: result.dynamicMode.collage.images.map(img => omit(img, ['url']) as any)
+        }
+      }
+    };
+  }
+
+  return result;
+}
+
+export const useCreateReadingOffer = (merchantId: string, editingService?: ExistingServiceData) => {
   const queryClient = useQueryClient();
   const vendorCurrency = UseVendorCurrency(merchantId);
+  const isEditing = !!editingService;
 
   const form = useForm<CreateReadingOfferSchema>({
-    defaultValues: {
+    defaultValues: editingService ? {
+      id: editingService.id,
+      merchantId,
+      name: editingService.name,
+      description: editingService.description || '',
+      readingType: editingService.readingOptions?.readingType || 'Tarot',
+      deckUsed: editingService.readingOptions?.deckUsed || '',
+      availableTopics: editingService.readingOptions?.availableTopics || '',
+      astrologyReadingTypes: editingService.readingOptions?.astrologyReadingTypes || [],
+      houseSystem: editingService.readingOptions?.houseSystem || 'placidus',
+      requiresBirthTime: editingService.readingOptions?.requiresBirthTime || false,
+      focusAreas: editingService.readingOptions?.focusAreas || '',
+      customReadingDetails: editingService.readingOptions?.customReadingDetails || '',
+      deliveryFormat: editingService.deliveryFormats?.[0]?.format || 'RECORDED_VIDEO',
+      price: editingService.pricing?.fixedPrice ? String(editingService.pricing.fixedPrice.amount / 100) : '',
+      currency: editingService.pricing?.fixedPrice?.currency || 'AUD',
+      turnaroundDays: editingService.turnaroundDays || 3,
+      includePullCardSummary: editingService.readingOptions?.includePullCardSummary || false,
+      includeVoiceNote: editingService.readingOptions?.includeVoiceNote || false,
+      thumbnail: editingService.thumbnail,
+      questionnaire: mapQuestionnaireFromApi(editingService.questionnaire),
+      targetTimezones: editingService.targetTimezones || [],
+      requiresConsultation: editingService.deliveryMode === 'SYNC',
+      scheduleId: undefined,
+    } : {
       id: uuidv4(),
       merchantId,
       name: '',
@@ -124,127 +245,88 @@ export const useCreateReadingOffer = (merchantId: string) => {
     }
   });
 
-  // Update currency when vendor data loads
+  // Update currency when vendor data loads (only for new services)
   useEffect(() => {
-    if (vendorCurrency.data?.vendor?.currency) {
+    if (!isEditing && vendorCurrency.data?.vendor?.currency) {
       form.setValue('currency', vendorCurrency.data.vendor.currency);
     }
-  }, [vendorCurrency.data, form]);
+  }, [vendorCurrency.data, form, isEditing]);
 
   const mutation = useMutation({
     mutationFn: async (data: CreateReadingOfferSchema) => {
-      // Remove url fields from thumbnail media (backend only expects urlRelative)
-      let thumbnail = data.thumbnail ? { ...data.thumbnail } : undefined;
+      const thumbnail = stripThumbnailUrls(data.thumbnail);
 
-      if (thumbnail) {
-        // Remove url from image.media if it exists
-        if (thumbnail.image?.media) {
-          thumbnail = {
-            ...thumbnail,
-            image: {
-              ...thumbnail.image,
-              media: omit(thumbnail.image.media, ['url']) as any
-            }
-          };
+      const input: any = {
+        name: data.name,
+        description: data.description,
+        pricing: {
+          type: 'FIXED',
+          fixedPrice: {
+            amount: parseFloat(data.price) * 100,
+            currency: data.currency
+          }
+        },
+        turnaroundDays: data.requiresConsultation ? undefined : parseInt(String(data.turnaroundDays), 10),
+        deliveryFormats: data.requiresConsultation ? undefined : [data.deliveryFormat],
+        thumbnail,
+        targetTimezones: data.targetTimezones,
+        requiresConsultation: data.requiresConsultation,
+        scheduleId: data.scheduleId,
+        questionnaire: (data.questionnaire || []).map(q => ({
+          id: q.id,
+          question: q.question,
+          type: q.type,
+          required: q.required,
+          ...(q.options && { options: q.options.map(o => o.label) }),
+        })),
+        readingOptions: {
+          readingType: data.readingType,
+          includePullCardSummary: data.includePullCardSummary,
+          includeVoiceNote: data.includeVoiceNote,
+          deckUsed: data.deckUsed,
+          availableTopics: data.availableTopics,
+          astrologyReadingTypes: data.astrologyReadingTypes,
+          houseSystem: data.houseSystem,
+          requiresBirthTime: data.requiresBirthTime,
+          focusAreas: data.focusAreas,
+          customReadingDetails: data.customReadingDetails,
         }
+      };
 
-        // Remove url from dynamicMode.video.media if it exists
-        if (thumbnail.dynamicMode?.video?.media) {
-          thumbnail = {
-            ...thumbnail,
-            dynamicMode: {
-              ...thumbnail.dynamicMode,
-              video: {
-                ...thumbnail.dynamicMode.video,
-                media: omit(thumbnail.dynamicMode.video.media, ['url']) as any
-              }
+      if (isEditing) {
+        input.id = data.id;
+        const response = await gql<{
+          update_reading_offer: { id: string; name: string; category: string };
+        }>(`
+          mutation UpdateReadingOffer($merchantId: ID!, $input: UpdateReadingOfferInput!) {
+            update_reading_offer(merchantId: $merchantId, input: $input) {
+              id
+              name
+              category
             }
-          };
-        }
-
-        // Remove url from dynamicMode.collage.images if they exist
-        if (thumbnail.dynamicMode?.collage?.images) {
-          thumbnail = {
-            ...thumbnail,
-            dynamicMode: {
-              ...thumbnail.dynamicMode,
-              collage: {
-                ...thumbnail.dynamicMode.collage,
-                images: thumbnail.dynamicMode.collage.images.map(img => omit(img, ['url']) as any)
-              }
+          }
+        `, { merchantId: data.merchantId, input });
+        return response.update_reading_offer;
+      } else {
+        const response = await gql<{
+          create_reading_offer: { id: string; name: string; category: string };
+        }>(`
+          mutation CreateReadingOffer($merchantId: ID!, $input: CreateReadingOfferInput!) {
+            create_reading_offer(merchantId: $merchantId, input: $input) {
+              id
+              name
+              category
             }
-          };
-        }
+          }
+        `, { merchantId: data.merchantId, input });
+        return response.create_reading_offer;
       }
-
-      const response = await gql<{
-        create_reading_offer: {
-          id: string;
-          name: string;
-          category: string;
-        };
-      }>(`
-        mutation CreateReadingOffer($merchantId: ID!, $input: CreateReadingOfferInput!) {
-          create_reading_offer(merchantId: $merchantId, input: $input) {
-            id
-            name
-            category
-            deliveryMode
-            pricing {
-              type
-              fixedPrice {
-                amount
-                currency
-              }
-            }
-          }
-        }
-      `, {
-        merchantId: data.merchantId,
-        input: {
-          name: data.name,
-          description: data.description,
-          pricing: {
-            type: 'FIXED',
-            fixedPrice: {
-              amount: parseFloat(data.price) * 100,
-              currency: data.currency
-            }
-          },
-          turnaroundDays: data.requiresConsultation ? undefined : parseInt(String(data.turnaroundDays), 10),
-          deliveryFormats: data.requiresConsultation ? undefined : [data.deliveryFormat],
-          thumbnail: thumbnail, // Use the transformed thumbnail with dynamicMode
-          targetTimezones: data.targetTimezones,
-          requiresConsultation: data.requiresConsultation,
-          scheduleId: data.scheduleId,
-          questionnaire: (data.questionnaire || []).map(q => ({
-            id: q.id,
-            question: q.question,
-            type: q.type,
-            required: q.required,
-            ...(q.options && { options: q.options.map(o => o.label) }),
-          })),
-          readingOptions: {
-            readingType: data.readingType,
-            includePullCardSummary: data.includePullCardSummary,
-            includeVoiceNote: data.includeVoiceNote,
-            deckUsed: data.deckUsed,
-            availableTopics: data.availableTopics,
-            astrologyReadingTypes: data.astrologyReadingTypes,
-            houseSystem: data.houseSystem,
-            requiresBirthTime: data.requiresBirthTime,
-            focusAreas: data.focusAreas,
-            customReadingDetails: data.customReadingDetails,
-          }
-        }
-      });
-
-      return response.create_reading_offer;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['merchant-services'] });
+      queryClient.invalidateQueries({ queryKey: ['practitioner-services', merchantId] });
     }
   });
 
-  return { form, mutation };
+  return { form, mutation, isEditing };
 };

@@ -16,23 +16,32 @@ import { Label } from "@/components/ui/label";
 import TargetTimezoneSelector from "@/components/scheduling/TargetTimezoneSelector";
 import TimezoneImpactMap from "@/components/scheduling/TimezoneImpactMap";
 import SmartSchedulingRecommendations from "@/components/scheduling/SmartSchedulingRecommendations";
+import { type ExistingServiceData } from "../CreateReading/hooks/UseCreateReadingOffer";
 
 type BLProps = {
     merchantId: string;
+    editingService?: ExistingServiceData;
+    onClose?: () => void;
 }
 
 const useBL = (props: BLProps) => {
     const router = useRouter();
     const params = useParams();
     const merchant_slug = params.merchant_slug as string;
-    const { form, mutation } = useCreateCoachingOffer(props.merchantId);
+    const { form, mutation, isEditing } = useCreateCoachingOffer(props.merchantId, props.editingService);
 
     return {
         form,
+        isEditing,
+        mutation,
         submit: async (values: any) => {
             await mutation.mutateAsync(values);
-            escape_key();
-            router.push(`/m/${merchant_slug}/manage/services`);
+            if (props.onClose) {
+                props.onClose();
+            } else {
+                escape_key();
+                router.push(`/m/${merchant_slug}/manage/services`);
+            }
         }
     };
 }
@@ -49,7 +58,7 @@ const CreateCoaching: React.FC<Props> = (props) => {
                     <div className="flex-none w-[45px] h-[45px] flex items-center justify-center rounded-xl bg-blue-200">
                         <MessageCircle className="h-6 w-6 text-blue-600" />
                     </div>
-                    <DialogTitle>Create Your Coaching Offer</DialogTitle>
+                    <DialogTitle>{bl.isEditing ? 'Edit Your Coaching Offer' : 'Create Your Coaching Offer'}</DialogTitle>
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
@@ -309,8 +318,11 @@ const CreateCoaching: React.FC<Props> = (props) => {
 
                 <div className="flex flex-row items-center space-x-2 p-4 mt-4 border-t border-slate-700/30">
                     <CancelDialogButton />
-                    <Button type="submit" className="w-full" disabled={bl.form.formState.isSubmitting}>
-                        {bl.form.formState.isSubmitting ? 'Creating...' : 'Create Your Coaching Offer'}
+                    <Button type="submit" className="w-full" disabled={bl.form.formState.isSubmitting || bl.mutation.isPending}>
+                        {bl.form.formState.isSubmitting || bl.mutation.isPending
+                            ? (bl.isEditing ? 'Saving...' : 'Creating...')
+                            : (bl.isEditing ? 'Save Changes' : 'Create Your Coaching Offer')
+                        }
                     </Button>
                 </div>
             </form>

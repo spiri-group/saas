@@ -794,7 +794,12 @@ const ThumbnailInput: React.FC<Props> = ({
                   onChange={(e) =>
                     props.onChange({
                       ...props.value,
-                      stamp: { ...props.value.stamp, text: e.target.value },
+                      stamp: {
+                        text: e.target.value,
+                        enabled: true,
+                        bgColor: props.value.stamp?.bgColor || "#dc2626",
+                        textColor: props.value.stamp?.textColor || "#ffffff",
+                      },
                     })
                   }
                 />
@@ -812,7 +817,7 @@ const ThumbnailInput: React.FC<Props> = ({
                         <Palette className="w-3 h-3" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-64">
+                    <PopoverContent className="w-64" onOpenAutoFocus={(e) => e.preventDefault()}>
                       <div className="grid grid-cols-2 gap-2">
                         <p className="col-span-2 text-sm font-medium mb-2">Choose stamp colors:</p>
                         {STAMP_COLOR_COMBINATIONS.map((combo) => (
@@ -825,7 +830,12 @@ const ThumbnailInput: React.FC<Props> = ({
                             onClick={() =>
                               props.onChange({
                                 ...props.value,
-                                stamp: { ...props.value.stamp, bgColor: combo.bgColor, textColor: combo.textColor },
+                                stamp: {
+                                  text: props.value.stamp?.text || "NEW",
+                                  enabled: true,
+                                  bgColor: combo.bgColor,
+                                  textColor: combo.textColor,
+                                },
                               })
                             }
                           >
@@ -1110,7 +1120,12 @@ const ThumbnailInput: React.FC<Props> = ({
                       onChange={(e) =>
                         props.onChange({
                           ...props.value,
-                          stamp: { ...props.value.stamp, text: e.target.value },
+                          stamp: {
+                            text: e.target.value,
+                            enabled: true,
+                            bgColor: props.value.stamp?.bgColor || "#dc2626",
+                            textColor: props.value.stamp?.textColor || "#ffffff",
+                          },
                         })
                       }
                     />
@@ -1128,7 +1143,7 @@ const ThumbnailInput: React.FC<Props> = ({
                             <Palette className="w-3 h-3" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-64">
+                        <PopoverContent className="w-64" onOpenAutoFocus={(e) => e.preventDefault()}>
                           <div className="grid grid-cols-2 gap-2">
                             <p className="col-span-2 text-sm font-medium mb-2">Choose stamp colors:</p>
                             {STAMP_COLOR_COMBINATIONS.map((combo) => (
@@ -1141,7 +1156,12 @@ const ThumbnailInput: React.FC<Props> = ({
                                 onClick={() =>
                                   props.onChange({
                                     ...props.value,
-                                    stamp: { ...props.value.stamp, bgColor: combo.bgColor, textColor: combo.textColor },
+                                    stamp: {
+                                      text: props.value.stamp?.text || "NEW",
+                                      enabled: true,
+                                      bgColor: combo.bgColor,
+                                      textColor: combo.textColor,
+                                    },
                                   })
                                 }
                               >
@@ -1325,7 +1345,12 @@ const ThumbnailInput: React.FC<Props> = ({
                 onChange={(e) =>
                   props.onChange({
                     ...props.value,
-                    stamp: { ...props.value.stamp, text: e.target.value },
+                    stamp: {
+                      text: e.target.value,
+                      enabled: true,
+                      bgColor: props.value.stamp?.bgColor || "#dc2626",
+                      textColor: props.value.stamp?.textColor || "#ffffff",
+                    },
                   })
                 }
               />
@@ -1344,7 +1369,7 @@ const ThumbnailInput: React.FC<Props> = ({
                       <Palette className="w-3 h-3" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-64">
+                  <PopoverContent className="w-64" onOpenAutoFocus={(e) => e.preventDefault()}>
                     <div className="grid grid-cols-2 gap-2">
                       <p className="col-span-2 text-sm font-medium mb-2">Choose stamp colors:</p>
                       {STAMP_COLOR_COMBINATIONS.map((combo) => (
@@ -1357,7 +1382,12 @@ const ThumbnailInput: React.FC<Props> = ({
                           onClick={() =>
                             props.onChange({
                               ...props.value,
-                              stamp: { ...props.value.stamp, bgColor: combo.bgColor, textColor: combo.textColor },
+                              stamp: {
+                                text: props.value.stamp?.text || "NEW",
+                                enabled: true,
+                                bgColor: combo.bgColor,
+                                textColor: combo.textColor,
+                              },
                             })
                           }
                         >
