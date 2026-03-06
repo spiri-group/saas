@@ -12,14 +12,20 @@
  *
  * Changes:
  * 1. Adds directory pricing to fee config
- * 2. Adds directory tier definition and restructures all tier features
+ * 2. Updates Awaken pricing from $16/mo to $19/mo
+ * 3. Adds directory tier definition and restructures all tier features
  */
 
 import { Migration } from "../types";
 
-const DIRECTORY_FEE_ENTRIES: Record<string, { percent: number; fixed: number; currency: string }> = {
+const NEW_FEE_ENTRIES: Record<string, { percent: number; fixed: number; currency: string }> = {
     "subscription-directory-monthly": { percent: 0, fixed: 900, currency: "AUD" },
     "subscription-directory-annual": { percent: 0, fixed: 8600, currency: "AUD" },
+};
+
+const UPDATED_FEE_ENTRIES: Record<string, { percent: number; fixed: number; currency: string }> = {
+    "subscription-awaken-monthly": { percent: 0, fixed: 1900, currency: "AUD" },
+    "subscription-awaken-annual": { percent: 0, fixed: 18200, currency: "AUD" },
 };
 
 const UPDATED_TIER_FEATURES = {
@@ -147,7 +153,7 @@ const UPDATED_TIER_FEATURES = {
 
 export const migration: Migration = {
     id: "055_add_directory_tier_and_restructure_features",
-    description: "Adds Directory tier ($9/mo) and restructures all tier feature gates to match updated pricing table",
+    description: "Adds Directory tier ($9/mo), updates Awaken to $19/mo, and restructures all tier feature gates",
 
     async up(context) {
         // 1. Add directory pricing to fee config
@@ -168,13 +174,25 @@ export const migration: Migration = {
             const feeDoc = feeResults[0];
             let changes = 0;
 
-            for (const [key, value] of Object.entries(DIRECTORY_FEE_ENTRIES)) {
+            for (const [key, value] of Object.entries(NEW_FEE_ENTRIES)) {
                 if (feeDoc[key]) {
                     context.log(`  "${key}" already exists — skipping`);
                 } else {
                     feeDoc[key] = value;
                     changes++;
                     context.log(`  Added "${key}": ${JSON.stringify(value)}`);
+                }
+            }
+
+            // Update Awaken pricing from $16 to $19
+            for (const [key, value] of Object.entries(UPDATED_FEE_ENTRIES)) {
+                const existing = feeDoc[key];
+                if (!existing || existing.fixed !== value.fixed) {
+                    feeDoc[key] = value;
+                    changes++;
+                    context.log(`  Updated "${key}": ${JSON.stringify(value)}`);
+                } else {
+                    context.log(`  "${key}" already at correct price — skipping`);
                 }
             }
 

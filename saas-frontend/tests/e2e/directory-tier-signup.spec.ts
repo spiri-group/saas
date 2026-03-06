@@ -76,9 +76,7 @@ test.describe('Directory Tier', () => {
     // ── Verify SpiriAssist is accessible (Directory feature) ──
     await page.goto(`/p/${slug}/manage/spiri-assist`);
     // Should NOT show the locked preview since Directory has SpiriAssist
-    const lockedPreview = page.locator('[data-testid="spiri-assist-locked-preview"]');
-    const isLocked = await lockedPreview.isVisible({ timeout: 10000 }).catch(() => false);
-    expect(isLocked).toBe(false);
+    await expect(page.locator('[data-testid="spiri-assist-locked-preview"]')).not.toBeVisible({ timeout: 15000 });
     console.log('[Directory] SpiriAssist: accessible (not locked)');
 
     // ── Verify Payment Links is gated (Illuminate feature) ──

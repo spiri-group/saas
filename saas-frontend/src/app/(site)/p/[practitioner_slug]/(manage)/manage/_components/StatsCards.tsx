@@ -13,6 +13,7 @@ interface StatsCardsProps {
     testimonialsCount: number;
     avgRating: number;
     isLoading?: boolean;
+    canSellServices?: boolean;
 }
 
 const StatsCards: React.FC<StatsCardsProps> = ({
@@ -24,6 +25,7 @@ const StatsCards: React.FC<StatsCardsProps> = ({
     testimonialsCount,
     avgRating,
     isLoading,
+    canSellServices = true,
 }) => {
     const renderStars = (rating: number) => {
         const rounded = Math.round(rating * 2) / 2;
@@ -46,7 +48,7 @@ const StatsCards: React.FC<StatsCardsProps> = ({
     };
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="stats-cards">
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${canSellServices ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-4`} data-testid="stats-cards">
             {/* Bookings Card */}
             <Link href={`/p/${slug}/manage/bookings`}>
                 <div
@@ -76,34 +78,36 @@ const StatsCards: React.FC<StatsCardsProps> = ({
                 </div>
             </Link>
 
-            {/* Client Orders Card */}
-            <Link href={`/p/${slug}/manage/services/orders`}>
-                <div
-                    className="p-4 rounded-lg bg-slate-800/30 border border-slate-700/50 hover:border-slate-600 transition-colors cursor-pointer"
-                    data-testid="orders-stats-card"
-                >
-                    <div className="flex items-center gap-2 mb-3">
-                        <ShoppingBag className="w-5 h-5 text-purple-400" />
-                        <span className="font-medium text-white">Client Orders</span>
-                    </div>
-                    {isLoading ? (
-                        <div className="space-y-2">
-                            <div className="h-6 bg-slate-700/50 rounded animate-pulse w-24" />
-                            <div className="h-4 bg-slate-700/50 rounded animate-pulse w-20" />
+            {/* Client Orders Card — only shown when practitioner can sell services */}
+            {canSellServices && (
+                <Link href={`/p/${slug}/manage/services/orders`}>
+                    <div
+                        className="p-4 rounded-lg bg-slate-800/30 border border-slate-700/50 hover:border-slate-600 transition-colors cursor-pointer"
+                        data-testid="orders-stats-card"
+                    >
+                        <div className="flex items-center gap-2 mb-3">
+                            <ShoppingBag className="w-5 h-5 text-purple-400" />
+                            <span className="font-medium text-white">Client Orders</span>
                         </div>
-                    ) : (
-                        <>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-bold text-white">{inProgressOrdersCount}</span>
-                                <span className="text-sm text-slate-400">in progress</span>
+                        {isLoading ? (
+                            <div className="space-y-2">
+                                <div className="h-6 bg-slate-700/50 rounded animate-pulse w-24" />
+                                <div className="h-4 bg-slate-700/50 rounded animate-pulse w-20" />
                             </div>
-                            <div className="text-sm text-slate-500 mt-1">
-                                {newOrdersCount} new to fulfill
-                            </div>
-                        </>
-                    )}
-                </div>
-            </Link>
+                        ) : (
+                            <>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-3xl font-bold text-white">{inProgressOrdersCount}</span>
+                                    <span className="text-sm text-slate-400">in progress</span>
+                                </div>
+                                <div className="text-sm text-slate-500 mt-1">
+                                    {newOrdersCount} new to fulfill
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </Link>
+            )}
 
             {/* Reviews Card */}
             <Link href={`/p/${slug}/manage/testimonials`}>

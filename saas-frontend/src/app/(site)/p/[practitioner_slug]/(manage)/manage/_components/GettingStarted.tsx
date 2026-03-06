@@ -10,6 +10,7 @@ interface GettingStartedProps {
     isOnboarded: boolean;
     hasServices: boolean;
     hasSchedule: boolean;
+    canSellServices?: boolean;
 }
 
 type ChecklistItemProps = {
@@ -49,10 +50,8 @@ const ChecklistItem: React.FC<ChecklistItemProps> = ({ label, completed, onClick
     return content;
 };
 
-const GettingStarted: React.FC<GettingStartedProps> = ({ slug, isOnboarded, hasServices, hasSchedule }) => {
+const GettingStarted: React.FC<GettingStartedProps> = ({ slug, isOnboarded, hasServices, hasSchedule, canSellServices = true }) => {
     if (isOnboarded) return null;
-
-    const completedCount = [hasServices, hasSchedule].filter(Boolean).length;
 
     const handleCreateService = () => {
         const event = new CustomEvent("open-nav-external", {
@@ -66,6 +65,71 @@ const GettingStarted: React.FC<GettingStartedProps> = ({ slug, isOnboarded, hasS
         });
         window.dispatchEvent(event);
     };
+
+    const handleOpenGallery = () => {
+        const event = new CustomEvent("open-nav-external", {
+            detail: {
+                path: ["Gallery"],
+                action: {
+                    type: "dialog",
+                    dialog: "Practitioner Gallery"
+                }
+            }
+        });
+        window.dispatchEvent(event);
+    };
+
+    // Directory tier: focus on profile building
+    if (!canSellServices) {
+        const steps = [hasSchedule];
+        const completedCount = steps.filter(Boolean).length;
+
+        return (
+            <Card
+                className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border-purple-500/30 mb-6"
+                data-testid="getting-started-checklist"
+            >
+                <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Sparkles className="w-5 h-5 text-purple-400" />
+                            <CardTitle className="text-base text-white">Getting Started</CardTitle>
+                        </div>
+                        <span className="text-xs text-slate-400">{completedCount}/1 complete</span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">
+                        Build your profile and start getting discovered.
+                    </p>
+                </CardHeader>
+                <CardContent className="pt-0">
+                    <div className="space-y-0.5">
+                        <ChecklistItem
+                            label="Set your availability hours"
+                            completed={hasSchedule}
+                            href={`/p/${slug}/manage/availability`}
+                            testId="getting-started-availability"
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-4 px-3 py-2 rounded-lg bg-white/5 text-slate-400 text-sm">
+                        <Lightbulb className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                        <span>
+                            <button onClick={handleOpenGallery} className="text-purple-400 hover:text-purple-300">
+                                Add photos to your gallery
+                            </button>
+                            {' '}and{' '}
+                            <Link href={`/p/${slug}/manage/spiri-assist`} className="text-purple-400 hover:text-purple-300">
+                                browse SpiriAssist cases
+                            </Link>
+                            {' '}to start connecting with clients
+                        </span>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    const completedCount = [hasServices, hasSchedule].filter(Boolean).length;
 
     return (
         <Card

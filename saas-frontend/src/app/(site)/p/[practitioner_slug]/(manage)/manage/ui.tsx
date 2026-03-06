@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { Session } from "next-auth";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Heart, MessageCircle, Receipt, Radio } from "lucide-react";
+import { Sparkles, Heart, MessageCircle, Receipt, Radio, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
 import UIContainer from "@/components/uicontainer";
 import PractitionerSideNav from "../../../_components/PractitionerSideNav";
 import WelcomeHeader from "./_components/WelcomeHeader";
@@ -54,6 +55,27 @@ const QuickAction: React.FC<{
     );
 };
 
+const LockedQuickAction: React.FC<{
+    label: string;
+    icon: React.ReactNode;
+    slug: string;
+}> = ({ label, icon, slug }) => {
+    const router = useRouter();
+
+    return (
+        <Button
+            variant="outline"
+            className="flex items-center gap-2 border-dashed border-slate-600 bg-transparent text-slate-500 hover:border-purple-500/50 hover:text-purple-400 hover:bg-purple-500/5"
+            onClick={() => router.push(`/p/${slug}/manage/subscription`)}
+            data-testid={`quick-action-locked-${label.toLowerCase().replace(' ', '-')}`}
+        >
+            {icon}
+            {label}
+            <Lock className="w-3 h-3 ml-0.5" />
+        </Button>
+    );
+};
+
 export default function PractitionerDashboard({ session, practitionerId, slug, practitionerName }: Props) {
     const data = usePractitionerDashboardData(practitionerId, slug);
     const { features } = useTierFeatures(practitionerId);
@@ -83,26 +105,37 @@ export default function PractitionerDashboard({ session, practitionerId, slug, p
                             isOnboarded={data.onboarding.isOnboarded}
                             hasServices={data.onboarding.hasServices}
                             hasSchedule={data.onboarding.hasSchedule}
+                            canSellServices={features.canSellServices}
                         />
 
                         {/* Quick Actions */}
                         <div className="mb-6">
                             <div className="flex flex-wrap gap-3">
-                                <QuickAction
-                                    label="New Reading"
-                                    icon={<Sparkles className="w-4 h-4" />}
-                                    dialogId="Create Reading"
-                                />
-                                <QuickAction
-                                    label="New Healing"
-                                    icon={<Heart className="w-4 h-4" />}
-                                    dialogId="Create Healing"
-                                />
-                                <QuickAction
-                                    label="New Coaching"
-                                    icon={<MessageCircle className="w-4 h-4" />}
-                                    dialogId="Create Coaching"
-                                />
+                                {features.canSellServices ? (
+                                    <>
+                                        <QuickAction
+                                            label="New Reading"
+                                            icon={<Sparkles className="w-4 h-4" />}
+                                            dialogId="Create Reading"
+                                        />
+                                        <QuickAction
+                                            label="New Healing"
+                                            icon={<Heart className="w-4 h-4" />}
+                                            dialogId="Create Healing"
+                                        />
+                                        <QuickAction
+                                            label="New Coaching"
+                                            icon={<MessageCircle className="w-4 h-4" />}
+                                            dialogId="Create Coaching"
+                                        />
+                                    </>
+                                ) : (
+                                    <>
+                                        <LockedQuickAction label="New Reading" icon={<Sparkles className="w-4 h-4" />} slug={slug} />
+                                        <LockedQuickAction label="New Healing" icon={<Heart className="w-4 h-4" />} slug={slug} />
+                                        <LockedQuickAction label="New Coaching" icon={<MessageCircle className="w-4 h-4" />} slug={slug} />
+                                    </>
+                                )}
                                 {features.hasPaymentLinks && (
                                     <Button
                                         variant="outline"
@@ -140,6 +173,7 @@ export default function PractitionerDashboard({ session, practitionerId, slug, p
                                     testimonialsCount={data.stats.testimonialsCount}
                                     avgRating={data.stats.avgRating}
                                     isLoading={data.isLoading}
+                                    canSellServices={features.canSellServices}
                                 />
                             </div>
 

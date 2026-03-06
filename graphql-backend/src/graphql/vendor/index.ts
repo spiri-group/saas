@@ -5,11 +5,20 @@ import { DateTime } from "luxon";
 import { generate_human_friendly_id, isNullOrUndefined, isNullOrWhiteSpace, mergeDeep, slugify } from '../../utils/functions';
 import { serverContext } from '../../services/azFunction';
 import { socialpost_type } from '../social/types';
-import { vendor_type, plan_type, merchant_card_status, merchant_subscription_payment_status, VendorDocType, PractitionerAvailability, practitioner_profile_type } from './types';
+import { vendor_type, plan_type, merchant_card_status, merchant_subscription_payment_status, VendorDocType, PractitionerAvailability, practitioner_profile_type, subscription_tier } from './types';
 import { user_type } from '../user/types';
 import { sender_details } from '../../client/email_templates';
 import { googleplace_type, recordref_type } from '../0_shared/types';
 import { ReadingRequestManager } from '../reading-request/manager';
+
+// Monthly price in cents for each tier (used as default subscriptionCostThreshold)
+const TIER_MONTHLY_PRICE: Record<subscription_tier, number> = {
+    directory: 900,
+    awaken: 1900,
+    illuminate: 2900,
+    manifest: 3900,
+    transcend: 5900,
+};
 
 const resolvers = {
     Query: {
@@ -742,7 +751,7 @@ const resolvers = {
                 trialStartedAt: DateTime.now().toISO(),
                 trialEndsAt: DateTime.now().plus({ days: 14 }).toISO(),
                 cumulativePayouts: 0,
-                subscriptionCostThreshold: 3200, // Manifest monthly default in cents, overridden by selectVendorSubscriptionTier
+                subscriptionCostThreshold: TIER_MONTHLY_PRICE[(subscription?.tier || 'manifest') as subscription_tier] ?? 3900,
                 failedPaymentAttempts: 0,
                 // Legacy fields kept for compatibility
                 payment_retry_count: 0,
@@ -880,7 +889,7 @@ const resolvers = {
             const practitionerId = uuidv4();
 
             // DEBUG: Log every create_practitioner call
-            context.logger.logMessage(`[CREATE_PRACTITIONER] Called with slug="${input.slug}", userId="${context.userId}", timestamp=${Date.now()}`);
+            context.logger.logMessage(`[CREATE_PRACTITIONER] Called with slug="${input.slug}", userId="${context.userId}", tier="${subscription?.tier}", timestamp=${Date.now()}`);
 
             // Validate slug uniqueness (only check ACTIVE vendors, not soft-deleted ones)
             const existingSlugs = await context.dataSources.cosmos.run_query("Main-Vendor", {
@@ -957,16 +966,16 @@ const resolvers = {
                     rating4: 0,
                     rating5: 0
                 },
-                // Subscription: always Awaken tier for practitioners
+                // Subscription: use the tier selected during onboarding
                 subscription: {
-                    subscriptionTier: 'awaken' as const,
+                    subscriptionTier: (subscription?.tier || 'awaken') as subscription_tier,
                     billingInterval: subscription?.billingInterval || 'monthly',
                     billingModel: 'trial' as const,
                     billingStatus: 'trial' as const,
                     trialStartedAt: DateTime.now().toISO(),
                     trialEndsAt: DateTime.now().plus({ days: 14 }).toISO(),
                     cumulativePayouts: 0,
-                    subscriptionCostThreshold: 1600, // Awaken monthly in cents
+                    subscriptionCostThreshold: TIER_MONTHLY_PRICE[subscription?.tier as subscription_tier] ?? 1900,
                     failedPaymentAttempts: 0,
                     // Legacy fields
                     payment_retry_count: 0,

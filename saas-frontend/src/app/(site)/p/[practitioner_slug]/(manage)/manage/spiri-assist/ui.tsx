@@ -108,9 +108,9 @@ const SpiriAssistLockedPreview: React.FC<{ practitionerSlug: string }> = ({ prac
 
 const UI: React.FC<Props> = (props) => {
     const bl = useBL(props)
-    const { features } = useTierFeatures(props.merchantId);
+    const { features, isLoading } = useTierFeatures(props.merchantId);
 
-    if (bl.merchantId == null) return null;
+    if (bl.merchantId == null || isLoading) return null;
 
     if (!features.hasSpiriAssist) {
         return <SpiriAssistLockedPreview practitionerSlug={props.practitionerSlug} />;

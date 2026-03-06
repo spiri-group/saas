@@ -327,7 +327,7 @@ const useBL = (props: BLProps) => {
             return [
                 ...unlocked,
                 ...(locked.length > 0 ? [
-                    { type: "divider" as const, label: "Upgrade to Unlock" },
+                    { type: "divider" as const, label: "More Features" },
                     ...locked,
                 ] : []),
             ];
