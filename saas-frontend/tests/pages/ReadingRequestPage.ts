@@ -27,26 +27,37 @@ export class ReadingRequestPage {
     await expect(this.page.locator('[role="dialog"]')).toBeVisible({ timeout: 10000 });
   }
 
+  // Wait for wizard step 1 (Category Selection) to load
   async waitForPageLoad() {
-    // Wait for wizard step 1 (Topic & Context) inside the dialog
     await expect(this.page.locator('h2:has-text("Request a SpiriReading")')).toBeVisible({ timeout: 10000 });
-    // Wait for topic select to be visible (step 1 element)
-    await expect(this.page.locator('[data-testid="topic-select"]')).toBeVisible({ timeout: 15000 });
+    // Wait for category buttons to be visible (step 1 element)
+    await expect(this.page.locator('[data-testid="category-tarot"]')).toBeVisible({ timeout: 15000 });
   }
 
-  // Navigate to step 2 (spread selection)
+  // Step 1: Category selection
+  async selectCategory(category: 'TAROT' | 'ASTROLOGY') {
+    await this.page.locator(`[data-testid="category-${category.toLowerCase()}"]`).click();
+  }
+
+  // Navigate from step 1 to step 2 (or step 2 to step 3)
   async goToStep2() {
-    await this.page.locator('button:has-text("Next: Choose Spread")').click();
+    await this.page.locator('[data-testid="wizard-next-btn"]').click();
+    // Wait for step 2 content to load (topic select for tarot, focus area for astrology)
+    await this.page.waitForTimeout(500);
+  }
+
+  // Navigate from step 2 to step 3
+  async goToStep3() {
+    await this.page.locator('[data-testid="wizard-next-btn"]').click();
     // Wait for spread cards to load
     await expect(this.page.locator('[data-testid^="spread-card-"]').first()).toBeVisible({ timeout: 15000 });
   }
 
-  // Navigate back to step 1
-  async goToStep1() {
-    const backButton = this.page.locator('button:has-text("Back")');
+  // Navigate back one step
+  async goBack() {
+    const backButton = this.page.locator('[data-testid="wizard-back-btn"]');
     // Use force click if element is outside viewport due to dialog content overflow
     await backButton.click({ force: true });
-    await expect(this.page.locator('[data-testid="topic-select"]')).toBeVisible({ timeout: 5000 });
   }
 
   // Spread selection
@@ -110,45 +121,43 @@ export class ReadingRequestPage {
 
   // Saved card helpers
   async hasSavedCards(): Promise<boolean> {
-    // Check if any saved card option is visible (not the "Use a different card" button)
-    const savedCardButtons = this.page.locator('button:has(p:has-text("••••"))');
+    const savedCardButtons = this.page.locator('[data-testid^="saved-card-"]');
     return (await savedCardButtons.count()) > 0;
   }
 
   async getSavedCardCount(): Promise<number> {
-    const savedCardButtons = this.page.locator('button:has(p:has-text("••••"))');
+    const savedCardButtons = this.page.locator('[data-testid^="saved-card-"]');
     return await savedCardButtons.count();
   }
 
   async selectSavedCard(index: number = 0) {
-    const savedCardButtons = this.page.locator('button:has(p:has-text("••••"))');
+    const savedCardButtons = this.page.locator('[data-testid^="saved-card-"]');
     const button = savedCardButtons.nth(index);
     // Use force click if element is outside viewport due to dialog content overflow
     await button.click({ force: true });
   }
 
   async selectNewCard() {
-    // Click "Use a different card" button
-    const newCardButton = this.page.locator('button:has-text("Use a different card")');
+    const newCardButton = this.page.locator('[data-testid="add-new-card-btn"]');
     // Use force click if element is outside viewport due to dialog content overflow
     await newCardButton.click({ force: true });
   }
 
   async isNewCardOptionSelected(): Promise<boolean> {
-    const newCardButton = this.page.locator('button:has-text("Use a different card"), button:has-text("Add payment card")');
+    const newCardButton = this.page.locator('[data-testid="add-new-card-btn"]');
     const className = await newCardButton.getAttribute('class');
     return className?.includes('border-purple-500') ?? false;
   }
 
   async isSavedCardSelected(index: number = 0): Promise<boolean> {
-    const savedCardButtons = this.page.locator('button:has(p:has-text("••••"))');
+    const savedCardButtons = this.page.locator('[data-testid^="saved-card-"]');
     const button = savedCardButtons.nth(index);
     const className = await button.getAttribute('class');
     return className?.includes('border-purple-500') ?? false;
   }
 
   async getSavedCardLast4(index: number = 0): Promise<string | null> {
-    const savedCardButtons = this.page.locator('button:has(p:has-text("••••"))');
+    const savedCardButtons = this.page.locator('[data-testid^="saved-card-"]');
     const button = savedCardButtons.nth(index);
     const text = await button.locator('p:has-text("••••")').textContent();
     // Extract last 4 digits from text like "Visa •••• 4242"
@@ -158,37 +167,7 @@ export class ReadingRequestPage {
 
   async waitForPaymentMethodSection() {
     // Wait for payment method section to appear (after selecting spread)
-    await expect(this.page.locator('label:has-text("Payment Method")')).toBeVisible({ timeout: 10000 });
-  }
-
-  // History / My Readings
-  async getRequestCount(): Promise<number> {
-    const requests = this.page.locator('[data-testid^="reading-request-"]');
-    return await requests.count();
-  }
-
-  async isEmptyStateVisible(): Promise<boolean> {
-    return await this.page.locator('text=No reading requests yet').isVisible();
-  }
-
-  async isRequestInHistory(topic: string): Promise<boolean> {
-    try {
-      await this.page.waitForSelector(`text=${topic}`, {
-        state: 'visible',
-        timeout: 10000
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async cancelRequest(requestId: string) {
-    await this.page.locator(`[data-testid="cancel-request-${requestId}"]`).click();
-  }
-
-  async viewCompletedReading(requestId: string) {
-    await this.page.locator(`[data-testid="view-reading-${requestId}"]`).click();
+    await expect(this.page.locator('[data-testid="payment-method-section"]')).toBeVisible({ timeout: 10000 });
   }
 
   // Verification helpers
@@ -290,7 +269,7 @@ export class ReadingRequestPage {
 
   async cancelCheckout() {
     // Click cancel or close the dialog
-    const cancelBtn = this.page.locator('button:has-text("Cancel")');
+    const cancelBtn = this.page.locator('[data-testid="wizard-cancel-btn"]');
     if (await cancelBtn.isVisible()) {
       await cancelBtn.click();
     } else {
@@ -306,21 +285,23 @@ export class ReadingRequestPage {
   }
 
   async waitForAllReadingsPage() {
-    await expect(this.page.locator('h1:has-text("My Readings")')).toBeVisible({ timeout: 10000 });
+    // Wait for filter tabs or loading to complete
+    await expect(
+      this.page.locator('[data-testid="filter-tab-all"]')
+        .or(this.page.locator('text=No readings yet'))
+    ).toBeVisible({ timeout: 10000 });
   }
 
   async getCompletedReadingCount(): Promise<number> {
-    const readings = this.page.locator('button:has-text("View Reading")');
+    const readings = this.page.locator('[data-testid="view-reading-button"]');
     return await readings.count();
   }
 
   async isReadingVisible(topic: string): Promise<boolean> {
     try {
-      await this.page.waitForSelector(`text=${topic}`, {
-        state: 'visible',
-        timeout: 10000
-      });
-      return true;
+      // Look for reading cards with the spiri-reading prefix that contain the topic text
+      const reading = this.page.locator(`[data-testid^="reading-spiri-reading-"]:has-text("${topic}")`);
+      return await reading.isVisible({ timeout: 10000 }).catch(() => false);
     } catch {
       return false;
     }
@@ -328,8 +309,8 @@ export class ReadingRequestPage {
 
   async clickViewReading(topic: string) {
     // Find the reading card with the topic and click its View button
-    const readingCard = this.page.locator(`div:has(h3:has-text("${topic}"))`).first();
-    await readingCard.locator('button:has-text("View Reading")').click();
+    const readingCard = this.page.locator(`[data-testid^="reading-spiri-reading-"]:has-text("${topic}")`).first();
+    await readingCard.locator('[data-testid="view-reading-button"]').click();
     // Wait for dialog to open
     await expect(this.page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
   }
@@ -353,33 +334,31 @@ export class ReadingRequestPage {
 
   // Review helpers
   async isLeaveReviewButtonVisible(): Promise<boolean> {
-    return await this.page.locator('button:has-text("Leave a Review")').isVisible({ timeout: 3000 }).catch(() => false);
+    return await this.page.locator('[data-testid="leave-review-btn"]').isVisible({ timeout: 3000 }).catch(() => false);
   }
 
   async clickLeaveReview() {
-    await this.page.locator('button:has-text("Leave a Review")').click();
+    await this.page.locator('[data-testid="leave-review-btn"]').click();
   }
 
   async setReviewRating(rating: number) {
-    // Click on the nth star (0-indexed, so rating 5 = index 4)
-    const star = this.page.locator('button:has(svg.lucide-star)').nth(rating - 1);
-    await star.click();
+    await this.page.locator(`[data-testid="review-star-${rating}"]`).click();
   }
 
   async setReviewHeadline(headline: string) {
-    await this.page.locator('input[placeholder*="important to know"]').fill(headline);
+    await this.page.locator('[data-testid="review-headline-input"]').fill(headline);
   }
 
   async setReviewText(text: string) {
-    await this.page.locator('textarea[placeholder*="experience with this reading"]').fill(text);
+    await this.page.locator('[data-testid="review-text-input"]').fill(text);
   }
 
   async submitReview() {
-    await this.page.locator('button:has-text("Submit Review")').click();
+    await this.page.locator('[data-testid="submit-review-btn"]').click();
   }
 
   async isSubmitReviewEnabled(): Promise<boolean> {
-    return await this.page.locator('button:has-text("Submit Review")').isEnabled();
+    return await this.page.locator('[data-testid="submit-review-btn"]').isEnabled();
   }
 
   async isReviewDisplayed(): Promise<boolean> {

@@ -51,8 +51,8 @@ const UpsertProductImages: React.FC<Props> = ({ aspectRatio = "video", maxImages
                     className="w-full h-full" 
                     style={{ paddingBottom: "1rem" }}>                
                 {(isNullOrUndefined(props.value) || props.value.length === 0) && (
-                    <CarouselItem className="bg-gray-100 w-full h-full">
-                        <div className="w-full h-full flex items-center justify-center text-gray-500">
+                    <CarouselItem className="bg-slate-800 w-full h-full">
+                        <div className="w-full h-full flex items-center justify-center text-slate-400">
                             No images uploaded
                         </div>
                     </CarouselItem>
@@ -109,7 +109,7 @@ const UpsertProductImages: React.FC<Props> = ({ aspectRatio = "video", maxImages
                         <CarouselPrevious />
                         <CarouselNext />
                     </div>
-                    <div className={cn("flex items-center justify-center text-xs ml-auto", isNullOrUndefined(props.value) || props.value.length === 0 ? "bg-gray-100" : "bg-primary", "flex-none p-2 w-auto aspect-square rounded-full")}>
+                    <div className={cn("flex items-center justify-center text-xs ml-auto", isNullOrUndefined(props.value) || props.value.length === 0 ? "bg-slate-800" : "bg-primary", "flex-none p-2 w-auto aspect-square rounded-full")}>
                         <span className="font-bold">{(props.value ?? []).length}</span>/{maxImages}
                     </div>
                 </div>

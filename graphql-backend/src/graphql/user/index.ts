@@ -130,15 +130,15 @@ const resolvers = {
                 await userContainer.item(user.id, user.id).patch(operations)
             }
 
-            // Only update requiresInput and address for full profile updates
-            if (user.requiresInput && isFullProfileUpdate && address) {
+            // Clear requiresInput once basic details (first + last name) are provided
+            if (user.requiresInput && isFullProfileUpdate) {
                 const userContainer = await context.dataSources.cosmos.get_container("Main-User")
                 const operations : PatchOperation[] = [
                     { op: "set", path: `/requiresInput`, value: false },
-                    { op: "set", path: `/addresses`, value: [{
+                    ...(address ? [{ op: "set" as const, path: `/addresses`, value: [{
                         id: uuidv4(),
                         ...address
-                    }]}
+                    }]}] : [])
                 ]
                 await userContainer.item(user.id, user.id).patch(operations)
             }

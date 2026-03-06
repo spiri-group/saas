@@ -255,6 +255,8 @@ input ServiceQuestionInput {
   options: [String]
   required: Boolean!
   placeholder: String
+  description: String
+  scaleMax: Int
 }
 
 input ReadingServiceOptionsInput {

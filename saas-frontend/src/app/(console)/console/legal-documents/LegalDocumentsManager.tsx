@@ -1141,7 +1141,7 @@ function PreviewWithToc({
     return result;
   }, [editContent, selectedDocument, documents]);
 
-  // Add IDs to rendered HTML headings and wrap sections for progressive highlight
+  // Add IDs to rendered HTML headings for TOC navigation
   const renderedHtml = useMemo(() => {
     const resolved = resolvePlaceholders(
       editContent,
@@ -1149,7 +1149,6 @@ function PreviewWithToc({
       editPlaceholders
     );
     let html = markdownToHtml(resolved);
-    // Add IDs to headings
     html = html.replace(
       /<(h[1-3])>([\s\S]*?)<\/h[1-3]>/g,
       (_match, tag, content) => {
@@ -1161,20 +1160,10 @@ function PreviewWithToc({
         return `<${tag} id="${id}">${content}</${tag}>`;
       }
     );
-    // Wrap content between headings in section divs for highlight effect
-    const parts = html.split(/(?=<h[1-3]\s)/);
-    html = parts
-      .map((part, i) => {
-        if (!part.trim()) return "";
-        const idMatch = part.match(/<h[1-3]\s[^>]*id="([^"]*)"[^>]*>/);
-        const sectionId = idMatch ? idMatch[1] : `intro-${i}`;
-        return `<div class="doc-section" data-section="${sectionId}">${part}</div>`;
-      })
-      .join("");
     return html;
   }, [editContent, globalPlaceholders, editPlaceholders]);
 
-  // Scroll tracking: progress bar + active heading + section highlight
+  // Scroll tracking: progress bar + active heading
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -1195,19 +1184,6 @@ function PreviewWithToc({
         }
       }
       setActiveHeadingId(active);
-
-      // Progressive section highlight
-      el.querySelectorAll(".doc-section").forEach((section) => {
-        section.classList.remove("section-reading");
-      });
-      if (active) {
-        const activeSection = el.querySelector(
-          `.doc-section[data-section="${CSS.escape(active)}"]`
-        );
-        if (activeSection) {
-          activeSection.classList.add("section-reading");
-        }
-      }
     };
 
     el.addEventListener("scroll", handleScroll, { passive: true });
@@ -1233,19 +1209,6 @@ function PreviewWithToc({
 
   return (
     <div className="flex-1 flex flex-col min-h-0" data-testid="editor-preview-content">
-      <style>{`
-        .doc-section {
-          border-left: 2px solid transparent;
-          padding-left: 0.75rem;
-          margin-left: -0.75rem;
-          transition: border-color 0.3s ease, background-color 0.3s ease;
-          border-radius: 0 0.25rem 0.25rem 0;
-        }
-        .doc-section.section-reading {
-          border-left-color: var(--console-primary, rgb(99, 102, 241));
-          background-color: rgba(99, 102, 241, 0.03);
-        }
-      `}</style>
       {/* Progress bar */}
       <div className="h-0.5 bg-console-surface flex-shrink-0">
         <div

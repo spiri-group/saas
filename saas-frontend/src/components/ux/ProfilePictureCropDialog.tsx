@@ -66,6 +66,8 @@ const ProfilePictureCropDialog: React.FC<ProfilePictureCropDialogProps> = ({
         return {
             width: displayWidth,
             height: displayHeight,
+            maxWidth: 'none',
+            maxHeight: 'none',
             left: (VIEWPORT_SIZE - displayWidth) / 2 + pan.x,
             top: (VIEWPORT_SIZE - displayHeight) / 2 + pan.y,
             position: 'absolute' as const,

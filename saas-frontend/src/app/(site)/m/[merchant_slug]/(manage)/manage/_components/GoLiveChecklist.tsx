@@ -74,11 +74,6 @@ const GoLiveChecklist: React.FC<GoLiveChecklistProps> = ({ merchantId }) => {
         );
     }
 
-    const completedCount = [
-        goLiveReadiness.hasStripeOnboarding,
-        goLiveReadiness.hasPaymentCard,
-    ].filter(Boolean).length;
-
     return (
         <Card className="bg-slate-800/50 border-orange-500/30 mb-6" data-testid="go-live-checklist">
             <CardHeader className="pb-2">
@@ -87,10 +82,10 @@ const GoLiveChecklist: React.FC<GoLiveChecklistProps> = ({ merchantId }) => {
                         <Rocket className="w-5 h-5 text-orange-400" />
                         <CardTitle className="text-base text-white">Go Live Checklist</CardTitle>
                     </div>
-                    <span className="text-xs text-slate-400">{completedCount}/2 complete</span>
+                    <span className="text-xs text-slate-400">{goLiveReadiness.hasStripeOnboarding ? '1' : '0'}/1 complete</span>
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
-                    Complete these steps to publish your shop and start accepting customers.
+                    Complete this step to publish your shop and start accepting customers.
                 </p>
             </CardHeader>
             <CardContent className="pt-0">
@@ -102,14 +97,6 @@ const GoLiveChecklist: React.FC<GoLiveChecklistProps> = ({ merchantId }) => {
                             ? () => openNavDialog(["Setup", "Bank"], "Bank Accounts")
                             : undefined}
                         testId="go-live-banking"
-                    />
-                    <ChecklistItem
-                        label="Add a payment card"
-                        completed={goLiveReadiness.hasPaymentCard}
-                        onClick={!goLiveReadiness.hasPaymentCard
-                            ? () => openNavDialog(["Setup", "Cards"], "Payment Cards")
-                            : undefined}
-                        testId="go-live-card"
                     />
                 </div>
             </CardContent>

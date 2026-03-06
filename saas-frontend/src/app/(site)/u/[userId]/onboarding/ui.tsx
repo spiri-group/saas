@@ -136,7 +136,7 @@ const UI: React.FC<Props> = ({ userId }) => {
                   ))}
                 </div>
 
-                <div className="mt-8">
+                <div className="mt-8 flex flex-col gap-3">
                   <Button
                     onClick={handleContinueToStep2}
                     disabled={!primaryInterest}
@@ -147,6 +147,15 @@ const UI: React.FC<Props> = ({ userId }) => {
                       Continue
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => window.location.href = '/'}
+                    className="text-slate-500 hover:text-white hover:bg-white/10"
+                    data-testid="back-to-home-button"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to home
                   </Button>
                 </div>
               </div>

@@ -4,14 +4,14 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod"
 import { useEffect, useState } from "react";
-import { mergeDeepWithClone, countWords } from "@/lib/functions";
+import { mergeDeepWithClone, countWords, omit } from "@/lib/functions";
 import { MediaSchema } from "@/shared/schemas/media";
 
 // Schema for bio and headline editing
 const EditPractitionerBioSchema = z.object({
     id: z.string().min(1),
     headline: z.string()
-        .min(10, "Headline must be at least 10 characters")
+        .min(3, "Headline must be at least 3 characters")
         .max(150, "Headline must be less than 150 characters"),
     bio: z.string()
         .min(50, "Bio must be at least 50 characters")
@@ -44,7 +44,7 @@ interface Practitioner {
     id: string;
     name: string;
     slug: string;
-    logo?: Media;
+    logo?: Media | null;
     practitioner: PractitionerProfile;
 }
 
@@ -153,6 +153,7 @@ const useEditPractitionerBio = (practitionerId: string) => {
 
                 // Update logo if changed
                 if (values.logo !== undefined) {
+                    const theme = omit({ logo: values.logo }, ["logo.url"])
                     await gql<{
                         update_merchant_theme: {
                             vendor: {
@@ -177,15 +178,13 @@ const useEditPractitionerBio = (practitionerId: string) => {
                         }
                     `, {
                         merchantId: values.id,
-                        theme: {
-                            logo: values.logo
-                        }
+                        theme
                     })
                 }
 
                 return {
                     ...profileResponse.update_practitioner_profile.practitioner,
-                    logo: values.logo ?? undefined
+                    logo: values.logo ?? null
                 }
             },
             onSuccess: async (data: Practitioner) => {
@@ -194,8 +193,9 @@ const useEditPractitionerBio = (practitionerId: string) => {
                     if (!oldData) return data
                     return mergeDeepWithClone(oldData, data)
                 })
-                // Also invalidate branding cache in case it's used elsewhere
+                // Invalidate branding and profile caches to ensure removed logos are reflected
                 queryClient.invalidateQueries({ queryKey: ['branding-for-vendor', practitionerId] })
+                queryClient.invalidateQueries({ queryKey: ['practitioner-profile', practitionerId] })
             }
         })
     }

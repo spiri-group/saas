@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import UIContainer from "@/components/uicontainer";
 import SetupUI from "./ui";
 import { auth } from "@/lib/auth";
@@ -11,7 +12,9 @@ export default async function SetupPage() {
 
     return (
         <UIContainer me={session.user}>
-            <SetupUI />
+            <Suspense fallback={null}>
+                <SetupUI />
+            </Suspense>
         </UIContainer>
     );
 }

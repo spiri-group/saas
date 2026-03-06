@@ -173,6 +173,44 @@ export async function selectRadixOption(page: Page, triggerSelector: string, opt
 }
 
 /**
+ * Handle the ConsentGuard modal if it appears after login.
+ * Iterates through each document, checks the checkbox, and clicks Next/Accept.
+ */
+export async function handleConsentGuardIfPresent(page: Page, timeout = 15000): Promise<void> {
+  const modal = page.locator('[data-testid="consent-guard-modal"]');
+  try {
+    await modal.waitFor({ state: 'visible', timeout });
+  } catch {
+    return; // Modal didn't appear, nothing to do
+  }
+
+  console.log('[ConsentGuard] Modal detected, accepting all documents...');
+
+  for (let step = 0; step < 10; step++) {
+    // Find and click the visible checkbox
+    const checkbox = page.locator('[data-testid^="consent-checkbox-"]').first();
+    await expect(checkbox).toBeVisible({ timeout: 5000 });
+    await checkbox.click();
+
+    // If Accept button is visible (final step), click it and wait for dismiss
+    const acceptBtn = page.locator('[data-testid="consent-accept-btn"]');
+    if (await acceptBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await expect(acceptBtn).toBeEnabled({ timeout: 3000 });
+      await acceptBtn.click();
+      await expect(modal).not.toBeVisible({ timeout: 10000 });
+      console.log('[ConsentGuard] All documents accepted');
+      return;
+    }
+
+    // Otherwise click Next
+    const nextBtn = page.locator('[data-testid="consent-next-btn"]');
+    await expect(nextBtn).toBeEnabled({ timeout: 3000 });
+    await nextBtn.click();
+    await page.waitForTimeout(500);
+  }
+}
+
+/**
  * Open Radix UI Dialog
  */
 export async function openDialog(page: Page, triggerSelector: string) {

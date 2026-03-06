@@ -29,8 +29,9 @@ import {
     Store,
     Plus,
     Settings,
-    Wallet,
-    ImageIcon
+    ImageIcon,
+    Receipt,
+    Radio
 } from "lucide-react";
 import { VendorDocType } from "@/utils/spiriverse";
 import CreateReading from "../../m/[merchant_slug]/(manage)/manage/services/_components/CreateReading";
@@ -48,10 +49,16 @@ import EditPractitionerOracleMessage from "./Profile/Edit/OracleMessage";
 import EditPractitionerPinnedTestimonials from "./Profile/Edit/PinnedTestimonials";
 import MerchantEventsComponent from "../../m/_components/Events";
 import MerchantGalleryComponent from "../../m/_components/Gallery";
+import MerchantBankingComponent from "../../m/_components/Banking";
+import MerchantCardsComponent from "../../m/_components/Cards";
+import SpiriAssistLogo from "@/icons/spiri-assist-logo";
 import { Session } from "next-auth";
 import { isNullOrUndefined } from "@/lib/functions";
 import withProtection from "@/components/ux/HOC/withProtection";
 import HasPractitionerAccess from "../_hooks/HasPractitionerAccess";
+import { useTierFeatures } from "@/hooks/UseTierFeatures";
+import ShopUpgradeDialog from "@/components/subscription/ShopUpgradeDialog";
+import FeatureUpgradeDialog from "@/components/subscription/FeatureUpgradeDialog";
 
 // Helper to get user's merchants from session
 const getUserMerchants = (session: Session) => {
@@ -71,6 +78,8 @@ const useBL = (props: BLProps) => {
     const practitionerSlug = props.practitionerSlug;
 
     const practitioner = props.session.user.vendors.find(v => v.id === practitionerId);
+    const { features, tier } = useTierFeatures(practitionerId);
+    const canCreateMerchant = features.canCreateMerchantProfile;
 
     const options: NavOption[] = [
         {
@@ -91,7 +100,7 @@ const useBL = (props: BLProps) => {
             href: `/p/${practitionerSlug}/manage/messages`,
             testId: "nav-messages"
         },
-        {
+        ...(features.canSellServices ? [{
             label: "Services",
             icon: <BookOpen className="w-5 h-5" />,
             testId: "nav-services",
@@ -116,7 +125,7 @@ const useBL = (props: BLProps) => {
                     className: "w-[870px] max-w-[95vw] h-[700px]"
                 },
                 {
-                    type: "divider",
+                    type: "divider" as const,
                     label: ""
                 },
                 {
@@ -134,13 +143,13 @@ const useBL = (props: BLProps) => {
                     label: "Client Orders",
                     href: `/p/${practitionerSlug}/manage/services/orders`
                 }
-            ],
-        },
+            ] as NavOption[],
+        }] as NavOption[] : [] as NavOption[]),
         {
             label: "Schedule",
             icon: <CalendarDays className="w-5 h-5" />,
             testId: "nav-schedule",
-            description: "Bookings, Availability, Events",
+            description: features.canCreateEvents ? "Bookings, Availability, Events" : "Bookings & Availability",
             navOptions: [
                 {
                     icon: <Calendar className="w-5 h-5" />,
@@ -152,13 +161,13 @@ const useBL = (props: BLProps) => {
                     label: "Availability",
                     href: `/p/${practitionerSlug}/manage/availability`
                 },
-                {
+                ...(features.canCreateEvents ? [{
                     icon: <CalendarDays className="w-5 h-5 text-purple-400" />,
                     label: "Events",
                     dialogId: "Manage Events",
                     className: "w-[1000px] max-w-[95vw] h-[850px]"
-                }
-            ],
+                }] : []),
+            ] as NavOption[],
         },
         {
             label: "Profile",
@@ -215,17 +224,17 @@ const useBL = (props: BLProps) => {
                     type: "divider",
                     label: "Media"
                 },
-                {
+                ...(features.hasVideoUpdates ? [{
                     icon: <Video className="w-5 h-5" />,
                     label: "Video Update",
                     dialogId: "Edit Video",
                     className: "w-[900px] max-w-[95vw]"
-                },
+                }] : []),
                 {
                     icon: <ImageIcon className="w-5 h-5" />,
                     label: "Gallery",
                     dialogId: "Practitioner Gallery",
-                    className: "w-[1000px] max-w-[95vw] h-[850px]"
+                    className: "w-[95vw] max-w-[95vw] h-[90vh] bg-slate-900 backdrop-blur-none"
                 },
                 {
                     icon: <Link className="w-5 h-5" />,
@@ -240,7 +249,7 @@ const useBL = (props: BLProps) => {
                     className: "w-[600px] max-w-[95vw]"
                 },
                 {
-                    type: "divider",
+                    type: "divider" as const,
                     label: "Engagement"
                 },
                 {
@@ -255,44 +264,74 @@ const useBL = (props: BLProps) => {
                     dialogId: "Edit Pinned Reviews",
                     className: "w-[700px] max-w-[95vw]"
                 },
-            ],
+            ] as NavOption[],
         },
-        {
-            label: "Shop Fronts",
-            icon: <Store className="w-5 h-5 text-amber-500" />,
-            testId: "nav-shop-fronts",
-            navOptions: [
-                {
-                    icon: <Plus className="w-5 h-5" />,
-                    label: "Open New Shop",
-                    href: "/m/setup",
-                    testId: "open-new-shop-btn"
-                },
-                // Dynamically add user's existing merchants
-                ...getUserMerchants(props.session).map(merchant => ({
+        // Feature items — unlocked ones appear inline, locked ones grouped under a divider at the bottom
+        ...(() => {
+            const featureItems = [
+                { label: "Services", icon: <BookOpen className="w-5 h-5" />, testId: "nav-services-locked", href: `/p/${practitionerSlug}/manage/services`, dialogId: "Upgrade Services", unlocked: features.canSellServices },
+                { label: "Payment Links", icon: <Receipt className="w-5 h-5" />, testId: "nav-payment-links", href: `/p/${practitionerSlug}/manage/payment-links`, dialogId: "Upgrade Payment Links", unlocked: features.hasPaymentLinks },
+                { label: "Live Assist", icon: <Radio className="w-5 h-5" />, testId: "nav-live-assist", href: `/p/${practitionerSlug}/manage/live-assist`, dialogId: "Upgrade Live Assist", unlocked: features.hasLiveAssist },
+                { label: "Expo Mode", icon: <Store className="w-5 h-5" />, testId: "nav-expo-mode", href: `/p/${practitionerSlug}/manage/expo-mode`, dialogId: "Upgrade Expo Mode", unlocked: features.hasExpoMode },
+                { label: "SpiriAssist", icon: <div className="flex items-center justify-center"><SpiriAssistLogo height={20} /></div>, testId: "nav-spiri-assist", href: `/p/${practitionerSlug}/manage/spiri-assist`, dialogId: "Upgrade SpiriAssist", unlocked: features.hasSpiriAssist },
+            ];
+
+            const unlocked: NavOption[] = featureItems.filter(f => f.unlocked).map(f => ({
+                label: f.label, icon: f.icon, testId: f.testId, href: f.href,
+            }));
+            const locked: NavOption[] = featureItems.filter(f => !f.unlocked).map(f => ({
+                label: f.label, icon: f.icon, testId: f.testId, dialogId: f.dialogId,
+            }));
+
+            // Shop Fronts — unlocked on manifest+, otherwise locked
+            const shopFrontsItem: NavOption = canCreateMerchant
+                ? {
+                    label: "Shop Fronts",
+                    icon: <Store className="w-5 h-5 text-amber-500" />,
+                    testId: "nav-shop-fronts",
+                    navOptions: [
+                        {
+                            icon: <Plus className="w-5 h-5" />,
+                            label: "Open New Shop",
+                            href: "/setup",
+                            testId: "open-new-shop-btn"
+                        },
+                        ...getUserMerchants(props.session).map(merchant => ({
+                            icon: <Store className="w-5 h-5" />,
+                            label: merchant.name,
+                            href: `/m/${merchant.slug}`
+                        })),
+                        ...(getUserMerchants(props.session).length > 0 ? [
+                            { type: "divider" as const, label: "" },
+                            {
+                                icon: <Settings className="w-5 h-5" />,
+                                label: "Manage Linked Shops",
+                                href: `/p/${practitionerSlug}/manage/shopfronts`
+                            }
+                        ] : [])
+                    ],
+                }
+                : {
+                    label: "Shop Fronts",
                     icon: <Store className="w-5 h-5" />,
-                    label: merchant.name,
-                    href: `/m/${merchant.slug}`
-                })),
-                ...(getUserMerchants(props.session).length > 0 ? [
-                    {
-                        type: "divider" as const,
-                        label: ""
-                    },
-                    {
-                        icon: <Settings className="w-5 h-5" />,
-                        label: "Manage Linked Shops",
-                        href: `/p/${practitionerSlug}/manage/shopfronts`
-                    }
-                ] : [])
-            ],
-        },
-        {
-            label: "Subscription",
-            icon: <Wallet className="w-5 h-5" />,
-            href: `/p/${practitionerSlug}/manage/subscription`,
-            testId: "nav-subscription"
-        },
+                    testId: "nav-shop-fronts",
+                    dialogId: "Shop Upgrade",
+                };
+
+            if (canCreateMerchant) {
+                unlocked.push(shopFrontsItem);
+            } else {
+                locked.push(shopFrontsItem);
+            }
+
+            return [
+                ...unlocked,
+                ...(locked.length > 0 ? [
+                    { type: "divider" as const, label: "More Features" },
+                    ...locked,
+                ] : []),
+            ];
+        })(),
     ];
 
     const dialogMapping: Record<string, (onClose: () => void) => JSX.Element> = !isNullOrUndefined(practitioner)
@@ -314,6 +353,17 @@ const useBL = (props: BLProps) => {
             "Edit Audio Intro": () => <EditPractitionerAudioIntro practitionerId={practitionerId} />,
             "Edit Oracle Message": () => <EditPractitionerOracleMessage practitionerId={practitionerId} />,
             "Edit Pinned Reviews": () => <EditPractitionerPinnedTestimonials practitionerId={practitionerId} />,
+            // Payment dialogs (opened via CustomEvent from subscription page)
+            "Bank Accounts": () => <MerchantBankingComponent merchantId={practitionerId} />,
+            "Payment Cards": () => <MerchantCardsComponent merchantId={practitionerId} />,
+            // Shop upgrade dialog for Awaken/Illuminate tiers
+            "Shop Upgrade": (onClose) => <ShopUpgradeDialog vendorId={practitionerId} currentTier={tier || 'awaken'} onClose={onClose} />,
+            // Feature upgrade dialogs for gated nav items
+            "Upgrade Services": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Services" targetTier="awaken" targetTierName="Awaken" onClose={onClose} benefits={["Create and sell readings, healings, and coaching", "Accept payments from clients", "Manage bookings and availability"]} />,
+            "Upgrade Payment Links": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Payment Links" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Send payment links via email", "Collect payments at expos and events", "Track payment status and history"]} />,
+            "Upgrade Live Assist": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Live Assist" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Go live on any platform", "Collect requests and payments in real-time", "Track revenue and session stats"]} />,
+            "Upgrade Expo Mode": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Expo Mode" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Create popup shops with QR codes", "Take payments at expos and markets", "Track inventory in real-time"]} />,
+            "Upgrade SpiriAssist": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="SpiriAssist" targetTier="directory" targetTierName="Directory" onClose={onClose} benefits={["Browse and apply to paranormal cases", "Submit proposals with your own pricing", "Manage investigations end-to-end"]} />,
         }
         : {};
 

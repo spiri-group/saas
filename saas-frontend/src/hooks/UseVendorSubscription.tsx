@@ -39,6 +39,10 @@ export type VendorSubscriptionDetail = {
     waived?: boolean;
     waivedUntil?: string;
     overrideNotes?: string;
+    // Trial billing model
+    billingModel?: string;
+    trialStartedAt?: string;
+    trialEndsAt?: string;
 };
 
 export const useVendorSubscription = (vendorId: string) => {
@@ -80,16 +84,35 @@ export const useVendorSubscription = (vendorId: string) => {
                         payoutsBlocked
                         stripePaymentMethodId
                         tierFeatures {
+                            hasDirectory
+                            hasSpiriAssist
+                            hasGallery
+                            canAcceptPayments
+                            hasVideoUpdates
+                            canSellServices
+                            hasSpiriReadings
+                            hasPaymentLinks
+                            canCreateEvents
+                            hasLiveAssist
+                            hasExpoMode
+                            canListTours
                             canCreateMerchantProfile
                             maxProducts
-                            canHostPractitioners
                             hasInventoryAutomation
+                            canHostPractitioners
+                            canOperateTours
+                            hasRefundAutomation
                             hasShippingAutomation
+                            hasPOS
+                            hasBackorders
                         }
                         discountPercent
                         waived
                         waivedUntil
                         overrideNotes
+                        billingModel
+                        trialStartedAt
+                        trialEndsAt
                     }
                 }
             `, { vendorId });

@@ -391,9 +391,9 @@ function ProcessRefundDialog({
 
                     {hasLabels(refund) ? (
                       <div className="space-y-3">
-                        <div className="p-3 border border-green-200 bg-green-50 rounded">
-                          <div className="font-medium text-green-800 mb-1">✓ Return shipping labels generated</div>
-                          <div className="text-sm text-green-700">
+                        <div className="p-3 border border-green-700/30 bg-green-900/20 rounded">
+                          <div className="font-medium text-green-400 mb-1">✓ Return shipping labels generated</div>
+                          <div className="text-sm text-green-400">
                             Customer can now print labels and return items
                           </div>
                         </div>
@@ -479,9 +479,9 @@ function ProcessRefundDialog({
                   <div className="space-y-3">
                     {/* Request Better Evidence Form */}
                     {showBetterEvidenceForm ? (
-                      <div className="border border-orange-200 bg-orange-50 rounded-lg p-4">
-                        <h4 className="font-semibold text-orange-800 mb-2">Request Better Evidence</h4>
-                        <p className="text-sm text-orange-700 mb-3">
+                      <div className="border border-orange-700/30 bg-orange-900/20 rounded-lg p-4">
+                        <h4 className="font-semibold text-orange-400 mb-2">Request Better Evidence</h4>
+                        <p className="text-sm text-orange-400 mb-3">
                           Send a message to the customer explaining what evidence is needed.
                         </p>
                         <Textarea

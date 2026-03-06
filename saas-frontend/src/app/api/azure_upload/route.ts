@@ -105,8 +105,10 @@ export async function POST(req: Request) {
 
           console.log(`Uploading file: ${file.name}`);
 
+          const isImageFile = file.name.match(/\.(jpg|jpeg|png|gif|webp|avif|tiff|tif|svg|heic|heif)$/i)
+            || (file.type && file.type.startsWith('image/'));
           if (
-            file.name.match(/\.(jpg|jpeg|png|gif|webp|avif)$/)
+            isImageFile
             || (output != null && output.match(/image\/(png|jpeg|webp)/))
           ) {
             const buffer = Buffer.from(await file.arrayBuffer());
@@ -156,7 +158,22 @@ export async function POST(req: Request) {
             filename = filename.replace(/%20/g, "-").replace(/ /g, "-");
 
             const blobClient = containerClient.getBlockBlobClient(`${req.headers.get("relative_path")}/${filename}`);
-            uploadPromises.push(uploadToBlobStorage(await file.arrayBuffer(), blobClient));
+            const arrayBuffer = await file.arrayBuffer();
+            // Set the correct content type so browsers can play videos etc.
+            const contentType = file.type || 'application/octet-stream';
+            uploadPromises.push(
+              blobClient.uploadData(arrayBuffer, {
+                blobHTTPHeaders: { blobContentType: contentType }
+              }).then(async () => {
+                const props = await blobClient.getProperties();
+                return {
+                  relativePath: blobClient.name,
+                  name: blobClient.name.split('/').pop()!,
+                  url: blobClient.url,
+                  sizeBytes: props.contentLength ?? 0
+                };
+              })
+            );
           }
 
         }

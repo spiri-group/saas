@@ -20,7 +20,7 @@ const TourUpgradeBanner: React.FC<{ merchantId: string }> = ({ merchantId }) => 
     const router = useRouter();
     const pathname = usePathname();
 
-    if (features.canCreateTours) return null;
+    if (features.canOperateTours) return null;
 
     const handleUpgrade = () => {
         const match = pathname.match(/^\/m\/([^/]+)/);
@@ -37,7 +37,7 @@ const TourUpgradeBanner: React.FC<{ merchantId: string }> = ({ merchantId }) => 
             <div className="flex items-center gap-3">
                 <ArrowUpCircle className="h-5 w-5 text-purple-400 flex-shrink-0" />
                 <p className="text-sm text-slate-300">
-                    Guided tours are a <span className="font-medium text-purple-400">Transcend</span> feature.
+                    Guided tours are a <span className="font-medium text-purple-400">Manifest</span> feature.
                 </p>
             </div>
             <button

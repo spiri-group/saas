@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  serverExternalPackages: ['react-pdf'],
   images: {
     remotePatterns: [
       {
@@ -34,18 +35,6 @@ const nextConfig: NextConfig = {
         pathname: "/**"
       }
     ]
-  },
-  webpack: (config, { isServer }) => {
-      if (isServer) {
-          // Exclude react-pdf from SSR on the server-side build
-          config.externals = [
-              ...config.externals,
-              {
-                  'react-pdf': 'react-pdf',
-              },
-          ];
-      }
-      return config;
   }
   /* config options here */
 };

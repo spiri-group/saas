@@ -54,29 +54,75 @@ export async function runBillingProcessor(
         logger.logMessage("Failed to load fee config");
     }
 
-    // Pass 1: First-billing trigger
-    logger.logMessage('Pass 1: Querying for first-billing triggers...');
-    const firstBillingVendors = await cosmos.run_query<vendor_type>("Main-Vendor", {
+    // Pass 1: Trial expired WITH card → charge first subscription
+    logger.logMessage('Pass 1: Querying for expired trials with card...');
+    const trialExpiredWithCard = await cosmos.run_query<vendor_type>("Main-Vendor", {
         query: `
             SELECT * FROM c
-            WHERE c.subscription.billingStatus = "pendingFirstBilling"
-            AND c.subscription.cumulativePayouts >= c.subscription.subscriptionCostThreshold
+            WHERE c.subscription.billingModel = "trial"
+            AND c.subscription.billingStatus = "trial"
+            AND c.subscription.trialEndsAt <= @now
+            AND c.subscription.card_status = "saved"
             AND IS_DEFINED(c.subscription.stripePaymentMethodId)
             AND c.subscription.stripePaymentMethodId != null
         `,
-        parameters: []
+        parameters: [
+            { name: "@now", value: nowISO }
+        ]
     }, true);
-    logger.logMessage(`Pass 1: Found ${firstBillingVendors.length} vendors ready for first billing`);
-    for (const vendor of firstBillingVendors) {
+    logger.logMessage(`Pass 1: Found ${trialExpiredWithCard.length} trial-expired vendors with card`);
+    for (const vendor of trialExpiredWithCard) {
         try {
-            await processFirstBilling(vendor, cosmos, stripe, email, logger, feeConfig, now);
+            await processTrialExpiredWithCard(vendor, cosmos, stripe, email, logger, feeConfig, now);
         } catch (error) {
             logger.error(`Pass 1: Failed for vendor ${vendor.id}:`, error);
         }
     }
 
-    // Pass 2: Due renewals
-    logger.logMessage('Pass 2: Querying for due renewals...');
+    // Pass 2: Trial expired WITHOUT card → suspend
+    logger.logMessage('Pass 2: Querying for expired trials without card...');
+    const trialExpiredNoCard = await cosmos.run_query<vendor_type>("Main-Vendor", {
+        query: `
+            SELECT * FROM c
+            WHERE c.subscription.billingModel = "trial"
+            AND c.subscription.billingStatus = "trial"
+            AND c.subscription.trialEndsAt <= @now
+            AND (c.subscription.card_status = "not_saved" OR NOT IS_DEFINED(c.subscription.card_status))
+        `,
+        parameters: [
+            { name: "@now", value: nowISO }
+        ]
+    }, true);
+    logger.logMessage(`Pass 2: Found ${trialExpiredNoCard.length} trial-expired vendors without card`);
+    for (const vendor of trialExpiredNoCard) {
+        try {
+            logger.logMessage(`Suspending trial-expired vendor ${vendor.id} (no card on file)`);
+            await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
+                { op: "set", path: "/subscription/billingStatus", value: "suspended" as billing_status },
+                { op: "set", path: "/subscription/payouts_blocked", value: true },
+            ], "BILLING_PROCESSOR");
+
+            // Switch to manual payouts
+            if (vendor.stripe?.accountId) {
+                try {
+                    await stripe.callApi("POST", `accounts/${vendor.stripe.accountId}`, {
+                        settings: { payouts: { schedule: { interval: "manual" } } },
+                    });
+                } catch (e) {
+                    logger.error(`Failed to switch vendor ${vendor.id} to manual payouts:`, e);
+                }
+            }
+
+            await sendBillingEmail(email, vendor, "trial-expired-no-card", {
+                "trial.endDate": DateTime.fromISO(vendor.subscription.trialEndsAt!).toFormat("dd MMMM yyyy"),
+            }, logger);
+        } catch (error) {
+            logger.error(`Pass 2: Failed for vendor ${vendor.id}:`, error);
+        }
+    }
+
+    // Pass 3: Due renewals
+    logger.logMessage('Pass 3: Querying for due renewals...');
     const threeDaysFromNow = now.plus({ days: 3 }).toISO();
     const dueRenewals = await cosmos.run_query<vendor_type>("Main-Vendor", {
         query: `
@@ -90,17 +136,17 @@ export async function runBillingProcessor(
             { name: "@cutoff", value: threeDaysFromNow }
         ]
     }, true);
-    logger.logMessage(`Pass 2: Found ${dueRenewals.length} vendors with due renewals`);
+    logger.logMessage(`Pass 3: Found ${dueRenewals.length} vendors with due renewals`);
     for (const vendor of dueRenewals) {
         try {
             await processRenewal(vendor, cosmos, stripe, email, logger, feeConfig, now);
         } catch (error) {
-            logger.error(`Pass 2: Failed for vendor ${vendor.id}:`, error);
+            logger.error(`Pass 3: Failed for vendor ${vendor.id}:`, error);
         }
     }
 
-    // Pass 3: Retries
-    logger.logMessage('Pass 3: Querying for payment retries...');
+    // Pass 4: Retries
+    logger.logMessage('Pass 4: Querying for payment retries...');
     const retryVendors = await cosmos.run_query<vendor_type>("Main-Vendor", {
         query: `
             SELECT * FROM c
@@ -113,17 +159,17 @@ export async function runBillingProcessor(
             { name: "@now", value: nowISO }
         ]
     }, true);
-    logger.logMessage(`Pass 3: Found ${retryVendors.length} vendors with pending retries`);
+    logger.logMessage(`Pass 4: Found ${retryVendors.length} vendors with pending retries`);
     for (const vendor of retryVendors) {
         try {
             await processRetry(vendor, cosmos, stripe, email, logger, feeConfig, now);
         } catch (error) {
-            logger.error(`Pass 3: Failed for vendor ${vendor.id}:`, error);
+            logger.error(`Pass 4: Failed for vendor ${vendor.id}:`, error);
         }
     }
 
-    // Pass 4: Pending downgrades
-    logger.logMessage('Pass 4: Querying for pending downgrades...');
+    // Pass 5: Pending downgrades
+    logger.logMessage('Pass 5: Querying for pending downgrades...');
     const pendingDowngrades = await cosmos.run_query<vendor_type>("Main-Vendor", {
         query: `
             SELECT * FROM c
@@ -135,21 +181,21 @@ export async function runBillingProcessor(
             { name: "@now", value: nowISO }
         ]
     }, true);
-    logger.logMessage(`Pass 4: Found ${pendingDowngrades.length} vendors with pending downgrades`);
+    logger.logMessage(`Pass 5: Found ${pendingDowngrades.length} vendors with pending downgrades`);
     for (const vendor of pendingDowngrades) {
         try {
             await applyDowngrade(vendor, cosmos, email, logger, feeConfig);
         } catch (error) {
-            logger.error(`Pass 4: Failed for vendor ${vendor.id}:`, error);
+            logger.error(`Pass 5: Failed for vendor ${vendor.id}:`, error);
         }
     }
 
     logger.logMessage('Billing processor completed at: ' + new Date().toISOString());
 }
 
-// ─── Pass 1: First Billing ──────────────────────────────────────
+// ─── Pass 1: Trial Expired With Card ────────────────────────────
 
-async function processFirstBilling(
+async function processTrialExpiredWithCard(
     vendor: vendor_type,
     cosmos: CosmosDataSource,
     stripe: StripeDataSource,
@@ -207,9 +253,9 @@ async function processFirstBilling(
 
     const periodStart = now.toISODate();
     const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
-    const idempotencyKey = `first_billing_${vendor.id}_${periodStart}`;
+    const idempotencyKey = `trial_first_billing_${vendor.id}_${periodStart}`;
 
-    logger.logMessage(`First billing for vendor ${vendor.id}: ${amount} AUD`);
+    logger.logMessage(`Trial expired — first billing for vendor ${vendor.id}: ${amount} AUD`);
 
     const paymentResult = await stripe.callApi("POST", "payment_intents", {
         amount,
@@ -222,7 +268,7 @@ async function processFirstBilling(
             merchantId: vendor.id,
             billing_period_start: periodStart,
             billing_period_end: periodEnd.toISODate(),
-            billing_type: "first_billing",
+            billing_type: "trial_first_billing",
         }
     }, idempotencyKey);
 
@@ -236,7 +282,7 @@ async function processFirstBilling(
     };
 
     if (paymentResult.status === 200 && paymentResult.data?.status === "succeeded") {
-        logger.logMessage(`First billing succeeded for vendor ${vendor.id}`);
+        logger.logMessage(`Trial first billing succeeded for vendor ${vendor.id}`);
 
         const successRecord = {
             ...billingRecord,
@@ -268,7 +314,7 @@ async function processFirstBilling(
     }
 }
 
-// ─── Pass 2: Renewal ────────────────────────────────────────────
+// ─── Pass 3: Renewal ────────────────────────────────────────────
 
 async function processRenewal(
     vendor: vendor_type,
@@ -384,7 +430,7 @@ async function processRenewal(
     }
 }
 
-// ─── Pass 3: Retry ──────────────────────────────────────────────
+// ─── Pass 4: Retry ──────────────────────────────────────────────
 
 async function processRetry(
     vendor: vendor_type,
@@ -487,7 +533,7 @@ async function processRetry(
     }
 }
 
-// ─── Pass 4: Downgrade ──────────────────────────────────────────
+// ─── Pass 5: Downgrade ──────────────────────────────────────────
 
 async function applyDowngrade(
     vendor: vendor_type,

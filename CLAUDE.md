@@ -1,10 +1,52 @@
 # SpiriVerse Development Guidelines
 
+## CRITICAL: Commit Message Style
+
+**ALWAYS** write commit messages in plain business language. Avoid technical jargon — a non-technical business partner reads these.
+
+| ❌ BAD (technical) | ✅ GOOD (business language) |
+|---|---|
+| Fix cache invalidation causing duplicate entries | Fix gallery showing duplicate uploads |
+| Add RBAC role assignment for storage blob | Grant storage access for preview environments |
+| Override Tailwind preflight max-width on img | Fix profile picture zoom slider |
+| Invalidate React Query cache on mutation | Fix uploaded photos appearing multiple times |
+
+## CRITICAL: Stripe Webhooks Run on Azure, Not Locally
+
+**Stripe webhooks are NEVER processed locally.** They always hit the **deployed Azure Function** at `func-spiriverse-server-dev-002.azurewebsites.net/api/payments`. When debugging webhook issues:
+
+1. **Check the Stripe Dashboard** → Developers → Webhooks → click the endpoint → view attempted events and response codes
+2. **Check Azure Function logs** — not local console output. Use `az monitor` or the Azure Portal to view function invocation logs
+3. **The local dev server does NOT receive webhooks** — Stripe sends them to the deployed Azure endpoint, which shares the same Cosmos DB
+
+If a webhook-dependent flow isn't working (e.g., case status stuck at CREATED), the issue is in the **deployed** function code, not local.
+
+---
+
 ## Quick Reference
 
 - **Testing Guidelines**: See `/saas-frontend/tests/TESTING_GUIDELINES.md`
 - **System Architecture**: See `/docs/` folder for detailed implementation docs
 - **Database Migrations**: See `/graphql-backend/src/db/migrations/`
+
+### Running Tests
+
+From `saas-frontend/`:
+
+```bash
+# Run specific tests by name pattern (preferred)
+yarn test:grep "practitioner signup"
+
+# Run all E2E tests
+yarn test:e2e
+
+# Other useful commands
+yarn test:headed    # Run with browser visible
+yarn test:debug     # Run in debug mode
+yarn test:report    # View last test report
+```
+
+**Always use `yarn test:grep "<pattern>"`** to run specific tests instead of calling `npx playwright test` directly.
 
 ---
 
@@ -18,6 +60,8 @@ When writing Playwright tests, follow the patterns in `/saas-frontend/tests/TEST
 2. **ALWAYS use `Map<number, State>`** keyed by `testInfo.parallelIndex`
 3. **ALWAYS pass `testInfo` parameter** to access `testInfo.parallelIndex`
 4. **PREFER inline cleanup** over complex state tracking
+5. **AVOID hard navigation** (`page.goto`) — tests should emulate real user behavior. Navigate via UI elements (sidebar links, buttons, menus) instead of jumping directly to URLs. Only use `page.goto` for the initial entry point of a test flow.
+6. **ALWAYS emulate real user behavior** — interact with the UI the same way a user would (clicking buttons, filling forms, navigating menus). **NEVER** use `CustomEvent` dispatch, `page.evaluate()` to trigger internal app events, or other programmatic shortcuts to bypass the UI. Only resort to non-UI approaches if there is genuinely no other way.
 
 ---
 

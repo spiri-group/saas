@@ -1,16 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { AuthPage } from '../pages/AuthPage';
-import { HomePage } from '../pages/HomePage';
-import { UserSetupPage } from '../pages/UserSetupPage';
 import { PractitionerSetupPage } from '../pages/PractitionerSetupPage';
 import {
   clearTestEntityRegistry,
-  registerTestUser,
-  registerTestPractitioner,
   getCookiesFromPage,
   cleanupTestUsers,
   cleanupTestPractitioners,
-  getVendorIdFromSlug,
 } from '../utils/test-cleanup';
 
 // Store cookies per test worker
@@ -52,108 +46,28 @@ test.afterAll(async ({}, testInfo) => {
 });
 
 test.describe('Practitioner Availability', () => {
-  let authPage: AuthPage;
-  let homePage: HomePage;
-  let userSetupPage: UserSetupPage;
-  let practitionerSetupPage: PractitionerSetupPage;
-
-  test.beforeEach(async ({ page }) => {
-    authPage = new AuthPage(page);
-    homePage = new HomePage(page);
-    userSetupPage = new UserSetupPage(page);
-    practitionerSetupPage = new PractitionerSetupPage(page);
-    await page.goto('/');
-  });
-
   test('practitioner can set weekly availability and delivery methods', async ({ page }, testInfo) => {
     test.setTimeout(300000); // 5 minutes for full flow
 
-    const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substring(2, 8);
     const workerId = testInfo.parallelIndex;
+    const timestamp = Date.now();
     const testEmail = `avail-prac-${timestamp}-${workerId}@playwright.com`;
-    const practitionerSlug = `test-avail-${timestamp}-${randomSuffix}`;
 
-    // === AUTHENTICATION & PRACTITIONER SETUP ===
-    await authPage.startAuthFlow(testEmail);
-    await expect(page.locator('[aria-label="input-login-otp"]')).toBeVisible({ timeout: 15000 });
-    await page.locator('[aria-label="input-login-otp"]').click();
-    await page.keyboard.type('123456');
-    await page.waitForURL('/', { timeout: 15000 });
+    // === PRACTITIONER CREATION (unified onboarding flow) ===
+    const practitionerSetupPage = new PractitionerSetupPage(page);
+    const practitionerSlug = await practitionerSetupPage.createPractitioner(
+      testEmail,
+      `Availability Tester ${timestamp}`,
+      testInfo,
+      'awaken'
+    );
 
-    // User setup
-    await homePage.waitForCompleteProfileLink();
-    await homePage.clickCompleteProfile();
-    await expect(page).toHaveURL(/\/u\/.*\/setup/, { timeout: 10000 });
-
-    // Register user for cleanup
-    const url = page.url();
-    const userIdMatch = url.match(/\/u\/([^\/]+)\/setup/);
-    if (userIdMatch) {
-      registerTestUser({ id: userIdMatch[1], email: testEmail }, workerId);
-      const cookies = await getCookiesFromPage(page);
-      if (cookies) cookiesPerWorker.set(workerId, cookies);
+    // Store cookies and practitioner data for subsequent tests
+    const cookies = await getCookiesFromPage(page);
+    if (cookies) {
+      cookiesPerWorker.set(workerId, cookies);
     }
-
-    await userSetupPage.fillUserProfile({
-      firstName: 'Availability',
-      lastName: 'Tester',
-      phone: '0412345678',
-      address: 'Sydney Opera House',
-      securityQuestion: 'What is your favorite color?',
-      securityAnswer: 'Purple',
-    });
-
-    // Continue as Practitioner
-    const practitionerBtn = page.locator('[data-testid="continue-as-practitioner-btn"]');
-    await expect(practitionerBtn).toBeVisible({ timeout: 10000 });
-    await practitionerBtn.click();
-    await expect(page).toHaveURL(/\/p\/setup\?practitionerId=/, { timeout: 15000 });
-
-    // Complete practitioner setup (minimal)
-    await practitionerSetupPage.waitForStep1();
-    await practitionerSetupPage.fillBasicInfo({
-      name: `Availability Tester ${timestamp}`,
-      slug: practitionerSlug,
-      email: testEmail,
-      countryName: 'Australia',
-    });
-    await practitionerSetupPage.clickContinue();
-
-    await practitionerSetupPage.waitForStep2();
-    await practitionerSetupPage.fillProfile({
-      headline: 'Tarot & Oracle Card Reader',
-      bio: 'I specialize in tarot and oracle readings to help guide you on your spiritual journey. With over 5 years of experience, I provide compassionate and insightful readings.',
-      modalities: ['TAROT', 'ORACLE'],
-      specializations: ['RELATIONSHIPS', 'CAREER'],
-    });
-    await practitionerSetupPage.clickContinue();
-
-    await practitionerSetupPage.waitForStep3();
-    await practitionerSetupPage.submitForm();
-
-    // Wait for profile page
-    await page.waitForURL(new RegExp(`/p/${practitionerSlug}`), { timeout: 30000 });
-
-    // Get cookies and fetch actual vendor ID for cleanup
-    const updatedCookies = await getCookiesFromPage(page);
-    if (updatedCookies) {
-      cookiesPerWorker.set(workerId, updatedCookies);
-
-      // IMPORTANT: The practitionerId from the URL is NOT the actual vendor ID.
-      // The server generates its own ID during create_practitioner mutation.
-      // We need to fetch the actual vendor ID using the slug.
-      const actualVendorId = await getVendorIdFromSlug(practitionerSlug, updatedCookies);
-
-      if (actualVendorId) {
-        console.log(`[Test] Registering practitioner for cleanup: vendorId=${actualVendorId}, slug=${practitionerSlug}`);
-        registerTestPractitioner({ id: actualVendorId, slug: practitionerSlug, email: testEmail, cookies: updatedCookies }, workerId);
-      } else {
-        console.error(`[Test] WARNING: Could not fetch actual vendor ID for slug ${practitionerSlug}`);
-        registerTestPractitioner({ slug: practitionerSlug, email: testEmail, cookies: updatedCookies }, workerId);
-      }
-      practitionerDataPerWorker.set(workerId, { slug: practitionerSlug, email: testEmail });
-    }
+    practitionerDataPerWorker.set(workerId, { slug: practitionerSlug, email: testEmail });
 
     // === NAVIGATE TO AVAILABILITY PAGE ===
     await page.goto(`/p/${practitionerSlug}/manage/availability`);

@@ -9,9 +9,10 @@ import RecentOrders from "./_components/RecentOrders";
 import GoLiveChecklist from "./_components/GoLiveChecklist";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, ShoppingCart, MapPin, Plus, ArrowUpCircle, Sparkles, Lock } from "lucide-react";
+import { ShoppingBag, ShoppingCart, MapPin, Plus, ArrowUpCircle, Sparkles, Lock, Receipt } from "lucide-react";
 import { useTierFeatures } from "@/hooks/UseTierFeatures";
 import UpgradePrompt from "@/components/subscription/UpgradePrompt";
+import CreatePaymentLinkDialog from "@/components/payment-links/CreatePaymentLinkDialog";
 import Link from "next/link";
 
 // Hooks
@@ -113,10 +114,12 @@ const CreateListingButton: React.FC<{
 };
 
 // My Listings Section Component
-const MyListingsSection: React.FC<{ merchantId: string }> = ({ merchantId }) => {
+const MyListingsSection: React.FC<{ merchantId: string; vendors: { id: string; name: string; currency?: string }[] }> = ({ merchantId, vendors }) => {
     const { features } = useTierFeatures(merchantId);
     const productLocked = features.maxProducts === 0;
-    const tourLocked = !features.canCreateTours;
+    const tourLocked = !features.canOperateTours;
+    const paymentLinksLocked = !features.hasPaymentLinks;
+    const [showPaymentLinkDialog, setShowPaymentLinkDialog] = React.useState(false);
 
     return (
         <div className="mb-6">
@@ -131,7 +134,7 @@ const MyListingsSection: React.FC<{ merchantId: string }> = ({ merchantId }) => 
                     icon={<ShoppingCart className="w-5 h-5" />}
                     dialogId="Create Product"
                     locked={productLocked}
-                    lockedReason="Open your shop with up to 10 products"
+                    lockedReason="Open your shop with up to 20 products"
                     requiredTier="manifest"
                 />
                 <CreateListingButton
@@ -141,24 +144,85 @@ const MyListingsSection: React.FC<{ merchantId: string }> = ({ merchantId }) => 
                     dialogId="Create Tour"
                     dialogClassName="w-[870px] h-[700px]"
                     locked={tourLocked}
-                    lockedReason="Host and sell guided tours"
-                    requiredTier="transcend"
+                    lockedReason="Operate and manage guided tours"
+                    requiredTier="manifest"
                 />
+                <Card
+                    className={
+                        paymentLinksLocked
+                            ? "bg-slate-800/30 border-slate-700/50 transition-all hover:border-purple-500/30 cursor-pointer group"
+                            : "bg-slate-800/50 border-slate-700 transition-all hover:border-orange-500/50 cursor-pointer group"
+                    }
+                    onClick={() => {
+                        if (!paymentLinksLocked) setShowPaymentLinkDialog(true);
+                    }}
+                    data-testid="create-listing-payment-link-card"
+                >
+                    <CardHeader className="pb-2">
+                        <div className="flex items-center gap-3">
+                            <div className={paymentLinksLocked ? "p-2 rounded-lg bg-slate-700/30 text-slate-500" : "p-2 rounded-lg bg-orange-500/20 text-orange-400"}>
+                                <Receipt className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1">
+                                <CardTitle className={paymentLinksLocked ? "text-base text-slate-400 flex items-center gap-2" : "text-base text-white"}>
+                                    Payment Link
+                                    {paymentLinksLocked && <Lock className="h-3.5 w-3.5 text-purple-400/60" />}
+                                </CardTitle>
+                                <CardDescription className="text-xs text-slate-400">Send a payment link to collect payments from clients</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                        {paymentLinksLocked ? (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full bg-transparent border-purple-500/20 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300"
+                                data-testid="create-listing-payment-link-btn"
+                            >
+                                <Lock className="w-3.5 h-3.5 mr-2" />
+                                Upgrade to Unlock
+                            </Button>
+                        ) : (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full bg-transparent border-orange-500/30 text-orange-400 hover:bg-orange-500/20 hover:text-orange-300"
+                                data-testid="create-listing-payment-link-btn"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Send Payment Link
+                            </Button>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
+
+            {!paymentLinksLocked && (
+                <CreatePaymentLinkDialog
+                    open={showPaymentLinkDialog}
+                    onOpenChange={setShowPaymentLinkDialog}
+                    vendors={vendors}
+                />
+            )}
         </div>
     );
 };
 
 const TIER_DISPLAY: Record<string, string> = {
+    directory: 'Directory',
     awaken: 'Awaken',
+    illuminate: 'Illuminate',
     manifest: 'Manifest',
     transcend: 'Transcend',
 };
 
 // Features unlocked at each tier upgrade (what you'd gain)
 const UPGRADE_HIGHLIGHTS: Record<string, string[]> = {
-    awaken: ['Sell up to 10 products', 'Inventory automation', 'SpiriAssist investigations', 'Ticketed events'],
-    manifest: ['Unlimited products', 'Guided tours', 'Host practitioners', 'Backorder support', 'Shipping automation'],
+    directory: ['Accept payments', 'Sell services', 'Video updates', 'SpiriReadings'],
+    awaken: ['Payment links', 'Ticketed events', 'Live Assist', 'Expo Mode', 'Tour listing'],
+    illuminate: ['Merchant storefront', 'Up to 20 products', 'Inventory sync', 'Host practitioners', 'Tour operation'],
+    manifest: ['Unlimited products', 'Refund automation', 'Shipping labels', 'POS', 'Backorder support'],
 };
 
 const PlanIndicator: React.FC<{ merchantId: string; merchantSlug: string }> = ({ merchantId, merchantSlug }) => {
@@ -211,6 +275,7 @@ interface Props {
     merchantSlug: string;
     merchantName: string;
     me: { id: string };
+    vendors: { id: string; name: string; currency?: string }[];
 }
 
 const useDashboardData = (merchantId: string) => {
@@ -302,7 +367,7 @@ const useDashboardData = (merchantId: string) => {
     };
 };
 
-const UI: React.FC<Props> = ({ merchantId, merchantSlug, merchantName, me }) => {
+const UI: React.FC<Props> = ({ merchantId, merchantSlug, merchantName, me, vendors }) => {
     const data = useDashboardData(merchantId);
 
     // Fix attention item hrefs to use slug instead of merchantId
@@ -326,7 +391,7 @@ const UI: React.FC<Props> = ({ merchantId, merchantSlug, merchantName, me }) => 
                 <GoLiveChecklist merchantId={merchantId} />
 
                 {/* My Listings - top for new merchants */}
-                {isNewMerchant && <MyListingsSection merchantId={merchantId} />}
+                {isNewMerchant && <MyListingsSection merchantId={merchantId} vendors={vendors} />}
 
                 {/* Dashboard Stats Row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -357,7 +422,7 @@ const UI: React.FC<Props> = ({ merchantId, merchantSlug, merchantName, me }) => 
                 />
 
                 {/* My Listings - below orders for established merchants */}
-                {!isNewMerchant && <MyListingsSection merchantId={merchantId} />}
+                {!isNewMerchant && <MyListingsSection merchantId={merchantId} vendors={vendors} />}
             </div>
         </UIContainer>
     );

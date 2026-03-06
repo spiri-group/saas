@@ -135,7 +135,7 @@ const AreaAffectedForm: React.FC<AreaAffectedFormProps> = (props) => {
     } else {
         return (
             <Form {...bl.areaForm}>
-                <form className="flex flex-col w-full">
+                <div className="flex flex-col w-full">
                     <div className="flex flex-row space-x-3 w-full">
                         {Controls}
                         <Button type="button"
@@ -160,7 +160,7 @@ const AreaAffectedForm: React.FC<AreaAffectedFormProps> = (props) => {
                             <span>The {values.name} {values.coldTemperature ? <><span>has </span><span className="font-bold">cold spots </span></> : "" } {values.physicalActivity ? <><span>with </span><span className="font-bold">physical activity</span></> : ""}{ values.physicalActivity && values.negativeSensations ? <span> and </span> : null} {!values.physicalActivity && values.negativeSensations ? <span>with </span> : null}{values.negativeSensations ? <span className="font-bold">negative sensations</span> : null}</span>
                         </div>
                     }
-                </form>
+                </div>
             </Form>
         )
     }

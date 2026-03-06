@@ -34,6 +34,7 @@ type Mutation {
   update_merchant_banner_config(merchantId: ID!, bannerConfig: BannerConfigInput!): CreateVendorResponse,
   update_merchant_video(merchantId: ID!, video: VideoInput, videoSettings: VideoSettingsInput): CreateVendorResponse,
   post_vendor_video_update(vendorId: ID!, videoUpdate: VideoUpdateInput!): CreateVendorResponse,
+  delete_vendor_video_update(vendorId: ID!, videoUpdateId: ID!): CreateVendorResponse,
   update_merchant_socials(merchantId: ID!, style: String!, socials: [SocialPlatformInput]!): CreateVendorResponse,
   upsert_product_return_policies(merchantId: ID!, policies: [ProductReturnPolicyInput]!): UpsertPolicyResponse,
   delete_product_return_policy(merchantId: ID!, policyId: ID!): MutationResponse,
@@ -123,8 +124,10 @@ input VendorInput {
   state: String
   slug: String
   logo: MediaInput
-  merchantTypeIds: [String]!
-  religionId: String!
+  merchantTypeIds: [String]
+  religionId: String
+  website: String
+  abn: String
   subscription: VendorSubscriptionInput
 }
 
@@ -371,14 +374,17 @@ input CreatePractitionerInput {
   country: CountryCode!
   currency: Currency!
 
-  # Practitioner profile (required for practitioner)
-  headline: String!
-  bio: String!
+  # Practitioner profile (optional — can be completed later from profile management)
+  headline: String
+  bio: String
   modalities: [PractitionerModality!]!
   specializations: [PractitionerSpecialization!]!
 
   # Optional fields
   pronouns: String
+  yearsExperience: Int
+  spiritualJourney: String
+  approach: String
   logo: MediaInput
   thumbnail: MediaInput
   banner: MediaInput

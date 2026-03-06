@@ -1,0 +1,75 @@
+type Mutation {
+    startLiveSession(input: StartLiveSessionInput!): StartLiveSessionResponse!
+    pauseLiveSession(sessionId: ID!, vendorId: ID!): LiveSessionMutationResponse!
+    resumeLiveSession(sessionId: ID!, vendorId: ID!): LiveSessionMutationResponse!
+    endLiveSession(sessionId: ID!, vendorId: ID!): LiveSessionMutationResponse!
+    startReading(entryId: ID!, sessionId: ID!): LiveQueueMutationResponse!
+    completeReading(entryId: ID!, sessionId: ID!, readingAudio: String, spreadPhoto: String): LiveQueueMutationResponse!
+    skipReading(entryId: ID!, sessionId: ID!): LiveQueueMutationResponse!
+    joinLiveQueue(input: JoinLiveQueueInput!): JoinLiveQueueResponse!
+    leaveLiveQueue(entryId: ID!, sessionId: ID!): LiveQueueMutationResponse!
+    sendReadingSummary(input: SendReadingSummaryInput!): LiveQueueMutationResponse!
+}
+
+input StartLiveSessionInput {
+    vendorId: String!
+    sessionTitle: String
+    pricingMode: String!
+    customPrice: CurrencyAmountInput
+    serviceId: String
+    defaultCta: LiveRecommendationInput
+}
+
+input LiveRecommendationInput {
+    message: String!
+    recommendedServiceId: String
+    recommendedProductId: String
+    recommendedProductVendorId: String
+}
+
+input JoinLiveQueueInput {
+    sessionId: String!
+    customerName: String!
+    customerEmail: String!
+    question: String!
+    photo: String
+    audio: String
+}
+
+input SendReadingSummaryInput {
+    entryId: String!
+    sessionId: String!
+    practitionerNote: String
+    recommendation: LiveRecommendationInput
+}
+
+type StartLiveSessionResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    session: LiveSession
+    shareUrl: String
+}
+
+type LiveSessionMutationResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    session: LiveSession
+}
+
+type LiveQueueMutationResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    entry: LiveQueueEntry
+}
+
+type JoinLiveQueueResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    entry: LiveQueueEntry
+    clientSecret: String
+    stripeAccountId: String
+}

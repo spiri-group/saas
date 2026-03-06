@@ -132,7 +132,7 @@ const PersonAffectedForm: React.FC<PersonAffectedFormProps> = (props) => {
     } else {
         return (
             <Form {...bl.personForm}>
-                <form className="flex flex-col space-y-2 w-full">
+                <div className="flex flex-col space-y-2 w-full">
                     <div className="flex flex-row space-x-3"> 
                         {Controls}
                         <Button type="button"
@@ -157,7 +157,7 @@ const PersonAffectedForm: React.FC<PersonAffectedFormProps> = (props) => {
                         <span>{values.name} {values.isChild ? <><span> is a </span><span className="font-bold">child</span></> : null} {values.isChild && (values.physicallyInjured || values.mentallyInjured) ? "who " : null} {values.physicallyInjured || values.mentallyInjured ? <><span> is </span>{values.physicallyInjured ? <span className="font-bold">physically injured</span> : null}{values.physicallyInjured && values.mentallyInjured ? <span> and </span> : null}{values.mentallyInjured ? <span className="font-bold">mentally injured</span> : null}</> : null}</span>
                     </div>
                     }
-                </form>
+                </div>
             </Form>
         )
     }

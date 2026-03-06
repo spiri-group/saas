@@ -9,6 +9,10 @@ require('dotenv').config({ path: '.env.local' });
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
+// When BASE_URL is set, we're testing against an external environment (e.g. preview)
+// so we don't need to start the local dev server
+const isExternalEnv = !!process.env.BASE_URL;
+
 export default defineConfig({
   testDir: './tests',
   /* Run tests in files in parallel */
@@ -20,7 +24,7 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : 1,
   /* Maximum time one test can run for */
-  timeout: 60000, // 60 seconds per test (increased from default 30s for slow OTP/server actions)
+  timeout: isExternalEnv ? 120000 : 60000, // longer timeout for external environments
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
@@ -86,13 +90,15 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    command: process.platform === 'win32'
-      ? 'set PORT=3002&& set NEXT_PUBLIC_graphql_proxy=http://localhost:3002/api/graphql&& yarn dev'
-      : 'PORT=3002 NEXT_PUBLIC_graphql_proxy=http://localhost:3002/api/graphql yarn dev',
-    url: 'http://localhost:3002',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  /* Run your local dev server before starting the tests (skip for external environments) */
+  ...(!isExternalEnv ? {
+    webServer: {
+      command: process.platform === 'win32'
+        ? 'set PORT=3002&& set NEXT_PUBLIC_graphql_proxy=http://localhost:3002/api/graphql&& yarn dev'
+        : 'PORT=3002 NEXT_PUBLIC_graphql_proxy=http://localhost:3002/api/graphql yarn dev',
+      url: 'http://localhost:3002',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    },
+  } : {}),
 });

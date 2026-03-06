@@ -60,7 +60,7 @@ const UI: React.FC<Props> = (props) => {
 
     return (
         <DialogContent>
-            <div className="rounded-lg bg-gray-100 p-4">
+            <div className="rounded-lg bg-slate-800 border border-slate-700 p-4">
                 {bl.ready && !isNullOrUndefined(bl.data) && (
                   <>
                     <div className="flex flex-row justify-between">

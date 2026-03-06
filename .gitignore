@@ -28,6 +28,9 @@ test-results/
 playwright-report/
 playwright/.cache/
 
+# Azure CLI (project-local config)
+.azure/
+
 # Azure Functions
 local.settings.json
 __blobstorage__/

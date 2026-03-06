@@ -4,7 +4,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import UseCreateService, { CreateServiceSchema } from "./hooks/UseCreateService";
 import { choice_option_type } from "@/utils/spiriverse";
 import CurrencyInput from "@/components/ux/CurrencyInput";
@@ -25,17 +25,19 @@ type BLProps = {
 
 const useBL = (props: BLProps) => {
     const router = useRouter();
+    const params = useParams();
+    const merchant_slug = params.merchant_slug as string;
 
     const { form, mutation, values } = UseCreateService(props.merchantId)
     const unitServiceQuery = UseChoice("unit", "EN", ["HOUR", "MINUTE"])
 
     return {
-        form, 
+        form,
         values,
         submit: async (values: CreateServiceSchema) => {
             await mutation.mutateAsync(values)
             escape_key()
-            router.push(`/m/${props.merchantId}/Services/Availability`)
+            router.push(`/m/${merchant_slug}/manage/services`)
         },
         unitOptions: unitServiceQuery.data == null ? [] : unitServiceQuery.data.options
     }

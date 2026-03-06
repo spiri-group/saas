@@ -257,12 +257,20 @@ export async function graphql(request: HttpRequest, context: InvocationContext):
         // Use error level for failures (red in Azure)
         context.error(`❌ ${operationInfo.type} ${operationInfo.name} FAILED (${duration}ms) - ${errors.length} error(s)`);
 
+        // Return proper GraphQL error response (status 200 per GraphQL spec).
+        // Clients rely on the `errors` array in the body — a 500 breaks
+        // client-side handling and masks the actual resolver error.
+        const sanitizedErrors = errors.map(e => ({
+          message: e.message,
+          path: e.path,
+          locations: e.locations,
+          extensions: e.extensions ? { code: e.extensions.code } : undefined,
+        }));
+
         return {
-          status: 500,
+          status: 200,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            error: 'An error occurred while processing your request. Please try again later.'
-          })
+          body: JSON.stringify({ data, errors: sanitizedErrors })
         };
       }
 

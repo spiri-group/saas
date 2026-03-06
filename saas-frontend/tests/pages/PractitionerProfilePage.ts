@@ -101,9 +101,8 @@ export class PractitionerProfilePage extends BasePage {
   async openProfileMenu() {
     const sideNav = this.page.locator(this.selectors.sideNav);
     await expect(sideNav).toBeVisible({ timeout: 10000 });
-    // Use data-testid to uniquely identify the Profile submenu trigger
-    await sideNav.getByTestId('profile-submenu').click();
-    await this.page.waitForTimeout(300);
+    await sideNav.getByTestId('nav-profile').click();
+    await this.page.waitForTimeout(500);
   }
 
   /**
@@ -111,8 +110,8 @@ export class PractitionerProfilePage extends BasePage {
    */
   async openBioDialog() {
     await this.openProfileMenu();
-    const sideNav = this.page.locator(this.selectors.sideNav);
-    await sideNav.getByRole('menuitem', { name: 'Bio & Headline' }).click();
+    // Flyout is portaled to body, so search at page level
+    await this.page.getByRole('menuitem', { name: 'Bio & Headline' }).click();
     await expect(this.page.locator(this.selectors.bioDialog)).toBeVisible({ timeout: 10000 });
   }
 
@@ -168,6 +167,7 @@ export class PractitionerProfilePage extends BasePage {
    */
   async removeProfilePicture() {
     const removeBtn = this.page.locator(this.selectors.removeProfilePictureBtn);
+    await expect(removeBtn).toBeAttached({ timeout: 10000 });
     await removeBtn.click({ force: true }); // force because it's opacity-0 until hover
     await this.page.waitForTimeout(300);
   }
@@ -205,8 +205,8 @@ export class PractitionerProfilePage extends BasePage {
    */
   async openModalitiesDialog() {
     await this.openProfileMenu();
-    const sideNav = this.page.locator(this.selectors.sideNav);
-    await sideNav.getByRole('menuitem', { name: 'Modalities' }).click();
+    // Flyout is portaled to body, so search at page level
+    await this.page.getByRole('menuitem', { name: 'Modalities' }).click();
     await expect(this.page.locator(this.selectors.modalitiesDialog)).toBeVisible({ timeout: 10000 });
   }
 
@@ -241,8 +241,8 @@ export class PractitionerProfilePage extends BasePage {
    */
   async openToolsDialog() {
     await this.openProfileMenu();
-    const sideNav = this.page.locator(this.selectors.sideNav);
-    await sideNav.getByRole('menuitem', { name: 'Tools Collection' }).click();
+    // Flyout is portaled to body, so search at page level
+    await this.page.getByRole('menuitem', { name: 'Tools Collection' }).click();
     await expect(this.page.locator(this.selectors.toolsDialog)).toBeVisible({ timeout: 10000 });
   }
 
@@ -288,16 +288,9 @@ export class PractitionerProfilePage extends BasePage {
    * Open Training & Credentials dialog
    */
   async openTrainingDialog() {
-    // Dispatch custom event directly to open the dialog - bypasses viewport issues with nested submenus
-    await this.page.evaluate(() => {
-      const event = new CustomEvent('open-nav', {
-        detail: {
-          path: ['Profile', 'Training & Credentials'],
-          action: { type: 'dialog', dialog: 'Edit Training' }
-        }
-      });
-      window.dispatchEvent(event);
-    });
+    await this.openProfileMenu();
+    // Flyout is portaled to body, so search at page level
+    await this.page.getByRole('menuitem', { name: 'Training & Credentials' }).click();
     await expect(this.page.locator(this.selectors.trainingDialog)).toBeVisible({ timeout: 10000 });
   }
 
@@ -349,16 +342,9 @@ export class PractitionerProfilePage extends BasePage {
    * Open Spiritual Journey dialog
    */
   async openJourneyDialog() {
-    // Dispatch custom event directly to open the dialog - bypasses viewport issues with nested submenus
-    await this.page.evaluate(() => {
-      const event = new CustomEvent('open-nav', {
-        detail: {
-          path: ['Profile', 'Spiritual Journey'],
-          action: { type: 'dialog', dialog: 'Edit Journey' }
-        }
-      });
-      window.dispatchEvent(event);
-    });
+    await this.openProfileMenu();
+    // Flyout is portaled to body, so search at page level
+    await this.page.getByRole('menuitem', { name: 'Spiritual Journey' }).click();
     await expect(this.page.locator(this.selectors.journeyDialog)).toBeVisible({ timeout: 10000 });
   }
 
@@ -434,16 +420,9 @@ export class PractitionerProfilePage extends BasePage {
    * Open Audio Introduction dialog
    */
   async openAudioIntroDialog() {
-    // Dispatch custom event directly to open the dialog
-    await this.page.evaluate(() => {
-      const event = new CustomEvent('open-nav', {
-        detail: {
-          path: ['Profile', 'Audio Introduction'],
-          action: { type: 'dialog', dialog: 'Edit Audio Intro' }
-        }
-      });
-      window.dispatchEvent(event);
-    });
+    await this.openProfileMenu();
+    // Flyout is portaled to body, so search at page level
+    await this.page.getByRole('menuitem', { name: 'Audio Introduction' }).click();
     await expect(this.page.locator(this.selectors.audioIntroDialog)).toBeVisible({ timeout: 10000 });
   }
 
@@ -474,16 +453,9 @@ export class PractitionerProfilePage extends BasePage {
    * Open Daily Oracle Message dialog
    */
   async openOracleMessageDialog() {
-    // Dispatch custom event directly to open the dialog
-    await this.page.evaluate(() => {
-      const event = new CustomEvent('open-nav', {
-        detail: {
-          path: ['Profile', 'Daily Oracle'],
-          action: { type: 'dialog', dialog: 'Edit Oracle Message' }
-        }
-      });
-      window.dispatchEvent(event);
-    });
+    await this.openProfileMenu();
+    // Flyout is portaled to body, so search at page level
+    await this.page.getByRole('menuitem', { name: 'Daily Oracle' }).click();
     await expect(this.page.locator(this.selectors.oracleMessageDialog)).toBeVisible({ timeout: 10000 });
   }
 
@@ -521,16 +493,9 @@ export class PractitionerProfilePage extends BasePage {
    * Open Pinned Testimonials dialog
    */
   async openPinnedTestimonialsDialog() {
-    // Dispatch custom event directly to open the dialog
-    await this.page.evaluate(() => {
-      const event = new CustomEvent('open-nav', {
-        detail: {
-          path: ['Profile', 'Pinned Testimonials'],
-          action: { type: 'dialog', dialog: 'Edit Pinned Testimonials' }
-        }
-      });
-      window.dispatchEvent(event);
-    });
+    await this.openProfileMenu();
+    // Flyout is portaled to body, so search at page level
+    await this.page.getByRole('menuitem', { name: 'Pinned Reviews' }).click();
     await expect(this.page.locator(this.selectors.pinnedTestimonialsDialog)).toBeVisible({ timeout: 10000 });
   }
 

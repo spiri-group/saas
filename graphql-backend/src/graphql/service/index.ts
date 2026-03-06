@@ -2817,6 +2817,32 @@ const resolvers = {
         service: async (parent: any, _: any, {dataSources}: serverContext) => {
             const service = await dataSources.cosmos.get_record<service_type>("Main-Listing", parent.listingId, parent.vendorId)
             return service
+        },
+        customer: async (parent: any, _: any, context: serverContext) => {
+            if (!parent.customerId) return null;
+            try {
+                const user = await context.dataSources.cosmos.get_record<user_type>("Main-User", parent.customerId, parent.customerId);
+                if (!user) return { id: parent.customerId, name: null, email: parent.customerEmail || null };
+                return {
+                    id: parent.customerId,
+                    name: `${user.firstname || ''} ${user.lastname || ''}`.trim() || null,
+                    email: parent.customerEmail || user.email || null
+                };
+            } catch {
+                return { id: parent.customerId, name: null, email: parent.customerEmail || null };
+            }
+        },
+        payment: (parent: any) => {
+            if (parent.price) {
+                return { amount: parent.price.amount, currency: parent.price.currency };
+            }
+            if (parent.stripe?.amount) {
+                return { amount: parent.stripe.amount.amount, currency: parent.stripe.amount.currency };
+            }
+            return null;
+        },
+        createdAt: (parent: any) => {
+            return parent.createdDate || parent.purchaseDate || null;
         }
     },
     ServicePayment: {

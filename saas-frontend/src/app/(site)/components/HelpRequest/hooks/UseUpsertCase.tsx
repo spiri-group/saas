@@ -59,7 +59,7 @@ export const helpRequestSchema_step5 = z.object({
     selectedUrgencyFee: z.object({
         id: z.string().min(1),
         defaultPrice: CurrencyAmountSchema
-    })
+    }).optional()
 })
 
 
@@ -171,7 +171,7 @@ const UseUpsertCase = (urgencyOptions?: product_type[], caseDetails?: case_type,
     const mutationStatus = useFormStatus()
 
     const form = useForm({
-        resolver: zodResolver(helpRequestFormSchema[page] as any),
+        resolver: zodResolver(helpRequestFormSchema[Math.min(page, helpRequestFormSchema.length - 1)] as any),
         defaultValues: default_values(caseDetails, me)
     });
 

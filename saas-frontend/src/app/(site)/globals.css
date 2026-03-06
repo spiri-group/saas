@@ -544,4 +544,57 @@ body {
   .animate-fade-in {
     animation: fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
+  /* Spectral Analysis scan line */
+  @keyframes scan-once {
+    0% {
+      transform: translateX(-5%);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(105vw);
+      opacity: 0;
+    }
+  }
+
+  .animate-scan-once {
+    animation: scan-once 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  /* Spectral Analysis lens pulse — uses --pulse-color CSS variable */
+  @keyframes spectral-pulse {
+    0% {
+      box-shadow: 0 0 8px 2px var(--pulse-color, rgba(168,85,247,0.4)),
+                  0 6px 20px rgba(0,0,0,0.35);
+    }
+    50% {
+      box-shadow: 0 0 20px 6px var(--pulse-color, rgba(168,85,247,0.6)),
+                  0 6px 20px rgba(0,0,0,0.35);
+    }
+    100% {
+      box-shadow: 0 0 8px 2px var(--pulse-color, rgba(168,85,247,0.4)),
+                  0 6px 20px rgba(0,0,0,0.35);
+    }
+  }
+
+  .animate-spectral-pulse {
+    animation: spectral-pulse 2s ease-in-out infinite;
+  }
+
+  /* Subtle scanline overlay */
+  .spectral-scanlines {
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+  }
 }

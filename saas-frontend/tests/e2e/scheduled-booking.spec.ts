@@ -1,22 +1,15 @@
 import { test, expect } from '@playwright/test';
-import { AuthPage } from '../pages/AuthPage';
-import { HomePage } from '../pages/HomePage';
-import { UserSetupPage } from '../pages/UserSetupPage';
 import { PractitionerSetupPage } from '../pages/PractitionerSetupPage';
 import {
   clearTestEntityRegistry,
-  registerTestUser,
-  registerTestPractitioner,
   getCookiesFromPage,
   cleanupTestUsers,
   cleanupTestPractitioners,
-  getVendorIdFromSlug,
 } from '../utils/test-cleanup';
 
 // Store data per test worker
 const cookiesPerWorker = new Map<number, string>();
-const customerCookiesPerWorker = new Map<number, string>();
-const practitionerDataPerWorker = new Map<number, { slug: string; email: string; practitionerId: string }>();
+const practitionerDataPerWorker = new Map<number, { slug: string; email: string }>();
 const bookingDataPerWorker = new Map<number, { bookingId: string }>();
 
 /**
@@ -49,7 +42,6 @@ test.afterAll(async ({}, testInfo) => {
       console.error('[Cleanup] Error during cleanup:', error);
     } finally {
       cookiesPerWorker.delete(workerId);
-      customerCookiesPerWorker.delete(workerId);
       practitionerDataPerWorker.delete(workerId);
       bookingDataPerWorker.delete(workerId);
     }
@@ -58,136 +50,39 @@ test.afterAll(async ({}, testInfo) => {
 });
 
 test.describe('Scheduled Booking Flow', () => {
-  let authPage: AuthPage;
-  let homePage: HomePage;
-  let userSetupPage: UserSetupPage;
-  let practitionerSetupPage: PractitionerSetupPage;
-
-  test.beforeEach(async ({ page }) => {
-    authPage = new AuthPage(page);
-    homePage = new HomePage(page);
-    userSetupPage = new UserSetupPage(page);
-    practitionerSetupPage = new PractitionerSetupPage(page);
-    await page.goto('/');
-  });
-
   test('complete scheduled booking flow: practitioner setup and availability', async ({ page }, testInfo) => {
     test.setTimeout(300000); // 5 minutes
 
     const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substring(2, 8);
     const workerId = testInfo.parallelIndex;
 
     // Practitioner details
     const practitionerEmail = `book-prac-${timestamp}-${workerId}@playwright.com`;
-    const practitionerSlug = `test-book-${timestamp}-${randomSuffix}`;
 
     // =========================================
-    // PART 1: PRACTITIONER AUTHENTICATION
+    // PART 1: PRACTITIONER CREATION (unified onboarding flow)
     // =========================================
-    console.log('[Test] Part 1: Authenticating practitioner...');
+    console.log('[Test] Part 1: Creating practitioner via unified onboarding...');
 
-    await authPage.startAuthFlow(practitionerEmail);
+    const practitionerSetupPage = new PractitionerSetupPage(page);
+    const practitionerSlug = await practitionerSetupPage.createPractitioner(
+      practitionerEmail,
+      `Booking Practitioner ${timestamp}`,
+      testInfo,
+      'awaken'
+    );
 
-    // STRICT: OTP input must appear
-    const otpInput = page.locator('[aria-label="input-login-otp"]');
-    await expect(otpInput).toBeVisible({ timeout: 15000 });
-    await otpInput.click();
-    await page.keyboard.type('123456');
-    await page.waitForURL('/', { timeout: 15000 });
-
-    // STRICT: Must see complete profile link
-    await homePage.waitForCompleteProfileLink();
-    await homePage.clickCompleteProfile();
-    await expect(page).toHaveURL(/\/u\/.*\/setup/, { timeout: 10000 });
-
-    // Register user for cleanup
-    const url = page.url();
-    const userIdMatch = url.match(/\/u\/([^\/]+)\/setup/);
-    let practitionerId = '';
-    if (userIdMatch) {
-      registerTestUser({ id: userIdMatch[1], email: practitionerEmail }, workerId);
-      const cookies = await getCookiesFromPage(page);
-      if (cookies) cookiesPerWorker.set(workerId, cookies);
+    // Store cookies and practitioner data for subsequent tests
+    const cookies = await getCookiesFromPage(page);
+    if (cookies) {
+      cookiesPerWorker.set(workerId, cookies);
     }
+    practitionerDataPerWorker.set(workerId, { slug: practitionerSlug, email: practitionerEmail });
 
     // =========================================
-    // PART 2: PRACTITIONER PROFILE SETUP
+    // PART 2: SET UP AVAILABILITY
     // =========================================
-    console.log('[Test] Part 2: Setting up practitioner profile...');
-
-    await userSetupPage.fillUserProfile({
-      firstName: 'Booking',
-      lastName: 'Practitioner',
-      phone: '0412345678',
-      address: 'Sydney Opera House',
-      securityQuestion: 'What is your favorite color?',
-      securityAnswer: 'Purple',
-    });
-
-    // STRICT: Continue as practitioner button must exist
-    const practitionerBtn = page.locator('[data-testid="continue-as-practitioner-btn"]');
-    await expect(practitionerBtn).toBeVisible({ timeout: 10000 });
-    await practitionerBtn.click();
-    await expect(page).toHaveURL(/\/p\/setup\?practitionerId=/, { timeout: 15000 });
-
-    // Get practitioner ID from URL
-    const setupUrl = page.url();
-    const pracIdMatch = setupUrl.match(/practitionerId=([^&]+)/);
-    if (pracIdMatch) {
-      practitionerId = pracIdMatch[1];
-    }
-
-    // Complete practitioner setup
-    await practitionerSetupPage.waitForStep1();
-    await practitionerSetupPage.fillBasicInfo({
-      name: `Booking Practitioner ${timestamp}`,
-      slug: practitionerSlug,
-      email: practitionerEmail,
-      countryName: 'Australia',
-    });
-    await practitionerSetupPage.clickContinue();
-
-    await practitionerSetupPage.waitForStep2();
-    await practitionerSetupPage.fillProfile({
-      headline: 'Experienced Tarot Reader',
-      bio: 'I provide insightful tarot readings to help guide you on your journey.',
-      modalities: ['TAROT'],
-      specializations: ['RELATIONSHIPS', 'CAREER'],
-    });
-    await practitionerSetupPage.clickContinue();
-
-    await practitionerSetupPage.waitForStep3();
-    await practitionerSetupPage.submitForm();
-
-    // STRICT: Must navigate to profile page
-    await page.waitForURL(new RegExp(`/p/${practitionerSlug}`), { timeout: 30000 });
-
-    // Get cookies and fetch actual vendor ID for cleanup
-    const updatedCookies = await getCookiesFromPage(page);
-    if (updatedCookies) {
-      cookiesPerWorker.set(workerId, updatedCookies);
-
-      // IMPORTANT: The practitionerId from the URL is NOT the actual vendor ID.
-      // The server generates its own ID during create_practitioner mutation.
-      // We need to fetch the actual vendor ID using the slug.
-      const actualVendorId = await getVendorIdFromSlug(practitionerSlug, updatedCookies);
-
-      if (actualVendorId) {
-        console.log(`[Test] Registering practitioner for cleanup: vendorId=${actualVendorId}, slug=${practitionerSlug}`);
-        registerTestPractitioner({ id: actualVendorId, slug: practitionerSlug, email: practitionerEmail, cookies: updatedCookies }, workerId);
-        practitionerDataPerWorker.set(workerId, { slug: practitionerSlug, email: practitionerEmail, practitionerId: actualVendorId });
-      } else {
-        console.error(`[Test] WARNING: Could not fetch actual vendor ID for slug ${practitionerSlug}`);
-        registerTestPractitioner({ slug: practitionerSlug, email: practitionerEmail, cookies: updatedCookies }, workerId);
-        practitionerDataPerWorker.set(workerId, { slug: practitionerSlug, email: practitionerEmail, practitionerId });
-      }
-    }
-
-    // =========================================
-    // PART 3: SET UP AVAILABILITY
-    // =========================================
-    console.log('[Test] Part 3: Setting up availability...');
+    console.log('[Test] Part 2: Setting up availability...');
 
     await page.goto(`/p/${practitionerSlug}/manage/availability`);
 

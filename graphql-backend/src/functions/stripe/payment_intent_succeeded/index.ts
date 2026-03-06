@@ -20,6 +20,312 @@ import { generate_shipment_summary } from "./generate_shipment_summary";
 import { variant_inventory_type } from "../../../graphql/product/types";
 import { serviceBooking_type } from "../../../graphql/service/types";
 import { user_type } from "../../../graphql/user/types";
+import { paymentLink_type } from "../../../graphql/paymentLink/types";
+import { renderEmailTemplate } from "../../../graphql/email/utils";
+import {
+    EXPO_MODE_CONTAINER, DOC_TYPE_EXPO_SALE,
+    expoSale_type, expoItem_type, expo_type, ExpoSaleStatus
+} from "../../../graphql/expoMode/types";
+
+// ─── Payment Link post-payment handler ──────────────────────────
+
+async function handlePaymentLinkPayment(
+    paymentIntent: Stripe.PaymentIntent,
+    metadata: { paymentLinkId?: string; vendorBreakdown?: string },
+    logger: any,
+    services: any
+) {
+    const { stripe, cosmos, email } = services;
+    const linkId = metadata.paymentLinkId!;
+
+    // 1. Fetch the payment link (cross-partition query since we don't know createdBy)
+    const results = await cosmos.run_query("Main-PaymentLinks", {
+        query: "SELECT * FROM c WHERE c.id = @id",
+        parameters: [{ name: "@id", value: linkId }],
+    }, true);
+
+    if (results.length === 0) {
+        throw new Error(`Payment link ${linkId} not found`);
+    }
+
+    const link = results[0];
+    const now = DateTime.now().toISO();
+
+    // 2. Update link status to PAID
+    await cosmos.patch_record("Main-PaymentLinks", link.id, link.createdBy, [
+        { op: "set", path: "/linkStatus", value: "PAID" },
+        { op: "set", path: "/paidAt", value: now },
+    ], "STRIPE");
+
+    logger.logMessage(`Payment link ${linkId} marked as PAID`);
+
+    // 3. Split funds via Stripe Transfers to each vendor's connected account
+    const vendorBreakdown: Record<string, number> = metadata.vendorBreakdown
+        ? JSON.parse(metadata.vendorBreakdown)
+        : {};
+
+    const bookingIds: string[] = [];
+
+    for (const [vendorId, vendorAmount] of Object.entries(vendorBreakdown)) {
+        const vendor = await cosmos.get_record("Main-Vendor", vendorId, vendorId) as vendor_type | null;
+        if (!vendor?.stripe?.accountId) {
+            logger.logMessage(`Vendor ${vendorId} has no Stripe account — skipping transfer`);
+            continue;
+        }
+
+        try {
+            // Transfer vendor's share (platform keeps the remainder as fee)
+            // For MVP, transfer full amount to vendor; platform fee can be deducted later
+            await stripe.callApi("POST", "transfers", {
+                amount: vendorAmount,
+                currency: link.totalAmount.currency.toLowerCase(),
+                destination: vendor.stripe.accountId,
+                transfer_group: `payment_link_${linkId}`,
+                metadata: {
+                    type: "PAYMENT_LINK",
+                    paymentLinkId: linkId,
+                    vendorId,
+                },
+            });
+            logger.logMessage(`Transfer of ${vendorAmount} ${link.totalAmount.currency} created to vendor ${vendorId}`);
+        } catch (transferError: any) {
+            logger.logMessage(`Failed to create transfer to vendor ${vendorId}: ${transferError.message}`);
+        }
+    }
+
+    // 4. For SERVICE items, create service bookings
+    const serviceItems = link.items.filter(i => i.itemType === "SERVICE" && i.sourceId);
+    for (const item of serviceItems) {
+        try {
+            const serviceOrderId = uuid();
+            const service = await cosmos.get_record("Main-Listing", item.sourceId!, item.vendorId);
+
+            const serviceOrder: any = {
+                id: serviceOrderId,
+                type: "SERVICE",
+                customerEmail: link.customerEmail,
+                userId: link.customerEmail,
+                vendorId: item.vendorId,
+                purchaseDate: now,
+                listingId: item.sourceId,
+                ref: {
+                    id: item.sourceId,
+                    container: "Main-Listing",
+                    partition: [item.vendorId],
+                },
+                service: service,
+                price: item.amount,
+                stripe: {
+                    paymentIntent: { id: paymentIntent.id },
+                },
+                orderStatus: "PAID",
+                questionnaireResponses: [],
+                source: "PAYMENT_LINK",
+                paymentLinkId: linkId,
+            };
+
+            const partition = ["SERVICE", link.customerEmail];
+            await cosmos.add_record("Main-Bookings", serviceOrder, partition, "system");
+            bookingIds.push(serviceOrderId);
+            logger.logMessage(`Service booking ${serviceOrderId} created from payment link for service ${item.sourceId}`);
+        } catch (serviceError: any) {
+            logger.logMessage(`Failed to create service booking for item ${item.id}: ${serviceError.message}`);
+        }
+    }
+
+    // Store booking IDs on the payment link
+    if (bookingIds.length > 0) {
+        await cosmos.patch_record("Main-PaymentLinks", link.id, link.createdBy, [
+            { op: "set", path: "/bookingIds", value: bookingIds },
+        ], "STRIPE");
+    }
+
+    // 5. Send confirmation emails
+    const description = link.items.map((i: any) => {
+        if (i.itemType === "CUSTOM") return i.customDescription || "Custom item";
+        return i.sourceName || i.customDescription || i.itemType;
+    }).join(", ");
+
+    const amountDisplay = `$${(link.totalAmount.amount / 100).toFixed(2)} ${link.totalAmount.currency.toUpperCase()}`;
+
+    // Customer confirmation
+    try {
+        const customerEmail = await renderEmailTemplate({ cosmos } as any, "payment-link-paid-customer", {
+            "vendor.name": link.items[0].vendorName,
+            "customer.name": link.customerName ? ` ${link.customerName}` : "",
+            "payment.amount": amountDisplay,
+            "payment.description": description,
+        });
+        if (customerEmail) {
+            await email.sendRawHtmlEmail(
+                sender_details.from,
+                link.customerEmail,
+                customerEmail.subject,
+                customerEmail.html
+            );
+        }
+    } catch (err) {
+        logger.logMessage(`Failed to send customer confirmation email: ${(err as any).message}`);
+    }
+
+    // Vendor notification(s) — one per unique vendor
+    const uniqueVendorIds = [...new Set(link.items.map(i => i.vendorId))];
+    for (const vendorId of uniqueVendorIds) {
+        try {
+            const vendor = await cosmos.get_record("Main-Vendor", vendorId, vendorId) as vendor_type | null;
+            const vendorEmail = vendor?.contact?.internal?.email;
+            if (!vendorEmail) continue;
+
+            const vendorSlug = vendor?.slug || "";
+            const dashboardUrl = vendor?.docType === "PRACTITIONER"
+                ? `${process.env.FRONTEND_URL || "https://spiriverse.com"}/p/${vendorSlug}/manage/payment-links`
+                : `${process.env.FRONTEND_URL || "https://spiriverse.com"}/m/${vendorSlug}/manage/payment-links`;
+
+            const vendorEmailContent = await renderEmailTemplate({ cosmos } as any, "payment-link-paid-vendor", {
+                "vendor.name": vendor?.name || "Vendor",
+                "vendor.contactName": vendor?.name || "there",
+                "customer.email": link.customerEmail,
+                "payment.amount": amountDisplay,
+                "payment.description": description,
+                dashboardUrl,
+            });
+            if (vendorEmailContent) {
+                await email.sendRawHtmlEmail(
+                    sender_details.from,
+                    vendorEmail,
+                    vendorEmailContent.subject,
+                    vendorEmailContent.html
+                );
+            }
+        } catch (err) {
+            logger.logMessage(`Failed to send vendor notification to ${vendorId}: ${(err as any).message}`);
+        }
+    }
+}
+
+// ─── Expo Sale post-payment handler ──────────────────────────────
+
+async function handleExpoSalePayment(
+    paymentIntent: Stripe.PaymentIntent,
+    metadata: { expoId: string; saleId: string; vendorId: string },
+    logger: any,
+    services: any
+) {
+    const { cosmos, signalR } = services;
+    const { expoId, saleId, vendorId } = metadata;
+    const now = DateTime.now().toISO();
+
+    // 1. Update sale to PAID
+    await cosmos.patch_record(EXPO_MODE_CONTAINER, saleId, expoId, [
+        { op: "set", path: "/saleStatus", value: "PAID" as ExpoSaleStatus },
+        { op: "set", path: "/paidAt", value: now },
+    ], "STRIPE");
+
+    logger.logMessage(`Expo sale ${saleId} marked as PAID`);
+
+    // 2. Fetch the sale for item details
+    const sale = await cosmos.get_record(EXPO_MODE_CONTAINER, saleId, expoId) as expoSale_type | null;
+    if (!sale) {
+        logger.logMessage(`Expo sale ${saleId} not found after patch`);
+        return;
+    }
+
+    // 3. Decrement inventory for each item
+    for (const saleItem of sale.items) {
+        const item = await cosmos.get_record(EXPO_MODE_CONTAINER, saleItem.itemId, expoId) as expoItem_type | null;
+        if (!item || item.docType !== "expo-item") continue;
+
+        await cosmos.patch_record(EXPO_MODE_CONTAINER, saleItem.itemId, expoId, [
+            { op: "set", path: "/quantitySold", value: (item.quantitySold || 0) + saleItem.quantity },
+        ], "STRIPE");
+
+        // Broadcast item update
+        signalR.addDataMessage("expoItem", {
+            ...item,
+            quantitySold: (item.quantitySold || 0) + saleItem.quantity,
+        }, {
+            group: `expo-${expoId}`,
+            action: DataAction.UPSERT,
+        });
+    }
+
+    // 4. Update expo stats
+    const expo = await cosmos.get_record(EXPO_MODE_CONTAINER, expoId, vendorId) as expo_type | null;
+    if (expo) {
+        const totalItemsSoldInSale = sale.items.reduce((sum: number, i: any) => sum + i.quantity, 0);
+        await cosmos.patch_record(EXPO_MODE_CONTAINER, expoId, vendorId, [
+            { op: "set", path: "/totalSales", value: (expo.totalSales || 0) + 1 },
+            { op: "set", path: "/totalRevenue", value: (expo.totalRevenue || 0) + sale.subtotal.amount },
+            { op: "set", path: "/totalItemsSold", value: (expo.totalItemsSold || 0) + totalItemsSoldInSale },
+            { op: "set", path: "/totalCustomers", value: (expo.totalCustomers || 0) + 1 },
+        ], "STRIPE");
+
+        // Broadcast updated expo
+        const updatedExpo = await cosmos.get_record(EXPO_MODE_CONTAINER, expoId, vendorId) as expo_type | null;
+        if (updatedExpo) {
+            signalR.addDataMessage("expo", updatedExpo, {
+                group: `expo-${expoId}`,
+                action: DataAction.UPSERT,
+            });
+        }
+    }
+
+    // 5. Broadcast the sale
+    signalR.addDataMessage("expoSale", { ...sale, saleStatus: "PAID", paidAt: now }, {
+        group: `expo-${expoId}`,
+        action: DataAction.UPSERT,
+    });
+
+    // 6. Send emails
+    const vendor = await cosmos.get_record("Main-Vendor", vendorId, vendorId) as vendor_type | null;
+    const formatAmt = (amt: number, cur: string) => `$${(amt / 100).toFixed(2)} ${cur.toUpperCase()}`;
+    const itemsStr = sale.items.map((i: any) =>
+        `${i.quantity}x ${i.itemName} — ${formatAmt(i.lineTotal.amount, i.lineTotal.currency)}`
+    ).join(", ");
+
+    // Customer receipt
+    if (sale.customerEmail) {
+        try {
+            const emailContent = await renderEmailTemplate({ cosmos } as any, "expo-sale-receipt", {
+                "customer.name": sale.customerName || "Customer",
+                "expo.name": expo?.expoName || "Expo",
+                "vendor.name": vendor?.name || "Practitioner",
+                "sale.number": String(sale.saleNumber),
+                "sale.items": itemsStr,
+                "sale.total": formatAmt(sale.subtotal.amount, sale.subtotal.currency),
+            });
+            if (emailContent) {
+                await services.email.sendRawHtmlEmail(
+                    sender_details.from, sale.customerEmail, emailContent.subject, emailContent.html
+                );
+            }
+        } catch (err) {
+            logger.logMessage(`Failed to send expo sale receipt: ${(err as any).message}`);
+        }
+    }
+
+    // Vendor notification
+    const vendorEmail = vendor?.contact?.internal?.email;
+    if (vendorEmail) {
+        try {
+            const emailContent = await renderEmailTemplate({ cosmos } as any, "expo-sale-vendor-notification", {
+                "expo.name": expo?.expoName || "Expo",
+                "customer.name": sale.customerName || "Walk-up customer",
+                "sale.items": itemsStr,
+                "sale.total": formatAmt(sale.subtotal.amount, sale.subtotal.currency),
+            });
+            if (emailContent) {
+                await services.email.sendRawHtmlEmail(
+                    sender_details.from, vendorEmail, emailContent.subject, emailContent.html
+                );
+            }
+        } catch (err) {
+            logger.logMessage(`Failed to send expo vendor notification: ${(err as any).message}`);
+        }
+    }
+
+    logger.logMessage(`Expo sale ${saleId} fully processed`);
+}
 
 const handler : StripeHandler = async (event, logger, services ) => {
 
@@ -28,10 +334,30 @@ const handler : StripeHandler = async (event, logger, services ) => {
     const metadata = paymentIntent.metadata as {
         orderId: string,
         customerEmail: string,
-        tax_amount: string
+        tax_amount: string,
+        paymentLinkId?: string,
+        vendorBreakdown?: string,
+        type?: string,
+        expoId?: string,
+        saleId?: string
     }
 
     const paymentId = uuid();
+
+    // ─── Payment Link handling ──────────────────────────────────
+    if (!isNullOrWhiteSpace(metadata["paymentLinkId"])) {
+        logger.logMessage(`Processing payment for payment link ${metadata["paymentLinkId"]}`);
+        await handlePaymentLinkPayment(paymentIntent, metadata, logger, services);
+        logger.logMessage(`Payment link ${metadata["paymentLinkId"]} processed successfully`);
+        return;
+    }
+
+    // ─── Expo Sale handling ──────────────────────────────────────
+    if (metadata["type"] === "EXPO_SALE" && metadata["expoId"] && metadata["saleId"]) {
+        logger.logMessage(`Processing expo sale ${metadata["saleId"]} for expo ${metadata["expoId"]}`);
+        await handleExpoSalePayment(paymentIntent, metadata as any, logger, services);
+        return;
+    }
 
     if (!isNullOrWhiteSpace(metadata["orderId"])) {
         logger.logMessage(`Processing payment intent in relation to order ${metadata["orderId"]}`)

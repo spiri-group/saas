@@ -5,11 +5,20 @@ import { DateTime } from "luxon";
 import { generate_human_friendly_id, isNullOrUndefined, isNullOrWhiteSpace, mergeDeep, slugify } from '../../utils/functions';
 import { serverContext } from '../../services/azFunction';
 import { socialpost_type } from '../social/types';
-import { vendor_type, plan_type, merchant_card_status, merchant_subscription_payment_status, VendorDocType, PractitionerAvailability, practitioner_profile_type } from './types';
+import { vendor_type, plan_type, merchant_card_status, merchant_subscription_payment_status, VendorDocType, PractitionerAvailability, practitioner_profile_type, subscription_tier } from './types';
 import { user_type } from '../user/types';
 import { sender_details } from '../../client/email_templates';
 import { googleplace_type, recordref_type } from '../0_shared/types';
 import { ReadingRequestManager } from '../reading-request/manager';
+
+// Monthly price in cents for each tier (used as default subscriptionCostThreshold)
+const TIER_MONTHLY_PRICE: Record<subscription_tier, number> = {
+    directory: 900,
+    awaken: 1900,
+    illuminate: 2900,
+    manifest: 3900,
+    transcend: 5900,
+};
 
 const resolvers = {
     Query: {
@@ -666,6 +675,10 @@ const resolvers = {
             if (context.userId == null) throw "User must be present for this call";
 
             var { subscription, ...vendorInput } = args.vendor;
+            // Default optional fields
+            vendorInput["merchantTypeIds"] = vendorInput["merchantTypeIds"] || [];
+            vendorInput["religionId"] = vendorInput["religionId"] || "";
+
             // assume the merchant does not have any team members at sign up
             vendorInput["teamMembers"] = [];
             vendorInput["descriptions"] = [];
@@ -733,23 +746,42 @@ const resolvers = {
                 // Tier-based subscription
                 subscriptionTier: subscription?.tier || 'manifest',
                 billingInterval: subscription?.billingInterval || 'monthly',
-                billingStatus: 'pendingFirstBilling',
+                billingModel: 'trial',
+                billingStatus: 'trial',
+                trialStartedAt: DateTime.now().toISO(),
+                trialEndsAt: DateTime.now().plus({ days: 14 }).toISO(),
                 cumulativePayouts: 0,
-                subscriptionCostThreshold: 3200, // Manifest monthly default in cents, overridden by selectVendorSubscriptionTier
+                subscriptionCostThreshold: TIER_MONTHLY_PRICE[(subscription?.tier || 'manifest') as subscription_tier] ?? 3900,
                 failedPaymentAttempts: 0,
                 // Legacy fields kept for compatibility
                 payment_retry_count: 0,
                 last_payment_date: null,
                 card_status: merchant_card_status.not_saved,
                 payment_status: merchant_subscription_payment_status.not_attempted,
-                // Deferred subscription model: first payout triggers card requirement
                 first_payout_received: false,
                 payouts_blocked: false,
                 plans: subscription?.plans || []
             }
 
+            // Validate same country if user already has a practitioner profile (required for payment link transfers)
+            const existingUser = await context.dataSources.cosmos.get_record<user_type>("Main-User", context.userId, context.userId);
+            if (existingUser?.vendors?.length > 0) {
+                for (const existingVendorRef of existingUser.vendors) {
+                    const existingVendor = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", (existingVendorRef as any).id, (existingVendorRef as any).id);
+                    if (existingVendor?.stripe?.accountId) {
+                        const existingAccount = await context.dataSources.stripe.callApi("GET", `accounts/${existingVendor.stripe.accountId}`);
+                        if (existingAccount.data.country && existingAccount.data.country !== vendorCountry) {
+                            throw new GraphQLError(
+                                `New merchant must be in the same country as your existing profile (${existingVendor.name} is in ${existingAccount.data.country}). This is required for payment transfers.`,
+                                { extensions: { code: "REGION_MISMATCH" } }
+                            );
+                        }
+                    }
+                }
+            }
+
             await context.dataSources.cosmos.add_record("Main-Vendor", vendorInput, vendorInput.id, context.userId)
-            
+
             // create the vendor as a customer in stripe - so they can be put on their subscription
             var createStripeMerchantAsCustomerAccountResp = await context.dataSources.stripe.callApi(HTTPMethod.post, "customers", {
                 "email": vendorInput.contact.public.email,
@@ -857,7 +889,7 @@ const resolvers = {
             const practitionerId = uuidv4();
 
             // DEBUG: Log every create_practitioner call
-            context.logger.logMessage(`[CREATE_PRACTITIONER] Called with slug="${input.slug}", userId="${context.userId}", timestamp=${Date.now()}`);
+            context.logger.logMessage(`[CREATE_PRACTITIONER] Called with slug="${input.slug}", userId="${context.userId}", tier="${subscription?.tier}", timestamp=${Date.now()}`);
 
             // Validate slug uniqueness (only check ACTIVE vendors, not soft-deleted ones)
             const existingSlugs = await context.dataSources.cosmos.run_query("Main-Vendor", {
@@ -885,10 +917,13 @@ const resolvers = {
             // Build the practitioner profile
             const practitionerProfile: practitioner_profile_type = {
                 pronouns: input.pronouns,
-                headline: input.headline,
-                bio: input.bio,
+                headline: input.headline || "",
+                bio: input.bio || "",
                 modalities: input.modalities,
                 specializations: input.specializations,
+                yearsExperience: input.yearsExperience,
+                spiritualJourney: input.spiritualJourney,
+                approach: input.approach,
                 gifts: [],
                 tools: [],
                 training: [],
@@ -931,13 +966,16 @@ const resolvers = {
                     rating4: 0,
                     rating5: 0
                 },
-                // Subscription: always Awaken tier for practitioners
+                // Subscription: use the tier selected during onboarding
                 subscription: {
-                    subscriptionTier: 'awaken' as const,
+                    subscriptionTier: (subscription?.tier || 'awaken') as subscription_tier,
                     billingInterval: subscription?.billingInterval || 'monthly',
-                    billingStatus: 'pendingFirstBilling' as const,
+                    billingModel: 'trial' as const,
+                    billingStatus: 'trial' as const,
+                    trialStartedAt: DateTime.now().toISO(),
+                    trialEndsAt: DateTime.now().plus({ days: 14 }).toISO(),
                     cumulativePayouts: 0,
-                    subscriptionCostThreshold: 1600, // Awaken monthly in cents
+                    subscriptionCostThreshold: TIER_MONTHLY_PRICE[subscription?.tier as subscription_tier] ?? 1900,
                     failedPaymentAttempts: 0,
                     // Legacy fields
                     payment_retry_count: 0,
@@ -950,11 +988,28 @@ const resolvers = {
                 }
             };
 
+            // Validate same country if user already has a merchant profile (required for payment link transfers)
+            const practitionerCountry = input.country || 'AU';
+            const existingPractUser = await context.dataSources.cosmos.get_record<user_type>("Main-User", context.userId, context.userId);
+            if (existingPractUser?.vendors?.length > 0) {
+                for (const existingVendorRef of existingPractUser.vendors) {
+                    const existingVendor = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", (existingVendorRef as any).id, (existingVendorRef as any).id);
+                    if (existingVendor?.stripe?.accountId) {
+                        const existingAccount = await context.dataSources.stripe.callApi("GET", `accounts/${existingVendor.stripe.accountId}`);
+                        if (existingAccount.data.country && existingAccount.data.country !== practitionerCountry) {
+                            throw new GraphQLError(
+                                `New practitioner must be in the same country as your existing profile (${existingVendor.name} is in ${existingAccount.data.country}). This is required for payment transfers.`,
+                                { extensions: { code: "REGION_MISMATCH" } }
+                            );
+                        }
+                    }
+                }
+            }
+
             // Save to database
             await context.dataSources.cosmos.add_record("Main-Vendor", practitioner, practitionerId, context.userId);
 
             // Create a Stripe Customer for the practitioner (for subscription billing)
-            const practitionerCountry = input.country || 'AU';
             const createStripeCustomerResp = await context.dataSources.stripe.callApi(HTTPMethod.post, "customers", {
                 "email": input.email,
                 "name": input.name,
@@ -1716,12 +1771,12 @@ const resolvers = {
 
             // now patch the background image or logo if they were not provided
             // this would mean the person wants to remove the image
-            if (args.theme.background.image == null) {
+            if (args.theme.background != null && args.theme.background.image == null) {
                 await context.dataSources.cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
                     { op: "set", path: "/background/image", value: null}
                 ], context.userId)
             }
-            if (args.theme.logo == null) {
+            if ('logo' in args.theme && args.theme.logo == null) {
                 await context.dataSources.cosmos.patch_record("Main-Vendor", merchantId, merchantId, [
                     { op: "set", path: "/logo", value: null}
                 ], context.userId)
@@ -1903,6 +1958,32 @@ const resolvers = {
                 code: "200",
                 success: true,
                 message: `Video update posted successfully`,
+                vendor: await context.dataSources.cosmos.get_record("Main-Vendor", args.vendorId, args.vendorId)
+            };
+        },
+        delete_vendor_video_update: async (_: any, args: { vendorId: string, videoUpdateId: string }, context: serverContext) => {
+            if (context.userId == null) throw "User must be present for this call";
+
+            await protect_via_merchant_access(context.dataSources.cosmos, context.userId, args.vendorId);
+
+            const vendor = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", args.vendorId, args.vendorId);
+            if (!vendor) {
+                throw new GraphQLError(`Vendor with ID ${args.vendorId} not found`, {
+                    extensions: { code: 'NOT_FOUND' },
+                });
+            }
+
+            const videoUpdates = (vendor.videoUpdates || []).filter((v: any) => v.id !== args.videoUpdateId);
+
+            const container = await context.dataSources.cosmos.get_container("Main-Vendor");
+            await container.item(args.vendorId, args.vendorId).patch([
+                { op: "set", path: "/videoUpdates", value: videoUpdates }
+            ]);
+
+            return {
+                code: "200",
+                success: true,
+                message: `Video update deleted successfully`,
                 vendor: await context.dataSources.cosmos.get_record("Main-Vendor", args.vendorId, args.vendorId)
             };
         },
@@ -2637,6 +2718,12 @@ const resolvers = {
             const card = attachResp.data.card;
             console.log(`[add_test_card] ✅ Card attached: ${card.brand} ****${card.last4}`);
 
+            // Update card_status in Cosmos DB so goLiveReadiness.hasPaymentCard reflects the change
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.merchantId, args.merchantId, [
+                { op: "set", path: "/subscription/card_status", value: merchant_card_status.saved },
+            ], context.userId || "TEST");
+            console.log(`[add_test_card] Updated card_status to saved in Cosmos DB`);
+
             return {
                 code: '200',
                 success: true,
@@ -3230,9 +3317,10 @@ const resolvers = {
                 }
             }
 
-            // Subscription payment is NOT required for go-live.
-            // Billing triggers automatically once cumulative payouts reach the threshold.
-            const isReady = hasPaymentCard && hasStripeOnboarding;
+            // Only Stripe onboarding is required for go-live.
+            // Payment card is optional — vendors start with a 14-day free trial,
+            // and billing triggers automatically once cumulative payouts reach the threshold.
+            const isReady = hasStripeOnboarding;
 
             // Auto-publish if all requirements met and not yet published
             if (isReady && !parent.publishedAt) {
@@ -3243,7 +3331,6 @@ const resolvers = {
             }
 
             const missingRequirements: string[] = [];
-            if (!hasPaymentCard) missingRequirements.push("Add a payment card");
             if (!hasStripeOnboarding) missingRequirements.push("Complete Stripe Connect onboarding");
 
             return {
@@ -3253,6 +3340,10 @@ const resolvers = {
                 missingRequirements
             };
         }
+    },
+    PractitionerVerification: {
+        identityVerified: (parent: any) => parent.identityVerified ?? false,
+        practitionerVerified: (parent: any) => parent.practitionerVerified ?? false,
     },
     VendorUser: {
         vendor: async (parent: any, _: any, context: serverContext) => {

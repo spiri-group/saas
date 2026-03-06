@@ -8,7 +8,6 @@ import SpiriLogo from '@/icons/spiri-logo';
 import Providers from '@/lib/providers';
 import SignedIn from './components/SignedIn';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
 import CartIcon from './components/Catalogue/components/ShoppingCart/Nav';
 import SearchBar from './components/SearchBar';
 import Notifications from '@/components/notifications';
@@ -16,6 +15,7 @@ import ConditionalNav from './components/ConditionalNav';
 import ConditionalNavItems from './components/ConditionalNavItems';
 import ConditionalMainWrapper from './components/ConditionalMainWrapper';
 import SacredAnimatedBackground from './components/Home/SacredAnimatedBackground';
+import NavOrbs from './components/NavOrbs';
 import ResolveStripeSuccess from './components/ResolveStripeSuccess';
 import ConsentGuard from './components/ConsentGuard';
 import CookieBanner from './components/CookieBanner';
@@ -29,13 +29,11 @@ export const metadata: Metadata = {
   description: 'SpiriVerse – A sacred digital marketplace connecting spiritual practitioners with seekers worldwide.',
 };
 
-export default async function SiteLayout({
+export default function SiteLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-
   return (
     <div className={classNames(inter.className, 'flex flex-col min-h-screen')}>
       <Providers>
@@ -45,17 +43,18 @@ export default async function SiteLayout({
         <ConditionalNav>
           <div
              style={{}}
-             className="flex flex-row items-center justify-between h-20 w-full fixed z-50 bg-transparent backdrop-blur-sm shadow-xl px-3 border-b border-white/10">
-            <Link href="/">
+             className="flex flex-row items-center justify-between h-20 w-full fixed z-50 bg-slate-950 shadow-xl px-3 border-b border-white/10 overflow-hidden">
+            {/* Orbs layer inside nav — matches global background animation */}
+            <NavOrbs />
+            <Link href="/" className="relative z-10">
               <SpiriLogo height={40} />
             </Link>
               <ConditionalNavItems>
-                <SearchBar className="flex-grow mx-6" />
-                <div className="flex flex-row items-center space-x-2">
-                { session != null && session.user != null &&
-                  <CartIcon
-                    />
-                }
+                <Suspense fallback={null}>
+                  <SearchBar className="relative z-10 flex-grow mx-6" />
+                </Suspense>
+                <div className="relative z-10 flex flex-row items-center space-x-2">
+                <CartIcon />
                 <SignedIn/>
                 </div>
               </ConditionalNavItems>
@@ -66,7 +65,9 @@ export default async function SiteLayout({
         </ConditionalMainWrapper>
         <div id="modal-div" className="absolute t-0 l-0 text-slate-800"/>
         <Notifications />
-        <ResolveStripeSuccess />
+        <Suspense fallback={null}>
+          <ResolveStripeSuccess />
+        </Suspense>
         <ConsentGuard />
         <CookieBanner />
         <Suspense fallback={null}>

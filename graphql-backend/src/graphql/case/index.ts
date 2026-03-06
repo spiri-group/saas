@@ -311,11 +311,17 @@ const resolvers = {
                 }
                 
                 // create the order
+                const orderId = uuidv4();
                 const order = {
-                    id: uuidv4(),
+                    id: orderId,
+                    orderId: orderId,
+                    docType: "ORDER",
                     code: await generate_order_no(customerEmail, context.dataSources.cosmos),
                     userId: context.userId,
                     customerEmail,
+                    forObject: { id: item.id, partition: [item.id], container: "Main-Cases" },
+                    target: "CASE-CREATE",
+                    digitalOnly: true,
                     lines,
                     payments: [],
                     ttl
@@ -373,8 +379,8 @@ const resolvers = {
                 const tierFeatures = getTierFeatures(vendor.subscription.subscriptionTier as subscription_tier);
                 if (!tierFeatures.hasSpiriAssist) {
                     throw new GraphQLError(
-                        "SpiriAssist investigations require the Manifest plan or higher.",
-                        { extensions: { code: "TIER_FEATURE_LOCKED", requiredTier: "manifest" } }
+                        "SpiriAssist investigations require the Directory plan or higher.",
+                        { extensions: { code: "TIER_FEATURE_LOCKED", requiredTier: "directory" } }
                     );
                 }
             }
@@ -1265,28 +1271,26 @@ const resolvers = {
             }
         },
         religion: async(parent: {religionId: string}, _args: any, context: serverContext, _info: any) => {
-            let defaultLocale = "EN"
-
-            const religions = await context.dataSources.cosmos.run_query("System-Settings", {
+            // Religions are stored as hierarchical tree nodes in System-SettingTrees
+            const nodes = await context.dataSources.cosmos.run_query("System-SettingTrees", {
               query:  `
-                SELECT VALUE o FROM c
-                JOIN o in c.options
-                WHERE c.id = "religions"
-                AND o.id = @religionId
+                SELECT * FROM c
+                WHERE c.id = @religionId
+                AND c.configId = "religions"
               `,
               parameters: [
                 { name: "@religionId", value: parent.religionId }
               ]
             }, true)
-            
-            if (religions.length == 0) throw `Could not find an option set for religion.`
-            const religion = religions[0]
+
+            if (nodes.length == 0) throw `Could not find a religion for id: ${parent.religionId}`
+            const religion = nodes[0]
 
             return {
-                id: religion.id, 
-                defaultLabel: religion.localizations.filter((x: any) => x.locale == defaultLocale)[0].value,
-                otherLocales: religion.localizations.filter((x: any) => x.locale != defaultLocale),
-                status: religion.status
+                id: religion.id,
+                defaultLabel: religion.label,
+                otherLocales: [],
+                status: "ACTIVE"
             }
         },
         locatedFromMe:async (_parent: any, _:any, _context: serverContext) => {

@@ -1,18 +1,18 @@
 import { test, expect, Page } from '@playwright/test';
 import { AuthPage } from '../pages/AuthPage';
-import { HomePage } from '../pages/HomePage';
 import { UserSetupPage } from '../pages/UserSetupPage';
 import { PractitionerSetupPage } from '../pages/PractitionerSetupPage';
+import { OnboardingPage } from '../pages/OnboardingPage';
 import {
   clearTestEntityRegistry,
   registerTestUser,
-  registerTestPractitioner,
   getCookiesFromPage,
   cleanupTestUsers,
   cleanupTestPractitioners,
   completeStripeTestOnboarding,
   getVendorIdFromSlug,
 } from '../utils/test-cleanup';
+import { handleConsentGuardIfPresent } from '../utils/test-helpers';
 import { PurchaseManager, DialogManager, ServiceManager } from '../managers';
 
 /**
@@ -93,109 +93,37 @@ test.describe.serial('Practitioner Customer Journey', () => {
     }
     clearTestEntityRegistry(workerId);
   });
+
   test('setup: create practitioner with service', async ({ page }, testInfo) => {
     test.setTimeout(300000); // 5 minutes for full setup
 
     const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substring(2, 8);
     const workerId = testInfo.parallelIndex;
     const testEmail = `prac-journey-${timestamp}-${workerId}@playwright.com`;
-    practitionerSlug = `test-prac-${timestamp}-${randomSuffix}`;
+    const practitionerName = `Journey Practitioner ${timestamp}`;
 
-    // === AUTHENTICATE ===
-    const authPage = new AuthPage(page);
-    const homePage = new HomePage(page);
-    const userSetupPage = new UserSetupPage(page);
+    // === CREATE PRACTITIONER VIA UNIFIED SETUP FLOW ===
     const practitionerSetupPage = new PractitionerSetupPage(page);
+    practitionerSlug = await practitionerSetupPage.createPractitioner(testEmail, practitionerName, testInfo, 'awaken');
 
-    await page.goto('/');
-    await authPage.startAuthFlow(testEmail);
-    await expect(page.locator('[aria-label="input-login-otp"]')).toBeVisible({ timeout: 15000 });
-    await page.locator('[aria-label="input-login-otp"]').click();
-    await page.keyboard.type('123456');
-    await page.waitForURL('/', { timeout: 15000 });
-
-    // === USER SETUP ===
-    await homePage.waitForCompleteProfileLink();
-    await homePage.clickCompleteProfile();
-    await expect(page).toHaveURL(/\/u\/.*\/setup/, { timeout: 10000 });
-
-    const url = page.url();
-    const userIdMatch = url.match(/\/u\/([^\/]+)\/setup/);
-    if (userIdMatch) {
-      registerTestUser({ id: userIdMatch[1], email: testEmail }, workerId);
-      const cookies = await getCookiesFromPage(page);
-      if (cookies) cookiesPerWorker.set(workerId, cookies);
-    }
-
-    await userSetupPage.fillUserProfile({
-      firstName: 'Journey',
-      lastName: 'Practitioner',
-      phone: '0412345678',
-      address: 'Sydney Opera House',
-      securityQuestion: 'What is your favorite color?',
-      securityAnswer: 'Purple',
-    });
-
-    // Continue as practitioner
-    const practitionerBtn = page.locator('[data-testid="continue-as-practitioner-btn"]');
-    await expect(practitionerBtn).toBeVisible({ timeout: 10000 });
-    await practitionerBtn.click();
-    await expect(page).toHaveURL(/\/p\/setup\?practitionerId=/, { timeout: 15000 });
-
-    // The practitionerId from the URL is just a suggestion - the real ID is created by create_practitioner
-    // We'll get the real ID after setup using the slug
-
-    // === PRACTITIONER SETUP ===
-    await practitionerSetupPage.waitForStep1();
-    await practitionerSetupPage.fillBasicInfo({
-      name: `Journey Practitioner ${timestamp}`,
-      slug: practitionerSlug,
-      email: testEmail,
-      countryName: 'Australia',
-    });
-    await practitionerSetupPage.clickContinue();
-
-    await practitionerSetupPage.waitForStep2();
-    await practitionerSetupPage.fillProfile({
-      headline: 'Intuitive Tarot Reader',
-      bio: 'I specialize in helping people find clarity through tarot readings. With years of experience, I provide compassionate and insightful guidance.',
-      modalities: ['TAROT'],
-      specializations: ['RELATIONSHIPS', 'CAREER'],
-    });
-    await practitionerSetupPage.clickContinue();
-
-    await practitionerSetupPage.waitForStep3();
-    await practitionerSetupPage.submitForm();
-
-    // Wait for profile page - this confirms the practitioner setup is complete
-    await page.waitForURL(new RegExp(`/p/${practitionerSlug}`), { timeout: 30000 });
-
-    // Wait for the practitioner record to be fully committed to the database
-    await page.waitForTimeout(2000);
-
-    // === GET THE REAL PRACTITIONER ID ===
-    // The create_practitioner mutation creates a new vendor record with a different ID than the URL suggested
+    // === GET COOKIES AND PRACTITIONER ID ===
     const cookies = await getCookiesFromPage(page);
     if (!cookies) {
-      throw new Error('Cookies not found');
+      throw new Error('Cookies not found after practitioner creation');
     }
     cookiesPerWorker.set(workerId, cookies);
 
-    // Fetch actual vendor ID using the slug
     const actualVendorId = await getVendorIdFromSlug(practitionerSlug, cookies);
     if (actualVendorId) {
       practitionerId = actualVendorId;
-      console.log(`[Test] Registering practitioner for cleanup: vendorId=${practitionerId}, slug=${practitionerSlug}`);
-      registerTestPractitioner({ id: practitionerId, slug: practitionerSlug, email: testEmail, cookies }, workerId);
+      console.log(`[Test] Practitioner created: vendorId=${practitionerId}, slug=${practitionerSlug}`);
     } else {
       console.error(`[Test] WARNING: Could not fetch actual vendor ID for slug ${practitionerSlug}`);
-      registerTestPractitioner({ slug: practitionerSlug, email: testEmail, cookies }, workerId);
     }
 
     // === NAVIGATE TO DASHBOARD ===
     await page.goto(`/p/${practitionerSlug}/manage`);
-    await expect(page.getByText('Welcome back')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[aria-label="practitioner-side-nav"]')).toBeVisible({ timeout: 15000 });
     await dismissWelcomeDialog(page);
 
     // === COMPLETE STRIPE ONBOARDING ===
@@ -216,8 +144,21 @@ test.describe.serial('Practitioner Customer Journey', () => {
 
     // === CREATE SERVICE ===
     await page.goto(`/p/${practitionerSlug}/manage`);
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
     await dismissWelcomeDialog(page);
+
+    // Dismiss cookie banner if present (it intercepts button clicks)
+    const cookieBanner = page.getByTestId('cookie-banner');
+    if (await cookieBanner.isVisible({ timeout: 2000 }).catch(() => false)) {
+      const acceptCookieBtn = page.getByTestId('cookie-accept-btn');
+      if (await acceptCookieBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await acceptCookieBtn.click();
+        await expect(cookieBanner).not.toBeVisible({ timeout: 3000 });
+        console.log('[Setup] ✓ Dismissed cookie banner');
+      }
+    }
+
     const service = await createReadingService(page);
     serviceSlug = service.slug;
     serviceName = service.name;
@@ -235,7 +176,6 @@ test.describe.serial('Practitioner Customer Journey', () => {
     // === AUTHENTICATE AS CUSTOMER ===
     const authPage = new AuthPage(page);
     const userSetupPage = new UserSetupPage(page);
-    const homePage = new HomePage(page);
 
     await page.goto('/');
     await authPage.startAuthFlow(customerEmail);
@@ -244,35 +184,36 @@ test.describe.serial('Practitioner Customer Journey', () => {
     await page.keyboard.type('123456');
     await page.waitForURL('/', { timeout: 15000 });
 
-    // Complete basic user setup
-    await homePage.waitForCompleteProfileLink();
-    await homePage.clickCompleteProfile();
-    await expect(page).toHaveURL(/\/u\/.*\/setup/, { timeout: 10000 });
+    // Handle site-level ConsentGuard if present
+    await handleConsentGuardIfPresent(page);
 
-    const url = page.url();
-    const userIdMatch = url.match(/\/u\/([^\/]+)\/setup/);
-    if (userIdMatch) {
-      customerUserId = userIdMatch[1];
+    // === COMPLETE USER SETUP VIA UNIFIED /setup FLOW ===
+    await page.goto('/setup');
+    await userSetupPage.waitForForm();
+
+    // Get user ID from session for cleanup
+    customerUserId = await page.evaluate(async () => {
+      const response = await fetch('/api/auth/session');
+      const session = await response.json();
+      return session?.user?.id || '';
+    });
+
+    if (customerUserId) {
       registerTestUser({ id: customerUserId, email: customerEmail }, workerId);
     }
+
+    const cookies = await getCookiesFromPage(page);
+    if (cookies) cookiesPerWorker.set(workerId, cookies);
 
     await userSetupPage.fillUserProfile({
       firstName: 'Test',
       lastName: 'Customer',
-      phone: '0498765432',
-      address: 'Melbourne CBD',
-      securityQuestion: 'What is your favorite color?',
-      securityAnswer: 'Blue',
     });
+    await userSetupPage.startBrowsing();
 
-    // Don't continue as practitioner - just complete user setup
-    const completeBtn = page.locator('[data-testid="complete-setup-btn"]');
-    if (await completeBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await completeBtn.click();
-    } else {
-      // If no complete button, navigate away
-      await page.goto('/');
-    }
+    // Complete onboarding (spiritual interest selection)
+    const onboardingPage = new OnboardingPage(page);
+    await onboardingPage.completeWithPrimaryOnly('mediumship');
 
     // === NAVIGATE TO PRACTITIONER PROFILE ===
     await page.goto(`/p/${practitionerSlug}`);
@@ -458,82 +399,9 @@ test.describe.serial('Practitioner Customer Journey', () => {
       throw new Error('Customer storage state not available - purchase test must run first');
     }
 
-    // Navigate to home page first
-    await page.goto('/');
-    await page.waitForTimeout(2000);
-
-    // Check if we need to complete profile
-    // First check if user account menu is already visible (profile completed)
-    const userMenuVisible = await page.getByRole('button', { name: 'User account menu' }).isVisible({ timeout: 2000 }).catch(() => false);
-    console.log(`[Test] User menu visible check: ${userMenuVisible}`);
-
-    if (!userMenuVisible) {
-      // Profile not completed - look for setup link
-      const setupLinks = await page.locator('a[href*="/setup"]').count();
-      console.log(`[Test] Found ${setupLinks} setup links on page`);
-
-      // Find and click the complete profile link (matches /u/{userId}/setup pattern)
-      const completeProfileLink = page.locator('a[href*="/u/"][href*="/setup"]').first();
-      const linkExists = await completeProfileLink.isVisible({ timeout: 3000 }).catch(() => false);
-      console.log(`[Test] Complete profile link visible: ${linkExists}`);
-
-      if (linkExists) {
-        const href = await completeProfileLink.getAttribute('href');
-        console.log(`[Test] Profile link href: ${href}`);
-        console.log('[Test] Profile completion required, navigating to setup...');
-        await completeProfileLink.click();
-        await page.waitForURL(/\/u\/.*\/setup/, { timeout: 10000 });
-
-        console.log('[Test] Completing profile form...');
-        const userSetupPage = new UserSetupPage(page);
-        await userSetupPage.fillUserProfile({
-          firstName: 'Test',
-          lastName: 'Customer',
-          phone: '0498765432',
-          address: 'Melbourne CBD',
-          securityQuestion: 'What is your favorite color?',
-          securityAnswer: 'Blue',
-        });
-
-        // Click "Start Browsing SpiriVerse" button
-        console.log('[Test] Clicking Start Browsing button...');
-        const startBrowsingBtn = page.getByRole('button', { name: 'Start Browsing SpiriVerse' });
-        await expect(startBrowsingBtn).toBeEnabled({ timeout: 5000 });
-        await startBrowsingBtn.click();
-
-        // Wait for navigation - either to home page or the page to change
-        try {
-          await page.waitForURL('/', { timeout: 30000 });
-          console.log('[Test] Profile completed, redirected to home page');
-        } catch {
-          // If not redirected to home, check if we're still on setup or if form disappeared
-          const currentUrl = page.url();
-          console.log(`[Test] Current URL after click: ${currentUrl}`);
-
-          // If still on setup page, check if the form is still visible
-          const formStillVisible = await page.locator('text="Start Browsing SpiriVerse"').isVisible();
-          if (formStillVisible) {
-            console.log('[Test] Form still visible, trying to navigate to home manually');
-            await page.goto('/');
-          }
-        }
-        await page.waitForTimeout(2000);
-      }
-    }
-
-    // After profile is complete, navigate to customer profile to access orders
-    // The home page shows "My Personal Space" link, we need to go to customer profile
-    // Navigate to customer profile which has the side nav with Orders link
-    await page.goto(`/c/${customerUserId}`);
-    await page.waitForTimeout(1000);
-
-    // Click "Orders" in the side nav (it's a menuitem, not a button)
-    const ordersBtn = page.getByRole('menuitem', { name: 'Orders' });
-    await expect(ordersBtn).toBeVisible({ timeout: 10000 });
-    await ordersBtn.click();
-
-    // Wait for orders page to load
-    await page.waitForURL(/\/c\/.*\/orders/, { timeout: 10000 });
+    // Navigate directly to orders page in customer's Personal Space
+    await page.goto(`/u/${customerUserId}/space/orders`);
+    await page.waitForLoadState('networkidle');
     console.log('[Test] Orders page loaded');
 
     // Wait for orders to load (may take a moment)

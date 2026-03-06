@@ -35,15 +35,16 @@ type BLProps = {
 }
 
 const useSelectedSku = (skus: listing_sku_type[]) => {
-    const isSingleSku = skus.length === 1;
+    const safeSkus = skus ?? [];
+    const isSingleSku = safeSkus.length === 1;
     const [value, select] = useState<listing_sku_type | null>(
-      isSingleSku ? skus[0] : null
+      isSingleSku ? safeSkus[0] : null
     );
-  
+
     const reset = () => {
-        select(isSingleSku ? skus[0] : null);
+        select(isSingleSku ? safeSkus[0] : null);
     };
-  
+
     return { value, select, reset };
 };
 
@@ -62,8 +63,8 @@ const useBL = (props: BLProps) => {
 
     const form = useForm<z.infer<typeof schema>>({
         resolver: zodResolver(schema),
-        defaultValues: props.listing.skus.length == 1 ? {
-            sku: props.listing.skus[0],
+        defaultValues: (props.listing.skus ?? []).length == 1 ? {
+            sku: props.listing.skus![0],
             quantity: 1
         } : {
             quantity: 1
@@ -103,6 +104,11 @@ const CatalogueItem = forwardRef<HTMLAnchorElement, Props>(({ className, ...prop
 
     // Safety check: if thumbnail or image is missing, don't render
     if (!thumbnail || !thumbnail.image || !thumbnail.image.media) {
+        return null;
+    }
+
+    // Don't render products with no SKUs — customers can't buy them
+    if (props.listing.type === "PRODUCT" && !(props.listing.skus?.length)) {
         return null;
     }
 
@@ -173,7 +179,7 @@ const CatalogueItem = forwardRef<HTMLAnchorElement, Props>(({ className, ...prop
     }
 
     if (!isNullOrWhitespace(urlRelative)) {
-        const lowest_price = props.listing.type === "PRODUCT" ? props.listing.skus.reduce((prev, curr) => {
+        const lowest_price = props.listing.type === "PRODUCT" && props.listing.skus?.length ? props.listing.skus.reduce((prev, curr) => {
             return prev.price < curr.price ? prev : curr
         }).price : undefined;
 

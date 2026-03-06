@@ -20,7 +20,9 @@ import AddressInput, { GooglePlaceSchema } from "@/components/ux/AddressInput";
 import CalendarDropdown from "@/components/ux/CalendarDropdown";
 import RichTextInput from "@/components/ux/RichTextInput";
 import { ThumbnailSchema } from "@/shared/schemas/thumbnail";
+import { StepIndicator } from "@/components/ui/step-indicator";
 import { omit } from "@/lib/functions";
+import { toast } from "sonner";
 
 // Schema that matches VendorEventLocationInput GraphQL type
 const VendorEventLocationSchema = z.object({
@@ -148,7 +150,7 @@ const EventForm: React.FC<Props> = ({ merchantId, event, eventId, onSuccess, onD
             }
             
             const eventData = {
-                ...omit(data, ["event.landscapeImage.image.media.url", "startDate", "endDate"]),
+                ...omit(data, ["landscapeImage.image.media.url", "startDate", "endDate"]),
                 startAt: startDateTime.toISO(),
                 endAt: endDateTime ? endDateTime.toISO() : undefined,
             };
@@ -169,6 +171,7 @@ const EventForm: React.FC<Props> = ({ merchantId, event, eventId, onSuccess, onD
             onSuccess();
         } catch (error) {
             console.error("Failed to save event:", error);
+            toast.error("Failed to save event. Please try again.");
         } finally {
             setIsSubmitClicked(false); // Reset after submission
         }
@@ -220,38 +223,16 @@ const EventForm: React.FC<Props> = ({ merchantId, event, eventId, onSuccess, onD
     return (
         <div className="flex flex-col h-full">
             {/* Modern progress indicator */}
-            <div className="flex items-center justify-between mb-8 px-4 flex-shrink-0">
-                <div className="flex items-center space-x-2">
-                    <div className={`h-1 w-16 rounded-full transition-colors ${
-                        currentStep >= 1 ? 'bg-primary' : 'bg-muted'
-                    }`}></div>
-                    <span className={`text-sm font-medium transition-colors ${
-                        currentStep === 1 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                    }`}>
-                        Event Details
-                    </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <div className={`h-1 w-16 rounded-full transition-colors ${
-                        currentStep >= 2 ? 'bg-primary' : 'bg-muted'
-                    }`}></div>
-                    <span className={`text-sm font-medium transition-colors ${
-                        currentStep === 2 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                    }`}>
-                        Description
-                    </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <div className={`h-1 w-16 rounded-full transition-colors ${
-                        currentStep >= 3 ? 'bg-primary' : 'bg-muted'
-                    }`}></div>
-                    <span className={`text-sm font-medium transition-colors ${
-                        currentStep === 3 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-                    }`}>
-                        Media & Tags
-                    </span>
-                </div>
-            </div>
+            <StepIndicator
+                steps={[
+                    { label: 'Event Details' },
+                    { label: 'Description' },
+                    { label: 'Media & Tags' },
+                ]}
+                currentStep={currentStep}
+                onStepClick={setCurrentStep}
+                className="mb-8 px-4 flex-shrink-0"
+            />
 
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">

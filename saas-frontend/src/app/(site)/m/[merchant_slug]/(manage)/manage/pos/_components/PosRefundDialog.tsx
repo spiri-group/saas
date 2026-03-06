@@ -77,7 +77,7 @@ const PosRefundDialog = ({ open, sale, isRefunding, onRefund, onClose }: Props) 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-slate-900 border-slate-700 text-white" data-testid="pos-refund-dialog">
+      <DialogContent className="sm:max-w-md" data-testid="pos-refund-dialog">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <RotateCcw className="h-5 w-5 text-orange-400" />

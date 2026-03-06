@@ -25,7 +25,9 @@ type SubscriptionManagementProps = {
 };
 
 const TIER_DISPLAY: Record<string, string> = {
+    directory: 'Directory',
     awaken: 'Awaken',
+    illuminate: 'Illuminate',
     manifest: 'Manifest',
     transcend: 'Transcend',
 };
@@ -80,8 +82,11 @@ export default function SubscriptionManagement({ vendorId, profileType }: Subscr
         ? Math.min(100, (subscription.cumulativePayouts / subscription.subscriptionCostThreshold) * 100)
         : null;
 
-    const canUpgrade = profileType === 'merchant' && tier !== 'transcend';
-    const canDowngrade = profileType === 'merchant' && tier === 'transcend';
+    const TIER_ORDER = ['directory', 'awaken', 'illuminate', 'manifest', 'transcend'];
+    const currentTierIndex = TIER_ORDER.indexOf(tier || '');
+    const canUpgrade = tier !== 'transcend';
+    const canDowngrade = currentTierIndex > 0;
+    const downgradeTier = currentTierIndex > 0 ? TIER_ORDER[currentTierIndex - 1] : undefined;
 
     const handleCancelDowngrade = async () => {
         try {
@@ -358,10 +363,10 @@ export default function SubscriptionManagement({ vendorId, profileType }: Subscr
                     onClose={() => setShowUpgrade(false)}
                 />
             )}
-            {showDowngrade && (
+            {showDowngrade && downgradeTier && (
                 <DowngradeModal
                     vendorId={vendorId}
-                    targetTier="manifest"
+                    targetTier={downgradeTier}
                     onClose={() => setShowDowngrade(false)}
                 />
             )}

@@ -259,7 +259,7 @@ const FulfillmentDialog: React.FC<FulfillmentDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] w-full md:max-w-2xl lg:max-w-3xl xl:max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700" data-testid="fulfillment-dialog">
+      <DialogContent className="max-w-[95vw] w-full md:max-w-2xl lg:max-w-3xl xl:max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="fulfillment-dialog">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
             {getCategoryIcon(order.service.category)}

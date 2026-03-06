@@ -42,7 +42,7 @@ export interface StorageUsage {
 }
 
 export const calculateStorageUsage = (
-  usedBytes: number, 
+  usedBytes: number,
   totalGB: number
 ): StorageUsage => {
   const usedGB = usedBytes / (1024 * 1024 * 1024);
@@ -55,6 +55,18 @@ export const calculateStorageUsage = (
     usedPercentage: Number(usedPercentage.toFixed(1)),
     remainingGB: Number(remainingGB.toFixed(2))
   };
+};
+
+/**
+ * Smart storage display — shows MB when under 1GB, GB when 1GB+
+ */
+export const formatStorageSize = (gb: number): string => {
+  if (gb < 0.01) return '0 MB';
+  if (gb < 1) {
+    const mb = gb * 1024;
+    return `${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB`;
+  }
+  return `${gb.toFixed(1)} GB`;
 };
 
 export const formatFileSize = (bytes: number): string => {

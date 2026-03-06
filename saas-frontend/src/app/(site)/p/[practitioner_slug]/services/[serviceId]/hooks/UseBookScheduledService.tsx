@@ -14,7 +14,7 @@ export interface BookScheduledServiceInput {
     customerTimezone: string;
     deliveryMethod: string;
     customerAddress?: {
-        formatted_address?: string;
+        formattedAddress?: string;
         place_id?: string;
         name?: string;
         lat?: number;

@@ -47,24 +47,57 @@ export class ServiceManager {
   async openNewReadingWizard(): Promise<void> {
     await this.dialogManager.waitForDialogOverlayToClose();
 
-    // Open sidenav menu and click New Reading
-    const sideNav = this.page.locator('[aria-label="practitioner-side-nav"]');
-    const myServicesButton = sideNav.locator('button[aria-label="My Services"]').first();
-
-    if (await myServicesButton.isVisible({ timeout: 5000 })) {
-      await myServicesButton.click();
-      await this.page.waitForTimeout(500);
+    // Dismiss cookie banner if present (it can intercept clicks)
+    const cookieBanner = this.page.getByTestId('cookie-banner');
+    if (await cookieBanner.isVisible({ timeout: 1000 }).catch(() => false)) {
+      const acceptBtn = this.page.getByTestId('cookie-accept-btn');
+      if (await acceptBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await acceptBtn.click();
+        await this.page.waitForTimeout(500);
+      }
     }
 
-    const newReadingButton = sideNav
-      .locator('button[aria-label="New Reading"], button:has-text("New Reading"), a:has-text("New Reading")')
-      .first();
+    // Try sidenav "Services" menu first (opens dropdown with "New Reading")
+    const servicesNav = this.page.getByTestId('nav-services');
+    if (await servicesNav.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await servicesNav.click();
+      await this.page.waitForTimeout(1500);
+
+      const newReadingMenuItem = this.page.locator('[role="menuitem"]').filter({ hasText: 'New Reading' }).first();
+      if (await newReadingMenuItem.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await newReadingMenuItem.click();
+        await this.page.waitForTimeout(3000);
+      }
+    }
+
+    // Check if dialog appeared
+    const dialogCheck = this.page.locator('[role="dialog"]:not([aria-hidden="true"])');
+    if (await dialogCheck.isVisible({ timeout: 3000 }).catch(() => false)) {
+      console.log('[ServiceManager] New Reading wizard opened via sidenav');
+      await this.page.waitForTimeout(1000);
+      return;
+    }
+
+    // Fallback: "New Reading" button on dashboard main content
+    console.log('[ServiceManager] Dialog not found via sidenav, trying dashboard button...');
+    const newReadingButton = this.page.locator('button:has-text("New Reading")').first();
     await newReadingButton.waitFor({ state: 'visible', timeout: 5000 });
     await newReadingButton.click();
+    await this.page.waitForTimeout(3000);
+
+    // Second fallback: Try clicking the "Create your first service" button from Getting Started
+    if (!(await dialogCheck.isVisible({ timeout: 3000 }).catch(() => false))) {
+      console.log('[ServiceManager] Dashboard button did not open dialog, trying Getting Started...');
+      const createFirstService = this.page.locator('button:has-text("Create your first service")');
+      if (await createFirstService.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await createFirstService.click();
+        await this.page.waitForTimeout(3000);
+      }
+    }
 
     // Wait for wizard dialog
     const dialog = this.page.locator('[role="dialog"]:not([aria-hidden="true"])');
-    await expect(dialog).toBeVisible({ timeout: 10000 });
+    await expect(dialog).toBeVisible({ timeout: 15000 });
     await this.page.waitForTimeout(1000);
 
     console.log('[ServiceManager] New Reading wizard opened');

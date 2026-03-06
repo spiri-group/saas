@@ -13,7 +13,7 @@ type UpgradeModalProps = {
     onSuccess?: () => void;
 };
 
-const TIER_ORDER = ['awaken', 'manifest', 'transcend'];
+const TIER_ORDER = ['directory', 'awaken', 'illuminate', 'manifest', 'transcend'];
 
 function formatPrice(cents: number): string {
     return `$${(cents / 100).toFixed(0)}`;
@@ -21,7 +21,7 @@ function formatPrice(cents: number): string {
 
 export default function UpgradeModal({ vendorId, onClose, onSuccess }: UpgradeModalProps) {
     const { tier: currentTier, subscription } = useTierFeatures(vendorId);
-    const { data: tiers } = useSubscriptionTiers('merchant');
+    const { data: tiers } = useSubscriptionTiers();
     const upgradeMutation = useUpgradeVendorSubscription(vendorId);
     const [selectedInterval, setSelectedInterval] = useState<'monthly' | 'annual'>(
         (subscription?.billingInterval as 'monthly' | 'annual') || 'monthly'
@@ -58,7 +58,7 @@ export default function UpgradeModal({ vendorId, onClose, onSuccess }: UpgradeMo
         >
             <div
                 data-testid="upgrade-modal"
-                className="relative mx-4 max-w-2xl w-full rounded-2xl border border-slate-700 bg-slate-900 p-8 shadow-2xl"
+                className="relative mx-4 max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-8 shadow-2xl"
             >
                 <button
                     type="button"
@@ -111,7 +111,11 @@ export default function UpgradeModal({ vendorId, onClose, onSuccess }: UpgradeMo
                 </div>
 
                 {/* Upgrade tier cards */}
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className={`grid gap-4 ${
+                    upgradableTiers.length === 1 ? 'max-w-md mx-auto' :
+                    upgradableTiers.length === 3 ? 'md:grid-cols-3' :
+                    'md:grid-cols-2'
+                }`}>
                     {upgradableTiers.map((tier) => (
                         <UpgradeTierOption
                             key={tier.tier}
@@ -189,14 +193,31 @@ function UpgradeTierOption({
 
 function getFeatureLabel(key: string, value: boolean | number | null): string {
     const labels: Record<string, string> = {
+        // Core
+        hasDirectory: 'Directory listing',
+        hasSpiriAssist: 'SpiriAssist',
+        hasGallery: 'Gallery',
+        // Practitioner
+        canAcceptPayments: 'Accept payments',
+        hasVideoUpdates: 'Video updates + Followers',
+        canSellServices: 'Sell services + availability',
+        hasSpiriReadings: 'SpiriReadings',
+        // Growth
+        hasPaymentLinks: 'Payment links (SMS, Email)',
+        canCreateEvents: 'Ticketed events',
+        hasLiveAssist: 'Live Assist sessions',
+        hasExpoMode: 'Expo Mode',
+        canListTours: 'Tour listing + selling',
+        // Merchant
         canCreateMerchantProfile: 'Merchant storefront',
         maxProducts: value === null ? 'Unlimited products' : `Up to ${value} products`,
+        hasInventoryAutomation: 'Inventory sync',
         canHostPractitioners: 'Host practitioners',
-        hasInventoryAutomation: 'Inventory automation',
-        hasShippingAutomation: 'Shipping automation',
-        canCreateEvents: 'Ticketed events',
-        canCreateTours: 'Guided tours',
-        hasSpiriAssist: 'SpiriAssist investigations',
+        canOperateTours: 'Tour operation',
+        // Enterprise
+        hasRefundAutomation: 'Refund automation',
+        hasShippingAutomation: 'Shipping labels + tracking',
+        hasPOS: 'POS + stock sync',
         hasBackorders: 'Backorder support',
     };
     return labels[key] || key;

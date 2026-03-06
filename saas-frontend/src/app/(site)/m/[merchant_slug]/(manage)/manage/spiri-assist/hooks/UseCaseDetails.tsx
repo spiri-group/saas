@@ -9,13 +9,13 @@ export const required_attributes = `
     release_status
 `
 
-const queryFn = async (caseId: string) => {
-    if (caseId == null) return null;
+const queryFn = async (caseId: string, trackingCode?: string) => {
+    if (caseId == null && trackingCode == null) return null;
 
     const resp = await gql<{
         case: case_type
-    }>( `query get_caseDetail($caseId: String)  {
-            case(caseId: $caseId) {
+    }>( `query get_caseDetail($caseId: String, $trackingCode: ID)  {
+            case(caseId: $caseId, trackingCode: $trackingCode) {
                 id
                 caseStatus
                 code
@@ -108,24 +108,6 @@ const queryFn = async (caseId: string) => {
                                 currency
                             }
                         }
-                        balanceDue {
-                            subtotal {
-                                amount
-                                currency
-                            }
-                            fees {
-                                amount
-                                currency
-                            }
-                            total {
-                                amount
-                                currency
-                            }
-                            discount {
-                                amount
-                                currency 
-                            }
-                        }  
                     }
                     ref {
                         id
@@ -142,7 +124,7 @@ const queryFn = async (caseId: string) => {
                     merchantId
                     caseId
                     type
-                    merchant { 
+                    merchant {
                         name
                     }
                     description
@@ -156,24 +138,6 @@ const queryFn = async (caseId: string) => {
                                 currency
                             }
                         }
-                        balanceDue {
-                            subtotal {
-                                amount
-                                currency
-                            }
-                            fees {
-                                amount
-                                currency
-                            }
-                            total {
-                                amount
-                                currency
-                            }
-                            discount {
-                                amount
-                                currency 
-                            }
-                        }  
                     }
                     ref {
                         id
@@ -189,16 +153,17 @@ const queryFn = async (caseId: string) => {
         }
         `,
         {
-            caseId
+            caseId: caseId || undefined,
+            trackingCode: trackingCode || undefined
         }
     )
     return resp.case;
 }
 
-const UseCaseDetails = (caseId: string) => {
+const UseCaseDetails = (caseId: string, trackingCode?: string) => {
     return useQuery({
-        queryKey: [key, caseId],
-        queryFn: () => queryFn(caseId)
+        queryKey: [key, caseId || trackingCode],
+        queryFn: () => queryFn(caseId, trackingCode)
     });
 }
 

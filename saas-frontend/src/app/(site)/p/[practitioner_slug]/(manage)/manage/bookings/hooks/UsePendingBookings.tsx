@@ -28,7 +28,7 @@ export interface ScheduledBooking {
     meetingLink?: string;
     meetingPasscode?: string;
     customerAddress?: {
-        formatted_address?: string;
+        formattedAddress?: string;
     };
     practitionerAddress?: string;
     questionnaireResponses?: Array<{

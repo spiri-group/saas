@@ -1,0 +1,88 @@
+type Query {
+    expos(vendorId: ID!): [Expo!]!
+    expo(expoId: ID!, vendorId: ID!): Expo
+    expoItems(expoId: ID!): [ExpoItem!]!
+    expoSales(expoId: ID!): [ExpoSale!]!
+    expoByCode(code: String!): ExpoPublic
+    expoPublicItems(expoId: ID!): [ExpoPublicItem!]!
+}
+
+type Expo {
+    id: ID!
+    vendorId: String!
+    code: String!
+    expoName: String!
+    expoStatus: String!
+    totalSales: Int!
+    totalRevenue: Int!
+    totalItemsSold: Int!
+    totalCustomers: Int!
+    createdAt: String!
+    goLiveAt: String
+    pausedAt: String
+    endedAt: String
+}
+
+type ExpoItem {
+    id: ID!
+    expoId: String!
+    vendorId: String!
+    itemSource: String!
+    serviceId: String
+    serviceName: String
+    itemName: String!
+    itemDescription: String
+    itemImage: String
+    price: CurrencyAmount!
+    trackInventory: Boolean!
+    quantityBrought: Int
+    quantitySold: Int!
+    sortOrder: Int!
+    isActive: Boolean!
+    createdAt: String!
+}
+
+type ExpoSale {
+    id: ID!
+    expoId: String!
+    vendorId: String!
+    customerName: String
+    customerEmail: String
+    saleChannel: String!
+    paymentMethod: String!
+    items: [ExpoSaleItemDetail!]!
+    subtotal: CurrencyAmount!
+    saleStatus: String!
+    saleNumber: Int!
+    createdAt: String!
+    paidAt: String
+}
+
+type ExpoSaleItemDetail {
+    itemId: String!
+    itemName: String!
+    quantity: Int!
+    unitPrice: CurrencyAmount!
+    lineTotal: CurrencyAmount!
+}
+
+type ExpoPublic {
+    id: ID!
+    vendorId: String!
+    vendorName: String!
+    vendorLogo: String
+    code: String!
+    expoName: String!
+    expoStatus: String!
+}
+
+type ExpoPublicItem {
+    id: ID!
+    itemName: String!
+    itemDescription: String
+    itemImage: String
+    price: CurrencyAmount!
+    trackInventory: Boolean!
+    quantityAvailable: Int
+    sortOrder: Int!
+}

@@ -14,7 +14,9 @@ type DowngradeModalProps = {
 };
 
 const TIER_DISPLAY: Record<string, string> = {
+    directory: 'Directory',
     awaken: 'Awaken',
+    illuminate: 'Illuminate',
     manifest: 'Manifest',
     transcend: 'Transcend',
 };
@@ -87,7 +89,7 @@ export default function DowngradeModal({ vendorId, targetTier, onClose, onSucces
                                 <li>You&apos;ll keep your current features until then</li>
                                 {targetTier === 'manifest' && (
                                     <>
-                                        <li>Products beyond 15 will be hidden (not deleted)</li>
+                                        <li>Products beyond 20 will be hidden (not deleted)</li>
                                         <li>Practitioner hosting will be disabled</li>
                                         <li>Inventory and shipping automation will be disabled</li>
                                     </>

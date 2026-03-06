@@ -4,14 +4,31 @@ import { useQuery } from '@tanstack/react-query';
 import { gql } from '@/lib/services/gql';
 
 export type TierFeatures = {
+    // Core (Directory+)
+    hasDirectory: boolean;
+    hasSpiriAssist: boolean;
+    hasGallery: boolean;
+    // Practitioner (Awaken+)
+    canAcceptPayments: boolean;
+    hasVideoUpdates: boolean;
+    canSellServices: boolean;
+    hasSpiriReadings: boolean;
+    // Growth (Illuminate+)
+    hasPaymentLinks: boolean;
+    canCreateEvents: boolean;
+    hasLiveAssist: boolean;
+    hasExpoMode: boolean;
+    canListTours: boolean;
+    // Merchant (Manifest+)
     canCreateMerchantProfile: boolean;
     maxProducts: number | null;
-    canHostPractitioners: boolean;
     hasInventoryAutomation: boolean;
+    canHostPractitioners: boolean;
+    canOperateTours: boolean;
+    // Enterprise (Transcend)
+    hasRefundAutomation: boolean;
     hasShippingAutomation: boolean;
-    canCreateEvents: boolean;
-    canCreateTours: boolean;
-    hasSpiriAssist: boolean;
+    hasPOS: boolean;
     hasBackorders: boolean;
 };
 
@@ -40,14 +57,26 @@ export const useSubscriptionTiers = (profileType?: string) => {
                         description
                         profileType
                         features {
+                            hasDirectory
+                            hasSpiriAssist
+                            hasGallery
+                            canAcceptPayments
+                            hasVideoUpdates
+                            canSellServices
+                            hasSpiriReadings
+                            hasPaymentLinks
+                            canCreateEvents
+                            hasLiveAssist
+                            hasExpoMode
+                            canListTours
                             canCreateMerchantProfile
                             maxProducts
-                            canHostPractitioners
                             hasInventoryAutomation
+                            canHostPractitioners
+                            canOperateTours
+                            hasRefundAutomation
                             hasShippingAutomation
-                            canCreateEvents
-                            canCreateTours
-                            hasSpiriAssist
+                            hasPOS
                             hasBackorders
                         }
                         monthlyPrice

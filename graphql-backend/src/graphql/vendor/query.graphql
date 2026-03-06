@@ -157,10 +157,10 @@ type PractitionerVerification {
 type PractitionerProfile {
     # Identity
     pronouns: String
-    headline: String!
+    headline: String
 
     # Personal Story
-    bio: String!
+    bio: String
     spiritualJourney: String
 
     # Gifts & Modalities
@@ -290,10 +290,12 @@ type Vendor {
   practitioner: PractitionerProfile
   onStart: String
   country: CountryCode
+  state: String
   currency: Currency
   contact: VendorContactDetails
   address: String
   website: String
+  abn: String
   postcode: Int
   stripe: StripeAccount
   stripe_business: StripeBusinessAccount

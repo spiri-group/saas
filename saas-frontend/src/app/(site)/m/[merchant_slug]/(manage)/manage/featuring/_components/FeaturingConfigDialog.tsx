@@ -423,7 +423,7 @@ const FeaturingConfigDialog: React.FC<Props> = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-slate-900 border-slate-700 max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="text-white flex items-center gap-2">
                         Configure {relationship.practitionerName}

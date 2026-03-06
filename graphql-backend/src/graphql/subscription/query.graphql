@@ -29,17 +29,37 @@ type VendorSubscriptionDetail {
   waived: Boolean
   waivedUntil: String
   overrideNotes: String
+  billingModel: String
+  trialStartedAt: String
+  trialEndsAt: String
 }
 
 type TierFeatures {
+  # Core (Directory+)
+  hasDirectory: Boolean!
+  hasSpiriAssist: Boolean!
+  hasGallery: Boolean!
+  # Practitioner (Awaken+)
+  canAcceptPayments: Boolean!
+  hasVideoUpdates: Boolean!
+  canSellServices: Boolean!
+  hasSpiriReadings: Boolean!
+  # Growth (Illuminate+)
+  hasPaymentLinks: Boolean!
+  canCreateEvents: Boolean!
+  hasLiveAssist: Boolean!
+  hasExpoMode: Boolean!
+  canListTours: Boolean!
+  # Merchant (Manifest+)
   canCreateMerchantProfile: Boolean!
   maxProducts: Int
-  canHostPractitioners: Boolean!
   hasInventoryAutomation: Boolean!
+  canHostPractitioners: Boolean!
+  canOperateTours: Boolean!
+  # Enterprise (Transcend)
+  hasRefundAutomation: Boolean!
   hasShippingAutomation: Boolean!
-  canCreateEvents: Boolean!
-  canCreateTours: Boolean!
-  hasSpiriAssist: Boolean!
+  hasPOS: Boolean!
   hasBackorders: Boolean!
 }
 

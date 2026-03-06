@@ -147,13 +147,13 @@ function BookingCard({ booking, onConfirm, onReject, onCancel, showActions = fal
                 )}
 
                 {/* Customer address for mobile bookings */}
-                {booking.deliveryMethod === 'MOBILE' && booking.customerAddress?.formatted_address && (
+                {booking.deliveryMethod === 'MOBILE' && booking.customerAddress?.formattedAddress && (
                     <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
                         <div className="flex items-center gap-2 text-slate-400 text-sm mb-1">
                             <MapPin className="w-4 h-4" />
                             Customer Address
                         </div>
-                        <p className="text-slate-200 text-sm">{booking.customerAddress.formatted_address}</p>
+                        <p className="text-slate-200 text-sm">{booking.customerAddress.formattedAddress}</p>
                     </div>
                 )}
 
@@ -516,11 +516,11 @@ export default function PractitionerBookingsUI({ session, practitionerId, slug }
                                 </Alert>
                             )}
 
-                            {selectedBooking.deliveryMethod === 'MOBILE' && selectedBooking.customerAddress?.formatted_address && (
+                            {selectedBooking.deliveryMethod === 'MOBILE' && selectedBooking.customerAddress?.formattedAddress && (
                                 <Alert className="bg-purple-500/10 border-purple-500/30">
                                     <Car className="h-4 w-4 text-purple-400" />
                                     <AlertDescription className="text-purple-300">
-                                        You&apos;ll travel to: {selectedBooking.customerAddress.formatted_address}
+                                        You&apos;ll travel to: {selectedBooking.customerAddress.formattedAddress}
                                     </AlertDescription>
                                 </Alert>
                             )}

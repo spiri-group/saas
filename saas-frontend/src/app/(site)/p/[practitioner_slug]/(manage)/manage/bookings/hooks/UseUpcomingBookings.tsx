@@ -36,7 +36,7 @@ export const useUpcomingBookings = (practitionerId: string | undefined) => {
                         meetingLink
                         meetingPasscode
                         customerAddress {
-                            formatted_address
+                            formattedAddress
                         }
                         practitionerAddress
                         payment {

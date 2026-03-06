@@ -1,8 +1,10 @@
 import { test, expect, Page, TestInfo } from '@playwright/test';
 import { PractitionerSetupPage } from '../pages/PractitionerSetupPage';
 import { AuthPage } from '../pages/AuthPage';
-import { HomePage } from '../pages/HomePage';
 import { UserSetupPage } from '../pages/UserSetupPage';
+import { OnboardingPage } from '../pages/OnboardingPage';
+import { PurchaseManager } from '../managers/PurchaseManager';
+import { handleConsentGuardIfPresent } from '../utils/test-helpers';
 import {
   getCookiesFromPage,
   registerTestUser,
@@ -23,18 +25,16 @@ import {
 const DESCRIBE_KEY = 'medium-journey';
 let practitionerSlug: string;
 let practitionerId: string;
-let practitionerCookies: any[];
+let practitionerCookies: string;
 let serviceName: string;
 let customerId: string;
 let customerEmail: string;
-let customerCookies: any[];
+let customerCookies: string;
 let orderId: string;
 let deliveryCompleted: boolean = false; // Track if Test 3 successfully delivered
 
 // Per-worker state tracking
 const cookiesPerWorker = new Map<string, string>();
-const practitionerPerWorker = new Map<string, string>();
-const setupCompletedPerWorker = new Map<string, boolean>();
 
 /** Generate unique test email */
 function generateUniqueTestEmail(testInfo: TestInfo): string {
@@ -147,20 +147,19 @@ async function getPractitionerIdFromSlug(page: Page, slug: string): Promise<stri
   }
 }
 
-/** Open My Services create menu for a specific service type */
-async function openMyServicesCreateMenu(page: Page, serviceType: 'Reading' | 'Healing' | 'Coaching') {
+/** Open Services create menu for a specific service type */
+async function openServicesCreateMenu(page: Page, serviceType: 'Reading' | 'Healing' | 'Coaching') {
   await waitForDialogOverlayToClose(page);
 
-  // Click on "My Services" in the sidebar
-  const sideNav = page.locator('[aria-label="practitioner-side-nav"]');
-  const myServicesButton = sideNav.locator('button[aria-label="My Services"]').first();
-  if (await myServicesButton.isVisible({ timeout: 5000 })) {
-    await myServicesButton.click();
+  // Click on "Services" in the sidebar using testid
+  const servicesNav = page.getByTestId('nav-services');
+  if (await servicesNav.isVisible({ timeout: 5000 })) {
+    await servicesNav.click();
     await page.waitForTimeout(1000);
   }
 
   // The menu items are "New Reading", "New Healing", "New Coaching" - not "Create"
-  const newServiceButton = sideNav.locator(`button:has-text("New ${serviceType}"), a:has-text("New ${serviceType}")`).first();
+  const newServiceButton = page.locator(`[role="menuitem"]`).filter({ hasText: `New ${serviceType}` }).first();
   if (await newServiceButton.isVisible({ timeout: 3000 })) {
     await newServiceButton.click();
     await page.waitForLoadState('networkidle');
@@ -194,10 +193,10 @@ test.describe.serial('ASYNC Reading Service - Medium - Full Customer Journey', (
     // Create merchant
     const testEmail = generateUniqueTestEmail(testInfo);
     const practitionerSetupPage = new PractitionerSetupPage(page);
-    practitionerSlug = await practitionerSetupPage.createPractitioner(testEmail, 'Medium Test', testInfo);
+    practitionerSlug = await practitionerSetupPage.createPractitioner(testEmail, 'Medium Test', testInfo, 'awaken');
     console.log(`[Test 1] Practitioner slug: ${practitionerSlug}`);
 
-    practitionerCookies = await page.context().cookies();
+    const cookies = await getCookiesFromPage(page);
     await dismissWelcomeDialog(page);
     await setupLocation(page);
 
@@ -207,16 +206,21 @@ test.describe.serial('ASYNC Reading Service - Medium - Full Customer Journey', (
 
     // Complete Stripe onboarding
     console.log('[Test 1] Completing Stripe onboarding...');
-    const cookiesString = await getCookiesFromPage(page);
-    if (!cookiesString) {
+    if (!cookies) {
       throw new Error('Failed to get cookies from page');
     }
-    const onboardingResult = await completeStripeTestOnboarding(practitionerId, cookiesString);
+    const onboardingResult = await completeStripeTestOnboarding(practitionerId, cookies);
     if (onboardingResult.success) {
       console.log('[Test 1] ✓ Stripe onboarding completed');
       await page.reload();
       await page.waitForLoadState('networkidle');
     }
+
+    // Store cookies for re-auth in later tests
+    practitionerCookies = cookies;
+    const workerId = testInfo.parallelIndex;
+    const stateKey = `${workerId}-${DESCRIBE_KEY}`;
+    cookiesPerWorker.set(stateKey, cookies);
 
     // Navigate to practitioner dashboard
     await page.goto(`/p/${practitionerSlug}/manage`);
@@ -225,7 +229,7 @@ test.describe.serial('ASYNC Reading Service - Medium - Full Customer Journey', (
 
     // Navigate to create reading service
     console.log('[Test 1] Creating ASYNC mediumship reading service...');
-    await openMyServicesCreateMenu(page, 'Reading');
+    await openServicesCreateMenu(page, 'Reading');
 
     const timestamp = Date.now();
     serviceName = `Medium Reading ${timestamp}`;
@@ -342,9 +346,10 @@ test.describe.serial('ASYNC Reading Service - Medium - Full Customer Journey', (
       throw new Error('[Test 2] Missing practitionerSlug or serviceName from Test 1');
     }
 
-    // Create customer user
+    // Create customer user via unified /setup flow
     const testEmail = `customer-${generateUniqueTestEmail(testInfo)}`;
     customerEmail = testEmail;
+    const workerId = testInfo.parallelIndex;
 
     const authPage = new AuthPage(page);
     const userSetupPage = new UserSetupPage(page);
@@ -353,187 +358,96 @@ test.describe.serial('ASYNC Reading Service - Medium - Full Customer Journey', (
     await authPage.startAuthFlow(testEmail);
 
     // Wait for OTP input and enter test OTP
-    await page.locator('[aria-label="input-login-otp"]').waitFor({ state: 'visible', timeout: 15000 });
+    await expect(page.locator('[aria-label="input-login-otp"]')).toBeVisible({ timeout: 15000 });
     await page.locator('[aria-label="input-login-otp"]').click();
     await page.keyboard.type('123456');
     await page.waitForURL('/', { timeout: 15000 });
 
-    // Complete profile setup
-    const homePage = new HomePage(page);
-    try {
-      await homePage.waitForCompleteProfileLink();
-      await homePage.clickCompleteProfile();
-      await page.waitForURL(/\/u\/.*\/setup/, { timeout: 10000 });
+    // Handle site-level ConsentGuard if present
+    await handleConsentGuardIfPresent(page);
 
-      const setupUrl = page.url();
-      const userIdMatch = setupUrl.match(/\/u\/([^\/]+)\/setup/);
-      if (userIdMatch) {
-        customerId = userIdMatch[1];
-        console.log(`[Test 2] Customer user ID: ${customerId}`);
-      }
+    // Navigate to unified setup page
+    await page.goto('/setup');
+    await userSetupPage.waitForForm();
 
-      await userSetupPage.fillUserProfile({
-        firstName: 'Medium',
-        lastName: 'Seeker',
-        phone: '0412345678',
-        address: 'Sydney Opera House',
-        securityQuestion: 'What is your favorite flower?',
-        securityAnswer: 'Rose',
-      });
-
-      // Complete user setup (primary interest selection happens in onboarding, not setup)
-      await userSetupPage.startBrowsing();
-      await page.waitForURL('/', { timeout: 15000 });
-    } catch (error) {
-      console.log('[Test 2] Profile setup not needed or already complete');
+    // Get user ID from session for cleanup
+    customerId = await page.evaluate(async () => {
+      const response = await fetch('/api/auth/session');
+      const session = await response.json();
+      return session?.user?.id || '';
+    });
+    if (customerId) {
+      console.log(`[Test 2] Customer user ID: ${customerId}`);
     }
 
-    customerCookies = await page.context().cookies();
+    // Fill basic details and click "Start Your Journey"
+    await userSetupPage.fillUserProfile({
+      firstName: 'Medium',
+      lastName: 'Seeker',
+    });
+    await userSetupPage.startBrowsing();
+
+    // Complete onboarding (spiritual interest selection)
+    const onboardingPage = new OnboardingPage(page);
+    await onboardingPage.completeWithPrimaryOnly('mediumship');
+    console.log('[Test 2] ✓ Customer profile completed');
+
+    // Store cookies for re-auth in later tests
+    const customerCookieString = await getCookiesFromPage(page);
+    if (customerCookieString) {
+      customerCookies = customerCookieString;
+      const stateKey = `${workerId}-${DESCRIBE_KEY}-customer`;
+      cookiesPerWorker.set(stateKey, customerCookieString);
+      if (customerId) {
+        registerTestUser({ id: customerId, email: testEmail, cookies: customerCookieString }, workerId);
+      }
+    }
 
     // Navigate to practitioner storefront
     await page.goto(`/p/${practitionerSlug}`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
-    // Find and click on the service
-    const serviceCard = page.locator(`[data-testid="service-card"]:has-text("${serviceName}"), .service-card:has-text("${serviceName}")`).first();
-    if (await serviceCard.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await serviceCard.click();
-    } else {
-      // Fallback: Find any card with service name
-      const fallbackCard = page.locator(`text=${serviceName}`).first();
-      await fallbackCard.click();
+    // Find and click on the service using href-based locator
+    const servicesSection = page.getByTestId('services-section');
+    await expect(servicesSection).toBeVisible({ timeout: 10000 });
+    const serviceCard = servicesSection.locator(`a[href*="/services/"]`).filter({ hasText: serviceName }).first();
+    await expect(serviceCard).toBeVisible({ timeout: 10000 });
+    await serviceCard.click();
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+    console.log('[Test 2] ✓ Navigated to service detail page');
+
+    // Dismiss cookie banner if present (it intercepts checkout clicks)
+    const cookieBanner = page.getByTestId('cookie-banner');
+    if (await cookieBanner.isVisible({ timeout: 2000 }).catch(() => false)) {
+      const acceptCookieBtn = page.getByTestId('cookie-accept-btn');
+      if (await acceptCookieBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await acceptCookieBtn.click();
+        await expect(cookieBanner).not.toBeVisible({ timeout: 3000 });
+        console.log('[Test 2] ✓ Dismissed cookie banner');
+      }
     }
 
-    await page.waitForTimeout(2000);
+    // Use PurchaseManager for the complete purchase flow
+    const purchaseManager = new PurchaseManager(page);
+    const result = await purchaseManager.completePurchaseFromDetailPage(serviceName, {
+      skipBilling: false,
+    });
 
-    // Click "Add to Cart" button
-    const addToCartButton = page.locator('button:has-text("Add to Cart")');
-    await addToCartButton.waitFor({ state: 'visible', timeout: 10000 });
-    await addToCartButton.click();
-    await page.waitForTimeout(2000);
-    console.log('[Test 2] ✓ Added to cart');
-
-    // Open the cart drawer by clicking the cart button in the header
-    console.log('[Test 2] Opening cart drawer...');
-    const cartButton = page.locator('button[aria-label*="cart" i], button[aria-label*="Shopping" i]').first();
-    await cartButton.waitFor({ state: 'visible', timeout: 10000 });
-    await cartButton.click();
-    await page.waitForTimeout(1500);
-    console.log('[Test 2] ✓ Opened cart drawer');
-
-    // Click "Checkout" button inside the cart drawer
-    console.log('[Test 2] Proceeding to checkout...');
-    const checkoutButton = page.locator('button:has-text("Checkout"), button:has-text("Proceed to Checkout")').first();
-    await checkoutButton.waitFor({ state: 'visible', timeout: 10000 });
-    await checkoutButton.click();
-    await page.waitForTimeout(2000);
-    console.log('[Test 2] ✓ Navigated to checkout');
-
-    // Fill billing address (required before payment)
-    console.log('[Test 2] Filling billing address...');
-
-    // Click "Enter details manually" button
-    const manualButton = page.locator('button:has-text("Enter details manually")');
-    await manualButton.waitFor({ state: 'visible', timeout: 10000 });
-    await manualButton.click();
-    console.log('[Test 2] Clicked "Enter details manually"');
-    await page.waitForTimeout(1000);
-
-    // Fill manual billing address fields
-    const nameInput = page.locator('input[name="manualAddress.name"]');
-    await nameInput.waitFor({ state: 'visible', timeout: 5000 });
-    await nameInput.fill('Test Customer');
-    await page.locator('input[name="manualAddress.line1"]').fill('123 Test Street');
-    await page.locator('input[name="manualAddress.city"]').fill('Sydney');
-    await page.locator('input[name="manualAddress.postal_code"]').fill('2000');
-    await page.locator('input[name="manualAddress.country"]').fill('AU');
-
-    const saveButton = page.locator('button:has-text("Save Address")');
-    await saveButton.waitFor({ state: 'visible', timeout: 5000 });
-    await saveButton.click();
-    await page.waitForTimeout(1500);
-    console.log('[Test 2] ✓ Filled billing address manually');
-
-    // Expand Payment Method section
-    console.log('[Test 2] Expanding payment method section...');
-    const paymentSection = page.locator('text=Payment Method').first();
-    if (await paymentSection.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await paymentSection.click();
-      await page.waitForTimeout(2000);
-      console.log('[Test 2] ✓ Expanded payment method section');
+    if (!result.success) {
+      await page.screenshot({ path: 'test-results/medium-purchase-failed.png' });
+      throw new Error(`[Test 2] Purchase failed: ${result.error}`);
     }
 
-    // Fill Stripe payment form
-    console.log('[Test 2] Filling Stripe payment...');
-    const stripeFrames = page.locator('iframe[name^="__privateStripeFrame"]');
-    await stripeFrames.first().waitFor({ state: 'visible', timeout: 15000 });
-    await page.waitForTimeout(2000);
+    console.log('[Test 2] ✓ Payment successful');
 
-    const frameCount = await stripeFrames.count();
-    console.log(`[Test 2] Found ${frameCount} Stripe iframes`);
-
-    let filledNumber = false;
-    let filledExpiry = false;
-    let filledCvc = false;
-
-    for (let i = 0; i < frameCount; i++) {
-      const frame = page.frameLocator('iframe[name^="__privateStripeFrame"]').nth(i);
-
-      if (!filledNumber) {
-        const numberInput = frame.locator('input[name="number"]');
-        if (await numberInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-          await numberInput.fill('4242424242424242');
-          filledNumber = true;
-          console.log(`[Test 2] ✓ Filled card number in iframe ${i}`);
-        }
-      }
-
-      if (!filledExpiry) {
-        const expiryInput = frame.locator('input[name="expiry"]');
-        if (await expiryInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-          await expiryInput.fill('1228');
-          filledExpiry = true;
-          console.log(`[Test 2] ✓ Filled expiry in iframe ${i}`);
-        }
-      }
-
-      if (!filledCvc) {
-        const cvcInput = frame.locator('input[name="cvc"]');
-        if (await cvcInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-          await cvcInput.fill('123');
-          filledCvc = true;
-          console.log(`[Test 2] ✓ Filled CVC in iframe ${i}`);
-        }
-      }
-
-      if (filledNumber && filledExpiry && filledCvc) break;
-    }
-
-    await page.waitForTimeout(1000);
-    console.log('[Test 2] ✓ Completed Stripe payment form');
-
-    // Submit payment
-    const payButton = page.locator('button:has-text("Pay"), button:has-text("Complete Order"), button:has-text("Finish & Pay")').first();
-    await payButton.waitFor({ state: 'visible', timeout: 5000 });
-    await payButton.click();
-    console.log('[Test 2] Submitted payment...');
-
-    // Wait for navigation to complete (page redirects after payment)
-    await page.waitForLoadState('networkidle', { timeout: 30000 });
-    await page.waitForTimeout(3000);
-
-    // Wait for success dialog (should appear after navigation)
-    const successDialog = page.locator('text=Payment successful').first();
-    await successDialog.waitFor({ state: 'visible', timeout: 10000 });
-    console.log('[Test 2] ✓ Payment successful dialog appeared');
-    await page.waitForTimeout(1000);
-
-    // Click "Go to orders" button
+    // Click "Go to orders" button if visible after payment success
     const goToOrdersButton = page.locator('button:has-text("Go to orders")').first();
-    await goToOrdersButton.waitFor({ state: 'visible', timeout: 5000 });
-    await goToOrdersButton.click();
-    await page.waitForTimeout(2000);
+    if (await goToOrdersButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await goToOrdersButton.click();
+      await page.waitForTimeout(2000);
+    }
 
     await page.screenshot({ path: 'test-results/medium-order-placed.png' });
     console.log('[Test 2] ✓ Customer order placed successfully');
@@ -548,9 +462,14 @@ test.describe.serial('ASYNC Reading Service - Medium - Full Customer Journey', (
       throw new Error('[Test 3] Missing practitioner data from Test 1');
     }
 
-    // Re-authenticate as practitioner
+    // Re-authenticate as practitioner using stored cookie string
+    const cookiePairs = practitionerCookies.split('; ');
+    const cookieObjs = cookiePairs.map(pair => {
+      const [name, value] = pair.split('=');
+      return { name, value: value || '', domain: 'localhost', path: '/' };
+    });
     await context.clearCookies();
-    await context.addCookies(practitionerCookies);
+    await context.addCookies(cookieObjs);
     await page.goto('/');
     await page.waitForTimeout(2000);
 
@@ -686,9 +605,14 @@ Your Medium`;
       throw new Error('[Test 4] Missing customer data from Test 2');
     }
 
-    // Re-authenticate as customer
+    // Re-authenticate as customer using stored cookie string
+    const cookiePairs = customerCookies.split('; ');
+    const cookieObjs = cookiePairs.map(pair => {
+      const [name, value] = pair.split('=');
+      return { name, value: value || '', domain: 'localhost', path: '/' };
+    });
     await context.clearCookies();
-    await context.addCookies(customerCookies);
+    await context.addCookies(cookieObjs);
     await page.goto('/');
     await page.waitForTimeout(2000);
 

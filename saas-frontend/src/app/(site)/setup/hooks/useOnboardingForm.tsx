@@ -28,15 +28,14 @@ export const onboardingSchema = z.object({
 
     // Merchant sub-object (optional — only for manifest/transcend)
     merchant: z.object({
+        id: z.string().min(1),
         name: z.string().min(1, 'Business name is required'),
         slug: z.string().min(1, 'URL is required').regex(/^[a-z0-9-]+$/, 'Use only lowercase letters, numbers and hyphens'),
         email: z.string().email('Please enter a valid email'),
-        state: z.string().min(1, 'State/province is required'),
-        merchantTypeIds: z.array(z.string()).min(1, 'Select at least one type'),
-        religion: z.object({
-            id: z.string().min(1),
-            label: z.string().min(1),
-        }),
+        website: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+        country: z.string().optional(),
+        state: z.string().optional(),
+        abn: z.string().optional(),
         logo: MediaSchema.nullable().optional(),
     }).optional(),
 
@@ -44,8 +43,8 @@ export const onboardingSchema = z.object({
     practitioner: z.object({
         name: z.string().min(2, 'Name must be at least 2 characters'),
         slug: z.string().min(3, 'URL must be at least 3 characters').regex(/^[a-z0-9-]+$/, 'Use only lowercase letters, numbers and hyphens'),
-        headline: z.string().min(10, 'Headline must be at least 10 characters').max(150),
-        bio: z.string().min(50, 'Bio must be at least 50 characters').max(2000),
+        headline: z.string().max(150).optional(),
+        bio: z.string().max(2000).optional(),
         modalities: z.array(z.string()).min(1, 'Select at least one modality'),
         specializations: z.array(z.string()).min(1, 'Select at least one specialization'),
         pronouns: z.string().optional(),
@@ -62,13 +61,17 @@ export type OnboardingFormValues = z.infer<typeof onboardingSchema>;
 export const BASIC_FIELDS: (keyof OnboardingFormValues)[] = ['firstName', 'lastName', 'email', 'country'];
 
 export const MERCHANT_FIELDS = [
-    'merchant.name', 'merchant.slug', 'merchant.email', 'merchant.state',
-    'merchant.merchantTypeIds', 'merchant.religion',
+    'merchant.name', 'merchant.slug', 'merchant.email',
+    'merchant.country', 'merchant.state',
+] as const;
+
+export const MERCHANT_FIELDS_NO_LOCATION = [
+    'merchant.name', 'merchant.slug', 'merchant.email',
 ] as const;
 
 export const PRACTITIONER_REQUIRED_FIELDS = [
-    'practitioner.name', 'practitioner.slug', 'practitioner.headline',
-    'practitioner.bio', 'practitioner.modalities', 'practitioner.specializations',
+    'practitioner.name', 'practitioner.slug',
+    'practitioner.modalities', 'practitioner.specializations',
 ] as const;
 
 // ── Countries list ──────────────────────────────────────────────────
@@ -117,13 +120,20 @@ export function useOnboardingForm() {
     const initMerchant = () => {
         const vals = form.getValues();
         if (!vals.merchant) {
+            // Check if user already has a practitioner account with location info
+            const practitionerVendor = session?.user?.vendors?.find(
+                (v: any) => v.docType === 'PRACTITIONER'
+            ) as any;
+
             form.setValue('merchant', {
+                id: uuid(),
                 name: `${vals.firstName} ${vals.lastName}`.trim(),
                 slug: '',
                 email: vals.email,
-                state: '',
-                merchantTypeIds: [],
-                religion: { id: '', label: '' },
+                website: '',
+                country: practitionerVendor?.country || vals.country || '',
+                state: practitionerVendor?.state || '',
+                abn: '',
                 logo: undefined,
             });
         }
@@ -148,11 +158,12 @@ export function useOnboardingForm() {
         }
     };
 
-    /** Create vendor via GraphQL mutation. Returns vendor slug. */
-    const createVendor = async (): Promise<string> => {
+    /** Create vendor via GraphQL mutation. Returns { id, slug }. */
+    const createVendor = async (): Promise<{ id: string; slug: string }> => {
         const vals = form.getValues();
         const merchant = vals.merchant!;
-        const currency = countryToCurrency[vals.country as keyof typeof countryToCurrency] || 'USD';
+        const country = merchant.country || vals.country;
+        const currency = countryToCurrency[country as keyof typeof countryToCurrency] || 'USD';
 
         const { create_vendor: { vendor } } = await gql<{
             create_vendor: {
@@ -168,16 +179,16 @@ export function useOnboardingForm() {
             }
         `, {
             vendor: {
-                id: uuid(),
+                id: merchant.id,
                 name: merchant.name,
                 slug: merchant.slug,
                 email: merchant.email,
-                state: merchant.state,
-                merchantTypeIds: merchant.merchantTypeIds,
-                religionId: merchant.religion.id,
+                state: merchant.state || undefined,
+                website: merchant.website || undefined,
+                abn: merchant.abn || undefined,
                 logo: merchant.logo ?? undefined,
                 currency,
-                country: vals.country,
+                country,
                 subscription: {
                     tier: vals.subscription.tier,
                     billingInterval: vals.subscription.billingInterval,
@@ -187,11 +198,11 @@ export function useOnboardingForm() {
         });
 
         await updateSession();
-        return vendor.slug;
+        return vendor;
     };
 
-    /** Create practitioner via GraphQL mutation. Returns practitioner slug. */
-    const createPractitioner = async (overrideTier?: string): Promise<string> => {
+    /** Create practitioner via GraphQL mutation. Returns { id, slug }. */
+    const createPractitioner = async (overrideTier?: string): Promise<{ id: string; slug: string }> => {
         const vals = form.getValues();
         const prac = vals.practitioner!;
         const currency = countryToCurrency[vals.country as keyof typeof countryToCurrency] || 'USD';
@@ -215,8 +226,8 @@ export function useOnboardingForm() {
                 email: vals.email,
                 country: vals.country,
                 currency,
-                headline: prac.headline,
-                bio: prac.bio,
+                headline: prac.headline || undefined,
+                bio: prac.bio || undefined,
                 modalities: prac.modalities,
                 specializations: prac.specializations,
                 pronouns: prac.pronouns || undefined,
@@ -232,7 +243,7 @@ export function useOnboardingForm() {
         });
 
         await updateSession();
-        return practitioner.slug;
+        return practitioner;
     };
 
     return {

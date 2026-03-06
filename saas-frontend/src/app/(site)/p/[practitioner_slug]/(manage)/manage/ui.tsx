@@ -1,9 +1,10 @@
 'use client'
 
-import React from "react";
+import React, { useState } from "react";
 import { Session } from "next-auth";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Heart, MessageCircle } from "lucide-react";
+import { Sparkles, Heart, MessageCircle, Receipt, Radio, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
 import UIContainer from "@/components/uicontainer";
 import PractitionerSideNav from "../../../_components/PractitionerSideNav";
 import WelcomeHeader from "./_components/WelcomeHeader";
@@ -12,6 +13,9 @@ import NeedsAttention from "./_components/NeedsAttention";
 import RecentBookings from "./_components/RecentBookings";
 import GettingStarted from "./_components/GettingStarted";
 import { usePractitionerDashboardData } from "./_hooks/usePractitionerDashboardData";
+import { useTierFeatures } from "@/hooks/UseTierFeatures";
+import CreatePaymentLinkDialog from "@/components/payment-links/CreatePaymentLinkDialog";
+import StartLiveSessionDialog from "@/components/live-assist/StartLiveSessionDialog";
 
 type Props = {
     session: Session;
@@ -51,8 +55,36 @@ const QuickAction: React.FC<{
     );
 };
 
+const LockedQuickAction: React.FC<{
+    label: string;
+    icon: React.ReactNode;
+    slug: string;
+}> = ({ label, icon, slug }) => {
+    const router = useRouter();
+
+    return (
+        <Button
+            variant="outline"
+            className="flex items-center gap-2 border-dashed border-slate-600 bg-transparent text-slate-500 hover:border-purple-500/50 hover:text-purple-400 hover:bg-purple-500/5"
+            onClick={() => router.push(`/p/${slug}/manage/subscription`)}
+            data-testid={`quick-action-locked-${label.toLowerCase().replace(' ', '-')}`}
+        >
+            {icon}
+            {label}
+            <Lock className="w-3 h-3 ml-0.5" />
+        </Button>
+    );
+};
+
 export default function PractitionerDashboard({ session, practitionerId, slug, practitionerName }: Props) {
     const data = usePractitionerDashboardData(practitionerId, slug);
+    const { features } = useTierFeatures(practitionerId);
+    const [showPaymentLinkDialog, setShowPaymentLinkDialog] = useState(false);
+    const [showGoLiveDialog, setShowGoLiveDialog] = useState(false);
+
+    const vendors = session.user.vendors
+        ?.filter(v => v.id)
+        .map(v => ({ id: v.id, name: v.name, currency: v.currency })) || [];
 
     return (
         <UIContainer me={session.user}>
@@ -73,26 +105,59 @@ export default function PractitionerDashboard({ session, practitionerId, slug, p
                             isOnboarded={data.onboarding.isOnboarded}
                             hasServices={data.onboarding.hasServices}
                             hasSchedule={data.onboarding.hasSchedule}
+                            canSellServices={features.canSellServices}
                         />
 
                         {/* Quick Actions */}
                         <div className="mb-6">
                             <div className="flex flex-wrap gap-3">
-                                <QuickAction
-                                    label="New Reading"
-                                    icon={<Sparkles className="w-4 h-4" />}
-                                    dialogId="Create Reading"
-                                />
-                                <QuickAction
-                                    label="New Healing"
-                                    icon={<Heart className="w-4 h-4" />}
-                                    dialogId="Create Healing"
-                                />
-                                <QuickAction
-                                    label="New Coaching"
-                                    icon={<MessageCircle className="w-4 h-4" />}
-                                    dialogId="Create Coaching"
-                                />
+                                {features.canSellServices ? (
+                                    <>
+                                        <QuickAction
+                                            label="New Reading"
+                                            icon={<Sparkles className="w-4 h-4" />}
+                                            dialogId="Create Reading"
+                                        />
+                                        <QuickAction
+                                            label="New Healing"
+                                            icon={<Heart className="w-4 h-4" />}
+                                            dialogId="Create Healing"
+                                        />
+                                        <QuickAction
+                                            label="New Coaching"
+                                            icon={<MessageCircle className="w-4 h-4" />}
+                                            dialogId="Create Coaching"
+                                        />
+                                    </>
+                                ) : (
+                                    <>
+                                        <LockedQuickAction label="New Reading" icon={<Sparkles className="w-4 h-4" />} slug={slug} />
+                                        <LockedQuickAction label="New Healing" icon={<Heart className="w-4 h-4" />} slug={slug} />
+                                        <LockedQuickAction label="New Coaching" icon={<MessageCircle className="w-4 h-4" />} slug={slug} />
+                                    </>
+                                )}
+                                {features.hasPaymentLinks && (
+                                    <Button
+                                        variant="outline"
+                                        className="flex items-center gap-2 bg-slate-800/50 border-slate-700 text-white hover:bg-purple-500/20 hover:border-purple-500/50 hover:text-purple-300"
+                                        onClick={() => setShowPaymentLinkDialog(true)}
+                                        data-testid="quick-action-payment-link"
+                                    >
+                                        <Receipt className="w-4 h-4" />
+                                        Payment Link
+                                    </Button>
+                                )}
+                                {features.hasLiveAssist && (
+                                    <Button
+                                        variant="outline"
+                                        className="flex items-center gap-2 bg-slate-800/50 border-red-500/30 text-white hover:bg-red-500/20 hover:border-red-500/50 hover:text-red-300"
+                                        onClick={() => setShowGoLiveDialog(true)}
+                                        data-testid="quick-action-go-live"
+                                    >
+                                        <Radio className="w-4 h-4" />
+                                        Go Live
+                                    </Button>
+                                )}
                             </div>
                         </div>
 
@@ -108,6 +173,7 @@ export default function PractitionerDashboard({ session, practitionerId, slug, p
                                     testimonialsCount={data.stats.testimonialsCount}
                                     avgRating={data.stats.avgRating}
                                     isLoading={data.isLoading}
+                                    canSellServices={features.canSellServices}
                                 />
                             </div>
 
@@ -126,6 +192,26 @@ export default function PractitionerDashboard({ session, practitionerId, slug, p
                     </div>
                 </div>
             </div>
+
+            <>
+                {features.hasPaymentLinks && (
+                    <CreatePaymentLinkDialog
+                        open={showPaymentLinkDialog}
+                        onOpenChange={setShowPaymentLinkDialog}
+                        vendors={vendors}
+                    />
+                )}
+
+                {features.hasLiveAssist && (
+                    <StartLiveSessionDialog
+                        open={showGoLiveDialog}
+                        onOpenChange={setShowGoLiveDialog}
+                        vendorId={practitionerId}
+                        vendorCurrency={vendors.find(v => v.id === practitionerId)?.currency || 'AUD'}
+                        practitionerSlug={slug}
+                    />
+                )}
+            </>
         </UIContainer>
     );
 }

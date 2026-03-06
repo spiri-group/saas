@@ -96,6 +96,8 @@ type ServiceQuestion {
   options: [String]
   required: Boolean!
   placeholder: String
+  description: String
+  scaleMax: Int
 }
 
 type ReadingServiceOptions {
@@ -174,6 +176,17 @@ type ServicesCalendarOccurence {
   serviceIds: [RecordRefWithName]!
 }
 
+type ServiceBookingCustomer {
+  id: ID!
+  name: String
+  email: String
+}
+
+type ServiceBookingPayment {
+  amount: Float
+  currency: String
+}
+
 type ServiceBooking {
   id: ID!
   date: Date
@@ -212,6 +225,11 @@ type ServiceBooking {
   practitionerAddress: String
   remindersSent: BookingReminders
   scheduledDateTime: ScheduledDateTime
+
+  # Resolved fields for booking display
+  customer: ServiceBookingCustomer
+  payment: ServiceBookingPayment
+  createdAt: DateTime
 }
 
 type QuestionResponse {

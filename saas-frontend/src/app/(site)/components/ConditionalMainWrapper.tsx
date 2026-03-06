@@ -9,7 +9,8 @@ export default function ConditionalMainWrapper({ children }: { children: ReactNo
   const isHomePage = pathname === '/';
   const isLearnMore = pathname === '/learn-more';
   const isPersonalSpace = pathname?.startsWith('/u/') && pathname?.includes('/space');
-  const isPractitionerManage = pathname?.startsWith('/p/') && pathname?.includes('/manage');
+  const isPractitioner = pathname?.startsWith('/p/');
+  const isPractitionerManage = isPractitioner && pathname?.includes('/manage');
   const isSetup = pathname === '/setup' || pathname?.startsWith('/m/setup') || pathname?.startsWith('/p/setup');
 
   // Full screen pages without nav
@@ -30,8 +31,8 @@ export default function ConditionalMainWrapper({ children }: { children: ReactNo
     );
   }
 
-  // Personal space, practitioner manage use dark theme - no light gradient
-  if (isPersonalSpace || isPractitionerManage) {
+  // Personal space, practitioner pages use dark theme - no light gradient
+  if (isPersonalSpace || isPractitioner) {
     return (
       <main className={cn("min-h-screen-minus-nav flex flex-col flex-grow mt-20 bg-slate-950")}>
         {children}

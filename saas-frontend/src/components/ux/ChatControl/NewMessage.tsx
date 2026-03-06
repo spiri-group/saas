@@ -10,6 +10,7 @@ import FileUploader from "../FileUploader";
 import { useState } from "react";
 import useFormStatus from "@/components/utils/UseFormStatus";
 import Spinner from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
 type BLProps = {
     forObject: recordref_type,
@@ -26,8 +27,7 @@ type BLProps = {
 }
 
 type Props = BLProps & {
-    // allowResponseCodes: boolean
-    // onMessageSent?: (message: message_type) => void
+    dark?: boolean
 }
 
 const useBL = (props: BLProps) => { 
@@ -124,16 +124,17 @@ const NewMessage: React.FC<Props> = (props) => {
                     />
                     )}
 
-                <FormField 
+                <FormField
                     name="text"
                     control={bl.form.control}
                     render={({field}) => {
                         return (
                             <FormItem className="w-full">
                                 <FormControl>
-                                    <Textarea 
-                                        {...field} 
+                                    <Textarea
+                                        {...field}
                                         placeholder="Type message"
+                                        className={cn(props.dark && "border-white/20 text-white placeholder:text-white/40")}
                                         onInput={(e: React.FormEvent<HTMLTextAreaElement>) => {
                                             const target = e.target as HTMLTextAreaElement;
                                             if (e.currentTarget.value.length < 22) {
@@ -161,8 +162,8 @@ const NewMessage: React.FC<Props> = (props) => {
                         )
                     }} />
                 { bl.status.formState == "idle" ?
-                    <IconButton type="submit" variant="link" icon={<SendHorizonalIcon />} data-testid="chat-send-btn" /> :
-                      bl.status.formState === "processing" ? 
+                    <IconButton type="submit" variant="link" icon={<SendHorizonalIcon className={cn(props.dark && "text-white")} />} data-testid="chat-send-btn" /> :
+                      bl.status.formState === "processing" ?
                         <Spinner /> :
                         <CheckIcon className="text-green-500" />
                 }

@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import { gql } from '@/lib/services/gql';
 import axios from 'axios';
+import { randomUUID } from 'crypto';
 
 /**
  * Test Cleanup Utilities
@@ -8,10 +9,11 @@ import axios from 'axios';
  */
 
 // Use Next.js GraphQL proxy for test cleanup (it handles auth automatically)
-// Always use the test server port (3002) regardless of env vars
-// The env vars may point to the main dev server (3000), but tests run on 3002
+// When BASE_URL is set (external env like preview), use that instead of localhost
 const TEST_SERVER_PORT = process.env.TEST_SERVER_PORT || '3002';
-const GRAPHQL_PROXY = `http://localhost:${TEST_SERVER_PORT}/api/graphql`;
+const GRAPHQL_PROXY = process.env.BASE_URL
+  ? `${process.env.BASE_URL.replace(/\/$/, '')}/api/graphql`
+  : `http://localhost:${TEST_SERVER_PORT}/api/graphql`;
 
 /**
  * Call GraphQL via Next.js proxy with session cookies
@@ -391,7 +393,7 @@ export async function addTestLocation(
   locationName: string = 'Test Location'
 ): Promise<boolean> {
   try {
-    const locationId = `loc-${Date.now()}`;
+    const locationId = randomUUID();
     await gqlDirect(
       `mutation UpdateMerchantLocations($merchantId: ID!, $locations: [MerchantLocationInput]!) {
         update_merchant_locations(merchantId: $merchantId, locations: $locations) {
@@ -406,7 +408,7 @@ export async function addTestLocation(
             id: locationId,
             title: locationName,
             address: {
-              id: `addr-${Date.now()}`,
+              id: randomUUID(),
               formattedAddress: '1 Test Street, Sydney NSW 2000, Australia',
               components: {
                 city: 'Sydney',
@@ -635,7 +637,71 @@ export async function queryTestEntities(auth: string) {
   }
 }
 
+// Store created test cases for cleanup per worker
+const testCasesPerWorker = new Map<number, Set<string>>();
+
+/**
+ * Register a test case for cleanup
+ */
+export function registerTestCase(caseId: string, workerId: number = 0) {
+  if (!testCasesPerWorker.has(workerId)) {
+    testCasesPerWorker.set(workerId, new Set());
+  }
+  testCasesPerWorker.get(workerId)!.add(caseId);
+}
+
+/**
+ * Clean up test cases — no purge mutation exists for cases,
+ * so cases with test TTL will auto-expire. Log for visibility.
+ */
+export async function cleanupTestCases(_cookies: string, workerId: number = 0) {
+  const caseIds = testCasesPerWorker.get(workerId);
+  if (!caseIds?.size) return;
+
+  console.log(`[Cleanup] ${caseIds.size} test case(s) created — cases will auto-expire via TTL`);
+  for (const caseId of caseIds) {
+    console.log(`[Cleanup] Test case: ${caseId}`);
+  }
+
+  testCasesPerWorker.delete(workerId);
+}
+
 /**
  * Export alias for gqlDirect as executeGraphQL for clearer naming in tests
  */
 export { gqlDirect as executeGraphQL };
+
+/**
+ * Mark a reading request as paid (simulates setup_intent.succeeded webhook).
+ * In local test environments, Stripe webhooks may not reach the backend,
+ * so we call the markReadingRequestPaid mutation directly.
+ */
+export async function markReadingRequestPaid(
+  requestId: string,
+  cookies: string
+): Promise<boolean> {
+  try {
+    const result = await gqlDirect<{
+      markReadingRequestPaid: {
+        success: boolean;
+        message: string;
+      };
+    }>(
+      `mutation MarkReadingRequestPaid($requestId: ID!) {
+        markReadingRequestPaid(requestId: $requestId) {
+          success
+          message
+        }
+      }`,
+      { requestId },
+      cookies
+    );
+
+    const response = result.markReadingRequestPaid;
+    console.log(`[ReadingRequest] markPaid: ${response.success ? '✓' : '✗'} ${response.message}`);
+    return response.success;
+  } catch (error) {
+    console.error('[ReadingRequest] Failed to mark reading request as paid:', error);
+    return false;
+  }
+}

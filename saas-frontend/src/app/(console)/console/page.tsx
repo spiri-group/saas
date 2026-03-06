@@ -13,6 +13,7 @@ import {
   GitBranch,
   BarChart3,
   Scale,
+  Tag,
 } from "lucide-react";
 import Link from "next/link";
 import ChoiceManager from "./choice-manager/ChoiceManager";
@@ -23,8 +24,9 @@ import AccountsManager from "./accounts-manager/AccountsManager";
 import AccountJourneys from "./account-journeys/AccountJourneys";
 import Analytics from "./analytics/Analytics";
 import LegalDocumentsManager from "./legal-documents/LegalDocumentsManager";
+import PricingReference from "./pricing-reference/PricingReference";
 
-type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager' | 'accounts-manager' | 'account-journeys' | 'analytics' | 'legal-documents';
+type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager' | 'accounts-manager' | 'account-journeys' | 'analytics' | 'legal-documents' | 'pricing-reference';
 
 export default function ConsolePage() {
   const { data: session, status } = useSession();
@@ -77,6 +79,7 @@ export default function ConsolePage() {
                      currentView === 'alerts-manager' ? 'Alerts Manager' :
                      currentView === 'account-journeys' ? 'Account Journeys' :
                      currentView === 'analytics' ? 'Site Analytics' :
+                     currentView === 'pricing-reference' ? 'Pricing Reference' :
                      'Accounts Manager'}
                   </p>
                 </div>
@@ -129,6 +132,7 @@ export default function ConsolePage() {
             ]},
             { group: 'Finance', items: [
               { key: 'fees-manager' as ConsoleView, icon: DollarSign, label: 'Fees Manager' },
+              { key: 'pricing-reference' as ConsoleView, icon: Tag, label: 'Pricing Reference' },
             ]},
             { group: 'Accounts', items: [
               { key: 'accounts-manager' as ConsoleView, icon: Users, label: 'Accounts' },
@@ -169,6 +173,7 @@ export default function ConsolePage() {
           {currentView === 'accounts-manager' && <AccountsManager />}
           {currentView === 'account-journeys' && <AccountJourneys />}
           {currentView === 'analytics' && <Analytics />}
+          {currentView === 'pricing-reference' && <PricingReference />}
         </main>
       </div>
     </div>

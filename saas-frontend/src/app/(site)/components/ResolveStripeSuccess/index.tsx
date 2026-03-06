@@ -273,6 +273,11 @@ const ResolveStripeSuccess = () => {
                 }, 2000);
 
             } else {
+                // Stop any ongoing polling from a previous redirect
+                if (pollIntervalRef.current) {
+                    clearInterval(pollIntervalRef.current);
+                    pollIntervalRef.current = null;
+                }
                 setActiveDialog(null);
                 setForObjectRef(null);
                 setPaymentStatus('idle');

@@ -8,7 +8,7 @@ import { useCatalogueEvents } from "../hooks/UseCatalogueEvents";
 import { useCatalogueGallery } from "../hooks/UseCatalogueGallery";
 import { useFeaturedPractitioners } from "../hooks/UseFeaturedPractitioners";
 import { UpcomingEventsTile, FeaturedEventTile } from "./EventTiles";
-import { GalleryTile } from "./GalleryTiles";
+import { GalleryTile } from "@/components/ux/GalleryTiles";
 import { FeaturedPractitionersTile, FeaturedPractitionersListTile, FeaturedPractitionersGrid } from "./FeaturedPractitionersTile";
 import { Session } from "next-auth";
 import useInterfaceSize from "@/components/ux/useInterfaceSize";

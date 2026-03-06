@@ -277,7 +277,7 @@ export default function StartPackingDialog({ onClose, onSave, boxes }: StartPack
           <DialogHeader>
             <DialogTitle>No boxes to pack</DialogTitle>
           </DialogHeader>
-          <p className="text-gray-500">There are no suggested boxes available for this shipment.</p>
+          <p className="text-slate-400">There are no suggested boxes available for this shipment.</p>
           <DialogFooter>
             <Button onClick={() => {
               reset();
@@ -324,13 +324,13 @@ export default function StartPackingDialog({ onClose, onSave, boxes }: StartPack
 
             {step === 'intro' && (
               <>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-slate-400">
                   You are packing shipment <strong>{selectedShipment!.code}</strong>.
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-slate-400">
                   You’ll start by checking the box size. Then choose what items to pack inside.
                 </p>
-                <p className="text-sm text-blue-600 font-medium flex items-center gap-2">
+                <p className="text-sm text-blue-400 font-medium flex items-center gap-2">
                   <PackageSearch className="w-4 h-4" /> Tip: You can adjust as you go — pack in the way that works best!
                 </p>
                 <DialogFooter className="w-full">
@@ -345,7 +345,7 @@ export default function StartPackingDialog({ onClose, onSave, boxes }: StartPack
                   onSubmit={form.handleSubmit(handleNextConfirmSize)}
                   className="space-y-4"
                 >
-                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                  <p className="text-sm text-slate-400 flex items-center gap-2">
                     <Box className="w-4 h-4" /> Confirm or adjust box dimensions:
                   </p>
                   <div className="grid grid-cols-2 gap-4">
@@ -376,17 +376,17 @@ export default function StartPackingDialog({ onClose, onSave, boxes }: StartPack
 
             {(step === 'pack-items' || step === 'manual-pack-items') && (
               <>
-                <p className="text-sm text-gray-600 flex items-center gap-2">
+                <p className="text-sm text-slate-400 flex items-center gap-2">
                   <Boxes className="w-4 h-4" /> Specify packed quantity for each item:
                 </p>
                 <div className="grid grid-cols-2 gap-3">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-slate-400">
                     <strong>Total Packed Weight:</strong> {Object.keys(packedItemAmounts).reduce((total, key) => {
                       const item = aggregatePackedItems(step.startsWith('manual') ? remainingItems : suggestedItems).find(i => i.variantId === key || i.name === key);
                       return total + ((packedItemAmounts[key] ?? 0) * (item?.weight.amount || 0));
                     }, 0).toFixed(2)} kg
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-slate-400">
                     <strong>Remaining Weight Capacity:</strong> {(form.getValues('max_weight') - Object.keys(packedItemAmounts).reduce((total, key) => {
                       const item = aggregatePackedItems(step.startsWith('manual') ? remainingItems : suggestedItems).find(i => i.variantId === key || i.name === key);
                       return total + ((packedItemAmounts[key] ?? 0) * (item?.weight.amount || 0));
@@ -398,10 +398,10 @@ export default function StartPackingDialog({ onClose, onSave, boxes }: StartPack
                     const key = item.variantId || item.name;
                     const remainingQty = item.quantity - (packedItemAmounts[key] ?? 0);
                     return (
-                      <li key={key} className="flex items-center gap-4 py-1 border-b border-gray-100 last:border-0">
-                        <div className="flex-1 text-gray-700">
-                          <span className="text-gray-500">{item.name}</span>
-                          <span className="ml-2 font-semibold text-black">Qty: {remainingQty}</span>
+                      <li key={key} className="flex items-center gap-4 py-1 border-b border-slate-700 last:border-0">
+                        <div className="flex-1 text-slate-300">
+                          <span className="text-slate-400">{item.name}</span>
+                          <span className="ml-2 font-semibold text-white">Qty: {remainingQty}</span>
                         </div>
                         <Input
                           type="number"
@@ -437,8 +437,8 @@ export default function StartPackingDialog({ onClose, onSave, boxes }: StartPack
 
             {step === 'manual-info' && (
               <>
-                <p className="text-lg font-semibold text-yellow-700">You’re moving to a manual packing flow</p>
-                <div className="space-y-2 text-sm text-gray-700">
+                <p className="text-lg font-semibold text-yellow-400">You’re moving to a manual packing flow</p>
+                <div className="space-y-2 text-sm text-slate-300">
                   <p>
                     Because you chose not to pack all suggested items in this box, our original box suggestions are now being abandoned.
                     This means:
@@ -448,7 +448,7 @@ export default function StartPackingDialog({ onClose, onSave, boxes }: StartPack
                     <li>There may be a difference compared to the rate the customer paid</li>
                     <li>We will automatically re-estimate the rate and show you the expected difference before you confirm this shipment</li>
                   </ul>
-                  <p className="font-medium text-blue-700">
+                  <p className="font-medium text-blue-400">
                     This is normal — many shipments require manual adjustments. Please proceed carefully and we’ll guide you the rest of the way!
                   </p>
                 </div>
@@ -465,11 +465,11 @@ export default function StartPackingDialog({ onClose, onSave, boxes }: StartPack
                 <p className="pt-3 text-xl font-semibold text-green-700 animate-bounce flex items-center gap-2">
                   <PackageCheck className="w-6 h-6" /> 🎉 You did it!
                 </p>
-                <p className="text-sm text-gray-600">All items are packed. Well done!</p>
-                <p className="text-sm text-blue-600 font-medium">
+                <p className="text-sm text-slate-400">All items are packed. Well done!</p>
+                <p className="text-sm text-blue-400 font-medium">
                   You can now confirm your configuration. 
                 </p>
-                <p className="text-sm text-gray-600 max-w-xl">
+                <p className="text-sm text-slate-400 max-w-xl">
                   After confirmation we will show you the new estimate and you can choose to finalise the shipment.
                 </p>
                 <DialogFooter className="w-full">

@@ -12,6 +12,7 @@ import ProfilePictureCropDialog from "@/components/ux/ProfilePictureCropDialog"
 import Image from "next/image"
 import { useRef, useState } from "react"
 import axios from "axios"
+import { toast } from "sonner"
 
 type Props = {
     practitionerId: string
@@ -102,9 +103,12 @@ const EditPractitionerBio: React.FC<Props> = (props) => {
                     title: 'Profile Picture',
                     description: '',
                 }, { shouldDirty: true })
+            } else {
+                toast.error('Failed to upload profile picture. Please try again.')
             }
         } catch (error) {
             console.error('Profile picture upload failed:', error)
+            toast.error('Failed to upload profile picture. Please try again.')
         } finally {
             setIsUploading(false)
         }
@@ -249,10 +253,10 @@ const EditPractitionerBio: React.FC<Props> = (props) => {
                             <Button
                                 variant={bl.status.button.variant}
                                 type="submit"
-                                disabled={bl.status.formState !== "idle"}
+                                disabled={bl.status.formState !== "idle" || isUploading}
                                 data-testid="save-bio-btn"
                             >
-                                {bl.status.formState === "idle" ? "Save Changes" : bl.status.button.title}
+                                {isUploading ? "Uploading..." : bl.status.formState === "idle" ? "Save Changes" : bl.status.button.title}
                             </Button>
                         </DialogFooter>
                     </form>

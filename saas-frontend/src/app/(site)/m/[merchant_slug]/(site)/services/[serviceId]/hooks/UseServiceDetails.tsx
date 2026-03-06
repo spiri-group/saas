@@ -11,9 +11,11 @@ type ServiceDeliveryFormat = {
 type ServiceQuestion = {
     id: string;
     question: string;
-    type: "TEXT" | "TEXTAREA" | "SELECT" | "MULTISELECT";
+    type: "TEXT" | "TEXTAREA" | "SELECT" | "MULTISELECT" | "SHORT_TEXT" | "LONG_TEXT" | "MULTIPLE_CHOICE" | "CHECKBOXES" | "DROPDOWN" | "DATE" | "NUMBER" | "EMAIL" | "RATING" | "LINEAR_SCALE" | "YES_NO" | "PHONE" | "TIME" | "PHOTO";
     required: boolean;
     options?: string[];
+    description?: string;
+    scaleMax?: number;
 };
 
 type ServicePricing = {

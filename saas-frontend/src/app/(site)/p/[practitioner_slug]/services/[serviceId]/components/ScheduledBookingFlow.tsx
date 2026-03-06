@@ -5,9 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -17,6 +15,7 @@ import { Calendar, Clock, Video, MapPin, Car, ChevronLeft, ChevronRight, Loader2
 import { useAvailableSlots } from "../hooks/UseAvailableSlots";
 import { useBookScheduledService, BookScheduledServiceInput } from "../hooks/UseBookScheduledService";
 import { toast } from "sonner";
+import QuestionnaireRenderer from "@/components/ux/QuestionnaireRenderer";
 
 interface DeliveryMethodsConfig {
     online?: { enabled: boolean; defaultMeetingLink?: string };
@@ -39,9 +38,11 @@ interface ServicePricing {
 interface ServiceQuestion {
     id: string;
     question: string;
-    type: "TEXT" | "TEXTAREA" | "SELECT" | "MULTISELECT";
+    type: "TEXT" | "TEXTAREA" | "SELECT" | "MULTISELECT" | "SHORT_TEXT" | "LONG_TEXT" | "MULTIPLE_CHOICE" | "CHECKBOXES" | "DROPDOWN" | "DATE" | "NUMBER" | "EMAIL" | "RATING" | "LINEAR_SCALE" | "YES_NO" | "PHONE" | "TIME" | "PHOTO";
     required: boolean;
     options?: string[];
+    description?: string;
+    scaleMax?: number;
 }
 
 interface ServiceAddOn {
@@ -313,8 +314,8 @@ export default function ScheduledBookingFlow({
                             key={option.value}
                             className={`flex items-center space-x-3 p-4 rounded-lg border cursor-pointer transition-colors ${
                                 selectedDeliveryMethod === option.value
-                                    ? 'border-purple-500 bg-purple-50'
-                                    : 'border-slate-200 hover:border-purple-300'
+                                    ? 'border-indigo-500 bg-indigo-50'
+                                    : 'border-slate-200 hover:border-indigo-300'
                             }`}
                             onClick={() => {
                                 setSelectedDeliveryMethod(option.value);
@@ -324,7 +325,7 @@ export default function ScheduledBookingFlow({
                             data-testid={`delivery-method-${option.value.toLowerCase()}`}
                         >
                             <RadioGroupItem value={option.value} id={option.value} />
-                            <Icon className="w-5 h-5 text-purple-600" />
+                            <Icon className="w-5 h-5 text-indigo-600" />
                             <div className="flex-1">
                                 <Label htmlFor={option.value} className="font-medium cursor-pointer">
                                     {option.label} {extraInfo && <span className="text-slate-500 text-sm">{extraInfo}</span>}
@@ -338,8 +339,8 @@ export default function ScheduledBookingFlow({
 
             {/* Show duration if available */}
             {serviceDuration && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 border border-purple-200">
-                    <Clock className="w-5 h-5 text-purple-600" />
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-indigo-50 border border-indigo-200">
+                    <Clock className="w-5 h-5 text-indigo-600" />
                     <span className="text-slate-700">
                         Session duration: {serviceDuration.amount} {serviceDuration.unit.defaultLabel}
                     </span>
@@ -347,8 +348,8 @@ export default function ScheduledBookingFlow({
             )}
 
             {/* Show base price */}
-            <div className="p-4 rounded-lg border border-purple-200 bg-purple-50">
-                <div className="text-2xl font-bold text-purple-700">
+            <div className="p-4 rounded-lg border border-indigo-200 bg-indigo-50">
+                <div className="text-2xl font-bold text-indigo-700">
                     <CurrencySpan value={basePrice} withAnimation={false} />
                 </div>
                 {pricing.type === "HOURLY" && (
@@ -357,7 +358,7 @@ export default function ScheduledBookingFlow({
             </div>
 
             <Button
-                className="w-full bg-purple-600 hover:bg-purple-700"
+                className="w-full bg-indigo-600 hover:bg-indigo-700"
                 disabled={!selectedDeliveryMethod}
                 onClick={nextStep}
                 data-testid="continue-to-date-btn"
@@ -375,7 +376,7 @@ export default function ScheduledBookingFlow({
                     variant="ghost"
                     size="sm"
                     onClick={prevStep}
-                    className="text-purple-600"
+                    className="text-indigo-600"
                 >
                     <ChevronLeft className="w-4 h-4 mr-1" />
                     Back
@@ -405,7 +406,7 @@ export default function ScheduledBookingFlow({
 
             {loadingSlots ? (
                 <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+                    <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
                     <span className="ml-2 text-slate-500">Loading available dates...</span>
                 </div>
             ) : slotsError ? (
@@ -446,9 +447,9 @@ export default function ScheduledBookingFlow({
                                     }}
                                     className={`p-2 text-sm rounded-lg transition-colors ${
                                         isSelected
-                                            ? 'bg-purple-600 text-white'
+                                            ? 'bg-indigo-600 text-white'
                                             : isAvailable && !isPast
-                                            ? 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                                            ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
                                             : 'text-slate-300 cursor-not-allowed'
                                     }`}
                                     data-testid={`calendar-date-${dateStr}`}
@@ -470,7 +471,7 @@ export default function ScheduledBookingFlow({
 
             {selectedDate && (
                 <Button
-                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
                     onClick={nextStep}
                     data-testid="continue-to-time-btn"
                 >
@@ -488,12 +489,12 @@ export default function ScheduledBookingFlow({
                     variant="ghost"
                     size="sm"
                     onClick={prevStep}
-                    className="text-purple-600"
+                    className="text-indigo-600"
                 >
                     <ChevronLeft className="w-4 h-4 mr-1" />
                     Back
                 </Button>
-                <Badge variant="outline" className="text-purple-600 border-purple-300">
+                <Badge variant="outline" className="text-indigo-600 border-indigo-300">
                     {selectedDate && formatDateForDisplay(selectedDate)}
                 </Badge>
             </div>
@@ -508,8 +509,8 @@ export default function ScheduledBookingFlow({
                             onClick={() => setSelectedSlot(slot)}
                             className={`p-3 text-sm rounded-lg border transition-colors ${
                                 selectedSlot?.start === slot.start
-                                    ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                    : 'border-slate-200 hover:border-purple-300'
+                                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                                    : 'border-slate-200 hover:border-indigo-300'
                             }`}
                             data-testid={`time-slot-${slot.start}`}
                         >
@@ -529,7 +530,7 @@ export default function ScheduledBookingFlow({
 
             {selectedSlot && (
                 <Button
-                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
                     onClick={nextStep}
                     data-testid="continue-to-details-btn"
                 >
@@ -547,12 +548,12 @@ export default function ScheduledBookingFlow({
                     variant="ghost"
                     size="sm"
                     onClick={prevStep}
-                    className="text-purple-600"
+                    className="text-indigo-600"
                 >
                     <ChevronLeft className="w-4 h-4 mr-1" />
                     Back
                 </Button>
-                <Badge variant="outline" className="text-purple-600 border-purple-300">
+                <Badge variant="outline" className="text-indigo-600 border-indigo-300">
                     {selectedDate && formatDateForDisplay(selectedDate)} at {selectedSlot?.start}
                 </Badge>
             </div>
@@ -564,7 +565,7 @@ export default function ScheduledBookingFlow({
                     {addOns.map((addOn) => (
                         <div
                             key={addOn.id}
-                            className="flex items-start gap-2 p-3 rounded-lg border border-slate-200 hover:border-purple-300"
+                            className="flex items-start gap-2 p-3 rounded-lg border border-slate-200 hover:border-indigo-300"
                         >
                             <Checkbox
                                 checked={selectedAddOns.includes(addOn.id)}
@@ -579,7 +580,7 @@ export default function ScheduledBookingFlow({
                                             <div className="text-sm text-slate-500">{addOn.description}</div>
                                         )}
                                     </div>
-                                    <div className="text-sm font-semibold text-purple-700">
+                                    <div className="text-sm font-semibold text-indigo-700">
                                         +<CurrencySpan value={addOn.price} withAnimation={false} />
                                     </div>
                                 </div>
@@ -597,81 +598,16 @@ export default function ScheduledBookingFlow({
             {questionnaire && questionnaire.length > 0 && (
                 <div className="space-y-3">
                     <Label className="text-slate-700">Intake Questionnaire</Label>
-                    {questionnaire.map((q) => (
-                        <div key={q.id} className="space-y-2">
-                            <Label htmlFor={q.id}>
-                                {q.question}
-                                {q.required && <span className="text-red-500 ml-1">*</span>}
-                            </Label>
-
-                            {q.type === "TEXT" && (
-                                <Input
-                                    id={q.id}
-                                    value={(questionnaireResponses[q.id] as string) || ''}
-                                    onChange={(e) => setQuestionResponse(q.id, e.target.value)}
-                                    required={q.required}
-                                    data-testid={`questionnaire-${q.id}`}
-                                />
-                            )}
-
-                            {q.type === "TEXTAREA" && (
-                                <Textarea
-                                    id={q.id}
-                                    value={(questionnaireResponses[q.id] as string) || ''}
-                                    onChange={(e) => setQuestionResponse(q.id, e.target.value)}
-                                    required={q.required}
-                                    rows={4}
-                                    data-testid={`questionnaire-${q.id}`}
-                                />
-                            )}
-
-                            {q.type === "SELECT" && q.options && (
-                                <Select
-                                    value={(questionnaireResponses[q.id] as string) || ''}
-                                    onValueChange={(value) => setQuestionResponse(q.id, value)}
-                                >
-                                    <SelectTrigger id={q.id} data-testid={`questionnaire-${q.id}`}>
-                                        <SelectValue placeholder="Select an option" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {q.options.map((option) => (
-                                            <SelectItem key={option} value={option}>
-                                                {option}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-
-                            {q.type === "MULTISELECT" && q.options && (
-                                <div className="space-y-2">
-                                    {q.options.map((option) => (
-                                        <div key={option} className="flex items-center gap-2">
-                                            <Checkbox
-                                                id={`${q.id}-${option}`}
-                                                checked={((questionnaireResponses[q.id] as string[]) || []).includes(option)}
-                                                onCheckedChange={(checked) => {
-                                                    const current = (questionnaireResponses[q.id] as string[]) || [];
-                                                    const updated = checked
-                                                        ? [...current, option]
-                                                        : current.filter(x => x !== option);
-                                                    setQuestionResponse(q.id, updated);
-                                                }}
-                                            />
-                                            <Label htmlFor={`${q.id}-${option}`} className="font-normal">
-                                                {option}
-                                            </Label>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                    <QuestionnaireRenderer
+                        questions={questionnaire}
+                        responses={questionnaireResponses}
+                        onResponseChange={setQuestionResponse}
+                    />
                 </div>
             )}
 
             <Button
-                className="w-full bg-purple-600 hover:bg-purple-700"
+                className="w-full bg-indigo-600 hover:bg-indigo-700"
                 onClick={nextStep}
                 disabled={!isQuestionnaireValid()}
                 data-testid="continue-to-confirm-btn"
@@ -693,28 +629,28 @@ export default function ScheduledBookingFlow({
                         variant="ghost"
                         size="sm"
                         onClick={prevStep}
-                        className="text-purple-600"
+                        className="text-indigo-600"
                     >
                         <ChevronLeft className="w-4 h-4 mr-1" />
                         Back
                     </Button>
                 </div>
 
-                <div className="p-4 rounded-lg bg-purple-50 border border-purple-200 space-y-3">
-                    <h3 className="font-semibold text-purple-800">Booking Summary</h3>
+                <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-200 space-y-3">
+                    <h3 className="font-semibold text-indigo-800">Booking Summary</h3>
 
                     <div className="flex items-center gap-2 text-slate-700">
-                        <Calendar className="w-4 h-4 text-purple-600" />
+                        <Calendar className="w-4 h-4 text-indigo-600" />
                         <span>{selectedDate && formatDateForDisplay(selectedDate)}</span>
                     </div>
 
                     <div className="flex items-center gap-2 text-slate-700">
-                        <Clock className="w-4 h-4 text-purple-600" />
+                        <Clock className="w-4 h-4 text-indigo-600" />
                         <span>{selectedSlot?.start} - {selectedSlot?.end}</span>
                     </div>
 
                     <div className="flex items-center gap-2 text-slate-700">
-                        <DeliveryIcon className="w-4 h-4 text-purple-600" />
+                        <DeliveryIcon className="w-4 h-4 text-indigo-600" />
                         <span>{deliveryOption?.label}</span>
                     </div>
 
@@ -747,7 +683,7 @@ export default function ScheduledBookingFlow({
                         <Separator />
                         <div className="flex justify-between font-semibold">
                             <span>Total</span>
-                            <span className="text-purple-700">${totalPrice.toFixed(2)}</span>
+                            <span className="text-indigo-700">${totalPrice.toFixed(2)}</span>
                         </div>
                     </div>
                 </div>
@@ -760,7 +696,7 @@ export default function ScheduledBookingFlow({
                 </Alert>
 
                 <Button
-                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
                     onClick={handleBook}
                     disabled={bookMutation.isPending || !customerId}
                     data-testid="confirm-booking-btn"
@@ -787,7 +723,7 @@ export default function ScheduledBookingFlow({
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-purple-600" />
+                    <Calendar className="w-5 h-5 text-indigo-600" />
                     Schedule Your Session
                 </CardTitle>
             </CardHeader>

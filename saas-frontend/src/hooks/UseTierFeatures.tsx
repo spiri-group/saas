@@ -4,14 +4,31 @@ import { useVendorSubscription, VendorSubscriptionDetail } from './UseVendorSubs
 import { TierFeatures } from './UseSubscriptionTiers';
 
 const DEFAULT_FEATURES: TierFeatures = {
+    // Core
+    hasDirectory: false,
+    hasSpiriAssist: false,
+    hasGallery: false,
+    // Practitioner
+    canAcceptPayments: false,
+    hasVideoUpdates: false,
+    canSellServices: false,
+    hasSpiriReadings: false,
+    // Growth
+    hasPaymentLinks: false,
+    canCreateEvents: false,
+    hasLiveAssist: false,
+    hasExpoMode: false,
+    canListTours: false,
+    // Merchant
     canCreateMerchantProfile: false,
     maxProducts: 0,
-    canHostPractitioners: false,
     hasInventoryAutomation: false,
+    canHostPractitioners: false,
+    canOperateTours: false,
+    // Enterprise
+    hasRefundAutomation: false,
     hasShippingAutomation: false,
-    canCreateEvents: false,
-    canCreateTours: false,
-    hasSpiriAssist: false,
+    hasPOS: false,
     hasBackorders: false,
 };
 
