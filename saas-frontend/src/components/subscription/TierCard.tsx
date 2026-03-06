@@ -1,6 +1,7 @@
 "use client";
 
 const TIER_DESCRIPTIONS: Record<string, string> = {
+    directory: 'Get listed and let seekers find you',
     awaken: 'Get discovered and start earning',
     illuminate: 'Send payment links and collect payments from clients',
     manifest: 'Start selling alongside your services',
@@ -8,6 +9,11 @@ const TIER_DESCRIPTIONS: Record<string, string> = {
 };
 
 const TIER_BULLETS: Record<string, string[]> = {
+    directory: [
+        'Directory listing for seekers to find you',
+        'SpiriAssist for spiritual investigations',
+        'Photo gallery to showcase your work',
+    ],
     awaken: [
         'Get listed and found by seekers',
         'Fill your calendar with bookings',
@@ -17,28 +23,27 @@ const TIER_BULLETS: Record<string, string[]> = {
     ],
     illuminate: [
         'Everything in Awaken, plus:',
-        'Send payment links via email',
-        'Expo Mode for fairs and markets',
+        'Payment links via SMS and email',
+        'Ticketed events',
         'Live Assist for streaming shows',
-        'Include services or custom amounts',
-        'Track payment status in real time',
+        'Expo Mode for fairs and markets',
+        'List and sell tours',
     ],
     manifest: [
         'Everything in Illuminate, plus:',
-        'Open your online shop with up to 10 products',
-        'Payment links with products and services',
-        'Live Assist for streaming shows',
-        'Run and sell ticketed events',
-        'Stock stays in sync automatically',
-        'Paranormal and spiritual investigations with SpiriAssist',
+        'Full merchant storefront',
+        'Up to 20 products in your shop',
+        'Inventory sync across channels',
+        'Host practitioners in your space',
+        'Operate and manage guided tours',
     ],
     transcend: [
         'Everything in Manifest, plus:',
-        'List your full catalogue, unlimited',
-        'Bring practitioners into your space',
-        'Host and sell guided tours',
-        'Never miss a sale with backorders',
-        'Ship faster with auto labels',
+        'Unlimited products',
+        'Refund automation',
+        'Shipping labels and tracking',
+        'POS with stock sync',
+        'Backorder support',
     ],
 };
 import { Check } from 'lucide-react';

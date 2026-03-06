@@ -35,18 +35,32 @@ type VendorSubscriptionDetail {
 }
 
 type TierFeatures {
-  canCreateMerchantProfile: Boolean!
-  maxProducts: Int
-  canHostPractitioners: Boolean!
-  hasInventoryAutomation: Boolean!
-  hasShippingAutomation: Boolean!
-  canCreateEvents: Boolean!
-  canCreateTours: Boolean!
+  # Core (Directory+)
+  hasDirectory: Boolean!
   hasSpiriAssist: Boolean!
-  hasBackorders: Boolean!
+  hasGallery: Boolean!
+  # Practitioner (Awaken+)
+  canAcceptPayments: Boolean!
+  hasVideoUpdates: Boolean!
+  canSellServices: Boolean!
+  hasSpiriReadings: Boolean!
+  # Growth (Illuminate+)
   hasPaymentLinks: Boolean!
+  canCreateEvents: Boolean!
   hasLiveAssist: Boolean!
   hasExpoMode: Boolean!
+  canListTours: Boolean!
+  # Merchant (Manifest+)
+  canCreateMerchantProfile: Boolean!
+  maxProducts: Int
+  hasInventoryAutomation: Boolean!
+  canHostPractitioners: Boolean!
+  canOperateTours: Boolean!
+  # Enterprise (Transcend)
+  hasRefundAutomation: Boolean!
+  hasShippingAutomation: Boolean!
+  hasPOS: Boolean!
+  hasBackorders: Boolean!
 }
 
 type BillingRecord {

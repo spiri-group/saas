@@ -26,10 +26,10 @@ export const tour_resolvers = {
             const vendor = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", merchantId, merchantId);
             if (vendor?.subscription?.subscriptionTier) {
                 const tierFeatures = getTierFeatures(vendor.subscription.subscriptionTier as subscription_tier);
-                if (!tierFeatures.canCreateTours) {
+                if (!tierFeatures.canOperateTours) {
                     throw new GraphQLError(
-                        "Tour creation requires the Transcend plan. Upgrade to create and sell guided tours.",
-                        { extensions: { code: "TIER_FEATURE_LOCKED", requiredTier: "transcend" } }
+                        "Tour operation requires the Manifest plan. Upgrade to create and manage guided tours.",
+                        { extensions: { code: "TIER_FEATURE_LOCKED", requiredTier: "manifest" } }
                     );
                 }
             }

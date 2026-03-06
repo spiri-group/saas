@@ -57,7 +57,7 @@ const useBL = (props: BLProps) => {
     const isMerchant = merchant?.docType === VendorDocType.MERCHANT || !merchant?.docType;
     const canHostPractitioners = features.canHostPractitioners;
     const hasInventoryAutomation = features.hasInventoryAutomation;
-    const canCreateTours = features.canCreateTours;
+    const canOperateTours = features.canOperateTours;
     const hasSpiriAssist = features.hasSpiriAssist;
     const productLimit = features.maxProducts;
     const productCount = inventoryOverview.data?.total_products ?? 0;
@@ -74,7 +74,7 @@ const useBL = (props: BLProps) => {
             : undefined;
     const productDisabled = productLimit === 0 || (productLimit !== null && productCount >= productLimit);
     const productDisabledReason = productLimit === 0
-        ? "Open your shop with up to 10 products"
+        ? "Open your shop with up to 20 products"
         : productLimit !== null && productCount >= productLimit
             ? `Product limit reached (${productLimit}). Upgrade for more.`
             : undefined;
@@ -124,9 +124,9 @@ const useBL = (props: BLProps) => {
                     label: "New Tour",
                     dialogId: "Create Tour",
                     className: "w-[870px] max-w-[95vw] h-[700px]",
-                    disabled: !canCreateTours,
+                    disabled: !canOperateTours,
                     disabledReason: "Host and sell guided tours",
-                    requiredTier: "transcend",
+                    requiredTier: "manifest",
                 },
                 {
                     icon: <FileTextIcon className="w-5 h-5" />,

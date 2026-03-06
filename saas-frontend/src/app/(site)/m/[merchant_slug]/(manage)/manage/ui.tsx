@@ -117,7 +117,7 @@ const CreateListingButton: React.FC<{
 const MyListingsSection: React.FC<{ merchantId: string; vendors: { id: string; name: string; currency?: string }[] }> = ({ merchantId, vendors }) => {
     const { features } = useTierFeatures(merchantId);
     const productLocked = features.maxProducts === 0;
-    const tourLocked = !features.canCreateTours;
+    const tourLocked = !features.canOperateTours;
     const paymentLinksLocked = !features.hasPaymentLinks;
     const [showPaymentLinkDialog, setShowPaymentLinkDialog] = React.useState(false);
 

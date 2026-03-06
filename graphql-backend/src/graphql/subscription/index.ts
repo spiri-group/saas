@@ -20,7 +20,7 @@ import {
     TierFeatures,
 } from "./featureGates";
 
-const VALID_TIERS: subscription_tier[] = ["awaken", "illuminate", "manifest", "transcend"];
+const VALID_TIERS: subscription_tier[] = ["directory", "awaken", "illuminate", "manifest", "transcend"];
 const VALID_INTERVALS: billing_interval[] = [billing_interval.monthly, billing_interval.annual];
 
 async function loadFeeConfig(context: serverContext): Promise<Record<string, any> | null> {
@@ -292,15 +292,15 @@ const resolvers = {
             if (!VALID_TIERS.includes(targetTier)) throw new GraphQLError("Invalid target tier", { extensions: { code: "BAD_REQUEST" } });
             if (!canDowngrade(currentTier, targetTier)) throw new GraphQLError("Cannot downgrade to a higher or equal tier", { extensions: { code: "BAD_REQUEST" } });
 
-            // If Manifest target, check product count (max 15 on Manifest)
+            // If Manifest target, check product count (max 20 on Manifest)
             if (targetTier === "manifest") {
                 const productCount = await context.dataSources.cosmos.run_query<any>("Main-Products", {
                     query: `SELECT VALUE COUNT(1) FROM c WHERE c.vendorId = @vendorId`,
                     parameters: [{ name: "@vendorId", value: args.vendorId }],
                 });
                 const count = productCount[0] || 0;
-                if (count > 15) {
-                    throw new GraphQLError(`Cannot downgrade to Manifest: you have ${count} products (max 15). Remove products before downgrading.`, {
+                if (count > 20) {
+                    throw new GraphQLError(`Cannot downgrade to Manifest: you have ${count} products (max 20). Remove products before downgrading.`, {
                         extensions: { code: "BAD_REQUEST" },
                     });
                 }

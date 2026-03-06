@@ -13,7 +13,7 @@ type UpgradeModalProps = {
     onSuccess?: () => void;
 };
 
-const TIER_ORDER = ['awaken', 'illuminate', 'manifest', 'transcend'];
+const TIER_ORDER = ['directory', 'awaken', 'illuminate', 'manifest', 'transcend'];
 
 function formatPrice(cents: number): string {
     return `$${(cents / 100).toFixed(0)}`;
@@ -193,18 +193,32 @@ function UpgradeTierOption({
 
 function getFeatureLabel(key: string, value: boolean | number | null): string {
     const labels: Record<string, string> = {
-        canCreateMerchantProfile: 'Merchant storefront',
-        maxProducts: value === null ? 'Unlimited products' : `Up to ${value} products`,
-        canHostPractitioners: 'Host practitioners',
-        hasInventoryAutomation: 'Inventory automation',
-        hasShippingAutomation: 'Shipping automation',
+        // Core
+        hasDirectory: 'Directory listing',
+        hasSpiriAssist: 'SpiriAssist',
+        hasGallery: 'Gallery',
+        // Practitioner
+        canAcceptPayments: 'Accept payments',
+        hasVideoUpdates: 'Video updates + Followers',
+        canSellServices: 'Sell services + availability',
+        hasSpiriReadings: 'SpiriReadings',
+        // Growth
+        hasPaymentLinks: 'Payment links (SMS, Email)',
         canCreateEvents: 'Ticketed events',
-        canCreateTours: 'Guided tours',
-        hasSpiriAssist: 'SpiriAssist investigations',
-        hasBackorders: 'Backorder support',
-        hasPaymentLinks: 'Payment links',
         hasLiveAssist: 'Live Assist sessions',
         hasExpoMode: 'Expo Mode',
+        canListTours: 'Tour listing + selling',
+        // Merchant
+        canCreateMerchantProfile: 'Merchant storefront',
+        maxProducts: value === null ? 'Unlimited products' : `Up to ${value} products`,
+        hasInventoryAutomation: 'Inventory sync',
+        canHostPractitioners: 'Host practitioners',
+        canOperateTours: 'Tour operation',
+        // Enterprise
+        hasRefundAutomation: 'Refund automation',
+        hasShippingAutomation: 'Shipping labels + tracking',
+        hasPOS: 'POS + stock sync',
+        hasBackorders: 'Backorder support',
     };
     return labels[key] || key;
 }

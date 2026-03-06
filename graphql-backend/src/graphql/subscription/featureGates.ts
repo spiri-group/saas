@@ -1,80 +1,182 @@
 import { subscription_tier } from "../vendor/types";
 
 export type TierFeatures = {
-    canCreateMerchantProfile: boolean;
-    maxProducts: number | null; // null = unlimited
-    canHostPractitioners: boolean;
-    hasInventoryAutomation: boolean;
-    hasShippingAutomation: boolean;
-    canCreateEvents: boolean;
-    canCreateTours: boolean;
+    // Core (Directory+)
+    hasDirectory: boolean;
     hasSpiriAssist: boolean;
-    hasBackorders: boolean;
+    hasGallery: boolean;
+
+    // Practitioner (Awaken+)
+    canAcceptPayments: boolean;
+    hasVideoUpdates: boolean;
+    canSellServices: boolean;
+    hasSpiriReadings: boolean;
+
+    // Growth (Illuminate+)
     hasPaymentLinks: boolean;
+    canCreateEvents: boolean;
     hasLiveAssist: boolean;
     hasExpoMode: boolean;
+    canListTours: boolean;
+
+    // Merchant (Manifest+)
+    canCreateMerchantProfile: boolean;
+    maxProducts: number | null; // null = unlimited
+    hasInventoryAutomation: boolean;
+    canHostPractitioners: boolean;
+    canOperateTours: boolean;
+
+    // Enterprise (Transcend)
+    hasRefundAutomation: boolean;
+    hasShippingAutomation: boolean;
+    hasPOS: boolean;
+    hasBackorders: boolean;
 };
 
 const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
-    awaken: {
-        canCreateMerchantProfile: false,
-        maxProducts: 0,
-        canHostPractitioners: false,
-        hasInventoryAutomation: false,
-        hasShippingAutomation: false,
-        canCreateEvents: false,
-        canCreateTours: false,
-        hasSpiriAssist: false,
-        hasBackorders: false,
+    directory: {
+        // Core
+        hasDirectory: true,
+        hasSpiriAssist: true,
+        hasGallery: true,
+        // Practitioner
+        canAcceptPayments: false,
+        hasVideoUpdates: false,
+        canSellServices: false,
+        hasSpiriReadings: false,
+        // Growth
         hasPaymentLinks: false,
+        canCreateEvents: false,
         hasLiveAssist: false,
         hasExpoMode: false,
-    },
-    illuminate: {
+        canListTours: false,
+        // Merchant
         canCreateMerchantProfile: false,
         maxProducts: 0,
-        canHostPractitioners: false,
         hasInventoryAutomation: false,
+        canHostPractitioners: false,
+        canOperateTours: false,
+        // Enterprise
+        hasRefundAutomation: false,
         hasShippingAutomation: false,
-        canCreateEvents: false,
-        canCreateTours: false,
-        hasSpiriAssist: true,
+        hasPOS: false,
         hasBackorders: false,
+    },
+    awaken: {
+        // Core
+        hasDirectory: true,
+        hasSpiriAssist: true,
+        hasGallery: true,
+        // Practitioner
+        canAcceptPayments: true,
+        hasVideoUpdates: true,
+        canSellServices: true,
+        hasSpiriReadings: true,
+        // Growth
+        hasPaymentLinks: false,
+        canCreateEvents: false,
+        hasLiveAssist: false,
+        hasExpoMode: false,
+        canListTours: false,
+        // Merchant
+        canCreateMerchantProfile: false,
+        maxProducts: 0,
+        hasInventoryAutomation: false,
+        canHostPractitioners: false,
+        canOperateTours: false,
+        // Enterprise
+        hasRefundAutomation: false,
+        hasShippingAutomation: false,
+        hasPOS: false,
+        hasBackorders: false,
+    },
+    illuminate: {
+        // Core
+        hasDirectory: true,
+        hasSpiriAssist: true,
+        hasGallery: true,
+        // Practitioner
+        canAcceptPayments: true,
+        hasVideoUpdates: true,
+        canSellServices: true,
+        hasSpiriReadings: true,
+        // Growth
         hasPaymentLinks: true,
+        canCreateEvents: true,
         hasLiveAssist: true,
         hasExpoMode: true,
+        canListTours: true,
+        // Merchant
+        canCreateMerchantProfile: false,
+        maxProducts: 0,
+        hasInventoryAutomation: false,
+        canHostPractitioners: false,
+        canOperateTours: false,
+        // Enterprise
+        hasRefundAutomation: false,
+        hasShippingAutomation: false,
+        hasPOS: false,
+        hasBackorders: false,
     },
     manifest: {
-        canCreateMerchantProfile: true,
-        maxProducts: 10,
-        canHostPractitioners: false,
-        hasInventoryAutomation: true,
-        hasShippingAutomation: false,
-        canCreateEvents: true,
-        canCreateTours: false,
+        // Core
+        hasDirectory: true,
         hasSpiriAssist: true,
-        hasBackorders: false,
+        hasGallery: true,
+        // Practitioner
+        canAcceptPayments: true,
+        hasVideoUpdates: true,
+        canSellServices: true,
+        hasSpiriReadings: true,
+        // Growth
         hasPaymentLinks: true,
+        canCreateEvents: true,
         hasLiveAssist: true,
         hasExpoMode: true,
+        canListTours: true,
+        // Merchant
+        canCreateMerchantProfile: true,
+        maxProducts: 20,
+        hasInventoryAutomation: true,
+        canHostPractitioners: true,
+        canOperateTours: true,
+        // Enterprise
+        hasRefundAutomation: false,
+        hasShippingAutomation: false,
+        hasPOS: false,
+        hasBackorders: false,
     },
     transcend: {
-        canCreateMerchantProfile: true,
-        maxProducts: null,
-        canHostPractitioners: true,
-        hasInventoryAutomation: true,
-        hasShippingAutomation: true,
-        canCreateEvents: true,
-        canCreateTours: true,
+        // Core
+        hasDirectory: true,
         hasSpiriAssist: true,
-        hasBackorders: true,
+        hasGallery: true,
+        // Practitioner
+        canAcceptPayments: true,
+        hasVideoUpdates: true,
+        canSellServices: true,
+        hasSpiriReadings: true,
+        // Growth
         hasPaymentLinks: true,
+        canCreateEvents: true,
         hasLiveAssist: true,
         hasExpoMode: true,
+        canListTours: true,
+        // Merchant
+        canCreateMerchantProfile: true,
+        maxProducts: null,
+        hasInventoryAutomation: true,
+        canHostPractitioners: true,
+        canOperateTours: true,
+        // Enterprise
+        hasRefundAutomation: true,
+        hasShippingAutomation: true,
+        hasPOS: true,
+        hasBackorders: true,
     },
 };
 
-const TIER_ORDER: subscription_tier[] = ['awaken', 'illuminate', 'manifest', 'transcend'];
+const TIER_ORDER: subscription_tier[] = ['directory', 'awaken', 'illuminate', 'manifest', 'transcend'];
 
 export function getTierFeatures(tier: subscription_tier): TierFeatures {
     return TIER_FEATURES[tier];

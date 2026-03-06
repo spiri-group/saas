@@ -84,18 +84,27 @@ export const useVendorSubscription = (vendorId: string) => {
                         payoutsBlocked
                         stripePaymentMethodId
                         tierFeatures {
-                            canCreateMerchantProfile
-                            maxProducts
-                            canHostPractitioners
-                            hasInventoryAutomation
-                            hasShippingAutomation
-                            canCreateEvents
-                            canCreateTours
+                            hasDirectory
                             hasSpiriAssist
-                            hasBackorders
+                            hasGallery
+                            canAcceptPayments
+                            hasVideoUpdates
+                            canSellServices
+                            hasSpiriReadings
                             hasPaymentLinks
+                            canCreateEvents
                             hasLiveAssist
                             hasExpoMode
+                            canListTours
+                            canCreateMerchantProfile
+                            maxProducts
+                            hasInventoryAutomation
+                            canHostPractitioners
+                            canOperateTours
+                            hasRefundAutomation
+                            hasShippingAutomation
+                            hasPOS
+                            hasBackorders
                         }
                         discountPercent
                         waived

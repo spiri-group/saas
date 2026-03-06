@@ -20,7 +20,7 @@ const TourUpgradeBanner: React.FC<{ merchantId: string }> = ({ merchantId }) => 
     const router = useRouter();
     const pathname = usePathname();
 
-    if (features.canCreateTours) return null;
+    if (features.canOperateTours) return null;
 
     const handleUpgrade = () => {
         const match = pathname.match(/^\/m\/([^/]+)/);

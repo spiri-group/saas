@@ -83,7 +83,11 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
             <div
                 data-testid="plan-cards-grid"
                 className={`grid gap-4 ${
-                    tiers.length === 1 ? 'max-w-md mx-auto' : tiers.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-3'
+                    tiers.length === 1 ? 'max-w-md mx-auto'
+                        : tiers.length === 2 ? 'grid-cols-1 md:grid-cols-2'
+                            : tiers.length <= 3 ? 'grid-cols-1 md:grid-cols-3'
+                                : tiers.length === 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+                                    : 'grid-cols-1 md:grid-cols-3 lg:grid-cols-5'
                 }`}
             >
                 {tiers.map((tier) => (
@@ -94,10 +98,12 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
                         selected={selectedTier === tier.tier}
                         onSelect={handleTierChange}
                         badge={
-                            tier.tier === 'awaken' ? 'Practitioner'
-                                : tier.tier === 'manifest' ? 'Most Popular'
-                                    : tier.tier === 'transcend' ? 'Everything'
-                                        : undefined
+                            tier.tier === 'directory' ? 'Get Listed'
+                                : tier.tier === 'awaken' ? 'Practitioner'
+                                    : tier.tier === 'illuminate' ? 'Growth'
+                                        : tier.tier === 'manifest' ? 'Most Popular'
+                                            : tier.tier === 'transcend' ? 'Everything'
+                                                : undefined
                         }
                     />
                 ))}

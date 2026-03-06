@@ -25,6 +25,7 @@ type SubscriptionManagementProps = {
 };
 
 const TIER_DISPLAY: Record<string, string> = {
+    directory: 'Directory',
     awaken: 'Awaken',
     illuminate: 'Illuminate',
     manifest: 'Manifest',
