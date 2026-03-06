@@ -1,10 +1,42 @@
 'use client';
 
+import { useState } from 'react';
 import { UseFormReturn, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { useSubscriptionTiers } from '@/hooks/UseSubscriptionTiers';
 import TierCard from '@/components/subscription/TierCard';
+import { ArrowLeft, BookOpen, Sparkles, Store } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { OnboardingFormValues } from '../hooks/useOnboardingForm';
+
+type Path = 'directory' | 'practitioner' | 'merchant' | null;
+
+type PathOption = { id: Path & string; label: string; description: string; icon: typeof BookOpen; tiers: string[]; showPrice?: boolean };
+
+const PATH_OPTIONS: PathOption[] = [
+    {
+        id: 'directory',
+        label: 'List me on the directory',
+        description: 'Get found by seekers looking for spiritual guidance',
+        icon: BookOpen,
+        tiers: ['directory'],
+        showPrice: true,
+    },
+    {
+        id: 'practitioner',
+        label: 'I\u2019m a practitioner',
+        description: 'Offer services, accept bookings, and grow your practice',
+        icon: Sparkles,
+        tiers: ['awaken', 'illuminate'],
+    },
+    {
+        id: 'merchant',
+        label: 'I\u2019m a merchant',
+        description: 'Sell products, host practitioners, and run your store',
+        icon: Store,
+        tiers: ['manifest', 'transcend'],
+    },
+];
 
 type Props = {
     form: UseFormReturn<OnboardingFormValues>;
@@ -16,6 +48,7 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
     const { data: tiers, isLoading } = useSubscriptionTiers();
     const selectedTier = useWatch({ control: form.control, name: 'subscription.tier' });
     const selectedInterval = useWatch({ control: form.control, name: 'subscription.billingInterval' }) || 'monthly';
+    const [path, setPath] = useState<Path>(null);
 
     const handleTierChange = (tier: string) => {
         form.setValue('subscription.tier', tier, { shouldValidate: true });
@@ -23,6 +56,30 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
 
     const handleIntervalChange = (interval: 'monthly' | 'annual') => {
         form.setValue('subscription.billingInterval', interval, { shouldValidate: true });
+    };
+
+    const handlePathSelect = (selected: Path) => {
+        if (!selected) return;
+        const option = PATH_OPTIONS.find(o => o.id === selected);
+        if (!option) return;
+
+        // Directory has only one tier — auto-select and go straight to next step
+        if (selected === 'directory') {
+            form.setValue('subscription.tier', 'directory', { shouldValidate: true });
+            onSelect('directory');
+            return;
+        } else {
+            // Clear any previously selected tier that doesn't belong to the new path
+            if (selectedTier && !option.tiers.includes(selectedTier)) {
+                form.setValue('subscription.tier', '', { shouldValidate: true });
+            }
+        }
+        setPath(selected);
+    };
+
+    const handleBackToPath = () => {
+        setPath(null);
+        form.setValue('subscription.tier', '', { shouldValidate: true });
     };
 
     const handleContinue = () => {
@@ -41,12 +98,80 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
 
     if (!tiers || tiers.length === 0) return null;
 
+    // ── Stage 1: Choose your path ──────────────────────────────────
+    if (!path) {
+        return (
+            <div className="flex-1 flex flex-col space-y-8 p-8 min-h-0 overflow-y-auto" data-testid="choose-plan-step">
+                <div className="text-center">
+                    <h1 className="font-light text-3xl text-white mb-3">How will you use SpiriVerse?</h1>
+                    <p className="text-slate-300">
+                        Pick what best describes you. You can always change your plan later.
+                    </p>
+                </div>
+
+                <div className="grid gap-4 max-w-2xl mx-auto w-full">
+                    {PATH_OPTIONS.map((option) => {
+                        const Icon = option.icon;
+                        const directoryTier = option.showPrice ? tiers.find(t => t.tier === 'directory') : null;
+                        const priceLabel = directoryTier ? `$${(directoryTier.monthlyPrice / 100).toFixed(0)}/month` : null;
+                        return (
+                            <button
+                                key={option.id}
+                                type="button"
+                                data-testid={`path-option-${option.id}`}
+                                onClick={() => handlePathSelect(option.id)}
+                                className={cn(
+                                    'group flex items-center gap-5 rounded-xl border-2 p-6 text-left transition-all cursor-pointer',
+                                    'border-slate-700 bg-slate-800/50 hover:border-purple-500/60 hover:bg-purple-500/5',
+                                )}
+                            >
+                                <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-purple-600/20 text-purple-400 group-hover:bg-purple-600/30 transition-colors">
+                                    <Icon className="w-6 h-6" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-lg font-semibold text-white">{option.label}</h3>
+                                    <p className="text-sm text-slate-400 mt-0.5">{option.description}</p>
+                                </div>
+                                {priceLabel && (
+                                    <div className="flex-shrink-0 text-right">
+                                        <span className="text-lg font-bold text-white">{priceLabel}</span>
+                                    </div>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Navigation */}
+                <div className="flex gap-3 max-w-md mx-auto w-full">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        data-testid="plan-back-btn"
+                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                        onClick={onBack}
+                    >
+                        Back
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Stage 2: Choose your plan within the selected path ─────────
+
+    const currentOption = PATH_OPTIONS.find(o => o.id === path)!;
+    const filteredTiers = tiers.filter(t => currentOption.tiers.includes(t.tier));
+
     return (
         <div className="flex-1 flex flex-col space-y-8 p-8 min-h-0 overflow-y-auto" data-testid="choose-plan-step">
             <div className="text-center">
                 <h1 className="font-light text-3xl text-white mb-3">Choose Your Plan</h1>
                 <p className="text-slate-300">
-                    Pick the plan that fits your goals. You won&apos;t be charged until after your first payout.
+                    {path === 'directory'
+                        ? 'Get listed and let seekers find you. You won\u2019t be charged until after your first payout.'
+                        : 'Pick the plan that fits your goals. You won\u2019t be charged until after your first payout.'
+                    }
                 </p>
             </div>
 
@@ -82,15 +207,13 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
             {/* Tier cards */}
             <div
                 data-testid="plan-cards-grid"
-                className={`grid gap-4 ${
-                    tiers.length === 1 ? 'max-w-md mx-auto'
-                        : tiers.length === 2 ? 'grid-cols-1 md:grid-cols-2'
-                            : tiers.length <= 3 ? 'grid-cols-1 md:grid-cols-3'
-                                : tiers.length === 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
-                                    : 'grid-cols-1 md:grid-cols-3 lg:grid-cols-5'
-                }`}
+                className={cn(
+                    'grid gap-4 mx-auto w-full',
+                    filteredTiers.length === 1 && 'max-w-md',
+                    filteredTiers.length === 2 && 'grid-cols-1 md:grid-cols-2 max-w-3xl',
+                )}
             >
-                {tiers.map((tier) => (
+                {filteredTiers.map((tier) => (
                     <TierCard
                         key={tier.tier}
                         tier={tier}
@@ -99,7 +222,7 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
                         onSelect={handleTierChange}
                         badge={
                             tier.tier === 'directory' ? 'Get Listed'
-                                : tier.tier === 'awaken' ? 'Practitioner'
+                                : tier.tier === 'awaken' ? 'Starter'
                                     : tier.tier === 'illuminate' ? 'Growth'
                                         : tier.tier === 'manifest' ? 'Most Popular'
                                             : tier.tier === 'transcend' ? 'Everything'
@@ -120,9 +243,10 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
                     variant="outline"
                     data-testid="plan-back-btn"
                     className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                    onClick={onBack}
+                    onClick={handleBackToPath}
                 >
-                    Back
+                    <ArrowLeft className="w-4 h-4 mr-1" />
+                    Change path
                 </Button>
                 <Button
                     type="button"
