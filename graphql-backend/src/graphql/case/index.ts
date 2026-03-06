@@ -379,8 +379,8 @@ const resolvers = {
                 const tierFeatures = getTierFeatures(vendor.subscription.subscriptionTier as subscription_tier);
                 if (!tierFeatures.hasSpiriAssist) {
                     throw new GraphQLError(
-                        "SpiriAssist investigations require the Manifest plan or higher.",
-                        { extensions: { code: "TIER_FEATURE_LOCKED", requiredTier: "manifest" } }
+                        "SpiriAssist investigations require the Directory plan or higher.",
+                        { extensions: { code: "TIER_FEATURE_LOCKED", requiredTier: "directory" } }
                     );
                 }
             }

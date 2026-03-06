@@ -379,8 +379,8 @@ const resolvers = {
                 const features = getTierFeatures(merchant.subscription.subscriptionTier as subscription_tier)
                 if (!features.canHostPractitioners) {
                     throw new GraphQLError(
-                        "Upgrade to Transcend to host practitioners on your storefront.",
-                        { extensions: { code: "TIER_FEATURE_LOCKED" } }
+                        "Upgrade to Manifest to host practitioners on your storefront.",
+                        { extensions: { code: "TIER_FEATURE_LOCKED", requiredTier: "manifest" } }
                     )
                 }
             }
