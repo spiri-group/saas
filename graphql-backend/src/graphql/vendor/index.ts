@@ -666,6 +666,10 @@ const resolvers = {
             if (context.userId == null) throw "User must be present for this call";
 
             var { subscription, ...vendorInput } = args.vendor;
+            // Default optional fields
+            vendorInput["merchantTypeIds"] = vendorInput["merchantTypeIds"] || [];
+            vendorInput["religionId"] = vendorInput["religionId"] || "";
+
             // assume the merchant does not have any team members at sign up
             vendorInput["teamMembers"] = [];
             vendorInput["descriptions"] = [];

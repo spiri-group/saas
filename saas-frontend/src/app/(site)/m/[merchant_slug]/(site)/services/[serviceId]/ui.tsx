@@ -22,7 +22,7 @@ import MerchantFontLoader from "@/app/(site)/m/_components/MerchantFontLoader";
 import UseServiceDetails from "./hooks/UseServiceDetails";
 import UseAddServiceToCart from "./hooks/UseAddServiceToCart";
 import { useBirthChart } from "@/app/(site)/u/[userId]/space/astrology/_hooks/useBirthChart";
-import { Clock, FileText, Package, Stars, AlertCircle } from "lucide-react";
+import { Clock, FileText, Package, Stars, AlertCircle, ArrowLeft } from "lucide-react";
 import QuestionnaireRenderer from "@/components/ux/QuestionnaireRenderer";
 
 type BLProps = {
@@ -122,10 +122,10 @@ const UI: React.FC<Props> = (props) => {
 
     const getCategoryBadgeColor = (category: string) => {
         switch (category) {
-            case "READING": return "bg-purple-500/20 text-purple-300 border-purple-500/30";
-            case "HEALING": return "bg-green-500/20 text-green-300 border-green-500/30";
-            case "COACHING": return "bg-blue-500/20 text-blue-300 border-blue-500/30";
-            default: return "bg-gray-500/20 text-gray-300 border-gray-500/30";
+            case "READING": return "bg-purple-100 text-purple-700 border-purple-200";
+            case "HEALING": return "bg-green-100 text-green-700 border-green-200";
+            case "COACHING": return "bg-blue-100 text-blue-700 border-blue-200";
+            default: return "bg-gray-100 text-gray-700 border-gray-200";
         }
     };
 
@@ -161,6 +161,17 @@ const UI: React.FC<Props> = (props) => {
                 minHeight: '100vh'
             }}>
             <MerchantFontLoader fonts={fontConfig} />
+
+            <div className="mx-4 mt-4 mb-2">
+                <Link
+                    href={`/m/${service.vendor.slug}`}
+                    className="inline-flex items-center text-merchant-links hover:underline transition-colors"
+                    data-testid="service-back-link"
+                >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to {service.vendor.name}
+                </Link>
+            </div>
 
             <Panel className="mt-2"
                 style={{
@@ -383,10 +394,10 @@ const UI: React.FC<Props> = (props) => {
 
                                     {/* Birth Chart Gate for Astrology Readings */}
                                     {bl.needsBirthChart ? (
-                                        <Alert className="border-purple-500/30 bg-purple-500/10">
-                                            <Stars className="h-4 w-4 text-purple-400" />
-                                            <AlertTitle className="text-purple-300">Birth Chart Required</AlertTitle>
-                                            <AlertDescription className="text-purple-200/80">
+                                        <Alert className="border-purple-200 bg-purple-50">
+                                            <Stars className="h-4 w-4 text-purple-600" />
+                                            <AlertTitle className="text-purple-800">Birth Chart Required</AlertTitle>
+                                            <AlertDescription className="text-purple-700">
                                                 This astrology reading requires your birth chart. Please set up your birth chart first to continue.
                                             </AlertDescription>
                                             <Link href={`/u/${bl.userId}/space/astrology/birth-chart?autoSetup=MEDIUMSHIP`}>
@@ -402,10 +413,10 @@ const UI: React.FC<Props> = (props) => {
                                             </Link>
                                         </Alert>
                                     ) : bl.isAstrologyReading && !bl.isLoggedIn ? (
-                                        <Alert className="border-blue-500/30 bg-blue-500/10">
-                                            <AlertCircle className="h-4 w-4 text-blue-400" />
-                                            <AlertTitle className="text-blue-300">Sign In Required</AlertTitle>
-                                            <AlertDescription className="text-blue-200/80">
+                                        <Alert className="border-blue-200 bg-blue-50">
+                                            <AlertCircle className="h-4 w-4 text-blue-600" />
+                                            <AlertTitle className="text-blue-800">Sign In Required</AlertTitle>
+                                            <AlertDescription className="text-blue-700">
                                                 This astrology reading requires your birth chart. Please sign in to continue.
                                             </AlertDescription>
                                             <Link href="/">

@@ -124,8 +124,10 @@ input VendorInput {
   state: String
   slug: String
   logo: MediaInput
-  merchantTypeIds: [String]!
-  religionId: String!
+  merchantTypeIds: [String]
+  religionId: String
+  website: String
+  abn: String
   subscription: VendorSubscriptionInput
 }
 

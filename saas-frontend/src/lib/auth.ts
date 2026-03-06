@@ -176,6 +176,8 @@ export const authOptions: NextAuthConfig = {
                             name
                             slug
                             currency
+                            country
+                            state
                             docType
                         }
                         cases {

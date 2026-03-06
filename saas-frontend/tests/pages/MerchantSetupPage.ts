@@ -12,7 +12,7 @@ import { handleConsentGuardIfPresent } from '../utils/test-helpers';
  *   1. BasicDetailsStep — firstName, lastName, email, country → "Set Up a Business"
  *   2. ChoosePlanStep — select tier (manifest = merchant) → Continue
  *   3. OnboardingConsent — accept documents
- *   4. MerchantProfileStep — name, slug, email, state, merchant types, religion → Continue
+ *   4. MerchantProfileStep — name, slug, email, country, state, website, abn → Continue
  *   5. AlsoPractitionerStep — Yes/No
  *   → Redirect to /m/{slug}
  */
@@ -79,20 +79,6 @@ export class MerchantSetupPage extends BasePage {
     if (data.state) {
       await this.page.locator('[data-testid="setup-merchant-state"]').fill(data.state);
     }
-
-    // Select religion (required) — pick the first tree item
-    await this.page.locator('[data-testid="religion-picker"]').click();
-    await this.page.locator('[data-testid="religion-tree"]').waitFor({ state: 'visible', timeout: 10000 });
-    await this.page.locator('[data-testid="religion-tree"] [role="treeitem"]').first().click();
-    await this.page.waitForTimeout(500);
-
-    // Select merchant type (required) — pick the first tree item
-    await this.page.locator('[data-testid="merchant-type-picker"]').click();
-    await this.page.locator('[data-testid="merchant-type-tree"]').waitFor({ state: 'visible', timeout: 10000 });
-    await this.page.locator('[data-testid="merchant-type-tree"] [role="treeitem"]').first().click();
-    await this.page.waitForTimeout(500);
-    await this.page.locator('[aria-label="close-dialog"]').click();
-    await this.page.waitForTimeout(300);
   }
 
   /**

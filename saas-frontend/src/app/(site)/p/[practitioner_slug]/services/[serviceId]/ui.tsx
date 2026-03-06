@@ -353,12 +353,12 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                     Back to {service.vendor.name}&apos;s Profile
                 </Link>
 
-                <Panel className="backdrop-blur-xl bg-indigo-50/70 shadow-2xl border border-white/20">
+                <Panel className="backdrop-blur-xl bg-white/[0.07] shadow-2xl border border-white/15">
                     <PanelHeader className="mb-4">
                         <div className="flex items-center justify-between">
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
-                                    <PanelTitle as="h1" className="text-xl" data-testid="service-name">
+                                    <PanelTitle as="h1" className="text-xl text-white" data-testid="service-name">
                                         {service.name}
                                     </PanelTitle>
                                     <Badge className={getCategoryBadgeColor(service.category)}>
@@ -366,9 +366,9 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                     </Badge>
                                 </div>
                                 <PanelDescription className="flex flex-row gap-1 items-center">
-                                    <span className="text-slate-500">Offered by</span>
-                                    <span className="font-bold text-slate-700">{service.vendor.name}</span>
-                                    <Link href={`/p/${practitionerSlug}`} className="text-sm text-indigo-600 hover:underline">
+                                    <span className="text-slate-400">Offered by</span>
+                                    <span className="font-bold text-white">{service.vendor.name}</span>
+                                    <Link href={`/p/${practitionerSlug}`} className="text-sm text-indigo-400 hover:underline">
                                         View Profile
                                     </Link>
                                 </PanelDescription>
@@ -391,14 +391,14 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                             )}
 
                             <div>
-                                <h2 className="text-lg font-semibold text-slate-800 mb-3">About This Service</h2>
-                                <div className="text-slate-600 whitespace-pre-line" data-testid="service-description" dangerouslySetInnerHTML={{ __html: service.description }} />
+                                <h2 className="text-lg font-semibold text-white mb-3">About This Service</h2>
+                                <div className="text-slate-300 whitespace-pre-line" data-testid="service-description" dangerouslySetInnerHTML={{ __html: service.description }} />
                             </div>
 
                             {service.deliveryMode === "ASYNC" && service.turnaroundDays && (
-                                <div className="flex items-center gap-2 p-3 rounded-lg bg-indigo-50 border border-indigo-200">
-                                    <Clock className="w-5 h-5 text-indigo-600" />
-                                    <span className="text-slate-700">
+                                <div className="flex items-center gap-2 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                                    <Clock className="w-5 h-5 text-indigo-400" />
+                                    <span className="text-slate-300">
                                         Typical delivery: {service.turnaroundDays} {service.turnaroundDays === 1 ? 'day' : 'days'}
                                     </span>
                                 </div>
@@ -406,15 +406,15 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
 
                             {service.deliveryFormats && service.deliveryFormats.length > 0 && (
                                 <div>
-                                    <h3 className="text-md font-semibold text-slate-800 mb-2">Delivery Formats</h3>
+                                    <h3 className="text-md font-semibold text-white mb-2">Delivery Formats</h3>
                                     <ul className="space-y-2">
                                         {service.deliveryFormats.map((format, idx) => (
                                             <li key={idx} className="flex items-start gap-2">
-                                                <FileText className="w-4 h-4 mt-0.5 text-indigo-600" />
+                                                <FileText className="w-4 h-4 mt-0.5 text-indigo-400" />
                                                 <div>
-                                                    <div className="text-slate-700 font-medium">{format.format}</div>
+                                                    <div className="text-slate-200 font-medium">{format.format}</div>
                                                     {format.description && (
-                                                        <div className="text-sm text-slate-500">{format.description}</div>
+                                                        <div className="text-sm text-slate-400">{format.description}</div>
                                                     )}
                                                 </div>
                                             </li>
@@ -425,12 +425,12 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
 
                             {service.faq && service.faq.length > 0 && (
                                 <div>
-                                    <h3 className="text-md font-semibold text-slate-800 mb-3">Frequently Asked Questions</h3>
+                                    <h3 className="text-md font-semibold text-white mb-3">Frequently Asked Questions</h3>
                                     <Accordion type="single" collapsible>
                                         {service.faq.map((item) => (
-                                            <AccordionItem key={item.id} value={item.id}>
-                                                <AccordionTrigger className="text-slate-700">{item.title}</AccordionTrigger>
-                                                <AccordionContent className="text-slate-600">
+                                            <AccordionItem key={item.id} value={item.id} className="border-white/10">
+                                                <AccordionTrigger className="text-slate-200">{item.title}</AccordionTrigger>
+                                                <AccordionContent className="text-slate-400">
                                                     {item.description}
                                                 </AccordionContent>
                                             </AccordionItem>
@@ -441,8 +441,8 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
 
                             {service.terms && (
                                 <div>
-                                    <h3 className="text-md font-semibold text-slate-800 mb-2">Terms & Conditions</h3>
-                                    <p className="text-sm text-slate-500 whitespace-pre-line">
+                                    <h3 className="text-md font-semibold text-white mb-2">Terms & Conditions</h3>
+                                    <p className="text-sm text-slate-400 whitespace-pre-line">
                                         {service.terms}
                                     </p>
                                 </div>
@@ -454,16 +454,16 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                             {/* Scheduled Booking Flow for SYNC services with SCHEDULED booking type */}
                             {service.deliveryMode === "SYNC" && service.bookingType === "SCHEDULED" ? (
                                 bookingComplete ? (
-                                    <Card>
+                                    <Card className="bg-white/[0.07] border-white/15">
                                         <CardContent className="py-8 text-center space-y-4">
-                                            <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
-                                                <Calendar className="w-8 h-8 text-green-600" />
+                                            <div className="w-16 h-16 mx-auto rounded-full bg-green-500/20 flex items-center justify-center">
+                                                <Calendar className="w-8 h-8 text-green-400" />
                                             </div>
-                                            <h3 className="text-xl font-semibold text-slate-800">Booking Request Sent!</h3>
-                                            <p className="text-slate-600">
+                                            <h3 className="text-xl font-semibold text-white">Booking Request Sent!</h3>
+                                            <p className="text-slate-300">
                                                 Your booking request has been submitted. The practitioner will review and confirm your appointment soon.
                                             </p>
-                                            <p className="text-sm text-slate-500">
+                                            <p className="text-sm text-slate-400">
                                                 You&apos;ll receive an email once your booking is confirmed.
                                             </p>
                                             <Link href={`/p/${practitionerSlug}`}>
@@ -489,9 +489,9 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                     />
                                 )
                             ) : (
-                            <Card>
+                            <Card className="bg-white/[0.07] border-white/15">
                                 <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
+                                    <CardTitle className="flex items-center gap-2 text-white">
                                         <Package className="w-5 h-5" />
                                         Select Your Option
                                     </CardTitle>
@@ -499,42 +499,42 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                 <CardContent className="space-y-4">
                                     {/* Fixed Price */}
                                     {service.pricing.type === "FIXED" && service.pricing.fixedPrice && (
-                                        <div className="p-4 rounded-lg border border-indigo-200 bg-indigo-50" data-testid="service-price">
-                                            <div className="text-2xl font-bold text-indigo-700">
+                                        <div className="p-4 rounded-lg border border-indigo-500/30 bg-indigo-500/10" data-testid="service-price">
+                                            <div className="text-2xl font-bold text-indigo-300">
                                                 <CurrencySpan value={service.pricing.fixedPrice} withAnimation={false} />
                                             </div>
-                                            <div className="text-sm text-slate-500">Fixed Price</div>
+                                            <div className="text-sm text-slate-400">Fixed Price</div>
                                         </div>
                                     )}
 
                                     {/* Package Selection */}
                                     {service.pricing.type === "PACKAGE" && service.pricing.packages && (
                                         <div className="space-y-2" data-testid="service-price">
-                                            <Label>Choose a Package</Label>
+                                            <Label className="text-slate-300">Choose a Package</Label>
                                             {service.pricing.packages.map((pkg, idx) => (
                                                 <div
                                                     key={idx}
                                                     className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                                                         selectedPackage === idx
-                                                            ? 'border-indigo-500 bg-indigo-50'
-                                                            : 'border-slate-200 hover:border-indigo-300'
+                                                            ? 'border-indigo-500 bg-indigo-500/10'
+                                                            : 'border-white/15 hover:border-indigo-500/40'
                                                     }`}
                                                     onClick={() => setSelectedPackage(idx)}
                                                     data-testid={`package-option-${idx}`}
                                                 >
                                                     <div className="flex justify-between items-start">
                                                         <div>
-                                                            <div className="font-semibold text-slate-800">{pkg.name}</div>
+                                                            <div className="font-semibold text-white">{pkg.name}</div>
                                                             {pkg.description && (
-                                                                <div className="text-sm text-slate-500">{pkg.description}</div>
+                                                                <div className="text-sm text-slate-400">{pkg.description}</div>
                                                             )}
                                                             {pkg.sessions && (
-                                                                <div className="text-sm text-slate-500">
+                                                                <div className="text-sm text-slate-400">
                                                                     {pkg.sessions} sessions
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <div className="font-bold text-indigo-700">
+                                                        <div className="font-bold text-indigo-300">
                                                             <CurrencySpan value={pkg.price} withAnimation={false} />
                                                         </div>
                                                     </div>
@@ -545,39 +545,40 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
 
                                     {/* Hourly Rate */}
                                     {service.pricing.type === "HOURLY" && service.pricing.hourlyRate && (
-                                        <div className="p-4 rounded-lg border border-indigo-200 bg-indigo-50" data-testid="service-price">
-                                            <div className="text-2xl font-bold text-indigo-700">
+                                        <div className="p-4 rounded-lg border border-indigo-500/30 bg-indigo-500/10" data-testid="service-price">
+                                            <div className="text-2xl font-bold text-indigo-300">
                                                 <CurrencySpan value={service.pricing.hourlyRate} withAnimation={false} />
                                             </div>
-                                            <div className="text-sm text-slate-500">Per Hour</div>
+                                            <div className="text-sm text-slate-400">Per Hour</div>
                                         </div>
                                     )}
 
                                     {/* Add-ons */}
                                     {service.addOns && service.addOns.length > 0 && (
                                         <>
-                                            <Separator />
+                                            <Separator className="bg-white/10" />
                                             <div className="space-y-2">
-                                                <Label>Add-Ons (Optional)</Label>
+                                                <Label className="text-slate-300">Add-Ons (Optional)</Label>
                                                 {service.addOns.map((addOn) => (
                                                     <div
                                                         key={addOn.id}
-                                                        className="flex items-start gap-2 p-2 rounded hover:bg-slate-50"
+                                                        className="flex items-start gap-2 p-2 rounded hover:bg-white/5"
                                                     >
                                                         <Checkbox
                                                             checked={selectedAddOns.includes(addOn.id)}
                                                             onCheckedChange={() => toggleAddOn(addOn.id)}
+                                                            dark
                                                             data-testid={`addon-${addOn.id}`}
                                                         />
                                                         <div className="flex-1">
                                                             <div className="flex justify-between items-start">
                                                                 <div>
-                                                                    <div className="font-medium text-slate-700">{addOn.name}</div>
+                                                                    <div className="font-medium text-slate-200">{addOn.name}</div>
                                                                     {addOn.description && (
-                                                                        <div className="text-sm text-slate-500">{addOn.description}</div>
+                                                                        <div className="text-sm text-slate-400">{addOn.description}</div>
                                                                     )}
                                                                 </div>
-                                                                <div className="text-sm font-semibold text-indigo-700">
+                                                                <div className="text-sm font-semibold text-indigo-300">
                                                                     +<CurrencySpan value={addOn.price} withAnimation={false} />
                                                                 </div>
                                                             </div>
@@ -591,9 +592,9 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                     {/* Questionnaire */}
                                     {service.questionnaire && service.questionnaire.length > 0 && (
                                         <>
-                                            <Separator />
+                                            <Separator className="bg-white/10" />
                                             <div className="space-y-3">
-                                                <Label>Intake Questionnaire</Label>
+                                                <Label className="text-slate-300">Intake Questionnaire</Label>
                                                 <QuestionnaireRenderer
                                                     questions={service.questionnaire}
                                                     responses={questionnaireResponses}
@@ -603,28 +604,28 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                         </>
                                     )}
 
-                                    <Separator />
+                                    <Separator className="bg-white/10" />
 
                                     {/* Total & Add to Cart */}
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-center">
-                                            <span className="font-semibold text-slate-700">Total</span>
-                                            <span className="text-2xl font-bold text-indigo-700">
+                                            <span className="font-semibold text-slate-200">Total</span>
+                                            <span className="text-2xl font-bold text-indigo-300">
                                                 <CurrencySpan value={totalPrice} withAnimation={false} />
                                             </span>
                                         </div>
 
                                         {/* Birth Chart Gate for Astrology Readings */}
                                         {needsBirthChart ? (
-                                            <Alert className="border-indigo-300 bg-indigo-50">
-                                                <Stars className="h-4 w-4 text-indigo-600" />
-                                                <AlertTitle className="text-indigo-800">Birth Chart Required</AlertTitle>
-                                                <AlertDescription className="text-indigo-700">
+                                            <Alert className="border-indigo-500/30 bg-indigo-500/10">
+                                                <Stars className="h-4 w-4 text-indigo-400" />
+                                                <AlertTitle className="text-indigo-300">Birth Chart Required</AlertTitle>
+                                                <AlertDescription className="text-indigo-200/80">
                                                     This astrology reading requires your birth chart. Please set up your birth chart first to continue.
                                                 </AlertDescription>
                                                 <Link href={`/u/${userId}/space/astrology/birth-chart?autoSetup=MEDIUMSHIP`}>
                                                     <Button
-                                                        className="w-full mt-3"
+                                                        className="w-full mt-3 border-white/20 text-white hover:bg-white/10"
                                                         size="lg"
                                                         variant="outline"
                                                         data-testid="setup-birth-chart-btn"
@@ -635,15 +636,15 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                                 </Link>
                                             </Alert>
                                         ) : isAstrologyReading && session.status !== 'authenticated' ? (
-                                            <Alert className="border-blue-300 bg-blue-50">
-                                                <AlertCircle className="h-4 w-4 text-blue-600" />
-                                                <AlertTitle className="text-blue-800">Sign In Required</AlertTitle>
-                                                <AlertDescription className="text-blue-700">
+                                            <Alert className="border-blue-500/30 bg-blue-500/10">
+                                                <AlertCircle className="h-4 w-4 text-blue-400" />
+                                                <AlertTitle className="text-blue-300">Sign In Required</AlertTitle>
+                                                <AlertDescription className="text-blue-200/80">
                                                     This astrology reading requires your birth chart. Please sign in to continue.
                                                 </AlertDescription>
                                                 <Link href="/">
                                                     <Button
-                                                        className="w-full mt-3"
+                                                        className="w-full mt-3 border-white/20 text-white hover:bg-white/10"
                                                         size="lg"
                                                         variant="outline"
                                                     >
@@ -661,7 +662,7 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                             </Button>
                                         ) : (
                                             <Button
-                                                className="w-full bg-indigo-600 hover:bg-indigo-700"
+                                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
                                                 size="lg"
                                                 onClick={handleAddToCart}
                                                 disabled={isAddingService}

@@ -28,15 +28,14 @@ export const onboardingSchema = z.object({
 
     // Merchant sub-object (optional — only for manifest/transcend)
     merchant: z.object({
+        id: z.string().min(1),
         name: z.string().min(1, 'Business name is required'),
         slug: z.string().min(1, 'URL is required').regex(/^[a-z0-9-]+$/, 'Use only lowercase letters, numbers and hyphens'),
         email: z.string().email('Please enter a valid email'),
-        state: z.string().min(1, 'State/province is required'),
-        merchantTypeIds: z.array(z.string()).min(1, 'Select at least one type'),
-        religion: z.object({
-            id: z.string().min(1),
-            label: z.string().min(1),
-        }),
+        website: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+        country: z.string().optional(),
+        state: z.string().optional(),
+        abn: z.string().optional(),
         logo: MediaSchema.nullable().optional(),
     }).optional(),
 
@@ -62,8 +61,12 @@ export type OnboardingFormValues = z.infer<typeof onboardingSchema>;
 export const BASIC_FIELDS: (keyof OnboardingFormValues)[] = ['firstName', 'lastName', 'email', 'country'];
 
 export const MERCHANT_FIELDS = [
-    'merchant.name', 'merchant.slug', 'merchant.email', 'merchant.state',
-    'merchant.merchantTypeIds', 'merchant.religion',
+    'merchant.name', 'merchant.slug', 'merchant.email',
+    'merchant.country', 'merchant.state',
+] as const;
+
+export const MERCHANT_FIELDS_NO_LOCATION = [
+    'merchant.name', 'merchant.slug', 'merchant.email',
 ] as const;
 
 export const PRACTITIONER_REQUIRED_FIELDS = [
@@ -117,13 +120,20 @@ export function useOnboardingForm() {
     const initMerchant = () => {
         const vals = form.getValues();
         if (!vals.merchant) {
+            // Check if user already has a practitioner account with location info
+            const practitionerVendor = session?.user?.vendors?.find(
+                (v: any) => v.docType === 'PRACTITIONER'
+            ) as any;
+
             form.setValue('merchant', {
+                id: uuid(),
                 name: `${vals.firstName} ${vals.lastName}`.trim(),
                 slug: '',
                 email: vals.email,
-                state: '',
-                merchantTypeIds: [],
-                religion: { id: '', label: '' },
+                website: '',
+                country: practitionerVendor?.country || vals.country || '',
+                state: practitionerVendor?.state || '',
+                abn: '',
                 logo: undefined,
             });
         }
@@ -152,7 +162,8 @@ export function useOnboardingForm() {
     const createVendor = async (): Promise<{ id: string; slug: string }> => {
         const vals = form.getValues();
         const merchant = vals.merchant!;
-        const currency = countryToCurrency[vals.country as keyof typeof countryToCurrency] || 'USD';
+        const country = merchant.country || vals.country;
+        const currency = countryToCurrency[country as keyof typeof countryToCurrency] || 'USD';
 
         const { create_vendor: { vendor } } = await gql<{
             create_vendor: {
@@ -168,16 +179,16 @@ export function useOnboardingForm() {
             }
         `, {
             vendor: {
-                id: uuid(),
+                id: merchant.id,
                 name: merchant.name,
                 slug: merchant.slug,
                 email: merchant.email,
-                state: merchant.state,
-                merchantTypeIds: merchant.merchantTypeIds,
-                religionId: merchant.religion.id,
+                state: merchant.state || undefined,
+                website: merchant.website || undefined,
+                abn: merchant.abn || undefined,
                 logo: merchant.logo ?? undefined,
                 currency,
-                country: vals.country,
+                country,
                 subscription: {
                     tier: vals.subscription.tier,
                     billingInterval: vals.subscription.billingInterval,

@@ -230,27 +230,8 @@ test.describe('Practitioner Shopfronts', () => {
         await expect(merchantEmailInput).toBeVisible({ timeout: 5000 });
         await merchantEmailInput.fill(testEmail);
 
-        const merchantStateInput = page.getByTestId('setup-merchant-state');
-        await expect(merchantStateInput).toBeVisible({ timeout: 5000 });
-        await merchantStateInput.fill('NSW');
-
-        // Select merchant type (required)
-        const merchantTypeBtn = page.locator('[aria-label="merchant-type-picker"]');
-        await expect(merchantTypeBtn).toBeVisible({ timeout: 10000 });
-        await merchantTypeBtn.click();
-        await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 10000 });
-        await page.locator('[data-testid="merchant-type-tree"] [role="treeitem"]').first().waitFor({ state: 'visible', timeout: 5000 });
-        await page.locator('[data-testid="merchant-type-tree"] [role="treeitem"]').first().click();
-        await page.waitForTimeout(500);
-        await page.locator('[role="dialog"] [aria-label="close-dialog"]').click();
-
-        // Select religion (required)
-        const religionBtn = page.locator('[aria-label="religion-picker"]');
-        await expect(religionBtn).toBeVisible({ timeout: 10000 });
-        await religionBtn.click();
-        await page.waitForSelector('[data-testid="religion-tree"]', { timeout: 10000 });
-        await page.locator('[role="treeitem"]').first().click();
-        await page.waitForTimeout(500);
+        // Country & State are hidden because user already has a practitioner account
+        // (location is reused from the practitioner profile)
 
         // Submit merchant profile
         const merchantSubmitBtn = page.getByTestId('setup-merchant-submit-btn');

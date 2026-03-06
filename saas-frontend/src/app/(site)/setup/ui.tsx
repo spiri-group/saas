@@ -262,6 +262,10 @@ export default function SetupUI() {
         if (!form.getValues('country') && detectedCountry) {
             form.setValue('country', detectedCountry);
         }
+        // Ensure merchant country is set (may be from practitioner or basic step)
+        if (!form.getValues('merchant.country')) {
+            form.setValue('merchant.country', form.getValues('country') || detectedCountry || '');
+        }
 
         setIsSubmitting(true);
         try {
@@ -504,9 +508,7 @@ export default function SetupUI() {
                     } ${
                         theme === 'purple'
                             ? 'bg-purple-50 border-2 border-purple-300/60 shadow-[0_8px_40px_-8px_rgba(147,51,234,0.25)]'
-                            : theme === 'amber'
-                                ? 'bg-amber-50 border-2 border-amber-300/60 shadow-[0_8px_40px_-8px_rgba(245,158,11,0.25)]'
-                                : 'bg-white border border-slate-200 shadow-2xl'
+                            : 'bg-white border border-slate-200 shadow-2xl'
                     }`}
                 >
                     {/* Themed accent bar */}

@@ -3,7 +3,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import CancelDialogButton from "@/components/ux/CancelDialogButton";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,6 +23,8 @@ type BLProps = {
 
 const useBL = (props: BLProps) => {
     const router = useRouter();
+    const params = useParams();
+    const merchant_slug = params.merchant_slug as string;
     const { form, mutation } = useCreateHealingOffer(props.merchantId);
 
     return {
@@ -30,7 +32,7 @@ const useBL = (props: BLProps) => {
         submit: async (values: any) => {
             await mutation.mutateAsync(values);
             escape_key();
-            router.push(`/m/${props.merchantId}/manage/services`);
+            router.push(`/m/${merchant_slug}/manage/services`);
         }
     };
 }
