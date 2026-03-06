@@ -280,25 +280,30 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
 };
 
 const TIER_OUTCOMES: Record<string, string[]> = {
-    awaken: [
-        'Share your practice globally',
-        'Book readings & sessions',
+    directory: [
+        'Get listed in the directory',
         'Showcase work in a gallery',
+        'SpiriAssist investigations',
+    ],
+    awaken: [
+        'Accept payments instantly',
+        'Book readings & sessions',
+        'Video updates & followers',
     ],
     illuminate: [
         'Send payment links',
-        'Earn in real-time, anywhere',
-        'Sell at expos and markets',
+        'Ticketed events & Expo Mode',
+        'List and sell tours',
     ],
     manifest: [
         'Your own online storefront',
-        'Manage products & orders',
-        'Integrated checkout',
+        'Up to 20 products',
+        'Host practitioners',
     ],
     transcend: [
         'Unlimited products',
-        'Host practitioners',
-        'Automated shipping',
+        'Refund & shipping automation',
+        'POS with stock sync',
     ],
 };
 
@@ -308,8 +313,8 @@ const DIALOG_CONFIG = {
         title: 'Start Your Practice',
         subtitle: 'Choose the plan that fits your practice',
         profileType: 'practitioner',
-        tiers: ['awaken', 'illuminate'],
-        defaultTier: 'awaken',
+        tiers: ['directory', 'awaken', 'illuminate'],
+        defaultTier: 'directory',
     },
     merchant: {
         icon: Store,
@@ -412,7 +417,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                             <span className="text-sm">Loading plans...</span>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-4" data-testid="get-started-tier-cards">
+                        <div className={`grid gap-4 ${availableTiers.length <= 2 ? 'grid-cols-2' : 'grid-cols-3'}`} data-testid="get-started-tier-cards">
                             {availableTiers.map((tier) => {
                                 const isSelected = tier.tier === selectedTier;
                                 const tierPrice = billingInterval === 'monthly' ? tier.monthlyPrice : tier.annualPrice;

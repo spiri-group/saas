@@ -12,7 +12,9 @@ type UpgradePromptProps = {
 };
 
 const TIER_DISPLAY: Record<string, string> = {
+    directory: 'Directory',
     awaken: 'Awaken',
+    illuminate: 'Illuminate',
     manifest: 'Manifest',
     transcend: 'Transcend',
 };
@@ -20,11 +22,11 @@ const TIER_DISPLAY: Record<string, string> = {
 // Benefit-oriented descriptions keyed by feature text
 // Falls back gracefully if no match — the feature text itself is always shown
 const FEATURE_BENEFITS: Record<string, { headline: string; benefits: string[] }> = {
-    'Open your shop with up to 10 products': {
+    'Open your shop with up to 20 products': {
         headline: 'Start selling on SpiriVerse',
-        benefits: ['List up to 10 products', 'Accept payments instantly', 'Manage orders and fulfilment'],
+        benefits: ['List up to 20 products', 'Accept payments instantly', 'Manage orders and fulfilment'],
     },
-    'Host and sell guided tours': {
+    'Operate and manage guided tours': {
         headline: 'Create guided spiritual experiences',
         benefits: ['Design multi-stop tour itineraries', 'Sell tickets with built-in inventory', 'Manage bookings and check-ins'],
     },

@@ -134,7 +134,7 @@ const MyListingsSection: React.FC<{ merchantId: string; vendors: { id: string; n
                     icon={<ShoppingCart className="w-5 h-5" />}
                     dialogId="Create Product"
                     locked={productLocked}
-                    lockedReason="Open your shop with up to 10 products"
+                    lockedReason="Open your shop with up to 20 products"
                     requiredTier="manifest"
                 />
                 <CreateListingButton
@@ -144,8 +144,8 @@ const MyListingsSection: React.FC<{ merchantId: string; vendors: { id: string; n
                     dialogId="Create Tour"
                     dialogClassName="w-[870px] h-[700px]"
                     locked={tourLocked}
-                    lockedReason="Host and sell guided tours"
-                    requiredTier="transcend"
+                    lockedReason="Operate and manage guided tours"
+                    requiredTier="manifest"
                 />
                 <Card
                     className={
@@ -210,6 +210,7 @@ const MyListingsSection: React.FC<{ merchantId: string; vendors: { id: string; n
 };
 
 const TIER_DISPLAY: Record<string, string> = {
+    directory: 'Directory',
     awaken: 'Awaken',
     illuminate: 'Illuminate',
     manifest: 'Manifest',
@@ -218,8 +219,10 @@ const TIER_DISPLAY: Record<string, string> = {
 
 // Features unlocked at each tier upgrade (what you'd gain)
 const UPGRADE_HIGHLIGHTS: Record<string, string[]> = {
-    awaken: ['Sell up to 10 products', 'Inventory automation', 'SpiriAssist investigations', 'Ticketed events'],
-    manifest: ['Unlimited products', 'Guided tours', 'Host practitioners', 'Backorder support', 'Shipping automation'],
+    directory: ['Accept payments', 'Sell services', 'Video updates', 'SpiriReadings'],
+    awaken: ['Payment links', 'Ticketed events', 'Live Assist', 'Expo Mode', 'Tour listing'],
+    illuminate: ['Merchant storefront', 'Up to 20 products', 'Inventory sync', 'Host practitioners', 'Tour operation'],
+    manifest: ['Unlimited products', 'Refund automation', 'Shipping labels', 'POS', 'Backorder support'],
 };
 
 const PlanIndicator: React.FC<{ merchantId: string; merchantSlug: string }> = ({ merchantId, merchantSlug }) => {

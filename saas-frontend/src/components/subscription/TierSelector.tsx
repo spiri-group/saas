@@ -83,7 +83,7 @@ export default function TierSelector({
                         selected={selectedTier === tier.tier}
                         onSelect={onTierChange}
                         badge={tier.tier === 'manifest' ? 'Most Popular' : undefined}
-                        disabled={profileType === 'practitioner' && tier.tier !== 'awaken' && tier.tier !== 'illuminate'}
+                        disabled={profileType === 'practitioner' && tier.tier !== 'directory' && tier.tier !== 'awaken' && tier.tier !== 'illuminate'}
                     />
                 ))}
             </div>
