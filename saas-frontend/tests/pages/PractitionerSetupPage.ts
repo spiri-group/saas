@@ -130,7 +130,7 @@ export class PractitionerSetupPage extends BasePage {
     testEmail: string,
     practitionerName: string,
     testInfo: { parallelIndex: number },
-    tier: 'awaken' | 'illuminate' | 'manifest' | 'transcend' = 'awaken'
+    tier: 'directory' | 'awaken' | 'illuminate' | 'manifest' | 'transcend' = 'awaken'
   ): Promise<string> {
     const timestamp = Date.now();
     const workerId = testInfo.parallelIndex;
@@ -271,7 +271,7 @@ export class PractitionerSetupPage extends BasePage {
     testEmail: string,
     practitionerName: string,
     testInfo: { parallelIndex: number },
-    tier: 'awaken' | 'illuminate' | 'manifest' | 'transcend' = 'awaken'
+    tier: 'directory' | 'awaken' | 'illuminate' | 'manifest' | 'transcend' = 'awaken'
   ): Promise<string> {
     const timestamp = Date.now();
     const workerId = testInfo.parallelIndex;
