@@ -51,7 +51,8 @@ type BLProps = {
     clientSecret?: string,
     return_url?: string,
     type: "SETUP" | "PAYMENT",
-    digitalOnly?: boolean
+    digitalOnly?: boolean,
+    amount?: currency_amount_type
 }
 
 const tierIcons = {
