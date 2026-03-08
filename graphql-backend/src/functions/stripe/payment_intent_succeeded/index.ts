@@ -1277,9 +1277,10 @@ const handler : StripeHandler = async (event, logger, services ) => {
 
                 // Create journey progress record in PersonalSpace
                 const progressId = `jp:${journeyId}`;
+                const customerUserId = (order as any).userId || order.customer?.id;
                 const progressRecord = {
                     id: progressId,
-                    userId: order.customerEmail,
+                    userId: customerUserId,
                     journeyId: journeyId,
                     vendorId: vendorId,
                     docType: "journeyProgress",
@@ -1292,8 +1293,8 @@ const handler : StripeHandler = async (event, logger, services ) => {
                     }))
                 };
 
-                await cosmos.add_record("Main-PersonalSpace", progressRecord, order.customerEmail, "system");
-                logger.logMessage(`Created journey progress for ${order.customerEmail}`);
+                await cosmos.add_record("Main-PersonalSpace", progressRecord, customerUserId, "system");
+                logger.logMessage(`Created journey progress for user ${customerUserId} (${order.customerEmail})`);
 
                 // Send confirmation emails
                 const vendor = await cosmos.get_record<vendor_type>("Main-Vendor", vendorId, vendorId);
