@@ -545,34 +545,38 @@ test.describe.serial('Guided Journeys - Full E2E Customer Journey', () => {
         throw new Error('[Test 3] No customer cookies found');
       }
 
-      // Navigate to Personal Space journeys list
+      // Wait for webhook to process (Stripe sends to Azure, not local)
+      // Retry up to 90 seconds for the journey to appear in Personal Space
       const journeyListPage = new JourneyListPage(customerPage);
-      await journeyListPage.navigateTo(customerId);
-      await journeyListPage.waitForPageLoad();
+      let journeyFound = false;
+      const maxRetries = 6;
 
-      // Verify the purchased journey appears
-      if (await journeyListPage.isListPageVisible()) {
-        const cardCount = await journeyListPage.getJourneyCardCount();
-        console.log(`[Test 3] Journey cards found: ${cardCount}`);
-        expect(cardCount).toBeGreaterThan(0);
-
-        // Check active section
-        if (await journeyListPage.hasActiveSection()) {
-          const activeCount = await journeyListPage.getActiveJourneyCount();
-          console.log(`[Test 3] Active journeys: ${activeCount}`);
-          expect(activeCount).toBeGreaterThan(0);
-        }
-      } else if (await journeyListPage.isEmptyStateVisible()) {
-        // Webhook may not have processed yet - this can happen
-        console.log('[Test 3] Empty state shown - webhook may still be processing');
-        // Wait and retry once
-        await customerPage.waitForTimeout(10000);
-        await customerPage.reload();
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        await journeyListPage.navigateTo(customerId);
         await journeyListPage.waitForPageLoad();
-        const cardCount = await journeyListPage.getJourneyCardCount();
-        console.log(`[Test 3] Journey cards after retry: ${cardCount}`);
+
+        if (await journeyListPage.isListPageVisible()) {
+          const cardCount = await journeyListPage.getJourneyCardCount();
+          if (cardCount > 0) {
+            console.log(`[Test 3] Journey cards found: ${cardCount} (attempt ${attempt})`);
+            journeyFound = true;
+
+            if (await journeyListPage.hasActiveSection()) {
+              const activeCount = await journeyListPage.getActiveJourneyCount();
+              console.log(`[Test 3] Active journeys: ${activeCount}`);
+              expect(activeCount).toBeGreaterThan(0);
+            }
+            break;
+          }
+        }
+
+        if (attempt < maxRetries) {
+          console.log(`[Test 3] Journey not yet available, waiting 15s... (attempt ${attempt}/${maxRetries})`);
+          await customerPage.waitForTimeout(15000);
+        }
       }
 
+      expect(journeyFound).toBe(true);
       await customerPage.screenshot({ path: 'test-results/journey-personal-space-list.png' });
 
       // Navigate to the journey player
@@ -581,51 +585,48 @@ test.describe.serial('Guided Journeys - Full E2E Customer Journey', () => {
       await playerPage.navigateTo(customerId, journeyId);
       await playerPage.waitForPageLoad();
 
-      if (await playerPage.isPlayerVisible()) {
-        // Verify player UI elements
-        const nowPlayingTitle = await playerPage.getNowPlayingTitle();
-        console.log(`[Test 3] Now playing: ${nowPlayingTitle}`);
-        expect(nowPlayingTitle.length).toBeGreaterThan(0);
+      expect(await playerPage.isPlayerVisible()).toBe(true);
 
-        const journeyTitle = await playerPage.getJourneyName();
-        console.log(`[Test 3] Journey: ${journeyTitle}`);
+      // Verify player UI elements
+      const nowPlayingTitle = await playerPage.getNowPlayingTitle();
+      console.log(`[Test 3] Now playing: ${nowPlayingTitle}`);
+      expect(nowPlayingTitle.length).toBeGreaterThan(0);
 
-        // Verify playback controls
-        expect(await playerPage.isSeekBarVisible()).toBe(true);
+      const journeyTitle = await playerPage.getJourneyName();
+      console.log(`[Test 3] Journey: ${journeyTitle}`);
 
-        const currentTime = await playerPage.getCurrentTime();
-        expect(currentTime).toContain(':');
+      // Verify playback controls
+      expect(await playerPage.isSeekBarVisible()).toBe(true);
 
-        // Verify track list
-        const trackCount = await playerPage.getTrackCount();
-        expect(trackCount).toBeGreaterThan(0);
-        console.log(`[Test 3] Tracks: ${trackCount}`);
+      const currentTime = await playerPage.getCurrentTime();
+      expect(currentTime).toContain(':');
 
-        // Verify play/pause has aria-label
-        const playPauseBtn = customerPage.getByTestId('play-pause-btn');
-        const ariaLabel = await playPauseBtn.getAttribute('aria-label');
-        expect(ariaLabel).toBeTruthy();
+      // Verify track list
+      const trackCount = await playerPage.getTrackCount();
+      expect(trackCount).toBeGreaterThan(0);
+      console.log(`[Test 3] Tracks: ${trackCount}`);
 
-        // Verify prev/next buttons
-        const prevBtn = customerPage.getByTestId('prev-track-btn');
-        const prevLabel = await prevBtn.getAttribute('aria-label');
-        expect(prevLabel).toBe('Previous track');
+      // Verify play/pause has aria-label
+      const playPauseBtn = customerPage.getByTestId('play-pause-btn');
+      const ariaLabel = await playPauseBtn.getAttribute('aria-label');
+      expect(ariaLabel).toBeTruthy();
 
-        const nextBtn = customerPage.getByTestId('next-track-btn');
-        const nextLabel = await nextBtn.getAttribute('aria-label');
-        expect(nextLabel).toBe('Next track');
+      // Verify prev/next buttons
+      const prevBtn = customerPage.getByTestId('prev-track-btn');
+      const prevLabel = await prevBtn.getAttribute('aria-label');
+      expect(prevLabel).toBe('Previous track');
 
-        console.log('[Test 3] Player UI verified with all controls');
+      const nextBtn = customerPage.getByTestId('next-track-btn');
+      const nextLabel = await nextBtn.getAttribute('aria-label');
+      expect(nextLabel).toBe('Next track');
 
-        // Navigate back to journeys list using back button
-        await playerPage.clickBackToJourneys();
-        await customerPage.waitForURL(/\/journeys$/, { timeout: 10000 });
-        expect(customerPage.url()).toContain('/journeys');
-        console.log('[Test 3] Back navigation works');
-      } else if (await playerPage.isErrorVisible()) {
-        // Journey might not be accessible yet due to webhook delay
-        console.log('[Test 3] Player shows error state - webhook may not have processed yet');
-      }
+      console.log('[Test 3] Player UI verified with all controls');
+
+      // Navigate back to journeys list using back button
+      await playerPage.clickBackToJourneys();
+      await customerPage.waitForURL(/\/journeys$/, { timeout: 10000 });
+      expect(customerPage.url()).toContain('/journeys');
+      console.log('[Test 3] Back navigation works');
 
       await customerPage.screenshot({ path: 'test-results/journey-player-verified.png' });
       console.log('[Test 3] Personal Space verification complete');
