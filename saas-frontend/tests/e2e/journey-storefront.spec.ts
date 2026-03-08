@@ -35,6 +35,7 @@ let customerId: string;
 let customerEmail: string;
 
 const cookiesPerWorker = new Map<string, string>();
+const browserCookiesPerWorker = new Map<string, Array<{name: string; value: string; domain: string; path: string; expires: number; httpOnly: boolean; secure: boolean; sameSite: 'Strict' | 'Lax' | 'None'}>>();
 
 function generateTestEmail(prefix: string, testInfo: TestInfo): string {
   const timestamp = Date.now();
@@ -255,10 +256,9 @@ test.describe.serial('Guided Journeys - Full E2E Customer Journey', () => {
     console.log('[Test 1] Journey creation submitted');
 
     // After creation, the UI switches to JourneyTrackManager
-    // Wait for track manager to appear (shows "No tracks yet" or add track button)
-    const addFirstTrackBtn = page.getByTestId('add-first-track-btn');
+    // Wait for track manager header's "Add Track" button (always visible in track manager)
     const addTrackBtn = page.getByTestId('add-track-btn');
-    await expect(addFirstTrackBtn.or(addTrackBtn)).toBeVisible({ timeout: 15000 });
+    await expect(addTrackBtn).toBeVisible({ timeout: 15000 });
     console.log('[Test 1] Track manager visible');
 
     // Get the journey ID via the catalogue GraphQL query
@@ -426,10 +426,12 @@ test.describe.serial('Guided Journeys - Full E2E Customer Journey', () => {
       await onboardingPage.completeWithPrimaryOnly('mediumship');
       console.log('[Test 2] Customer profile completed');
 
-      // Store cookies
+      // Store cookies (string for API calls, full objects for browser context restoration)
       const cookies = await getCookiesFromPage(customerPage);
+      const browserCookies = await customerPage.context().cookies();
       if (cookies) {
         cookiesPerWorker.set(stateKey, cookies);
+        browserCookiesPerWorker.set(stateKey, browserCookies);
         if (customerId) {
           registerTestUser({ id: customerId, email: customerEmail, cookies }, workerId);
         }
@@ -526,20 +528,15 @@ test.describe.serial('Guided Journeys - Full E2E Customer Journey', () => {
 
     const workerId = testInfo.parallelIndex;
     const stateKey = `${workerId}-${DESCRIBE_KEY}-customer`;
-    const cookies = cookiesPerWorker.get(stateKey);
+    const savedBrowserCookies = browserCookiesPerWorker.get(stateKey);
 
     const customerContext = await browser.newContext();
     const customerPage = await customerContext.newPage();
 
     try {
-      // Restore customer session
-      if (cookies) {
-        const cookiePairs = cookies.split('; ');
-        const cookieObjs = cookiePairs.map(pair => {
-          const [name, value] = pair.split('=');
-          return { name, value: value || '', domain: 'localhost', path: '/' };
-        });
-        await customerPage.context().addCookies(cookieObjs);
+      // Restore customer session using saved browser cookie objects
+      if (savedBrowserCookies && savedBrowserCookies.length > 0) {
+        await customerPage.context().addCookies(savedBrowserCookies);
         console.log('[Test 3] Customer session restored');
       } else {
         throw new Error('[Test 3] No customer cookies found');
@@ -646,18 +643,13 @@ test.describe.serial('Guided Journeys - Full E2E Customer Journey', () => {
     // Restore customer session (merchant pages require auth)
     const workerId = testInfo.parallelIndex;
     const stateKey = `${workerId}-${DESCRIBE_KEY}-customer`;
-    const cookies = cookiesPerWorker.get(stateKey);
+    const savedBrowserCookies = browserCookiesPerWorker.get(stateKey);
 
     const customerContext = await browser.newContext();
     const page = await customerContext.newPage();
 
-    if (cookies) {
-      const cookiePairs = cookies.split('; ');
-      const cookieObjs = cookiePairs.map(pair => {
-        const [name, value] = pair.split('=');
-        return { name, value: value || '', domain: 'localhost', path: '/' };
-      });
-      await page.context().addCookies(cookieObjs);
+    if (savedBrowserCookies && savedBrowserCookies.length > 0) {
+      await page.context().addCookies(savedBrowserCookies);
       console.log('[Test 4] Customer session restored');
     }
 

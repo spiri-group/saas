@@ -49,7 +49,7 @@ export default defineConfig({
     actionTimeout: 10000,
 
     /* Maximum time each navigation can take */
-    navigationTimeout: 30000,
+    navigationTimeout: isExternalEnv ? 60000 : 30000,
   },
 
   /* Configure projects for major browsers */
