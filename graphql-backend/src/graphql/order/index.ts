@@ -2723,6 +2723,8 @@ export const restore_target_on_line = async (line: orderLine_type, cosmosClient:
         }
     } else if (listing_type === "SERVICE") {
         line.target = "SERVICE-PURCHASE"
+    } else if (listing_type === "JOURNEY") {
+        line.target = "JOURNEY-PURCHASE"
     } else {
         throw new Error(`Listing type ${listing_type} is not supported`)
     }

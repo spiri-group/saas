@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { gql } from '@/lib/services/gql';
 
-type ListingType = 'TOUR' | 'PRODUCT' | 'SERVICE' | 'LIVESTREAM' | 'VIDEO' | 'PODCAST';
+type ListingType = 'TOUR' | 'PRODUCT' | 'SERVICE' | 'LIVESTREAM' | 'VIDEO' | 'PODCAST' | 'JOURNEY';
 
 type ThumbnailMedia = {
   name: string;

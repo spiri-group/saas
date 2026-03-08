@@ -63,6 +63,7 @@ import { migration as migration052 } from "./052_reseed_payment_link_email_templ
 import { migration as migration053 } from "./053_reseed_live_assist_email_templates";
 import { migration as migration054 } from "./054_seed_unit_choice_config";
 import { migration as migration055 } from "./055_add_directory_tier_and_restructure_features";
+import { migration as migration056 } from "./056_seed_journey_email_templates";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -121,4 +122,5 @@ export const migrations: Migration[] = [
     migration053,
     migration054,
     migration055,
+    migration056,
 ];

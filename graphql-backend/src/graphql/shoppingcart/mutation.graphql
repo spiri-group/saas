@@ -1,6 +1,7 @@
 type Mutation {
     add_to_shoppingcart(id: String): ShoppingCartResponse
     add_service_to_cart(serviceId: ID!, questionnaireResponses: [QuestionResponseInput], selectedAddOns: [ID], featuringRelationshipId: ID): ShoppingCartResponse
+    add_journey_to_cart(journeyId: ID!): ShoppingCartResponse
     add_product_to_cart(input: AddProductToCartInput!): ShoppingCartResponse
     update_cart_item_quantity(itemId: ID!, quantity: Int!): ShoppingCartResponse
     remove_from_cart(itemId: ID!): ShoppingCartResponse

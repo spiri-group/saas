@@ -198,15 +198,32 @@ export class PractitionerSetupPage extends BasePage {
     });
     await userSetupPage.setupBusiness();
 
-    // ── Step 5: ChoosePlanStep → select tier ──
+    // ── Step 5: ChoosePlanStep → two-step: pick path, then tier ──
     await expect(this.page.locator('[data-testid="choose-plan-step"]')).toBeVisible({ timeout: 10000 });
-    const tierCard = this.page.locator(`[data-testid="tier-card-${tier}"]`);
-    await expect(tierCard).toBeVisible({ timeout: 10000 });
-    await tierCard.click();
 
-    const planContinueBtn = this.page.locator('[data-testid="plan-continue-btn"]');
-    await expect(planContinueBtn).toBeEnabled({ timeout: 5000 });
-    await planContinueBtn.click();
+    // Map tier to path option
+    const tierToPath: Record<string, string> = {
+      directory: 'directory',
+      awaken: 'practitioner',
+      illuminate: 'practitioner',
+      manifest: 'merchant',
+      transcend: 'merchant',
+    };
+    const pathOption = tierToPath[tier] || 'practitioner';
+    const pathBtn = this.page.locator(`[data-testid="path-option-${pathOption}"]`);
+    await expect(pathBtn).toBeVisible({ timeout: 10000 });
+    await pathBtn.click();
+
+    // Directory auto-selects and advances; others show tier cards
+    if (pathOption !== 'directory') {
+      const tierCard = this.page.locator(`[data-testid="tier-card-${tier}"]`);
+      await expect(tierCard).toBeVisible({ timeout: 10000 });
+      await tierCard.click();
+
+      const planContinueBtn = this.page.locator('[data-testid="plan-continue-btn"]');
+      await expect(planContinueBtn).toBeEnabled({ timeout: 5000 });
+      await planContinueBtn.click();
+    }
 
     // ── Step 6: OnboardingConsent → accept terms ──
     await this.handleOnboardingConsent();
@@ -339,15 +356,32 @@ export class PractitionerSetupPage extends BasePage {
     });
     await userSetupPage.setupBusiness();
 
-    // ── Step 5: ChoosePlanStep → select tier ──
+    // ── Step 5: ChoosePlanStep → two-step: pick path, then tier ──
     await expect(this.page.locator('[data-testid="choose-plan-step"]')).toBeVisible({ timeout: 10000 });
-    const tierCard = this.page.locator(`[data-testid="tier-card-${tier}"]`);
-    await expect(tierCard).toBeVisible({ timeout: 10000 });
-    await tierCard.click();
 
-    const planContinueBtn = this.page.locator('[data-testid="plan-continue-btn"]');
-    await expect(planContinueBtn).toBeEnabled({ timeout: 5000 });
-    await planContinueBtn.click();
+    // Map tier to path option
+    const tierToPath: Record<string, string> = {
+      directory: 'directory',
+      awaken: 'practitioner',
+      illuminate: 'practitioner',
+      manifest: 'merchant',
+      transcend: 'merchant',
+    };
+    const pathOption = tierToPath[tier] || 'practitioner';
+    const pathBtn = this.page.locator(`[data-testid="path-option-${pathOption}"]`);
+    await expect(pathBtn).toBeVisible({ timeout: 10000 });
+    await pathBtn.click();
+
+    // Directory auto-selects and advances; others show tier cards
+    if (pathOption !== 'directory') {
+      const tierCard = this.page.locator(`[data-testid="tier-card-${tier}"]`);
+      await expect(tierCard).toBeVisible({ timeout: 10000 });
+      await tierCard.click();
+
+      const planContinueBtn = this.page.locator('[data-testid="plan-continue-btn"]');
+      await expect(planContinueBtn).toBeEnabled({ timeout: 5000 });
+      await planContinueBtn.click();
+    }
 
     // ── Step 6: OnboardingConsent → accept terms ──
     await this.handleOnboardingConsent();

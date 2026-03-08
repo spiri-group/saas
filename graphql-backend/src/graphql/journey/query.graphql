@@ -1,0 +1,98 @@
+type Query {
+  journey(id: ID!, vendorId: ID!): Journey
+  journeyTracks(journeyId: ID!, vendorId: ID!): [JourneyTrack]
+  journeyProgress(journeyId: ID!, userId: ID!): JourneyProgress
+  myJourneys(userId: ID!): [JourneyProgress]
+}
+
+type Journey {
+  id: ID!
+  vendorId: ID!
+  name: String!
+  slug: String
+  description: String!
+  thumbnail: Thumbnail
+  isLive: Boolean
+
+  journeyStructure: String!
+  modalities: [String]
+  intention: String
+  totalDurationSeconds: Int!
+  trackCount: Int!
+
+  pricing: JourneyPricing!
+
+  recommendedCrystals: [String]
+  recommendedTools: [String]
+  difficulty: String
+  spiritualInterests: [String]
+
+  previewTrackId: String
+
+  tracks: [JourneyTrack]
+  vendor: Vendor
+
+  ref: RecordRef
+}
+
+type JourneyPricing {
+  collectionPrice: CurrencyAmount!
+  singleTrackPrice: CurrencyAmount
+  allowSingleTrackPurchase: Boolean!
+}
+
+type JourneyTrack {
+  id: ID!
+  journeyId: ID!
+  vendorId: ID!
+  trackNumber: Int!
+  title: String!
+  description: String
+  intention: String
+  durationSeconds: Int!
+
+  audioFile: Media
+  previewDurationSeconds: Int
+
+  integrationPrompts: [String]
+  recommendedCrystals: [String]
+
+  releaseDate: DateTime
+
+  ref: RecordRef
+}
+
+type JourneyProgress {
+  id: ID!
+  userId: ID!
+  journeyId: ID!
+  vendorId: ID!
+  purchaseDate: String
+  completedDate: String
+  currentTrackNumber: Int!
+
+  trackProgress: [JourneyTrackProgress]
+  journey: Journey
+}
+
+type JourneyTrackProgress {
+  trackId: ID!
+  completed: Boolean!
+  lastPositionSeconds: Int!
+  completedDate: String
+  reflection: String
+}
+
+type CreateJourneyResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  journey: Journey
+}
+
+type UpsertTrackResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  track: JourneyTrack
+}

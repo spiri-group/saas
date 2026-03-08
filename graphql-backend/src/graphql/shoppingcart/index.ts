@@ -183,6 +183,62 @@ const resolvers = {
             };
         },
 
+        add_journey_to_cart: async (_: any, args: {
+            journeyId: string
+        }, context: serverContext) => {
+            if (context.userId == null) throw new Error("User must be present for this call");
+
+            const journeys = await context.dataSources.cosmos.run_query("Main-Listing", {
+                query: "SELECT * FROM c WHERE c.id = @journeyId AND c.type = 'JOURNEY'",
+                parameters: [{ name: "@journeyId", value: args.journeyId }]
+            }, true);
+
+            if (!journeys || journeys.length === 0) {
+                throw new Error("Journey not found");
+            }
+
+            const journey = journeys[0];
+
+            if (!journey.pricing?.collectionPrice) {
+                throw new Error("Journey pricing not configured");
+            }
+
+            const cartItem = {
+                id: uuidv4(),
+                itemType: "JOURNEY",
+                name: journey.name,
+                descriptor: journey.name,
+                quantity: 1,
+                merchantId: journey.vendorId,
+                isService: false,
+                journeyId: journey.id,
+                listingRef: {
+                    id: journey.id,
+                    partition: [journey.vendorId],
+                    container: "Main-Listing"
+                },
+                price: {
+                    amount: journey.pricing.collectionPrice.amount,
+                    currency: journey.pricing.collectionPrice.currency
+                }
+            };
+
+            const operations: PatchOperation[] = [{
+                op: "add",
+                value: cartItem,
+                path: `/items/0`
+            }];
+
+            await context.dataSources.cosmos.patch_record("Main-ShoppingCart", context.userId, context.userId, operations, context.userId);
+
+            return {
+                code: "200",
+                success: true,
+                message: `Journey "${journey.name}" added to shopping cart`,
+                shoppingCart: await context.dataSources.cosmos.get_record("Main-ShoppingCart", context.userId, context.userId)
+            };
+        },
+
         add_product_to_cart: async (_: any, args: {
             input: {
                 productRef: { id: string, partition: string[], container: string },

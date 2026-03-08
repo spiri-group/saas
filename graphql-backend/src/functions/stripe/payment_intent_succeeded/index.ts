@@ -1253,6 +1253,81 @@ const handler : StripeHandler = async (event, logger, services ) => {
                 logger.logMessage(`Failed to process service order for line ${line.id}: ${serviceError.message}`);
             }
         }
+
+        // Process journey purchases - create progress tracking records
+        const journeyLines = merchantLines.filter(x => x.target === "JOURNEY-PURCHASE");
+
+        for (const line of journeyLines) {
+            try {
+                const objectRef = line.forObject as recordref_type;
+                const journeyId = objectRef.id;
+                const vendorId = objectRef.partition[0];
+
+                const journey = await cosmos.get_record<any>("Main-Listing", journeyId, vendorId);
+                logger.logMessage(`Processing journey purchase: ${journey.name} (${journeyId})`);
+
+                // Get track list for the journey
+                const tracks = await cosmos.run_query("Main-Listing", {
+                    query: `SELECT c.id, c.trackNumber FROM c WHERE c.journeyId = @journeyId AND c.vendorId = @vendorId AND c.docType = 'journeyTrack' ORDER BY c.trackNumber ASC`,
+                    parameters: [
+                        { name: "@journeyId", value: journeyId },
+                        { name: "@vendorId", value: vendorId }
+                    ]
+                });
+
+                // Create journey progress record in PersonalSpace
+                const progressId = `jp:${journeyId}`;
+                const progressRecord = {
+                    id: progressId,
+                    userId: order.customerEmail,
+                    journeyId: journeyId,
+                    vendorId: vendorId,
+                    docType: "journeyProgress",
+                    purchaseDate: DateTime.now().toISO(),
+                    currentTrackNumber: 1,
+                    trackProgress: tracks.map((t: any) => ({
+                        trackId: t.id,
+                        completed: false,
+                        lastPositionSeconds: 0
+                    }))
+                };
+
+                await cosmos.add_record("Main-PersonalSpace", progressRecord, order.customerEmail, "system");
+                logger.logMessage(`Created journey progress for ${order.customerEmail}`);
+
+                // Send confirmation emails
+                const vendor = await cosmos.get_record<vendor_type>("Main-Vendor", vendorId, vendorId);
+                const practitionerEmail = vendor?.contact?.internal?.email;
+
+                if (practitionerEmail) {
+                    await email.sendEmail(
+                        sender_details.from,
+                        practitionerEmail,
+                        "JOURNEY_PURCHASED_PRACTITIONER",
+                        {
+                            journeyName: journey.name,
+                            customerEmail: order.customerEmail,
+                            price: `${(line.price.amount / 100).toFixed(2)} ${line.price.currency.toUpperCase()}`
+                        }
+                    );
+                }
+
+                await email.sendEmail(
+                    sender_details.from,
+                    order.customerEmail,
+                    "JOURNEY_PURCHASED_CUSTOMER",
+                    {
+                        journeyName: journey.name,
+                        practitionerName: vendor.name,
+                        trackCount: journey.trackCount?.toString() || tracks.length.toString()
+                    }
+                );
+
+                logger.logMessage(`Journey purchase emails sent for ${journey.name}`);
+            } catch (journeyError: any) {
+                logger.logMessage(`Failed to process journey purchase for line ${line.id}: ${journeyError.message}`);
+            }
+        }
     }
 
     logger.logMessage(`Payment intent processed successfully`)

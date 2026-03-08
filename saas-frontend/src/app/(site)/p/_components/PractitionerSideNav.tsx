@@ -31,7 +31,8 @@ import {
     Settings,
     ImageIcon,
     Receipt,
-    Radio
+    Radio,
+    Headphones
 } from "lucide-react";
 import { VendorDocType } from "@/utils/spiriverse";
 import CreateReading from "../../m/[merchant_slug]/(manage)/manage/services/_components/CreateReading";
@@ -144,6 +145,13 @@ const useBL = (props: BLProps) => {
                     href: `/p/${practitionerSlug}/manage/services/orders`
                 }
             ] as NavOption[],
+        }] as NavOption[] : [] as NavOption[]),
+        ...(features.canSellServices ? [{
+            label: "Journeys",
+            icon: <Headphones className="w-5 h-5" />,
+            testId: "nav-journeys",
+            href: `/p/${practitionerSlug}/manage/journeys`,
+            description: "Audio meditations & recordings",
         }] as NavOption[] : [] as NavOption[]),
         {
             label: "Schedule",
