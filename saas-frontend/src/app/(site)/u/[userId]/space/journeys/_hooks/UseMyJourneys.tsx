@@ -20,7 +20,6 @@ export interface JourneyThumbnail {
       name: string;
     };
   };
-  backgroundColor?: string;
 }
 
 export interface JourneyTrack {
@@ -121,7 +120,6 @@ export const useMyJourneys = (userId: string) => {
                     name
                   }
                 }
-                backgroundColor
               }
               journeyStructure
               intention
@@ -196,7 +194,6 @@ export const useJourneyDetail = (journeyId: string, vendorId: string) => {
                   name
                 }
               }
-              backgroundColor
             }
             isLive
             journeyStructure

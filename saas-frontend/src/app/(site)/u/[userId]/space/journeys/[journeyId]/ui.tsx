@@ -307,7 +307,7 @@ const UI: React.FC<Props> = ({ userId, journeyId }) => {
   }
 
   const thumbnailUrl = journey.thumbnail?.image?.media?.url;
-  const thumbnailBg = journey.thumbnail?.backgroundColor || '#1e1b4b';
+  const thumbnailBg = '#1e1b4b';
   const activeTrackProgress = activeTrack ? getTrackProgress(activeTrack.id) : undefined;
   const existingReflection = activeTrackProgress?.reflection;
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;

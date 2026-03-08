@@ -141,7 +141,7 @@ const JourneyCard: React.FC<JourneyCardProps> = ({ progress, onClick }) => {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center"
-            style={{ backgroundColor: journey?.thumbnail?.backgroundColor || '#1e1b4b' }}
+            style={{ backgroundColor: '#1e1b4b' }}
           >
             <Music className="w-12 h-12 text-purple-400/40" />
           </div>
