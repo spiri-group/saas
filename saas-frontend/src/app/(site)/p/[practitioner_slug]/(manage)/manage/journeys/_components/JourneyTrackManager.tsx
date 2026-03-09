@@ -19,6 +19,8 @@ import { media_type } from "@/utils/spiriverse";
 import { decodeAmountFromSmallestUnit } from "@/lib/functions";
 import { gql } from "@/lib/services/gql";
 import { ShoppingCart, Package } from "lucide-react";
+import FeatureGate from "@/components/subscription/FeatureGate";
+import { useTierFeatures } from "@/hooks/UseTierFeatures";
 
 type Props = {
     practitionerId: string;
@@ -160,12 +162,16 @@ function AddTrackDialog({
     nextTrackNumber,
     editingTrack,
     onClose,
+    canCrossSell,
+    currentTier,
 }: {
     practitionerId: string;
     journeyId: string;
     nextTrackNumber: number;
     editingTrack?: JourneyTrack;
     onClose: () => void;
+    canCrossSell: boolean;
+    currentTier?: string;
 }) {
     const upsertTrack = useUpsertTrack(practitionerId, journeyId);
     const isEditing = !!editingTrack;
@@ -447,6 +453,12 @@ function AddTrackDialog({
                 </div>
 
                 {/* Linked Products (Cross-sell) */}
+                <FeatureGate
+                    allowed={canCrossSell}
+                    feature="Journey cross-sell"
+                    requiredTier="Manifest"
+                    currentTier={currentTier}
+                >
                 <div>
                     <Label className="text-white flex items-center gap-2">
                         <ShoppingCart className="w-4 h-4 text-emerald-400" />
@@ -546,6 +558,7 @@ function AddTrackDialog({
                         )}
                     </div>
                 </div>
+                </FeatureGate>
             </div>
 
             <DialogFooter>
@@ -580,6 +593,8 @@ export default function JourneyTrackManager({ practitionerId, journey, onBack }:
     const deleteTrack = useDeleteTrack(practitionerId, journey.id);
     const reorderTracks = useReorderTracks(practitionerId, journey.id);
     const upsertTrack = useUpsertTrack(practitionerId, journey.id);
+    const { features, tier } = useTierFeatures(practitionerId);
+    const canCrossSell = (features.maxProducts ?? 0) > 0;
     const [showAddTrack, setShowAddTrack] = useState(false);
     const [editingTrack, setEditingTrack] = useState<JourneyTrack | null>(null);
     const [deletingTrack, setDeletingTrack] = useState<JourneyTrack | null>(null);
@@ -1003,6 +1018,8 @@ export default function JourneyTrackManager({ practitionerId, journey, onBack }:
                         journeyId={journey.id}
                         nextTrackNumber={nextTrackNumber}
                         onClose={() => setShowAddTrack(false)}
+                        canCrossSell={canCrossSell}
+                        currentTier={tier}
                     />
                 )}
             </Dialog>
@@ -1016,6 +1033,8 @@ export default function JourneyTrackManager({ practitionerId, journey, onBack }:
                         nextTrackNumber={editingTrack.trackNumber}
                         editingTrack={editingTrack}
                         onClose={() => setEditingTrack(null)}
+                        canCrossSell={canCrossSell}
+                        currentTier={tier}
                     />
                 </Dialog>
             )}
