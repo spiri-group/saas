@@ -26,6 +26,7 @@ const FEATURE_GROUPS: { group: string; features: Feature[] }[] = [
             { name: "Accept payments", directory: false, awaken: true, illuminate: true, manifest: true, transcend: true },
             { name: "Video updates + Followers", directory: false, awaken: true, illuminate: true, manifest: true, transcend: true },
             { name: "Sell Services + Availability", directory: false, awaken: true, illuminate: true, manifest: true, transcend: true },
+            { name: "Guided Journeys (sell + rent)", directory: false, awaken: true, illuminate: true, manifest: true, transcend: true },
             { name: "SpiriReadings", directory: false, awaken: true, illuminate: true, manifest: true, transcend: true },
         ],
     },
@@ -44,6 +45,7 @@ const FEATURE_GROUPS: { group: string; features: Feature[] }[] = [
         features: [
             { name: "Merchant Profile", directory: false, awaken: false, illuminate: false, manifest: true, transcend: true },
             { name: "Products", directory: false, awaken: false, illuminate: false, manifest: "20", transcend: "Unlimited" },
+            { name: "Journey cross-sell (link products to tracks)", directory: false, awaken: false, illuminate: false, manifest: true, transcend: true },
             { name: "Inventory sync", directory: false, awaken: false, illuminate: false, manifest: true, transcend: true },
             { name: "Host practitioners", directory: false, awaken: false, illuminate: false, manifest: true, transcend: true },
             { name: "Tour Operation", directory: false, awaken: false, illuminate: false, manifest: true, transcend: true },
