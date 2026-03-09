@@ -17,6 +17,8 @@ import { JourneyListItem } from "../_hooks/UseJourneys";
 import FileUploader from "@/components/ux/FileUploader";
 import { media_type } from "@/utils/spiriverse";
 import { decodeAmountFromSmallestUnit } from "@/lib/functions";
+import { gql } from "@/lib/services/gql";
+import { ShoppingCart, Package } from "lucide-react";
 
 type Props = {
     practitionerId: string;
@@ -107,6 +109,51 @@ const CRYSTAL_SUGGESTIONS = [
     "Tiger's Eye", "Obsidian"
 ];
 
+type CatalogueProduct = {
+    id: string;
+    name: string;
+    vendorId: string;
+    thumbnail?: { image?: { media?: { url?: string } } };
+    skus?: { id: string; price: { amount: number; currency: string }; qty: string }[];
+};
+
+function useProductSearch(vendorId: string) {
+    const [results, setResults] = useState<CatalogueProduct[]>([]);
+    const [searching, setSearching] = useState(false);
+
+    const search = async (query: string) => {
+        if (!query.trim() || !vendorId) {
+            setResults([]);
+            return;
+        }
+        setSearching(true);
+        try {
+            const response = await gql<{
+                catalogue: { listings: CatalogueProduct[] };
+            }>(`
+                query SearchProducts($vendorId: ID, $search: String, $types: [String], $limit: Int) {
+                    catalogue(vendorId: $vendorId, search: $search, types: $types, limit: $limit) {
+                        listings {
+                            id
+                            name
+                            vendorId
+                            thumbnail { image { media { url } } }
+                            skus { id price { amount currency } qty }
+                        }
+                    }
+                }
+            `, { vendorId, search: query, types: ['PRODUCT'], limit: 10 });
+            setResults(response.catalogue?.listings || []);
+        } catch {
+            setResults([]);
+        } finally {
+            setSearching(false);
+        }
+    };
+
+    return { results, searching, search, setResults };
+}
+
 function AddTrackDialog({
     practitionerId,
     journeyId,
@@ -129,6 +176,12 @@ function AddTrackDialog({
     const [integrationPrompts, setIntegrationPrompts] = useState<string[]>(editingTrack?.integrationPrompts || []);
     const [newPrompt, setNewPrompt] = useState("");
     const [recommendedCrystals, setRecommendedCrystals] = useState<string[]>(editingTrack?.recommendedCrystals || []);
+    const [linkedProductIds, setLinkedProductIds] = useState<string[]>(editingTrack?.linkedProductIds || []);
+    const [linkedProductDetails, setLinkedProductDetails] = useState<CatalogueProduct[]>(
+        (editingTrack?.linkedProducts as CatalogueProduct[]) || []
+    );
+    const [productSearchQuery, setProductSearchQuery] = useState("");
+    const productSearch = useProductSearch(practitionerId);
     const [audioFile, setAudioFile] = useState<media_type | null>(editingTrack?.audioFile as media_type || null);
     const [previewDurationSeconds, setPreviewDurationSeconds] = useState(editingTrack?.previewDurationSeconds || 30);
 
@@ -151,6 +204,19 @@ function AddTrackDialog({
         );
     };
 
+    const addLinkedProduct = (product: CatalogueProduct) => {
+        if (linkedProductIds.includes(product.id)) return;
+        setLinkedProductIds(prev => [...prev, product.id]);
+        setLinkedProductDetails(prev => [...prev, product]);
+        setProductSearchQuery("");
+        productSearch.setResults([]);
+    };
+
+    const removeLinkedProduct = (productId: string) => {
+        setLinkedProductIds(prev => prev.filter(id => id !== productId));
+        setLinkedProductDetails(prev => prev.filter(p => p.id !== productId));
+    };
+
     const handleSave = async () => {
         if (!title.trim() || !audioFile) return;
 
@@ -165,6 +231,7 @@ function AddTrackDialog({
             previewDurationSeconds,
             integrationPrompts: integrationPrompts.length > 0 ? integrationPrompts : undefined,
             recommendedCrystals: recommendedCrystals.length > 0 ? recommendedCrystals : undefined,
+            linkedProductIds: linkedProductIds.length > 0 ? linkedProductIds : undefined,
         });
 
         onClose();
@@ -376,6 +443,107 @@ function AddTrackDialog({
                                 {crystal}
                             </Badge>
                         ))}
+                    </div>
+                </div>
+
+                {/* Linked Products (Cross-sell) */}
+                <div>
+                    <Label className="text-white flex items-center gap-2">
+                        <ShoppingCart className="w-4 h-4 text-emerald-400" />
+                        Linked Products
+                    </Label>
+                    <p className="text-xs text-slate-400 mb-2">
+                        Link products from your catalogue that pair well with this track. Customers can add them to cart while listening.
+                    </p>
+
+                    {/* Linked products list */}
+                    {linkedProductDetails.length > 0 && (
+                        <div className="space-y-2 mb-3">
+                            {linkedProductDetails.map(product => (
+                                <div key={product.id} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-lg p-2">
+                                    <div className="w-10 h-10 rounded bg-slate-700 overflow-hidden flex-shrink-0">
+                                        {product.thumbnail?.image?.media?.url ? (
+                                            <img src={product.thumbnail.image.media.url} alt={product.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                <Package className="w-4 h-4 text-slate-500" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-white truncate">{product.name}</p>
+                                        {product.skus?.[0]?.price && (
+                                            <p className="text-xs text-slate-400">
+                                                ${decodeAmountFromSmallestUnit(product.skus[0].price.amount, product.skus[0].price.currency)} {product.skus[0].price.currency}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => removeLinkedProduct(product.id)}
+                                        className="text-slate-400 hover:text-red-400 h-6 w-6 p-0"
+                                        data-testid={`remove-linked-product-${product.id}`}
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Product search */}
+                    <div className="relative">
+                        <Input
+                            dark
+                            value={productSearchQuery}
+                            onChange={(e) => {
+                                setProductSearchQuery(e.target.value);
+                                productSearch.search(e.target.value);
+                            }}
+                            placeholder="Search your products..."
+                            data-testid="linked-product-search"
+                        />
+                        {productSearch.searching && (
+                            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 animate-spin" />
+                        )}
+
+                        {/* Search results dropdown */}
+                        {productSearch.results.length > 0 && productSearchQuery.trim() && (
+                            <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                {productSearch.results
+                                    .filter(p => !linkedProductIds.includes(p.id))
+                                    .map(product => (
+                                        <button
+                                            key={product.id}
+                                            type="button"
+                                            onClick={() => addLinkedProduct(product)}
+                                            className="w-full flex items-center gap-3 p-2 hover:bg-slate-700/50 transition-colors text-left"
+                                            data-testid={`product-result-${product.id}`}
+                                        >
+                                            <div className="w-8 h-8 rounded bg-slate-700 overflow-hidden flex-shrink-0">
+                                                {product.thumbnail?.image?.media?.url ? (
+                                                    <img src={product.thumbnail.image.media.url} alt={product.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                        <Package className="w-3 h-3 text-slate-500" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-white truncate">{product.name}</p>
+                                                {product.skus?.[0]?.price && (
+                                                    <p className="text-xs text-slate-400">
+                                                        ${decodeAmountFromSmallestUnit(product.skus[0].price.amount, product.skus[0].price.currency)} {product.skus[0].price.currency}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <Plus className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                        </button>
+                                    ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -801,6 +969,20 @@ export default function JourneyTrackManager({ practitionerId, journey, onBack }:
                                                             >
                                                                 {crystal}
                                                             </Badge>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {track.linkedProducts && track.linkedProducts.length > 0 && (
+                                                <div>
+                                                    <p className="text-xs font-medium text-slate-500 uppercase mb-1">Linked Products</p>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {track.linkedProducts.map(product => (
+                                                            <div key={product.id} className="flex items-center gap-2 bg-slate-800/50 border border-emerald-500/20 rounded-lg px-2 py-1">
+                                                                <ShoppingCart className="w-3 h-3 text-emerald-400" />
+                                                                <span className="text-xs text-slate-300">{product.name}</span>
+                                                            </div>
                                                         ))}
                                                     </div>
                                                 </div>

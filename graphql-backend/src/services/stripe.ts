@@ -56,18 +56,29 @@ export class StripeDataSource {
             url: `${service_prefix}/${uri}`
         }
 
-        try {
-            const resp = await axios(options);
-            return resp;
-        } catch (error) {
-            // Handle both Stripe API errors and network errors
-            if (error.response) {
-                this.logger.error(`Stripe API error: ${JSON.stringify(error.response.data)}`);
-                throw new GraphQLError(`Error ${error.response.status} - Stripe ${method} could not be called for ${uri}`, {
-                    extensions: { code: 'BAD_REQUEST'},
-                });
-            } else {
-                this.logger.error(`Stripe network/timeout error: ${error.message || error}`);
+        const maxRetries = 3;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const resp = await axios(options);
+                return resp;
+            } catch (error) {
+                // Stripe API errors (4xx/5xx with a response body) — don't retry
+                if (error.response) {
+                    this.logger.error(`Stripe API error: ${JSON.stringify(error.response.data)}`);
+                    throw new GraphQLError(`Error ${error.response.status} - Stripe ${method} could not be called for ${uri}`, {
+                        extensions: { code: 'BAD_REQUEST'},
+                    });
+                }
+
+                // Network errors (DNS, timeout, connection reset) — retry with backoff
+                if (attempt < maxRetries) {
+                    const delayMs = Math.min(1000 * Math.pow(2, attempt - 1), 4000);
+                    this.logger.error(`Stripe network error (attempt ${attempt}/${maxRetries}): ${error.message || error}. Retrying in ${delayMs}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                    continue;
+                }
+
+                this.logger.error(`Stripe network error (attempt ${attempt}/${maxRetries}, giving up): ${error.message || error}`);
                 throw new GraphQLError(`Network error calling Stripe ${method} for ${uri}: ${error.message || 'Unknown error'}`, {
                     extensions: { code: 'INTERNAL_SERVER_ERROR'},
                 });

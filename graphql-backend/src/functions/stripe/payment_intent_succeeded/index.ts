@@ -1254,17 +1254,18 @@ const handler : StripeHandler = async (event, logger, services ) => {
             }
         }
 
-        // Process journey purchases - create progress tracking records
-        const journeyLines = merchantLines.filter(x => x.target === "JOURNEY-PURCHASE");
+        // Process journey purchases and rentals - create progress tracking records
+        const journeyLines = merchantLines.filter(x => x.target === "JOURNEY-PURCHASE" || x.target === "JOURNEY-RENTAL");
 
         for (const line of journeyLines) {
             try {
                 const objectRef = line.forObject as recordref_type;
                 const journeyId = objectRef.id;
                 const vendorId = objectRef.partition[0];
+                const isRental = line.target === "JOURNEY-RENTAL";
 
                 const journey = await cosmos.get_record<any>("Main-Listing", journeyId, vendorId);
-                logger.logMessage(`Processing journey purchase: ${journey.name} (${journeyId})`);
+                logger.logMessage(`Processing journey ${isRental ? 'rental' : 'purchase'}: ${journey.name} (${journeyId})`);
 
                 // Get track list for the journey
                 const tracks = await cosmos.run_query("Main-Listing", {
@@ -1278,13 +1279,16 @@ const handler : StripeHandler = async (event, logger, services ) => {
                 // Create journey progress record in PersonalSpace
                 const progressId = `jp:${journeyId}`;
                 const customerUserId = (order as any).userId || order.customer?.id;
-                const progressRecord = {
+                const rentalDays = isRental ? ((line as any).rentalDurationDays || journey.pricing?.rentalDurationDays || 30) : undefined;
+
+                const progressRecord: any = {
                     id: progressId,
                     userId: customerUserId,
                     journeyId: journeyId,
                     vendorId: vendorId,
                     docType: "journeyProgress",
                     purchaseDate: DateTime.now().toISO(),
+                    accessType: isRental ? "RENTAL" : "PURCHASE",
                     currentTrackNumber: 1,
                     trackProgress: tracks.map((t: any) => ({
                         trackId: t.id,
@@ -1293,8 +1297,34 @@ const handler : StripeHandler = async (event, logger, services ) => {
                     }))
                 };
 
-                await cosmos.add_record("Main-PersonalSpace", progressRecord, customerUserId, "system");
-                logger.logMessage(`Created journey progress for user ${customerUserId} (${order.customerEmail})`);
+                if (isRental) {
+                    progressRecord.rentalExpiresAt = DateTime.now().plus({ days: rentalDays }).toISO();
+                    logger.logMessage(`Rental expires in ${rentalDays} days: ${progressRecord.rentalExpiresAt}`);
+                }
+
+                // Upsert: if re-renting, update existing record instead of creating new
+                try {
+                    const existing = await cosmos.get_record<any>("Main-PersonalSpace", progressId, customerUserId);
+                    // Record exists — update it (re-rent or upgrade)
+                    const ops: any[] = [
+                        { op: "set", path: "/accessType", value: progressRecord.accessType },
+                        { op: "set", path: "/purchaseDate", value: progressRecord.purchaseDate },
+                    ];
+                    if (isRental) {
+                        ops.push({ op: "set", path: "/rentalExpiresAt", value: progressRecord.rentalExpiresAt });
+                    } else {
+                        // Upgrading from rental to purchase — remove expiry
+                        if (existing.rentalExpiresAt) {
+                            ops.push({ op: "remove", path: "/rentalExpiresAt" });
+                        }
+                    }
+                    await cosmos.patch_record("Main-PersonalSpace", progressId, customerUserId, ops, "system");
+                    logger.logMessage(`Updated existing journey progress for user ${customerUserId}`);
+                } catch {
+                    // No existing record — create new
+                    await cosmos.add_record("Main-PersonalSpace", progressRecord, customerUserId, "system");
+                    logger.logMessage(`Created journey progress for user ${customerUserId} (${order.customerEmail})`);
+                }
 
                 // Send confirmation emails
                 const vendor = await cosmos.get_record<vendor_type>("Main-Vendor", vendorId, vendorId);

@@ -65,6 +65,10 @@ input OrderLineInput {
 
   # Optional service-specific details
   service: ServiceLineDetailsInput
+
+  # Optional journey rental details
+  purchaseType: String
+  rentalDurationDays: Int
 }
 
 input ServiceLineDetailsInput {

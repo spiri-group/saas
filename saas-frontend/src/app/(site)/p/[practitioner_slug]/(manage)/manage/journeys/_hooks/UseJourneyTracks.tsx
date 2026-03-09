@@ -22,6 +22,15 @@ export type JourneyTrack = {
     previewDurationSeconds?: number;
     integrationPrompts?: string[];
     recommendedCrystals?: string[];
+    linkedProductIds?: string[];
+    linkedProducts?: {
+        id: string;
+        name: string;
+        vendorId: string;
+        thumbnail?: { image?: { media?: { url?: string } } };
+        skus?: { id: string; price: { amount: number; currency: string }; qty: string }[];
+        ref?: { id: string; partition: string[]; container: string };
+    }[];
     releaseDate?: string;
 };
 
@@ -54,6 +63,15 @@ export const useJourneyTracks = (journeyId: string, vendorId: string) => {
                         previewDurationSeconds
                         integrationPrompts
                         recommendedCrystals
+                        linkedProductIds
+                        linkedProducts {
+                            id
+                            name
+                            vendorId
+                            thumbnail { image { media { url } } }
+                            skus { id price { amount currency } qty }
+                            ref { id partition container }
+                        }
                         releaseDate
                     }
                 }
@@ -80,6 +98,7 @@ export const useUpsertTrack = (vendorId: string, journeyId: string) => {
             previewDurationSeconds?: number;
             integrationPrompts?: string[];
             recommendedCrystals?: string[];
+            linkedProductIds?: string[];
             releaseDate?: string;
         }) => {
             const response = await gql<{

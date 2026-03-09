@@ -32,6 +32,10 @@ export class JourneyStorefrontPage extends BasePage {
     recommendedCrystals: '[data-testid="journey-recommended-crystals"]',
     recommendedTools: '[data-testid="journey-recommended-tools"]',
 
+    // Rental
+    rentBtn: '[data-testid="journey-rent-btn"]',
+    mobileRentBtn: '[data-testid="journey-mobile-rent-btn"]',
+
     // Mobile cart
     mobileCart: '[data-testid="journey-mobile-cart"]',
     mobileAddToCartBtn: '[data-testid="journey-mobile-add-to-cart-btn"]',
@@ -118,5 +122,14 @@ export class JourneyStorefrontPage extends BasePage {
 
   async clickVendorLink() {
     await this.page.locator(this.selectors.vendorLink).click();
+  }
+
+  // Rental
+  async isRentButtonVisible(): Promise<boolean> {
+    return await this.page.locator(this.selectors.rentBtn).isVisible();
+  }
+
+  async clickRent() {
+    await this.page.locator(this.selectors.rentBtn).click();
   }
 }

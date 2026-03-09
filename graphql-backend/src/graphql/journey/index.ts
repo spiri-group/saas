@@ -12,6 +12,20 @@ const resolvers = {
         journey: async (_: any, args: any, { dataSources }: serverContext) => {
             return await dataSources.cosmos.get_record("Main-Listing", args.id, args.vendorId)
         },
+        journeys: async (_: any, args: any, { dataSources }: serverContext) => {
+            const includeDrafts = args.includeDrafts === true
+            let query = `SELECT * FROM c WHERE c.vendorId = @vendorId AND c.type = 'JOURNEY'`
+            if (!includeDrafts) {
+                query += ` AND c.isLive = true`
+            }
+            query += ` ORDER BY c.createdDate DESC`
+            return await dataSources.cosmos.run_query("Main-Listing", {
+                query,
+                parameters: [
+                    { name: "@vendorId", value: args.vendorId }
+                ]
+            })
+        },
         journeyTracks: async (_: any, args: any, { dataSources }: serverContext) => {
             const tracks = await dataSources.cosmos.run_query("Main-Listing", {
                 query: `SELECT * FROM c WHERE c.journeyId = @journeyId AND c.vendorId = @vendorId AND c.docType = 'journeyTrack' ORDER BY c.trackNumber ASC`,
@@ -175,6 +189,7 @@ const resolvers = {
                 previewDurationSeconds: args.input.previewDurationSeconds,
                 integrationPrompts: args.input.integrationPrompts || [],
                 recommendedCrystals: args.input.recommendedCrystals || [],
+                linkedProductIds: args.input.linkedProductIds || [],
                 releaseDate: args.input.releaseDate
             }
 
@@ -301,6 +316,21 @@ const resolvers = {
             ], context.userId)
 
             return await context.dataSources.cosmos.get_record("Main-PersonalSpace", progressId, input.userId)
+        },
+        set_rental_expiry: async (_: any, args: { journeyId: string, userId: string, expiresAt: string, accessType?: string }, context: serverContext) => {
+            if (context.userId == null) throw "User must be present for this call"
+
+            const progressId = `jp:${args.journeyId}`
+            const operations: PatchOperation[] = [
+                { op: "set", path: "/rentalExpiresAt", value: args.expiresAt }
+            ]
+            if (args.accessType) {
+                operations.push({ op: "set", path: "/accessType", value: args.accessType })
+            }
+
+            await context.dataSources.cosmos.patch_record("Main-PersonalSpace", progressId, args.userId, operations, context.userId)
+
+            return await context.dataSources.cosmos.get_record("Main-PersonalSpace", progressId, args.userId)
         }
     },
     Journey: {
@@ -332,9 +362,28 @@ const resolvers = {
                 partition: [parent.vendorId],
                 container: "Main-Listing"
             }
+        },
+        linkedProducts: async (parent: any, _: any, { dataSources }: serverContext) => {
+            if (!parent.linkedProductIds || parent.linkedProductIds.length === 0) return [];
+            const products = [];
+            for (const productId of parent.linkedProductIds) {
+                try {
+                    const product = await dataSources.cosmos.get_record("Main-Listing", productId, parent.vendorId);
+                    products.push(product);
+                } catch {
+                    // Product may have been deleted — skip it
+                }
+            }
+            return products;
         }
     },
+    JourneyPricing: {
+        allowRental: (parent: any) => parent.allowRental ?? false,
+        rentalDurationDays: (parent: any) => parent.rentalDurationDays ?? null,
+        rentalPrice: (parent: any) => parent.rentalPrice ?? null,
+    },
     JourneyProgress: {
+        accessType: (parent: any) => parent.accessType ?? "PURCHASE",
         journey: async (parent: any, _: any, { dataSources }: serverContext) => {
             return await dataSources.cosmos.get_record("Main-Listing", parent.journeyId, parent.vendorId)
         }

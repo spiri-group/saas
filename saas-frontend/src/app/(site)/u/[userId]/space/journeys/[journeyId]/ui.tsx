@@ -2,10 +2,13 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Play, Pause, SkipBack, SkipForward, Check, Lock, Music,
-  Clock, BookOpen, Sparkles, ChevronRight, ChevronLeft, Loader2,
+  Clock, BookOpen, Sparkles, ChevronRight, ChevronLeft, Loader2, Timer, ShoppingCart, Package,
 } from 'lucide-react';
+import { useUnifiedCart } from '@/app/(site)/components/Catalogue/components/ShoppingCart/useUnifiedCart';
+import { decodeAmountFromSmallestUnit } from '@/lib/functions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -63,6 +66,7 @@ const UI: React.FC<Props> = ({ userId, journeyId }) => {
 
   const updateProgress = useUpdateProgress();
   const addReflection = useAddReflection();
+  const cart = useUnifiedCart();
 
   const isLoading = progressLoading || (!!vendorId && (journeyLoading || tracksLoading));
 
@@ -306,8 +310,53 @@ const UI: React.FC<Props> = ({ userId, journeyId }) => {
     );
   }
 
+  // Check rental expiry
+  const isRental = progress?.accessType === 'RENTAL';
+  const rentalExpired = isRental && progress?.rentalExpiresAt && new Date(progress.rentalExpiresAt) <= new Date();
+  const rentalDaysLeft = isRental && progress?.rentalExpiresAt
+    ? Math.max(0, Math.ceil((new Date(progress.rentalExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null;
+
+  if (rentalExpired) {
+    const thumbnailUrl = journey.thumbnail?.image?.media?.url;
+    return (
+      <div className="min-h-screen bg-slate-950" data-testid="journey-rental-expired">
+        <div className="px-6 pt-6">
+          <button
+            className="text-slate-400 hover:text-white text-sm flex items-center gap-1 transition-colors"
+            onClick={() => router.push(`/u/${userId}/space/journeys`)}
+            data-testid="back-to-journeys"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back to Journeys
+          </button>
+        </div>
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+          {thumbnailUrl ? (
+            <Image src={thumbnailUrl} alt={journey.name} width={192} height={192} className="object-cover rounded-2xl mb-6 opacity-50" />
+          ) : (
+            <Music className="w-16 h-16 text-slate-600 mb-6" />
+          )}
+          <Timer className="w-12 h-12 text-red-400 mb-4" />
+          <h2 className="text-xl font-medium text-slate-300 mb-2">Rental Expired</h2>
+          <p className="text-slate-500 max-w-md mb-6">
+            Your rental access to &ldquo;{journey.name}&rdquo; has expired. You can rent it again or purchase it for permanent access.
+          </p>
+          <Button
+            onClick={() => router.push(`/m/${journey.vendor?.slug || progress?.vendorId}/journey/${journeyId}`)}
+            className="bg-purple-600 hover:bg-purple-500 text-white"
+            data-testid="repurchase-btn"
+          >
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            View in Store
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const thumbnailUrl = journey.thumbnail?.image?.media?.url;
-  const thumbnailBg = '#1e1b4b';
+  const thumbnailBgClass = 'bg-indigo-950';
   const activeTrackProgress = activeTrack ? getTrackProgress(activeTrack.id) : undefined;
   const existingReflection = activeTrackProgress?.reflection;
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -315,6 +364,17 @@ const UI: React.FC<Props> = ({ userId, journeyId }) => {
   return (
     <div className="min-h-screen bg-slate-950" data-testid="journey-player-page">
       <audio ref={audioRef} preload="metadata" />
+
+      {/* Rental banner */}
+      {isRental && rentalDaysLeft !== null && (
+        <div
+          className={`px-6 py-2 text-center text-sm ${rentalDaysLeft <= 3 ? 'bg-amber-500/20 text-amber-300' : 'bg-blue-500/10 text-blue-300'}`}
+          data-testid="rental-banner"
+        >
+          <Timer className="w-3.5 h-3.5 inline mr-1.5" />
+          Rental access &mdash; {rentalDaysLeft} {rentalDaysLeft === 1 ? 'day' : 'days'} remaining
+        </div>
+      )}
 
       {/* Back nav */}
       <div className="px-6 pt-6">
@@ -330,7 +390,7 @@ const UI: React.FC<Props> = ({ userId, journeyId }) => {
 
       <div className="flex flex-col lg:flex-row gap-0 lg:gap-8 p-6 lg:p-8">
         {/* ── Left Column: Now Playing ──────────────────── */}
-        <div className="flex-1 max-w-2xl">
+        <div className="flex-1">
 
           {/* Journey Intention */}
           {journey.intention && (
@@ -344,9 +404,9 @@ const UI: React.FC<Props> = ({ userId, journeyId }) => {
           {/* Album Art */}
           <div className="relative aspect-square max-w-md mx-auto rounded-2xl overflow-hidden shadow-2xl shadow-purple-500/10 mb-8" data-testid="album-art">
             {thumbnailUrl ? (
-              <img src={thumbnailUrl} alt={journey.name} className="w-full h-full object-cover" />
+              <Image src={thumbnailUrl} alt={journey.name} fill className="object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: thumbnailBg }}>
+              <div className={`w-full h-full flex items-center justify-center ${thumbnailBgClass}`}>
                 <Music className="w-24 h-24 text-purple-400/30" />
               </div>
             )}
@@ -439,6 +499,66 @@ const UI: React.FC<Props> = ({ userId, journeyId }) => {
                     {crystal}
                   </Badge>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Cross-sell: Linked Products */}
+          {activeTrack?.linkedProducts && activeTrack.linkedProducts.length > 0 && (
+            <div className="mb-8" data-testid="track-linked-products">
+              <h3 className="text-slate-400 text-xs uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Package className="w-3.5 h-3.5 text-emerald-400" />
+                Pairs well with this track
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {activeTrack.linkedProducts.map((product) => {
+                  const sku = product.skus?.[0];
+                  const thumbUrl = product.thumbnail?.image?.media?.url;
+                  return (
+                    <div
+                      key={product.id}
+                      className="flex items-center gap-3 bg-slate-900/80 border border-slate-800 rounded-xl p-3 hover:border-emerald-500/30 transition-colors"
+                      data-testid={`linked-product-${product.id}`}
+                    >
+                      <div className="w-12 h-12 rounded-lg bg-slate-800 overflow-hidden flex-shrink-0">
+                        {thumbUrl ? (
+                          <Image src={thumbUrl} alt={product.name} width={48} height={48} className="object-cover w-full h-full" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-5 h-5 text-slate-600" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white truncate">{product.name}</p>
+                        {sku?.price && (
+                          <p className="text-xs text-slate-400">
+                            ${decodeAmountFromSmallestUnit(sku.price.amount, sku.price.currency)} {sku.price.currency}
+                          </p>
+                        )}
+                      </div>
+                      {sku && product.ref && (
+                        <Button
+                          size="sm"
+                          onClick={() => cart.addProduct({
+                            productRef: product.ref!,
+                            variantId: sku.id,
+                            descriptor: product.name,
+                            quantity: 1,
+                            price: sku.price,
+                            imageUrl: thumbUrl,
+                          })}
+                          disabled={cart.isAddingProduct}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white flex-shrink-0"
+                          data-testid={`add-product-${product.id}`}
+                        >
+                          <ShoppingCart className="w-3.5 h-3.5 mr-1" />
+                          Add
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

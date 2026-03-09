@@ -20,6 +20,7 @@ import {
     Layers,
     Lock,
     Music,
+    Package,
     Pause,
     Play,
     ShoppingCart,
@@ -27,6 +28,7 @@ import {
     Target,
     Wrench,
 } from "lucide-react"
+import { decodeAmountFromSmallestUnit } from "@/lib/functions"
 
 type Props = {
     merchantId: string
@@ -160,7 +162,9 @@ const useBL = (props: Props) => {
         journey: journey.data,
         isLoading: journey.isLoading,
         vendorBranding: vendorBranding.data,
+        cart,
         addToCart: () => cart.addJourney(props.journeyId),
+        addRentalToCart: () => cart.addJourney(props.journeyId, 'RENTAL'),
         isAddingToCart: cart.isAddingJourney,
     }
 }
@@ -186,7 +190,8 @@ const UI: React.FC<Props> = (props) => {
 
     return (
         <div
-            className="flex flex-col space-y-2 ml-2 mr-2"
+            className="flex flex-col space-y-2 mx-2"
+            data-testid="journey-storefront-page"
             style={{
                 background: 'rgb(var(--merchant-background, 248, 250, 252))',
                 backgroundImage: 'var(--merchant-background-image, linear-gradient(to bottom, #f8fafc, #f1f5f9, #e2e8f0))',
@@ -195,7 +200,13 @@ const UI: React.FC<Props> = (props) => {
         >
             <MerchantFontLoader fonts={fontConfig} />
 
-            {journey != undefined && (
+            {bl.isLoading && (
+                <div className="flex items-center justify-center min-h-[400px]" data-testid="journey-loading">
+                    <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'rgb(var(--merchant-primary))', borderTopColor: 'transparent' }} />
+                </div>
+            )}
+
+            {journey !== undefined && (
                 <>
                     {/* Hero Section */}
                     <div className="relative w-full h-72 md:h-96 rounded-b-2xl overflow-hidden mt-0" data-testid="journey-hero">
@@ -313,20 +324,42 @@ const UI: React.FC<Props> = (props) => {
                                                 /> per track
                                             </div>
                                         )}
+                                        {journey.pricing.allowRental && journey.pricing.rentalPrice && (
+                                            <div className="text-xs text-merchant-default-foreground/60 mt-0.5">
+                                                or rent for <CurrencySpan
+                                                    className="text-merchant-default-foreground/60"
+                                                    value={journey.pricing.rentalPrice}
+                                                /> ({journey.pricing.rentalDurationDays || 30} days)
+                                            </div>
+                                        )}
                                     </div>
-                                    <Button
-                                        onClick={bl.addToCart}
-                                        disabled={bl.isAddingToCart}
-                                        className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-sm transition-all"
-                                        style={{
-                                            backgroundColor: 'rgb(var(--merchant-primary))',
-                                            color: 'rgb(var(--merchant-primary-foreground))',
-                                        }}
-                                        data-testid="journey-add-to-cart-btn"
-                                    >
-                                        <ShoppingCart className="h-4 w-4" />
-                                        {bl.isAddingToCart ? 'Adding...' : 'Add to Cart'}
-                                    </Button>
+                                    <div className="flex flex-col gap-2">
+                                        <Button
+                                            onClick={bl.addToCart}
+                                            disabled={bl.isAddingToCart}
+                                            className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-sm transition-all"
+                                            style={{
+                                                backgroundColor: 'rgb(var(--merchant-primary))',
+                                                color: 'rgb(var(--merchant-primary-foreground))',
+                                            }}
+                                            data-testid="journey-add-to-cart-btn"
+                                        >
+                                            <ShoppingCart className="h-4 w-4" />
+                                            {bl.isAddingToCart ? 'Adding...' : 'Buy'}
+                                        </Button>
+                                        {journey.pricing.allowRental && journey.pricing.rentalPrice && (
+                                            <Button
+                                                onClick={bl.addRentalToCart}
+                                                disabled={bl.isAddingToCart}
+                                                variant="outline"
+                                                className="flex items-center gap-2 px-6 py-2 rounded-lg font-medium text-sm transition-all border-merchant-primary/30 text-merchant-default-foreground hover:bg-merchant-primary/10"
+                                                data-testid="journey-rent-btn"
+                                            >
+                                                <Clock className="h-4 w-4" />
+                                                Rent
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </PanelContent>
@@ -446,6 +479,55 @@ const UI: React.FC<Props> = (props) => {
                                                 {track.previewDurationSeconds && track.audioFile?.url && (
                                                     <TrackPreviewPlayer track={track} />
                                                 )}
+                                                {track.linkedProducts && track.linkedProducts.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2 mt-2" data-testid={`track-products-${track.id}`}>
+                                                        {track.linkedProducts.map((product) => {
+                                                            const sku = product.skus?.[0]
+                                                            const thumbUrl = product.thumbnail?.image?.media?.url
+                                                            return (
+                                                                <div
+                                                                    key={product.id}
+                                                                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs"
+                                                                    style={{
+                                                                        backgroundColor: 'rgb(var(--merchant-primary), 0.05)',
+                                                                        border: '1px solid rgb(var(--merchant-primary), 0.15)',
+                                                                    }}
+                                                                    data-testid={`storefront-product-${product.id}`}
+                                                                >
+                                                                    {thumbUrl ? (
+                                                                        <Image src={thumbUrl} alt={product.name} width={20} height={20} className="rounded object-cover" />
+                                                                    ) : (
+                                                                        <Package className="w-4 h-4 text-merchant-default-foreground/40" />
+                                                                    )}
+                                                                    <span className="text-merchant-default-foreground/80">{product.name}</span>
+                                                                    {sku?.price && (
+                                                                        <span className="text-merchant-default-foreground/50">
+                                                                            ${decodeAmountFromSmallestUnit(sku.price.amount, sku.price.currency)}
+                                                                        </span>
+                                                                    )}
+                                                                    {sku && product.ref && (
+                                                                        <button
+                                                                            onClick={() => bl.cart.addProduct({
+                                                                                productRef: product.ref!,
+                                                                                variantId: sku.id,
+                                                                                descriptor: product.name,
+                                                                                quantity: 1,
+                                                                                price: sku.price,
+                                                                                imageUrl: thumbUrl,
+                                                                            })}
+                                                                            className="ml-1 flex items-center gap-0.5 font-medium"
+                                                                            style={{ color: 'rgb(var(--merchant-primary))' }}
+                                                                            data-testid={`add-storefront-product-${product.id}`}
+                                                                        >
+                                                                            <ShoppingCart className="w-3 h-3" />
+                                                                            Add
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Duration */}
@@ -536,20 +618,42 @@ const UI: React.FC<Props> = (props) => {
                                     className="text-xl font-bold text-merchant-headings-foreground"
                                     value={journey.pricing.collectionPrice}
                                 />
+                                {journey.pricing.allowRental && journey.pricing.rentalPrice && (
+                                    <div className="text-xs text-merchant-default-foreground/60 mt-0.5">
+                                        or rent <CurrencySpan
+                                            className="text-merchant-default-foreground/60"
+                                            value={journey.pricing.rentalPrice}
+                                        />
+                                    </div>
+                                )}
                             </div>
-                            <Button
-                                onClick={bl.addToCart}
-                                disabled={bl.isAddingToCart}
-                                className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold"
-                                style={{
-                                    backgroundColor: 'rgb(var(--merchant-primary))',
-                                    color: 'rgb(var(--merchant-primary-foreground))',
-                                }}
-                                data-testid="journey-mobile-add-to-cart-btn"
-                            >
-                                <ShoppingCart className="h-4 w-4" />
-                                {bl.isAddingToCart ? 'Adding...' : 'Add to Cart'}
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    onClick={bl.addToCart}
+                                    disabled={bl.isAddingToCart}
+                                    className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold"
+                                    style={{
+                                        backgroundColor: 'rgb(var(--merchant-primary))',
+                                        color: 'rgb(var(--merchant-primary-foreground))',
+                                    }}
+                                    data-testid="journey-mobile-add-to-cart-btn"
+                                >
+                                    <ShoppingCart className="h-4 w-4" />
+                                    {bl.isAddingToCart ? 'Adding...' : 'Buy'}
+                                </Button>
+                                {journey.pricing.allowRental && journey.pricing.rentalPrice && (
+                                    <Button
+                                        onClick={bl.addRentalToCart}
+                                        disabled={bl.isAddingToCart}
+                                        variant="outline"
+                                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium border-merchant-primary/30 text-merchant-default-foreground"
+                                        data-testid="journey-mobile-rent-btn"
+                                    >
+                                        <Clock className="h-4 w-4" />
+                                        Rent
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -567,9 +671,9 @@ const UI: React.FC<Props> = (props) => {
                             }}
                         >
                             <PanelHeader className="flex flex-row">
-                                <h1 id="journey-reviews-title" className="font-bold text-sm md:text-xl text-merchant-headings-foreground">
+                                <h2 id="journey-reviews-title" className="font-bold text-sm md:text-xl text-merchant-headings-foreground">
                                     Reviews
-                                </h1>
+                                </h2>
                                 <NewReview
                                     objectId={props.journeyId}
                                     objectPartition={props.merchantId}

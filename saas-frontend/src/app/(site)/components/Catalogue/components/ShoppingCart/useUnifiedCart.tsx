@@ -55,6 +55,10 @@ export type CartItem = {
     }>;
     selectedAddOns?: string[];
 
+    // Journey-specific
+    purchaseType?: string;
+    rentalDurationDays?: number;
+
     // Sync status (local only, not persisted to backend)
     _pendingSync?: boolean;
     _localOnly?: boolean;
@@ -232,6 +236,8 @@ async function fetchCart(): Promise<ShoppingCart> {
                         answer
                     }
                     selectedAddOns
+                    purchaseType
+                    rentalDurationDays
                 }
             }
         }
@@ -361,7 +367,7 @@ async function addServiceToCartMutation(input: AddServiceInput) {
     return response.add_service_to_cart;
 }
 
-async function addJourneyToCartMutation(journeyId: string) {
+async function addJourneyToCartMutation(input: { journeyId: string; purchaseType?: string }) {
     const response = await gql<{
         add_journey_to_cart: {
             success: boolean;
@@ -369,8 +375,8 @@ async function addJourneyToCartMutation(journeyId: string) {
             shoppingCart: ShoppingCart;
         };
     }>(`
-        mutation AddJourneyToCart($journeyId: ID!) {
-            add_journey_to_cart(journeyId: $journeyId) {
+        mutation AddJourneyToCart($journeyId: ID!, $purchaseType: String) {
+            add_journey_to_cart(journeyId: $journeyId, purchaseType: $purchaseType) {
                 success
                 message
                 shoppingCart {
@@ -394,7 +400,7 @@ async function addJourneyToCartMutation(journeyId: string) {
                 }
             }
         }
-    `, { journeyId });
+    `, { journeyId: input.journeyId, purchaseType: input.purchaseType || null });
 
     return response.add_journey_to_cart;
 }
@@ -522,7 +528,7 @@ export function useUnifiedCart(options?: { enabled?: boolean }) {
                         await addServiceToCartMutation(op.payload);
                         break;
                     case 'ADD_JOURNEY':
-                        await addJourneyToCartMutation(op.payload);
+                        await addJourneyToCartMutation(typeof op.payload === 'string' ? { journeyId: op.payload } : op.payload);
                         break;
                     case 'UPDATE_QUANTITY':
                         await updateQuantityMutation(op.payload.itemId, op.payload.quantity);
@@ -718,14 +724,15 @@ export function useUnifiedCart(options?: { enabled?: boolean }) {
     // Add journey mutation with optimistic update
     const addJourney = useMutation({
         mutationFn: addJourneyToCartMutation,
-        onMutate: async (journeyId: string) => {
+        onMutate: async (input: { journeyId: string; purchaseType?: string }) => {
             await queryClient.cancelQueries({ queryKey: ['unified-cart'] });
             const previousCart = queryClient.getQueryData<ShoppingCart>(['unified-cart']);
 
+            const isRental = input.purchaseType === 'RENTAL';
             const optimisticItem: CartItem = {
                 id: crypto.randomUUID(),
                 itemType: 'JOURNEY',
-                descriptor: 'Guided Journey',
+                descriptor: isRental ? 'Guided Journey (Rental)' : 'Guided Journey',
                 quantity: 1,
                 price: { amount: 0, currency: 'USD' },
                 merchantId: '',
@@ -739,14 +746,14 @@ export function useUnifiedCart(options?: { enabled?: boolean }) {
 
             return { previousCart };
         },
-        onError: (err, journeyId, context) => {
+        onError: (err, input, context) => {
             if (context?.previousCart) {
                 queryClient.setQueryData(['unified-cart'], context.previousCart);
                 setLocalCart(context.previousCart.items);
                 dispatchCartEvent(context.previousCart.items);
             }
 
-            addPendingOperation({ type: 'ADD_JOURNEY', payload: journeyId });
+            addPendingOperation({ type: 'ADD_JOURNEY', payload: input });
 
             toast.error('Failed to add journey to cart', {
                 description: 'Will retry when back online.'
@@ -911,7 +918,7 @@ export function useUnifiedCart(options?: { enabled?: boolean }) {
         // Mutations
         addProduct: addProduct.mutate,
         addService: addService.mutate,
-        addJourney: addJourney.mutate,
+        addJourney: (journeyId: string, purchaseType?: string) => addJourney.mutate({ journeyId, purchaseType }),
         updateQuantity: (itemId: string, quantity: number) => updateQuantity.mutate({ itemId, quantity }),
         removeItem: removeItem.mutate,
         clearCart: clearCart.mutate,

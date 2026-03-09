@@ -44,6 +44,11 @@ export class JourneyPlayerPage extends BasePage {
     // Crystals
     trackCrystals: '[data-testid="track-crystals"]',
     journeyCrystals: '[data-testid="journey-crystals"]',
+
+    // Rental
+    rentalBanner: '[data-testid="rental-banner"]',
+    rentalExpiredPage: '[data-testid="journey-rental-expired"]',
+    repurchaseBtn: '[data-testid="repurchase-btn"]',
   };
 
   constructor(page: Page) {
@@ -181,5 +186,33 @@ export class JourneyPlayerPage extends BasePage {
 
   async hasJourneyCrystals(): Promise<boolean> {
     return await this.page.locator(this.selectors.journeyCrystals).isVisible();
+  }
+
+  // Rental
+  async isRentalBannerVisible(): Promise<boolean> {
+    return await this.page.locator(this.selectors.rentalBanner).isVisible();
+  }
+
+  async getRentalBannerText(): Promise<string> {
+    return await this.page.locator(this.selectors.rentalBanner).textContent() || '';
+  }
+
+  async isRentalExpiredPageVisible(): Promise<boolean> {
+    return await this.page.locator(this.selectors.rentalExpiredPage).isVisible();
+  }
+
+  async isRepurchaseButtonVisible(): Promise<boolean> {
+    return await this.page.locator(this.selectors.repurchaseBtn).isVisible();
+  }
+
+  async clickRepurchase() {
+    await this.page.locator(this.selectors.repurchaseBtn).click();
+  }
+
+  async waitForPlayerOrExpired() {
+    const playerPage = this.page.locator(this.selectors.playerPage);
+    const expiredPage = this.page.locator(this.selectors.rentalExpiredPage);
+    const errorState = this.page.locator(this.selectors.errorState);
+    await expect(playerPage.or(expiredPage).or(errorState)).toBeVisible({ timeout: 30000 });
   }
 }

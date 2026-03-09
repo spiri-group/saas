@@ -13,6 +13,14 @@ export type JourneyTrackType = {
     previewDurationSeconds?: number;
     integrationPrompts?: string[];
     recommendedCrystals?: string[];
+    linkedProducts?: {
+        id: string;
+        name: string;
+        vendorId: string;
+        thumbnail?: { image?: { media?: { url?: string } } };
+        skus?: { id: string; price: { amount: number; currency: string }; qty: string }[];
+        ref?: { id: string; partition: string[]; container: string };
+    }[];
     audioFile?: {
         url: string;
         name: string;
@@ -52,6 +60,12 @@ export type JourneyType = {
             currency: string;
         };
         allowSingleTrackPurchase: boolean;
+        allowRental: boolean;
+        rentalPrice?: {
+            amount: number;
+            currency: string;
+        };
+        rentalDurationDays?: number;
     };
     recommendedCrystals?: string[];
     recommendedTools?: string[];
@@ -111,6 +125,12 @@ export const queryFn = async (merchantId: string, journeyId: string) => {
                         currency
                     }
                     allowSingleTrackPurchase
+                    allowRental
+                    rentalPrice {
+                        amount
+                        currency
+                    }
+                    rentalDurationDays
                 }
                 recommendedCrystals
                 recommendedTools
@@ -126,6 +146,14 @@ export const queryFn = async (merchantId: string, journeyId: string) => {
                     previewDurationSeconds
                     integrationPrompts
                     recommendedCrystals
+                    linkedProducts {
+                        id
+                        name
+                        vendorId
+                        thumbnail { image { media { url } } }
+                        skus { id price { amount currency } qty }
+                        ref { id partition container }
+                    }
                     audioFile {
                         url
                         name

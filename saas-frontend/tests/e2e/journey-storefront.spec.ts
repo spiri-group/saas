@@ -404,8 +404,12 @@ test.describe.serial('Guided Journeys - Full E2E Customer Journey', () => {
 
       await handleConsentGuardIfPresent(customerPage);
 
-      // Setup profile
-      await customerPage.goto('/setup');
+      // Setup profile — new users are auto-redirected to /setup after login
+      // Wait for the redirect rather than hard-navigating
+      await customerPage.waitForURL(/\/setup/, { timeout: 15000 }).catch(async () => {
+        // Fallback: if redirect didn't happen, navigate manually
+        await customerPage.goto('/setup');
+      });
       await userSetupPage.waitForForm();
 
       customerId = await customerPage.evaluate(async () => {

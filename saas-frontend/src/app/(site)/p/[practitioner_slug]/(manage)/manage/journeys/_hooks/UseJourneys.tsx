@@ -24,6 +24,12 @@ export type JourneyListItem = {
             currency: string;
         };
         allowSingleTrackPurchase: boolean;
+        allowRental: boolean;
+        rentalPrice?: {
+            amount: number;
+            currency: string;
+        };
+        rentalDurationDays?: number;
     };
     thumbnail?: {
         image?: {
@@ -32,12 +38,6 @@ export type JourneyListItem = {
             };
             zoom?: number;
             objectFit?: string;
-        };
-        stamp?: {
-            text: string;
-            enabled: boolean;
-            bgColor: string;
-            textColor: string;
         };
         bgColor?: string;
     };
@@ -55,58 +55,54 @@ const useJourneys = (practitionerId: string) => {
         queryKey: ['practitioner-journeys', practitionerId],
         queryFn: async () => {
             const response = await gql<{
-                catalogue: {
-                    listings: JourneyListItem[];
-                };
+                journeys: JourneyListItem[];
             }>(`
-                query GetPractitionerJourneys($vendorId: ID!, $types: [String]) {
-                    catalogue(vendorId: $vendorId, types: $types, includeDrafts: true) {
-                        listings {
-                            id
-                            name
-                            slug
-                            description
-                            isLive
-                            journeyStructure
-                            trackCount
-                            totalDurationSeconds
-                            difficulty
-                            intention
-                            modalities
-                            recommendedTools
-                            pricing {
-                                collectionPrice {
-                                    amount
-                                    currency
-                                }
-                                singleTrackPrice {
-                                    amount
-                                    currency
-                                }
-                                allowSingleTrackPurchase
+                query GetPractitionerJourneys($vendorId: ID!, $includeDrafts: Boolean) {
+                    journeys(vendorId: $vendorId, includeDrafts: $includeDrafts) {
+                        id
+                        name
+                        slug
+                        description
+                        isLive
+                        journeyStructure
+                        trackCount
+                        totalDurationSeconds
+                        difficulty
+                        intention
+                        modalities
+                        recommendedTools
+                        pricing {
+                            collectionPrice {
+                                amount
+                                currency
                             }
-                            thumbnail {
-                                image {
-                                    media {
-                                        url
-                                    }
-                                    zoom
-                                    objectFit
-                                }
-                                stamp {
-                                    text
-                                    enabled
-                                    bgColor
-                                    textColor
-                                }
-                                bgColor
+                            singleTrackPrice {
+                                amount
+                                currency
                             }
+                            allowSingleTrackPurchase
+                            allowRental
+                            rentalPrice {
+                                amount
+                                currency
+                            }
+                            rentalDurationDays
+                        }
+                        thumbnail {
+                            image {
+                                media {
+                                    url
+                                }
+                                zoom
+                                objectFit
+                            }
+                            bgColor
                         }
                     }
                 }
-            `, { vendorId: practitionerId, types: ["JOURNEY"] });
+            `, { vendorId: practitionerId, includeDrafts: true });
 
-            return response.catalogue?.listings || [];
+            return response.journeys || [];
         },
         enabled: !!practitionerId,
     });

@@ -2050,10 +2050,15 @@ export type journey_type = {
     stripeSingleTrackPriceId?: string
 }
 
+export type JourneyAccessType = "PURCHASE" | "RENTAL"
+
 export type journey_pricing_type = {
     collectionPrice: currency_amount_type
     singleTrackPrice?: currency_amount_type
     allowSingleTrackPurchase: boolean
+    rentalPrice?: currency_amount_type
+    rentalDurationDays?: number
+    allowRental: boolean
 }
 
 export type journey_track_type = {
@@ -2080,6 +2085,9 @@ export type journey_track_type = {
     // Recommended crystals for this specific track
     recommendedCrystals?: string[]
 
+    // Cross-sell: linked product listing IDs from the practitioner's catalogue
+    linkedProductIds?: string[]
+
     // For drip-released series
     releaseDate?: string
 
@@ -2094,6 +2102,10 @@ export type journey_progress_type = {
     vendorId: string
     docType: "journeyProgress"
     purchaseDate: string
+
+    // Access type - defaults to PURCHASE for backward compat
+    accessType: JourneyAccessType
+    rentalExpiresAt?: string
 
     trackProgress: journey_track_progress_type[]
 

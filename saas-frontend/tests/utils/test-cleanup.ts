@@ -211,7 +211,14 @@ export async function cleanupTestMerchants(auth?: string, workerId: number = 0) 
  * NOTE: Each practitioner can have their own cookies for purging
  */
 export async function cleanupTestPractitioners(fallbackAuth?: string, workerId: number = 0) {
-  const practitionersToCleanup = Array.from(getWorkerEntities(workerId).practitioners);
+  // Deduplicate by ID to avoid double-purge errors
+  const seen = new Set<string>();
+  const practitionersToCleanup = Array.from(getWorkerEntities(workerId).practitioners).filter(p => {
+    const key = p.id || p.slug;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
   if (practitionersToCleanup.length === 0) {
     return;

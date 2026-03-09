@@ -2,7 +2,8 @@
 
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Headphones, Clock, Check, Music, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { Headphones, Clock, Check, Music, Loader2, Timer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useMyJourneys, JourneyProgress } from './_hooks/UseMyJourneys';
 
@@ -24,22 +25,40 @@ function getCompletionPercent(progress: JourneyProgress): number {
   return Math.round((completed / total) * 100);
 }
 
+function getRentalDaysRemaining(expiresAt?: string): number | null {
+  if (!expiresAt) return null;
+  const now = new Date();
+  const expires = new Date(expiresAt);
+  const diffMs = expires.getTime() - now.getTime();
+  if (diffMs <= 0) return 0;
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function isRentalExpired(progress: JourneyProgress): boolean {
+  if (progress.accessType !== 'RENTAL') return false;
+  if (!progress.rentalExpiresAt) return false;
+  return new Date(progress.rentalExpiresAt) <= new Date();
+}
+
 const UI: React.FC<Props> = ({ userId }) => {
   const router = useRouter();
   const { data: journeys, isLoading } = useMyJourneys(userId);
 
-  const { activeJourneys, completedJourneys } = useMemo(() => {
-    if (!journeys) return { activeJourneys: [], completedJourneys: [] };
+  const { activeJourneys, completedJourneys, expiredRentals } = useMemo(() => {
+    if (!journeys) return { activeJourneys: [], completedJourneys: [], expiredRentals: [] };
     const active: JourneyProgress[] = [];
     const completed: JourneyProgress[] = [];
+    const expired: JourneyProgress[] = [];
     for (const j of journeys) {
-      if (j.completedDate) {
+      if (isRentalExpired(j)) {
+        expired.push(j);
+      } else if (j.completedDate) {
         completed.push(j);
       } else {
         active.push(j);
       }
     }
-    return { activeJourneys: active, completedJourneys: completed };
+    return { activeJourneys: active, completedJourneys: completed, expiredRentals: expired };
   }, [journeys]);
 
   if (isLoading) {
@@ -82,7 +101,6 @@ const UI: React.FC<Props> = ({ userId }) => {
               <JourneyCard
                 key={jp.id}
                 progress={jp}
-                userId={userId}
                 onClick={() => router.push(`/u/${userId}/space/journeys/${jp.journeyId}`)}
               />
             ))}
@@ -100,7 +118,23 @@ const UI: React.FC<Props> = ({ userId }) => {
               <JourneyCard
                 key={jp.id}
                 progress={jp}
-                userId={userId}
+                onClick={() => router.push(`/u/${userId}/space/journeys/${jp.journeyId}`)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {expiredRentals.length > 0 && (
+        <section className="mt-10" data-testid="expired-rentals-section">
+          <h2 className="text-sm font-medium uppercase tracking-wider text-slate-400 mb-4">
+            Expired Rentals
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {expiredRentals.map((jp) => (
+              <JourneyCard
+                key={jp.id}
+                progress={jp}
                 onClick={() => router.push(`/u/${userId}/space/journeys/${jp.journeyId}`)}
               />
             ))}
@@ -115,7 +149,6 @@ const UI: React.FC<Props> = ({ userId }) => {
 
 interface JourneyCardProps {
   progress: JourneyProgress;
-  userId: string;
   onClick: () => void;
 }
 
@@ -134,31 +167,46 @@ const JourneyCard: React.FC<JourneyCardProps> = ({ progress, onClick }) => {
       {/* Thumbnail */}
       <div className="aspect-square w-full bg-slate-800 relative overflow-hidden">
         {thumbnailUrl ? (
-          <img
+          <Image
             src={thumbnailUrl}
             alt={journey?.name || 'Journey'}
-            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+            fill
+            className="object-cover transition-transform group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center"
-            style={{ backgroundColor: '#1e1b4b' }}
+          <div className="w-full h-full flex items-center justify-center bg-indigo-950"
           >
             <Music className="w-12 h-12 text-purple-400/40" />
           </div>
         )}
 
         {/* Status badge */}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
           {isCompleted ? (
             <Badge className="bg-emerald-500/90 text-white border-0 text-xs" data-testid="journey-completed-badge">
               <Check className="w-3 h-3 mr-1" />
               Completed
+            </Badge>
+          ) : isRentalExpired(progress) ? (
+            <Badge className="bg-red-500/90 text-white border-0 text-xs" data-testid="journey-expired-badge">
+              <Timer className="w-3 h-3 mr-1" />
+              Expired
             </Badge>
           ) : (
             <Badge className="bg-purple-500/90 text-white border-0 text-xs" data-testid="journey-progress-badge">
               {percent}%
             </Badge>
           )}
+          {progress.accessType === 'RENTAL' && !isRentalExpired(progress) && (() => {
+            const days = getRentalDaysRemaining(progress.rentalExpiresAt);
+            if (days === null) return null;
+            return (
+              <Badge className={`border-0 text-xs ${days <= 3 ? 'bg-amber-500/90' : 'bg-blue-500/90'} text-white`} data-testid="journey-rental-badge">
+                <Timer className="w-3 h-3 mr-1" />
+                {days} {days === 1 ? 'day' : 'days'} left
+              </Badge>
+            );
+          })()}
         </div>
       </div>
 

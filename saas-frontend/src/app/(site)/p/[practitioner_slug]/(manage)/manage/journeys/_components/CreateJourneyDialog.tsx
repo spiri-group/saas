@@ -63,7 +63,10 @@ type JourneyFormValues = {
     currency: string;
     allowSingleTrackPurchase: boolean;
     singleTrackPrice: string;
-    thumbnail?: any;
+    allowRental: boolean;
+    rentalPrice: string;
+    rentalDurationDays: string;
+    thumbnail?: Record<string, unknown>;
 };
 
 export default function CreateJourneyDialog({ practitionerId, editingJourney, defaultStructure, onClose, onCreated }: Props) {
@@ -91,13 +94,18 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
             singleTrackPrice: editingJourney?.pricing?.singleTrackPrice
                 ? (editingJourney.pricing.singleTrackPrice.amount / 100).toString()
                 : "",
+            allowRental: editingJourney?.pricing?.allowRental || false,
+            rentalPrice: editingJourney?.pricing?.rentalPrice
+                ? (editingJourney.pricing.rentalPrice.amount / 100).toString()
+                : "",
+            rentalDurationDays: editingJourney?.pricing?.rentalDurationDays?.toString() || "30",
             thumbnail: editingJourney?.thumbnail || undefined,
         },
     });
 
     const journeyId = form.watch('id');
 
-    const uploadToAzure = async (file: File, fileType: 'IMAGE' | 'VIDEO'): Promise<any> => {
+    const uploadToAzure = async (file: File, fileType: 'IMAGE' | 'VIDEO') => {
         const formData = new FormData();
         formData.append('files', file);
 
@@ -157,6 +165,9 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
         const singlePriceInCents = values.allowSingleTrackPurchase && values.singleTrackPrice
             ? Math.round(parseFloat(values.singleTrackPrice) * 100)
             : undefined;
+        const rentalPriceInCents = values.allowRental && values.rentalPrice
+            ? Math.round(parseFloat(values.rentalPrice) * 100)
+            : undefined;
 
         const input = {
             name: values.name,
@@ -173,6 +184,11 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
                     singleTrackPrice: { amount: singlePriceInCents, currency: values.currency }
                 }),
                 allowSingleTrackPurchase: values.allowSingleTrackPurchase,
+                allowRental: values.allowRental,
+                ...(rentalPriceInCents && {
+                    rentalPrice: { amount: rentalPriceInCents, currency: values.currency },
+                    rentalDurationDays: parseInt(values.rentalDurationDays) || 30,
+                }),
             },
         };
 
@@ -199,17 +215,22 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
 
     const watchedJourneyStructure = form.watch('journeyStructure');
     const watchedAllowSingle = form.watch('allowSingleTrackPurchase');
+    const watchedAllowRental = form.watch('allowRental');
     const watchedModalities = form.watch('modalities');
     const watchedRecommendedTools = form.watch('recommendedTools');
 
     return (
         <DialogContent className="w-[800px] max-w-[95vw] max-h-[90vh] flex flex-col overflow-hidden">
-            <VisuallyHidden>
-                <DialogTitle>{isEditing ? "Edit Journey" : "Create Guided Journey"}</DialogTitle>
-                <DialogDescription>Set up your guided journey experience</DialogDescription>
-            </VisuallyHidden>
-
             <div className="flex items-center justify-between mb-4 px-4 pt-2">
+                <DialogTitle className="text-lg font-semibold text-white">
+                    {isEditing ? "Edit Journey" : "Create Guided Journey"}
+                </DialogTitle>
+                <VisuallyHidden>
+                    <DialogDescription>Set up your guided journey experience</DialogDescription>
+                </VisuallyHidden>
+            </div>
+
+            <div className="flex items-center justify-between mb-4 px-4">
                 <StepIndicator
                     dark
                     steps={[
@@ -329,7 +350,7 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
                                                 <FormLabel dark>Currency</FormLabel>
                                                 <Select dark onValueChange={field.onChange} defaultValue={field.value}>
                                                     <FormControl>
-                                                        <SelectTrigger>
+                                                        <SelectTrigger data-testid="journey-currency-select">
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                     </FormControl>
@@ -412,6 +433,72 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
                                         )}
                                     </div>
                                 )}
+
+                                <div className="border border-slate-700 rounded-lg p-3">
+                                    <FormField
+                                        name="allowRental"
+                                        control={form.control}
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center gap-2 mb-2">
+                                                <FormControl>
+                                                    <Checkbox
+                                                        dark
+                                                        checked={field.value}
+                                                        onCheckedChange={field.onChange}
+                                                        data-testid="allow-rental-checkbox"
+                                                    />
+                                                </FormControl>
+                                                <FormLabel dark className="text-sm font-normal cursor-pointer">
+                                                    Offer time-limited rental access
+                                                </FormLabel>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    {watchedAllowRental && (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <FormField
+                                                name="rentalPrice"
+                                                control={form.control}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel dark className="text-xs text-slate-400">Rental price</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                {...field}
+                                                                dark
+                                                                type="number"
+                                                                min="0"
+                                                                step="0.01"
+                                                                placeholder="9.99"
+                                                                data-testid="rental-price-input"
+                                                            />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                name="rentalDurationDays"
+                                                control={form.control}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel dark className="text-xs text-slate-400">Duration (days)</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                {...field}
+                                                                dark
+                                                                type="number"
+                                                                min="1"
+                                                                step="1"
+                                                                placeholder="30"
+                                                                data-testid="rental-duration-input"
+                                                            />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 
@@ -514,7 +601,7 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
                                 type="button"
                                 variant="outline"
                                 onClick={onClose}
-                                data-testid="journey-back-btn"
+                                data-testid="journey-cancel-btn"
                             >
                                 <X className="w-4 h-4 mr-2" />
                                 Cancel
@@ -535,8 +622,9 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
                             <Button
                                 type="button"
                                 onClick={async () => {
-                                    const values = form.getValues();
-                                    await handleSubmit(values);
+                                    const valid = await form.trigger();
+                                    if (!valid) return;
+                                    await handleSubmit(form.getValues());
                                 }}
                                 disabled={isPending || !canProceed()}
                                 data-testid="journey-submit-btn"

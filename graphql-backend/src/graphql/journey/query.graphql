@@ -1,5 +1,6 @@
 type Query {
   journey(id: ID!, vendorId: ID!): Journey
+  journeys(vendorId: ID!, includeDrafts: Boolean): [Journey]
   journeyTracks(journeyId: ID!, vendorId: ID!): [JourneyTrack]
   journeyProgress(journeyId: ID!, userId: ID!): JourneyProgress
   myJourneys(userId: ID!): [JourneyProgress]
@@ -39,6 +40,9 @@ type JourneyPricing {
   collectionPrice: CurrencyAmount!
   singleTrackPrice: CurrencyAmount
   allowSingleTrackPurchase: Boolean!
+  rentalPrice: CurrencyAmount
+  rentalDurationDays: Int
+  allowRental: Boolean!
 }
 
 type JourneyTrack {
@@ -57,6 +61,9 @@ type JourneyTrack {
   integrationPrompts: [String]
   recommendedCrystals: [String]
 
+  linkedProductIds: [ID]
+  linkedProducts: [Listing]
+
   releaseDate: DateTime
 
   ref: RecordRef
@@ -70,6 +77,8 @@ type JourneyProgress {
   purchaseDate: String
   completedDate: String
   currentTrackNumber: Int!
+  accessType: String!
+  rentalExpiresAt: String
 
   trackProgress: [JourneyTrackProgress]
   journey: Journey

@@ -185,8 +185,11 @@ const resolvers = {
 
         add_journey_to_cart: async (_: any, args: {
             journeyId: string
+            purchaseType?: string
         }, context: serverContext) => {
             if (context.userId == null) throw new Error("User must be present for this call");
+
+            const isRental = args.purchaseType === "RENTAL";
 
             const journeys = await context.dataSources.cosmos.run_query("Main-Listing", {
                 query: "SELECT * FROM c WHERE c.id = @journeyId AND c.type = 'JOURNEY'",
@@ -199,27 +202,40 @@ const resolvers = {
 
             const journey = journeys[0];
 
-            if (!journey.pricing?.collectionPrice) {
-                throw new Error("Journey pricing not configured");
+            if (isRental) {
+                if (!journey.pricing?.allowRental || !journey.pricing?.rentalPrice) {
+                    throw new Error("Rental is not available for this journey");
+                }
+            } else {
+                if (!journey.pricing?.collectionPrice) {
+                    throw new Error("Journey pricing not configured");
+                }
             }
+
+            const price = isRental ? journey.pricing.rentalPrice : journey.pricing.collectionPrice;
+            const rentalDays = isRental ? (journey.pricing.rentalDurationDays || 30) : undefined;
 
             const cartItem = {
                 id: uuidv4(),
                 itemType: "JOURNEY",
                 name: journey.name,
-                descriptor: journey.name,
+                descriptor: isRental
+                    ? `${journey.name} (${rentalDays}-day rental)`
+                    : journey.name,
                 quantity: 1,
                 merchantId: journey.vendorId,
                 isService: false,
                 journeyId: journey.id,
+                purchaseType: isRental ? "RENTAL" : "PURCHASE",
+                ...(isRental && { rentalDurationDays: rentalDays }),
                 listingRef: {
                     id: journey.id,
                     partition: [journey.vendorId],
                     container: "Main-Listing"
                 },
                 price: {
-                    amount: journey.pricing.collectionPrice.amount,
-                    currency: journey.pricing.collectionPrice.currency
+                    amount: price.amount,
+                    currency: price.currency
                 }
             };
 

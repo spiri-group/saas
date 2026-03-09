@@ -162,7 +162,10 @@ const useBL = () => {
                             questionnaireResponses: item.questionnaireResponses || [],
                             selectedAddOns: item.selectedAddOns || []
                         }
-                    } : {})
+                    } : {}),
+                    // Journey rental details
+                    ...(item.purchaseType && { purchaseType: item.purchaseType }),
+                    ...(item.rentalDurationDays && { rentalDurationDays: item.rentalDurationDays }),
                 };
             }).filter(Boolean);
 

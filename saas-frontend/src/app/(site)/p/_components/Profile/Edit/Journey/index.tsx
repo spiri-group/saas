@@ -35,7 +35,7 @@ const EditPractitionerJourney: React.FC<Props> = (props) => {
 
     if (bl.isLoading || !bl.hasLoaded) {
         return (
-            <DialogContent className="w-[600px]" data-testid="edit-practitioner-journey-dialog">
+            <DialogContent className="w-[600px] max-w-[95vw]" data-testid="edit-practitioner-journey-dialog">
                 <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
                 </div>
@@ -44,7 +44,7 @@ const EditPractitionerJourney: React.FC<Props> = (props) => {
     }
 
     return (
-        <DialogContent className="w-[600px] max-h-[90vh] overflow-y-auto" data-testid="edit-practitioner-journey-dialog">
+        <DialogContent className="w-[600px] max-w-[95vw] max-h-[90vh] overflow-y-auto" data-testid="edit-practitioner-journey-dialog">
             <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                     <Compass className="w-5 h-5 text-purple-500" />

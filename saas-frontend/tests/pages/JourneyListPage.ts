@@ -21,6 +21,11 @@ export class JourneyListPage extends BasePage {
     progressBar: '[data-testid="journey-progress-bar"]',
     completedBadge: '[data-testid="journey-completed-badge"]',
     progressBadge: '[data-testid="journey-progress-badge"]',
+    rentalBadge: '[data-testid="journey-rental-badge"]',
+    expiredBadge: '[data-testid="journey-expired-badge"]',
+
+    // Sections
+    expiredSection: '[data-testid="expired-rentals-section"]',
 
     // Sidenav
     journeysNav: '[data-testid="journeys-nav"]',
@@ -83,5 +88,24 @@ export class JourneyListPage extends BasePage {
 
   async clickJourneysNavLink() {
     await this.page.locator(this.selectors.journeysNav).click();
+  }
+
+  // Rental
+  async hasExpiredSection(): Promise<boolean> {
+    return await this.page.locator(this.selectors.expiredSection).isVisible();
+  }
+
+  async getExpiredRentalCount(): Promise<number> {
+    const section = this.page.locator(this.selectors.expiredSection);
+    if (!(await section.isVisible())) return 0;
+    return await section.locator(this.selectors.journeyCard).count();
+  }
+
+  async hasRentalBadge(): Promise<boolean> {
+    return await this.page.locator(this.selectors.rentalBadge).first().isVisible();
+  }
+
+  async hasExpiredBadge(): Promise<boolean> {
+    return await this.page.locator(this.selectors.expiredBadge).first().isVisible();
   }
 }

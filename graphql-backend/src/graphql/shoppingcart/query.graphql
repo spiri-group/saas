@@ -29,4 +29,8 @@ type ShoppingCartItem {
     service: Service
     questionnaireResponses: [QuestionResponse]
     selectedAddOns: [ID]
+
+    # Journey-specific fields
+    purchaseType: String
+    rentalDurationDays: Int
 }

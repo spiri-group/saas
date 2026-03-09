@@ -6,6 +6,7 @@ type Mutation {
   reorder_journey_tracks(vendorId: ID!, journeyId: ID!, trackIds: [ID!]!): CreateJourneyResponse!
   update_journey_progress(input: UpdateJourneyProgressInput!): JourneyProgress!
   add_track_reflection(input: AddTrackReflectionInput!): JourneyProgress!
+  set_rental_expiry(journeyId: ID!, userId: ID!, expiresAt: String!, accessType: String): JourneyProgress!
 }
 
 input CreateJourneyInput {
@@ -45,6 +46,9 @@ input JourneyPricingInput {
   collectionPrice: CurrencyAmountInput!
   singleTrackPrice: CurrencyAmountInput
   allowSingleTrackPurchase: Boolean!
+  rentalPrice: CurrencyAmountInput
+  rentalDurationDays: Int
+  allowRental: Boolean
 }
 
 input JourneyTrackInput {
@@ -58,6 +62,7 @@ input JourneyTrackInput {
   previewDurationSeconds: Int
   integrationPrompts: [String]
   recommendedCrystals: [String]
+  linkedProductIds: [ID]
   releaseDate: DateTime
 }
 
