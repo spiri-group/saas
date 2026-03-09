@@ -110,10 +110,11 @@ const resolvers = {
                 parameters.push({ name: "@zipCode", value: args.zipCode })
             }
 
-            let casesFromDb = await context.dataSources.cosmos.run_query("Main-Cases", {
+            const queryObj = {
                 query: `SELECT * FROM c WHERE ${where_conditions.join(" AND ")}`,
                 parameters
-            }, true)
+            }
+            let casesFromDb = await context.dataSources.cosmos.run_query("Main-Cases", queryObj, true)
 
             // we need to change the formattedAddress to hidden for all New cases
             for (var c of casesFromDb) {
@@ -125,7 +126,7 @@ const resolvers = {
             if (vendors.length > 0) {
                 // for all not New cases we need to check if the user is allowed to see them
                 // they would need to belong to the vendor that is managing the case
-                casesFromDb = casesFromDb.filter(x => x.caseStatus == "NEW" || vendors.some(v => x.managedBy.includes(v.id)))
+                casesFromDb = casesFromDb.filter(x => x.caseStatus == "NEW" || vendors.some(v => x.managedBy?.includes(v.id)))
             } else {
                 // we should only return the cases that are new
                 casesFromDb = casesFromDb.filter(x => x.caseStatus == "NEW")
@@ -143,12 +144,12 @@ const resolvers = {
                 `c.type = "APPLICATION"`
             ]
             let parameters = []
-          
+
             if (userId != null) {
               // 1. Find all my merchants
               const user = await cosmos.get_record<{ vendors: { id: string }[] }>("Main-User", userId, userId);
-              let myMerchantIds = user.vendors.map(x => x.id);
-          
+              let myMerchantIds = (user.vendors ?? []).map(x => x.id);
+
               if (args.merchantId) {
                 if (!myMerchantIds.includes(args.merchantId)) {
                   throw "You do not have access to the requested merchant";
@@ -156,16 +157,30 @@ const resolvers = {
                   myMerchantIds = [args.merchantId];
                 }
               }
-          
-              where_conditions.push("ARRAY_CONTAINS(@merchantIds, c.merchantId)")
-              parameters.push({ name: "@merchantIds", value: myMerchantIds })
+
+              if (myMerchantIds.length > 0) {
+                // Practitioner: filter offers to only their merchants
+                where_conditions.push("ARRAY_CONTAINS(@merchantIds, c.merchantId)")
+                parameters.push({ name: "@merchantIds", value: myMerchantIds })
+              } else if (args.caseId) {
+                // Customer (no vendors): verify they own the case before showing offers
+                try {
+                  const caseRecord = await cosmos.get_record<case_type>("Main-Cases", args.caseId, args.caseId);
+                  if (!caseRecord || caseRecord.userId !== userId) {
+                    return [];
+                  }
+                } catch {
+                  // Case not found (may be a tracking code on initial render, or case was purged)
+                  return [];
+                }
+              }
             }
-          
+
             if (args.caseId) {
               where_conditions.push("c.caseId = @caseId");
               parameters.push({ name: "@caseId", value: args.caseId })
             }
-          
+
             if (!args.caseId && !userId) {
               throw "You must be either logged in or pass a case to view offers"
             }
@@ -1237,6 +1252,100 @@ const resolvers = {
 
             await case_business_logic.close_case(recordref_type.id, context.dataSources.cosmos, context.signalR, context.logger)
 
+        },
+        purge_case: async (_: any, args: { trackingCode: string }, context: serverContext) => {
+            if (context.userId == null) {
+                throw new GraphQLError('User must be authenticated to purge a case', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            // Look up case by tracking code
+            const results = await context.dataSources.cosmos.run_query<case_type>("Main-Cases", {
+                query: "SELECT * FROM c WHERE c.trackingCode=@trackingCode",
+                parameters: [
+                    { name: "@trackingCode", value: args.trackingCode }
+                ]
+            }, true)
+
+            if (!results || results.length === 0) {
+                return {
+                    code: '404',
+                    success: false,
+                    message: `Case with tracking code ${args.trackingCode} not found`
+                }
+            }
+
+            const caseRecord = results[0]
+
+            // Verify current user is the case creator
+            if (caseRecord.userId !== context.userId) {
+                throw new GraphQLError('You do not have permission to purge this case', {
+                    extensions: { code: 'FORBIDDEN' },
+                });
+            }
+
+            const caseId = caseRecord.id
+            context.logger.logMessage(`[PURGE] Purging case ${caseId} (tracking: ${args.trackingCode})`)
+
+            // Purge case offers
+            try {
+                const offers = await context.dataSources.cosmos.run_query<{ id: string }>("Main-CaseOffers", {
+                    query: "SELECT c.id FROM c WHERE c.caseId=@caseId",
+                    parameters: [{ name: "@caseId", value: caseId }]
+                }, true)
+                if (offers && offers.length > 0) {
+                    context.logger.logMessage(`[PURGE] Deleting ${offers.length} case offer(s)`)
+                    for (const offer of offers) {
+                        try {
+                            await context.dataSources.cosmos.purge_record("Main-CaseOffers", offer.id, caseId)
+                        } catch (err) {
+                            context.logger.error(`[PURGE] Failed to delete case offer ${offer.id}: ${err}`)
+                        }
+                    }
+                }
+            } catch (err) {
+                context.logger.error(`[PURGE] Failed to clean up case offers: ${err}`)
+            }
+
+            // Purge case interactions
+            try {
+                const interactions = await context.dataSources.cosmos.run_query<{ id: string }>("Main-CaseInteraction", {
+                    query: "SELECT c.id FROM c WHERE c.caseRef.id=@caseId",
+                    parameters: [{ name: "@caseId", value: caseId }]
+                }, true)
+                if (interactions && interactions.length > 0) {
+                    context.logger.logMessage(`[PURGE] Deleting ${interactions.length} case interaction(s)`)
+                    for (const interaction of interactions) {
+                        try {
+                            await context.dataSources.cosmos.purge_record("Main-CaseInteraction", interaction.id, caseId)
+                        } catch (err) {
+                            context.logger.error(`[PURGE] Failed to delete interaction ${interaction.id}: ${err}`)
+                        }
+                    }
+                }
+            } catch (err) {
+                context.logger.error(`[PURGE] Failed to clean up interactions: ${err}`)
+            }
+
+            // Purge the case record itself
+            try {
+                await context.dataSources.cosmos.purge_record("Main-Cases", caseId, caseId)
+                context.logger.logMessage(`[PURGE] Case ${caseId} purged successfully`)
+            } catch (err) {
+                context.logger.error(`[PURGE] Failed to purge case ${caseId}: ${err}`)
+                return {
+                    code: '500',
+                    success: false,
+                    message: `Failed to purge case: ${err}`
+                }
+            }
+
+            return {
+                code: '200',
+                success: true,
+                message: `Case ${caseRecord.code} (${caseId}) successfully purged`
+            }
         }
     },
     Case: {

@@ -29,22 +29,24 @@ const required_attributes = `
                 currency
             }
         }
-        balanceDue {
-            subtotal {
-                amount
-                currency
-            }
-            fees {
-                amount
-                currency
-            }
-            total {
-                amount
-                currency
-            }
-            discount {
-                amount
-                currency 
+        paymentSummary {
+            due {
+                subtotal {
+                    amount
+                    currency
+                }
+                fees {
+                    amount
+                    currency
+                }
+                total {
+                    amount
+                    currency
+                }
+                discount {
+                    amount
+                    currency
+                }
             }
         }
     }

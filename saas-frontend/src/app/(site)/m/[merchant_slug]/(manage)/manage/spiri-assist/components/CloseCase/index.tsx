@@ -28,8 +28,8 @@ const CloseCaseButton: React.FC<CloseCaseButtonProps> = ({ caseRef, onSuccess, .
 
     return (
         <>
-        <Button 
-            {...props} onClick={() => {
+        <Button
+            {...props} data-testid="btn-close-case" onClick={() => {
                 setAreYouSurePrompt(true);
             }}>
             Close Case
@@ -38,10 +38,10 @@ const CloseCaseButton: React.FC<CloseCaseButtonProps> = ({ caseRef, onSuccess, .
             <DialogContent>
                 <div className="text-lg font-bold">Are you sure you want to close this case?</div>
                 <div className="flex justify-end space-x-2 mt-4">
-                    <Button onClick={() => {
+                    <Button data-testid="btn-cancel-close-case" onClick={() => {
                         setAreYouSurePrompt(false);
                     }} variant="destructive">Cancel</Button>
-                    <Button onClick={async () => {
+                    <Button data-testid="btn-confirm-close-case" onClick={async () => {
                         await closeCase();
                         setAreYouSurePrompt(false);
                     }} variant={status.button.variant}>

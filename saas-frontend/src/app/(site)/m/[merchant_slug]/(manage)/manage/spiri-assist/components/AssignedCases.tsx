@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button";
 import { Panel, PanelContent, PanelHeader, PanelTitle } from "@/components/ux/Panel";
 import UseAssignedCases, { required_attributes } from "../hooks/UseAssignedCases";
@@ -18,6 +18,7 @@ type Props = {
 const useBL = () => {
     
     const assignedCases_query = UseAssignedCases()
+    const initialized = useRef(false)
     const assignedCases = useRealTimeArrayState<case_type>({
         idFields: ["id"],
         initialData: undefined as any,
@@ -40,10 +41,11 @@ const useBL = () => {
     })
 
     useEffect(() => {
-        if (assignedCases_query.data != null && assignedCases.get == undefined) {
+        if (assignedCases_query.data != null && !initialized.current) {
             assignedCases.set(assignedCases_query.data)
+            initialized.current = true
         }
-    }, [assignedCases_query])
+    }, [assignedCases_query.data])
 
     return {
         assignedCases
@@ -63,8 +65,8 @@ const AssignedCases : React.FC<Props> = (props) => {
             <PanelContent>
             <span className="text-sm">Below are the cases you&apos;ve taken from help requests.</span>
             <div className="grid grid-cols-2 items-center justify-center">
-                <Button variant="link" type="button" onClick={() => setCaseStatus(true)} className={caseStatus ? 'underline' : ''}> Active </Button>
-                <Button variant="link" type="button" onClick={() => setCaseStatus(false)} className={!caseStatus ? 'underline' : ''}> Historical </Button>
+                <Button data-testid="assigned-cases-active-tab" variant="link" type="button" onClick={() => setCaseStatus(true)} className={caseStatus ? 'underline' : ''}> Active </Button>
+                <Button data-testid="assigned-cases-historical-tab" variant="link" type="button" onClick={() => setCaseStatus(false)} className={!caseStatus ? 'underline' : ''}> Historical </Button>
             </div>
             <ul className="space-y-2 mt-2">
                 {(caseStatus
@@ -74,7 +76,7 @@ const AssignedCases : React.FC<Props> = (props) => {
                     <li key={assignedCase.id}>
                         <Panel className="flex flex-col">
                         <div className="flex flex-row items-center justify-between">
-                            <span> Case {assignedCase.code} </span>
+                            <span data-testid={`assigned-case-code-${assignedCase.code}`}> Case {assignedCase.code} </span>
                             <CaseStatusBadge status={assignedCase.caseStatus}>{assignedCase.caseStatus}</CaseStatusBadge>
                         </div>
                         <Button 

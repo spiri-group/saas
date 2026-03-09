@@ -26,14 +26,14 @@ const UseCloseCase = () => {
         return ref
       },
       onSuccess: async (data : recordref_type) => {
-        beforeStateReset(() => {
+        await beforeStateReset(() => {
             queryClient.setQueryData(["details-for-case", data.id], (old: case_type) => {
                 return {
                     ...old,
                     caseStatus: "CLOSED"
                 }
             })
-        })
+        })()
       }
     })
 

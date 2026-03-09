@@ -76,8 +76,8 @@ const CaseDetails : React.FC<Props> = (props) => {
                         <>
                             <div className="flex flex-row items-center">
                                 <div className="flex flex-col ml-2 font-bold">
-                                    <span> {bl.caseDetails.get.code} </span>
-                                    <span> Status: {bl.caseDetails.get.caseStatus} </span>
+                                    <span data-testid="case-detail-code"> {bl.caseDetails.get.code} </span>
+                                    <span data-testid="case-detail-status"> Status: {bl.caseDetails.get.caseStatus} </span>
                                 </div>
                                 <div className="ml-auto flex flex-row space-x-2">
                                     {bl.caseDetails.get.caseStatus == "ACTIVE" &&

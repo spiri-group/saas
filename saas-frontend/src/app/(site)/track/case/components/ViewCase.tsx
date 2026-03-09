@@ -31,9 +31,11 @@ type Props = BLProps & {
 const useBL = (props: BLProps) => {
 
     const caseDetails = UseCaseDetails(props.trackingCode ? "" : props.caseId, props.trackingCode)
-    const caseInteractions = UseCaseInteractions(props.caseId, ["ACTIVITY"])
-    const caseApplications = UseCaseApplications(undefined, props.caseId)
-    const reqReleaseCase = UseRequestReleaseCase(props.caseId)
+    // Use the resolved case ID from caseDetails (props.caseId may be a tracking code on the tracking page)
+    const resolvedCaseId = caseDetails.data?.id ?? props.caseId
+    const caseInteractions = UseCaseInteractions(resolvedCaseId, ["ACTIVITY"])
+    const caseApplications = UseCaseApplications(undefined, resolvedCaseId)
+    const reqReleaseCase = UseRequestReleaseCase(resolvedCaseId)
 
     return {
         caseDetails: {
@@ -140,7 +142,7 @@ const ViewCase: React.FC<Props> = (props) => {
                                     <Button className="text-xs md:text-base"> Activities </Button>
                                 </Link>
                                 <Drawer>
-                                    <DrawerTrigger> <Button className="text-xs md:text-base"> Chat </Button> </DrawerTrigger>
+                                    <DrawerTrigger asChild><Button className="text-xs md:text-base"> Chat </Button></DrawerTrigger>
                                     <DrawerContent className="p-4">
                                         <ChatControl
                                             allowResponseCodes={false}
@@ -150,7 +152,7 @@ const ViewCase: React.FC<Props> = (props) => {
                                             withAttachments={true}
                                             defaultMode={CommunicationModeType.PLATFORM}                            
                                         />   
-                                        <DrawerClose className="mt-2 w-full">
+                                        <DrawerClose asChild className="mt-2 w-full">
                                             <Button variant="link">Cancel</Button>
                                         </DrawerClose>
                                     </DrawerContent>
@@ -285,20 +287,20 @@ const ViewCase: React.FC<Props> = (props) => {
                                             <PanelTitle>Activities</PanelTitle>
                                         </PanelHeader>
                                         <PanelContent>
-                                            <ul>
+                                            <ul data-testid="customer-activities-list">
                                                 {bl.caseInteractions.isLoading ? (
                                                     <span className="text-xs">Loading...</span>
                                                 ) : (
                                                     bl.caseInteractions.get !== undefined && bl.caseInteractions.get.length > 0 ? (
                                                         bl.caseInteractions.get.map((caseInteraction) => (
-                                                            <li key={caseInteraction.id} className="flex flex-col">
+                                                            <li key={caseInteraction.id} data-testid={`customer-activity-${caseInteraction.id}`} className="flex flex-col">
                                                                 <span className="text-gray-500">{DateTime.fromISO(caseInteraction.conductedAtDate).toLocaleString(DateTime.DATETIME_MED)}</span>
                                                                 <span>{caseInteraction.message}</span>
                                                             </li>
                                                         ))
                                                     ) : (
                                                         <>
-                                                            <span className="p-2"> The investigator will log their activities that they conduct on your case here. </span>
+                                                            <span data-testid="no-activities-message" className="p-2"> The investigator will log their activities that they conduct on your case here. </span>
                                                         </>
                                                     )
                                                 )}
@@ -335,7 +337,7 @@ const ViewCase: React.FC<Props> = (props) => {
                                                                         <span>{caseInteraction.message}</span>
                                                                     </div>
                                                                     <Drawer>
-                                                                        <DrawerTrigger>
+                                                                        <DrawerTrigger asChild>
                                                                             <Button variant="link" className="items-center"> See details </Button>
                                                                         </DrawerTrigger>
                                                                         <DrawerContent className="p-4 h-[95%]">
@@ -345,7 +347,7 @@ const ViewCase: React.FC<Props> = (props) => {
                                                                                 <span>{caseInteraction.message}</span>
                                                                             </DrawerHeader>
                                                                             <DrawerFooter>
-                                                                                <DrawerClose>
+                                                                                <DrawerClose asChild>
                                                                                     <Button variant="outline">Close</Button>
                                                                                 </DrawerClose>
                                                                             </DrawerFooter>

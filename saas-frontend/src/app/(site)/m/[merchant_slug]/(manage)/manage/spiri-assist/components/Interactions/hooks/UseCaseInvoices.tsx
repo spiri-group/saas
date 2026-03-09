@@ -28,22 +28,24 @@ const queryFn = async (caseId: string, outstanding: boolean = false) => {
                         description
                         merchantId
                     }
-                    balanceDue {
-                        subtotal {
-                            amount
-                            currency
-                        }
-                        fees {
-                            amount
-                            currency
-                        }
-                        total {
-                            amount
-                            currency
-                        }
-                        discount {
-                            amount
-                            currency 
+                    paymentSummary {
+                        due {
+                            subtotal {
+                                amount
+                                currency
+                            }
+                            fees {
+                                amount
+                                currency
+                            }
+                            total {
+                                amount
+                                currency
+                            }
+                            discount {
+                                amount
+                                currency
+                            }
                         }
                     }
                     discount {

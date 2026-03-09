@@ -49,19 +49,19 @@ const OrderRow : React.FC<Props> = (props) => {
                             <HoverCardTrigger asChild>
                                 <div className="flex flex-row space-x-3">
                                     <span> Due: </span>
-                                    <CurrencySpan value={props.order.paymentSummary.due.total} />
+                                    <CurrencySpan value={props.order.paymentSummary?.due?.total} />
                                     <CircleHelp size={14} className="mt-1" />
                                 </div>
                             </HoverCardTrigger>
                             <HoverCardContent className="w-64 flex flex-col text-sm">
                                 <div className="flex flex-row space-x-2">
-                                    <span>Subtotal:</span><CurrencySpan value={props.order.paymentSummary.due.subtotal} />
+                                    <span>Subtotal:</span><CurrencySpan value={props.order.paymentSummary?.due?.subtotal} />
                                 </div>
                                 <div className="flex flex-row space-x-2">
-                                    <span>Fees:</span><CurrencySpan value={props.order.paymentSummary.due.fees} />
+                                    <span>Fees:</span><CurrencySpan value={props.order.paymentSummary?.due?.fees} />
                                 </div>
                                 <div className="flex flex-row space-x-2">
-                                    <span>Total:</span><CurrencySpan value={props.order.paymentSummary.due.total} />
+                                    <span>Total:</span><CurrencySpan value={props.order.paymentSummary?.due?.total} />
                                 </div>
                             </HoverCardContent>
                         </HoverCard>
@@ -69,7 +69,7 @@ const OrderRow : React.FC<Props> = (props) => {
                             <HoverCardTrigger asChild>
                                 <div className="flex flex-row space-x-3">
                                     <span> Paid: </span>
-                                    <CurrencySpan value={props.order.paymentSummary.due.total} />
+                                    <CurrencySpan value={props.order.paymentSummary?.due?.total} />
                                     <CircleHelp size={14} className="mt-1" />
                                 </div>
                             </HoverCardTrigger>
@@ -156,19 +156,19 @@ const OrderRow : React.FC<Props> = (props) => {
                             <HoverCardTrigger asChild>
                                 <div className="flex flex-row space-x-3">
                                     <span> Due: </span>
-                                    <CurrencySpan value={props.order.paymentSummary.due.total} />
+                                    <CurrencySpan value={props.order.paymentSummary?.due?.total} />
                                     <CircleHelp size={14} className="mt-1" />
                                 </div>
                             </HoverCardTrigger>
                             <HoverCardContent className="w-64 flex flex-col text-sm">
                                 <div className="flex flex-row space-x-2">
-                                    <span>Subtotal:</span><CurrencySpan value={props.order.paymentSummary.due.subtotal} />
+                                    <span>Subtotal:</span><CurrencySpan value={props.order.paymentSummary?.due?.subtotal} />
                                 </div>
                                 <div className="flex flex-row space-x-2">
-                                    <span>Fees:</span><CurrencySpan value={props.order.paymentSummary.due.fees} />
+                                    <span>Fees:</span><CurrencySpan value={props.order.paymentSummary?.due?.fees} />
                                 </div>
                                 <div className="flex flex-row space-x-2">
-                                    <span>Total:</span><CurrencySpan value={props.order.paymentSummary.due.total} />
+                                    <span>Total:</span><CurrencySpan value={props.order.paymentSummary?.due?.total} />
                                 </div>
                             </HoverCardContent>
                         </HoverCard>

@@ -435,6 +435,22 @@ export function computeLifecycleStage(vendor: vendor_type): VendorLifecycleStage
     return VendorLifecycleStage.CREATED
 }
 
+export interface AiConversation {
+    id: string;
+    title: string;
+    createdDate: string;
+    updatedDate: string;
+    messageCount: number;
+}
+
+export interface AiMessage {
+    id: string;
+    conversationId: string;
+    role: 'user' | 'assistant';
+    content: string;
+    createdDate: string;
+}
+
 export interface AnalyticsEntity {
     partitionKey: string;
     rowKey: string;

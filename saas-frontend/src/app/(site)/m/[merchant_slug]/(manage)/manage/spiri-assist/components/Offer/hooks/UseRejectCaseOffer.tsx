@@ -36,11 +36,11 @@ const UseRejectCaseOffer = () => {
         return resp.reject_caseOffer.offer
       },
       onSuccess: async (data : caseOffer_type) => {
-        beforeStateReset(() => {
+        await beforeStateReset(() => {
             queryClient.invalidateQueries({
                 queryKey: ['case-applications', undefined, data.caseId]
             })
-        })
+        })()
       }
     })
 

@@ -658,16 +658,32 @@ export function registerTestCase(caseId: string, workerId: number = 0) {
 }
 
 /**
- * Clean up test cases — no purge mutation exists for cases,
- * so cases with test TTL will auto-expire. Log for visibility.
+ * Clean up test cases by purging them from the database.
  */
-export async function cleanupTestCases(_cookies: string, workerId: number = 0) {
-  const caseIds = testCasesPerWorker.get(workerId);
-  if (!caseIds?.size) return;
+export async function cleanupTestCases(cookies: string, workerId: number = 0) {
+  const trackingCodes = testCasesPerWorker.get(workerId);
+  if (!trackingCodes?.size) return;
 
-  console.log(`[Cleanup] ${caseIds.size} test case(s) created — cases will auto-expire via TTL`);
-  for (const caseId of caseIds) {
-    console.log(`[Cleanup] Test case: ${caseId}`);
+  console.log(`[Cleanup] Purging ${trackingCodes.size} test case(s)...`);
+  for (const trackingCode of trackingCodes) {
+    try {
+      const result = await gqlDirect(`
+        mutation purge_case($trackingCode: ID!) {
+          purge_case(trackingCode: $trackingCode) {
+            code
+            success
+            message
+          }
+        }
+      `, { trackingCode }, cookies);
+      if (result?.purge_case?.success) {
+        console.log(`[Cleanup] ✓ Purged case: ${trackingCode}`);
+      } else {
+        console.log(`[Cleanup] ✗ Failed to purge case ${trackingCode}: ${result?.purge_case?.message}`);
+      }
+    } catch (error) {
+      console.error(`[Cleanup] ✗ Error purging case ${trackingCode}:`, error);
+    }
   }
 
   testCasesPerWorker.delete(workerId);

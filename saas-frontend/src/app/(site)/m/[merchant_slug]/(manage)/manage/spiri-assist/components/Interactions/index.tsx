@@ -72,9 +72,9 @@ const Interactions : React.FC<Props> = (props) => {
                 <div className="flex flex-row space-x-3 ml-2">
                     {bl.case.get != null && bl.case.get.caseStatus != "NEW" && (
                         <>
-                            <Button variant={viewCase === 'activities' ? 'outline' : 'default'} type="button" onClick={() => setViewCase('activities')}> Activities & Notes </Button>
-                            <Button variant={viewCase === 'payments' ? 'outline' : 'default'} type="button" onClick={() => setViewCase('payments')}> Payments </Button>
-                            <Button variant={viewCase === 'chat' ? 'outline' : 'default'} type="button" onClick={() => setViewCase('chat')}> Chat </Button>
+                            <Button data-testid="interactions-tab-activities" variant={viewCase === 'activities' ? 'outline' : 'default'} type="button" onClick={() => setViewCase('activities')}> Activities & Notes </Button>
+                            <Button data-testid="interactions-tab-payments" variant={viewCase === 'payments' ? 'outline' : 'default'} type="button" onClick={() => setViewCase('payments')}> Payments </Button>
+                            <Button data-testid="interactions-tab-chat" variant={viewCase === 'chat' ? 'outline' : 'default'} type="button" onClick={() => setViewCase('chat')}> Chat </Button>
                         </>
                     )}
                     <Button variant={viewCase == 'details' ? "outline" : "default"} type="button" onClick={() => setViewCase('details')}> Details </Button>
@@ -83,7 +83,7 @@ const Interactions : React.FC<Props> = (props) => {
                     <div className="space-x-2 ml-auto">
                         <Dialog>
                             <DialogTrigger asChild >
-                                <Button> Log Client Activity </Button>
+                                <Button data-testid="btn-log-client-activity"> Log Client Activity </Button>
                             </DialogTrigger>
                             <DialogContent className="flex flex-col">
                                 <CreateActivityLog caseRef={props.caseRef} merchantId={props.merchantId} />
@@ -190,7 +190,7 @@ const Interactions : React.FC<Props> = (props) => {
                                 ))}
                             </ul>
                         ) : (
-                            <span className="text-muted-foreground text-base px-2 mt-4">No interactions or comments captured for this case</span>
+                            <span data-testid="no-interactions-message" className="text-muted-foreground text-base px-2 mt-4">No interactions or comments captured for this case</span>
                         )}
                         </>
                     )}

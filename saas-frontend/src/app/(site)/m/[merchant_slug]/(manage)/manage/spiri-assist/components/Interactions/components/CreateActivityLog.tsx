@@ -54,7 +54,7 @@ const CreateActivityLog: React.FC<Props> = (props) => {
                         return (
                             <FormItem>
                                 <FormControl>
-                                    <Input {...field} placeholder="Activity title"/>
+                                    <Input {...field} data-testid="input-activity-title" placeholder="Activity title"/>
                                 </FormControl>
                             </FormItem>
                         )
@@ -120,7 +120,7 @@ const CreateActivityLog: React.FC<Props> = (props) => {
                     )} /> */}
                     <div className="flex flex-row space-x-2">
                         <CancelDialogButton />
-                        <Button  type="submit" className="w-full"> Save </Button>
+                        <Button data-testid="btn-save-activity" type="submit" className="w-full"> Save </Button>
                     </div>
                 </form>
             </Form>

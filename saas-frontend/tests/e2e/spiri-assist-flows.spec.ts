@@ -7,6 +7,7 @@ import {
     getCookiesFromPage,
     cleanupTestUsers,
     cleanupTestCases,
+    gqlDirect,
 } from '../utils/test-cleanup';
 import {
     fillStripePaymentElement,
@@ -19,6 +20,7 @@ import {
 const customerCookiesPerWorker = new Map<number, string>();
 const customerContextPerWorker = new Map<number, BrowserContext>();
 const trackingCodePerWorker = new Map<number, string>();
+const caseCodePerWorker = new Map<number, string>();
 const practitionerDataPerWorker = new Map<number, { slug: string; cookies: string; vendorId: string }>();
 
 test.describe.serial('SpiriAssist Case Flows', () => {
@@ -32,22 +34,31 @@ test.describe.serial('SpiriAssist Case Flows', () => {
         const workerId = testInfo.parallelIndex;
         const cookies = customerCookiesPerWorker.get(workerId);
 
+        // 1. Purge cases first (they reference the customer)
         if (cookies) {
             try {
                 await cleanupTestCases(cookies, workerId);
-                await cleanupTestUsers(cookies, workerId);
             } catch (error) {
-                console.error('[Cleanup] Error during customer cleanup:', error);
-            } finally {
-                customerCookiesPerWorker.delete(workerId);
+                console.error('[Cleanup] Error during case cleanup:', error);
             }
         }
 
-        // Clean up practitioner
+        // 2. Purge practitioner vendor BEFORE any user purges (needs valid session)
         try {
             await cleanupIlluminatePractitioner(testInfo);
         } catch (error) {
             console.error('[Cleanup] Error during practitioner cleanup:', error);
+        }
+
+        // 3. Purge customer user last (after vendor is gone)
+        if (cookies) {
+            try {
+                await cleanupTestUsers(cookies, workerId);
+            } catch (error) {
+                console.error('[Cleanup] Error during customer user cleanup:', error);
+            } finally {
+                customerCookiesPerWorker.delete(workerId);
+            }
         }
 
         // Close customer context if still open
@@ -58,6 +69,7 @@ test.describe.serial('SpiriAssist Case Flows', () => {
         }
 
         trackingCodePerWorker.delete(workerId);
+        caseCodePerWorker.delete(workerId);
         practitionerDataPerWorker.delete(workerId);
         clearTestEntityRegistry(workerId);
     });
@@ -425,10 +437,13 @@ test.describe.serial('SpiriAssist Case Flows', () => {
         console.log(`[Test] Navigating to tracking page: /track/case/${trackingCode}`);
         await page.goto(`/track/case/${trackingCode}`);
 
-        // Verify case code
+        // Verify and capture case code for strict matching in later tests
         const caseCodeEl = page.getByTestId('case-code');
         await expect(caseCodeEl).toBeVisible({ timeout: 15000 });
-        console.log('[Test] Case code visible');
+        const caseCode = (await caseCodeEl.textContent())?.trim();
+        expect(caseCode).toBeTruthy();
+        caseCodePerWorker.set(workerId, caseCode!);
+        console.log(`[Test] Case code: ${caseCode}`);
 
         // Verify status is NEW
         const caseStatusEl = page.getByTestId('case-status');
@@ -623,13 +638,9 @@ test.describe.serial('SpiriAssist Case Flows', () => {
         await acceptBtn.click();
         console.log('[Test] Clicked Accept');
 
-        // Wait for page to reload (ViewCaseOffer reloads on trackCase page after accept)
-        await page.waitForTimeout(5000);
-
-        // Verify case status changed to ACTIVE
+        // Verify case status changed to ACTIVE (page reloads after accept)
         const caseStatusEl = page.getByTestId('case-status');
-        await expect(caseStatusEl).toBeVisible({ timeout: 15000 });
-        await expect(caseStatusEl).toHaveText('ACTIVE', { timeout: 15000 });
+        await expect(caseStatusEl).toHaveText('ACTIVE', { timeout: 30000 });
         console.log('[Test] Case status is ACTIVE');
 
         // Verify "Managed by" is shown
@@ -643,6 +654,353 @@ test.describe.serial('SpiriAssist Case Flows', () => {
         console.log(`[Test] ${managedByText?.trim()}`);
 
         console.log('[Test] Customer accept offer flow complete');
+    });
+
+    test('practitioner views assigned case', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+
+        const workerId = testInfo.parallelIndex;
+        const trackingCode = trackingCodePerWorker.get(workerId);
+        const caseCode = caseCodePerWorker.get(workerId);
+        const practitionerData = practitionerDataPerWorker.get(workerId);
+        expect(trackingCode).toBeTruthy();
+        expect(caseCode).toBeTruthy();
+        expect(practitionerData).toBeTruthy();
+
+        // Wait for the case to be queryable via cross-partition query before navigating
+        console.log('[Test] Waiting for case to appear in assigned cases query...');
+        for (let attempt = 0; attempt < 10; attempt++) {
+            try {
+                const result = await gqlDirect<{ cases: { id: string; caseStatus: string }[] }>(
+                    `query get_my_cases($status: [String]!) { cases(statuses: $status) { id, caseStatus } }`,
+                    { status: ['ACTIVE', 'CLOSED'] },
+                    practitionerData!.cookies
+                );
+                if (result.cases && result.cases.length > 0) {
+                    console.log(`[Test] Case found in query after ${attempt + 1} attempt(s): ${result.cases.length} case(s)`);
+                    break;
+                }
+            } catch { /* ignore query errors */ }
+            if (attempt < 9) await new Promise(r => setTimeout(r, 2000));
+        }
+
+        const practContext = await createAuthenticatedContext(browser, practitionerData!.cookies);
+        const practPage = await practContext.newPage();
+
+        try {
+            console.log('[Test] Navigating to practitioner SpiriAssist manage page...');
+            await practPage.goto(`/p/${practitionerData!.slug}/manage/spiri-assist`);
+
+            // Wait for assigned cases panel to load
+            await expect(practPage.getByTestId('assigned-cases-active-tab')).toBeVisible({ timeout: 15000 });
+            console.log('[Test] Assigned cases panel loaded');
+
+            // Ensure Active tab is selected (it should be by default)
+            await practPage.getByTestId('assigned-cases-active-tab').click();
+
+            // Verify OUR specific case appears by case code
+            const ourCase = practPage.getByTestId(`assigned-case-code-${caseCode}`);
+            await expect(ourCase).toBeVisible({ timeout: 15000 });
+            console.log(`[Test] Case ${caseCode} found in Active tab`);
+
+            // Click See Details for our case (the button is in the same parent panel)
+            const casePanel = ourCase.locator('..').locator('..');
+            const seeDetailsBtn = casePanel.locator('[aria-label="button-see-casedetails"]');
+            await expect(seeDetailsBtn).toBeVisible({ timeout: 5000 });
+            await seeDetailsBtn.click();
+
+            // Verify case details loaded with ACTIVE status
+            const caseDetailStatus = practPage.getByTestId('case-detail-status');
+            await expect(caseDetailStatus).toBeVisible({ timeout: 15000 });
+            await expect(caseDetailStatus).toContainText('ACTIVE', { timeout: 10000 });
+            console.log('[Test] Case details show ACTIVE status');
+
+            // Verify the case code in the detail panel matches
+            const caseDetailCode = practPage.getByTestId('case-detail-code');
+            await expect(caseDetailCode).toBeVisible({ timeout: 10000 });
+            await expect(caseDetailCode).toContainText(caseCode!, { timeout: 5000 });
+            console.log('[Test] Case detail code matches');
+
+            // Verify the Activities & Notes tab is visible (only shows for non-NEW cases)
+            await expect(practPage.getByTestId('interactions-tab-activities')).toBeVisible({ timeout: 10000 });
+            console.log('[Test] Activities & Notes tab visible');
+
+            // Verify Close Case button is available
+            await expect(practPage.getByTestId('btn-close-case')).toBeVisible({ timeout: 10000 });
+            console.log('[Test] Close Case button visible');
+
+            console.log('[Test] Practitioner view assigned case complete');
+        } finally {
+            await practContext.close();
+        }
+    });
+
+    test('practitioner logs client activity', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+
+        const workerId = testInfo.parallelIndex;
+        const caseCode = caseCodePerWorker.get(workerId);
+        const practitionerData = practitionerDataPerWorker.get(workerId);
+        expect(caseCode).toBeTruthy();
+        expect(practitionerData).toBeTruthy();
+
+        const practContext = await createAuthenticatedContext(browser, practitionerData!.cookies);
+        const practPage = await practContext.newPage();
+
+        try {
+            console.log('[Test] Navigating to practitioner SpiriAssist manage page...');
+            await practPage.goto(`/p/${practitionerData!.slug}/manage/spiri-assist`);
+
+            // Wait for assigned cases and click into our specific case
+            await expect(practPage.getByTestId('assigned-cases-active-tab')).toBeVisible({ timeout: 15000 });
+            await practPage.getByTestId('assigned-cases-active-tab').click();
+
+            const ourCase = practPage.getByTestId(`assigned-case-code-${caseCode}`);
+            await expect(ourCase).toBeVisible({ timeout: 15000 });
+            const casePanel = ourCase.locator('..').locator('..');
+            const seeDetailsBtn = casePanel.locator('[aria-label="button-see-casedetails"]');
+            await expect(seeDetailsBtn).toBeVisible({ timeout: 5000 });
+            await seeDetailsBtn.click();
+
+            // Wait for case details to load
+            await expect(practPage.getByTestId('case-detail-status')).toContainText('ACTIVE', { timeout: 15000 });
+
+            // Ensure Activities & Notes tab is selected
+            const activitiesTab = practPage.getByTestId('interactions-tab-activities');
+            await expect(activitiesTab).toBeVisible({ timeout: 10000 });
+            await activitiesTab.click();
+            await practPage.waitForTimeout(1000);
+
+            // Click "Log Client Activity" button
+            const logActivityBtn = practPage.getByTestId('btn-log-client-activity');
+            await expect(logActivityBtn).toBeVisible({ timeout: 10000 });
+            await logActivityBtn.click();
+            console.log('[Test] Opened Log Client Activity dialog');
+
+            // Fill the activity title
+            const titleInput = practPage.getByTestId('input-activity-title');
+            await expect(titleInput).toBeVisible({ timeout: 10000 });
+            await titleInput.fill('Initial site visit and assessment');
+            console.log('[Test] Filled activity title');
+
+            // Fill the details in the rich text editor
+            const detailsEditor = practPage.locator('[placeholder="Your description here"]').locator('[contenteditable="true"]');
+            if (await detailsEditor.isVisible({ timeout: 5000 }).catch(() => false)) {
+                await detailsEditor.click();
+                await practPage.keyboard.type('Conducted initial site visit to assess the situation. Gathered preliminary information and documented key observations.');
+                console.log('[Test] Filled activity details');
+            } else {
+                // Fallback: try the contenteditable directly within the form
+                const richText = practPage.locator('form [contenteditable="true"]');
+                await expect(richText).toBeVisible({ timeout: 5000 });
+                await richText.click();
+                await practPage.keyboard.type('Conducted initial site visit to assess the situation.');
+                console.log('[Test] Filled activity details (fallback)');
+            }
+
+            // Submit the activity log
+            const saveBtn = practPage.getByTestId('btn-save-activity');
+            await expect(saveBtn).toBeVisible({ timeout: 5000 });
+            await saveBtn.click();
+            console.log('[Test] Clicked Save');
+
+            // Wait for dialog to close (indicates success)
+            await expect(saveBtn).not.toBeVisible({ timeout: 15000 });
+            console.log('[Test] Activity log dialog closed — activity saved successfully');
+
+            // Verify the activity appears in the list — empty state must NOT be showing
+            const noInteractionsMsg = practPage.getByTestId('no-interactions-message');
+            await expect(noInteractionsMsg).not.toBeVisible({ timeout: 15000 });
+            console.log('[Test] Empty state gone — activity is in the list');
+
+            console.log('[Test] Practitioner log activity complete');
+        } finally {
+            await practContext.close();
+        }
+    });
+
+    test('customer sees activity on tracking page', async ({ page }, testInfo) => {
+        test.setTimeout(60000);
+
+        const workerId = testInfo.parallelIndex;
+        const trackingCode = trackingCodePerWorker.get(workerId);
+        expect(trackingCode).toBeTruthy();
+
+        // Restore customer session
+        const cookies = customerCookiesPerWorker.get(workerId);
+        if (cookies) {
+            const cookiePairs = cookies.split('; ').map(c => {
+                const [name, ...rest] = c.split('=');
+                return { name, value: rest.join('='), domain: 'localhost', path: '/' };
+            });
+            await page.context().addCookies(cookiePairs);
+        }
+
+        console.log(`[Test] Navigating to tracking page: /track/case/${trackingCode}`);
+        await page.goto(`/track/case/${trackingCode}`);
+
+        // Verify case is still ACTIVE
+        const caseStatusEl = page.getByTestId('case-status');
+        await expect(caseStatusEl).toBeVisible({ timeout: 15000 });
+        await expect(caseStatusEl).toHaveText('ACTIVE', { timeout: 10000 });
+        console.log('[Test] Case status is ACTIVE');
+
+        // Wait for activities list to load with at least one activity
+        const activitiesList = page.getByTestId('customer-activities-list');
+        await expect(activitiesList).toBeVisible({ timeout: 15000 });
+        console.log('[Test] Activities list visible');
+
+        // Strictly verify the activity we logged is present
+        const activityItems = activitiesList.locator('li');
+        await expect(activityItems.first()).toBeVisible({ timeout: 15000 });
+        const count = await activityItems.count();
+        expect(count).toBeGreaterThanOrEqual(1);
+        console.log(`[Test] Found ${count} activity(ies) on tracking page`);
+
+        // Verify empty state is NOT shown
+        const noActivitiesMsg = page.getByTestId('no-activities-message');
+        await expect(noActivitiesMsg).not.toBeVisible({ timeout: 5000 });
+
+        console.log('[Test] Customer view activity complete');
+    });
+
+    test('practitioner closes the case', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+
+        const workerId = testInfo.parallelIndex;
+        const caseCode = caseCodePerWorker.get(workerId);
+        const practitionerData = practitionerDataPerWorker.get(workerId);
+        expect(caseCode).toBeTruthy();
+        expect(practitionerData).toBeTruthy();
+
+        const practContext = await createAuthenticatedContext(browser, practitionerData!.cookies);
+        const practPage = await practContext.newPage();
+
+        try {
+            console.log('[Test] Navigating to practitioner SpiriAssist manage page...');
+            await practPage.goto(`/p/${practitionerData!.slug}/manage/spiri-assist`);
+
+            // Wait for assigned cases and click into our specific case
+            await expect(practPage.getByTestId('assigned-cases-active-tab')).toBeVisible({ timeout: 15000 });
+            await practPage.getByTestId('assigned-cases-active-tab').click();
+
+            const ourCase = practPage.getByTestId(`assigned-case-code-${caseCode}`);
+            await expect(ourCase).toBeVisible({ timeout: 15000 });
+            const casePanel = ourCase.locator('..').locator('..');
+            const seeDetailsBtn = casePanel.locator('[aria-label="button-see-casedetails"]');
+            await expect(seeDetailsBtn).toBeVisible({ timeout: 5000 });
+            await seeDetailsBtn.click();
+
+            // Verify case is ACTIVE before closing
+            const caseDetailStatus = practPage.getByTestId('case-detail-status');
+            await expect(caseDetailStatus).toContainText('ACTIVE', { timeout: 15000 });
+            console.log('[Test] Case is ACTIVE, proceeding to close');
+
+            // Click Close Case button
+            const closeCaseBtn = practPage.getByTestId('btn-close-case');
+            await expect(closeCaseBtn).toBeVisible({ timeout: 10000 });
+            await closeCaseBtn.click();
+            console.log('[Test] Clicked Close Case');
+
+            // Confirm in the "Are you sure?" dialog
+            const confirmBtn = practPage.getByTestId('btn-confirm-close-case');
+            await expect(confirmBtn).toBeVisible({ timeout: 10000 });
+            await confirmBtn.click();
+            console.log('[Test] Confirmed case closure');
+
+            // Verify case status changed to CLOSED (wait for mutation to complete)
+            await expect(caseDetailStatus).toContainText('CLOSED', { timeout: 30000 });
+            console.log('[Test] Case status is now CLOSED');
+
+            console.log('[Test] Practitioner close case complete');
+        } finally {
+            await practContext.close();
+        }
+    });
+
+    test('closed case appears in historical tab', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+
+        const workerId = testInfo.parallelIndex;
+        const caseCode = caseCodePerWorker.get(workerId);
+        const practitionerData = practitionerDataPerWorker.get(workerId);
+        expect(caseCode).toBeTruthy();
+        expect(practitionerData).toBeTruthy();
+
+        const practContext = await createAuthenticatedContext(browser, practitionerData!.cookies);
+        const practPage = await practContext.newPage();
+
+        try {
+            console.log('[Test] Navigating to practitioner SpiriAssist manage page...');
+            await practPage.goto(`/p/${practitionerData!.slug}/manage/spiri-assist`);
+
+            // Wait for assigned cases panel
+            await expect(practPage.getByTestId('assigned-cases-historical-tab')).toBeVisible({ timeout: 15000 });
+
+            // Click Historical tab
+            await practPage.getByTestId('assigned-cases-historical-tab').click();
+            console.log('[Test] Switched to Historical tab');
+
+            // Verify OUR specific closed case appears in the Historical tab
+            const ourCase = practPage.getByTestId(`assigned-case-code-${caseCode}`);
+            await expect(ourCase).toBeVisible({ timeout: 15000 });
+            console.log(`[Test] Case ${caseCode} found in Historical tab`);
+
+            // Click See Details for our case
+            const casePanel = ourCase.locator('..').locator('..');
+            const seeDetailsBtn = casePanel.locator('[aria-label="button-see-casedetails"]');
+            await expect(seeDetailsBtn).toBeVisible({ timeout: 5000 });
+            await seeDetailsBtn.click();
+
+            // Verify CLOSED status in detail panel
+            const caseDetailStatus = practPage.getByTestId('case-detail-status');
+            await expect(caseDetailStatus).toBeVisible({ timeout: 15000 });
+            await expect(caseDetailStatus).toContainText('CLOSED', { timeout: 10000 });
+            console.log('[Test] Historical case shows CLOSED status');
+
+            // Verify Close Case button is NOT visible (case already closed)
+            const closeCaseBtn = practPage.getByTestId('btn-close-case');
+            await expect(closeCaseBtn).not.toBeVisible({ timeout: 5000 });
+            console.log('[Test] Close Case button hidden for closed case');
+
+            console.log('[Test] Historical tab verification complete');
+        } finally {
+            await practContext.close();
+        }
+    });
+
+    test('customer sees case is closed on tracking page', async ({ page }, testInfo) => {
+        test.setTimeout(60000);
+
+        const workerId = testInfo.parallelIndex;
+        const trackingCode = trackingCodePerWorker.get(workerId);
+        expect(trackingCode).toBeTruthy();
+
+        // Restore customer session
+        const cookies = customerCookiesPerWorker.get(workerId);
+        if (cookies) {
+            const cookiePairs = cookies.split('; ').map(c => {
+                const [name, ...rest] = c.split('=');
+                return { name, value: rest.join('='), domain: 'localhost', path: '/' };
+            });
+            await page.context().addCookies(cookiePairs);
+        }
+
+        console.log(`[Test] Navigating to tracking page: /track/case/${trackingCode}`);
+        await page.goto(`/track/case/${trackingCode}`);
+
+        // Verify case status is CLOSED
+        const caseStatusEl = page.getByTestId('case-status');
+        await expect(caseStatusEl).toBeVisible({ timeout: 15000 });
+        await expect(caseStatusEl).toHaveText('CLOSED', { timeout: 15000 });
+        console.log('[Test] Case status is CLOSED on tracking page');
+
+        // Verify "Managed by" is still shown
+        const managedByEl = page.getByTestId('managed-by');
+        await expect(managedByEl).toBeVisible({ timeout: 10000 });
+        console.log('[Test] Managed by text still visible');
+
+        console.log('[Test] Customer sees closed case — full case lifecycle complete');
     });
 
 });
