@@ -14,6 +14,7 @@ import {
   BarChart3,
   Scale,
   Tag,
+  Bot,
 } from "lucide-react";
 import Link from "next/link";
 import ChoiceManager from "./choice-manager/ChoiceManager";
@@ -25,8 +26,9 @@ import AccountJourneys from "./account-journeys/AccountJourneys";
 import Analytics from "./analytics/Analytics";
 import LegalDocumentsManager from "./legal-documents/LegalDocumentsManager";
 import PricingReference from "./pricing-reference/PricingReference";
+import AiAssistant from "./ai-assistant/AiAssistant";
 
-type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager' | 'accounts-manager' | 'account-journeys' | 'analytics' | 'legal-documents' | 'pricing-reference';
+type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager' | 'accounts-manager' | 'account-journeys' | 'analytics' | 'legal-documents' | 'pricing-reference' | 'ai-assistant';
 
 export default function ConsolePage() {
   const { data: session, status } = useSession();
@@ -80,6 +82,7 @@ export default function ConsolePage() {
                      currentView === 'account-journeys' ? 'Account Journeys' :
                      currentView === 'analytics' ? 'Site Analytics' :
                      currentView === 'pricing-reference' ? 'Pricing Reference' :
+                     currentView === 'ai-assistant' ? 'AI Assistant' :
                      'Accounts Manager'}
                   </p>
                 </div>
@@ -141,6 +144,7 @@ export default function ConsolePage() {
             { group: 'System', items: [
               { key: 'alerts-manager' as ConsoleView, icon: AlertTriangle, label: 'Alerts' },
               { key: 'analytics' as ConsoleView, icon: BarChart3, label: 'Website Traffic' },
+              { key: 'ai-assistant' as ConsoleView, icon: Bot, label: 'AI Assistant' },
             ]},
           ]).map(({ group, items }) => (
             <div key={group} className="mb-1">
@@ -174,6 +178,7 @@ export default function ConsolePage() {
           {currentView === 'account-journeys' && <AccountJourneys />}
           {currentView === 'analytics' && <Analytics />}
           {currentView === 'pricing-reference' && <PricingReference />}
+          {currentView === 'ai-assistant' && <AiAssistant />}
         </main>
       </div>
     </div>

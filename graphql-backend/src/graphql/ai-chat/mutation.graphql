@@ -1,0 +1,11 @@
+type AiSendMessageResponse {
+    message: AiMessage!
+    reply: AiMessage!
+    conversation: AiConversation!
+}
+
+type Mutation {
+    aiSendMessage(conversationId: ID, message: String!): AiSendMessageResponse
+    aiRenameConversation(id: ID!, title: String!): AiConversation
+    aiDeleteConversation(id: ID!): Boolean
+}

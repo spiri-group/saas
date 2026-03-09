@@ -1,0 +1,21 @@
+type AiConversation {
+    id: ID!
+    title: String!
+    createdDate: String!
+    updatedDate: String!
+    messageCount: Int!
+}
+
+type AiMessage {
+    id: ID!
+    conversationId: ID!
+    role: String!
+    content: String!
+    createdDate: String!
+}
+
+type Query {
+    aiConversations: [AiConversation]
+    aiConversation(id: ID!): AiConversation
+    aiMessages(conversationId: ID!): [AiMessage]
+}

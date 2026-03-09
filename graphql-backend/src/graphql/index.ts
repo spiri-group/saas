@@ -40,6 +40,7 @@ import {resolvers as PaymentLinkResolvers} from "./paymentLink"
 import {resolvers as LiveAssistResolvers} from "./liveAssist"
 import {resolvers as ExpoModeResolvers} from "./expoMode"
 import {resolvers as JourneyResolvers} from "./journey"
+import {resolvers as AiChatResolvers} from "./ai-chat"
 
 import {mergeDeep, getAllFilesWithExtension} from "../utils/functions"
 
@@ -87,7 +88,8 @@ const resolvers = mergeDeep(
   PaymentLinkResolvers,
   LiveAssistResolvers,
   ExpoModeResolvers,
-  JourneyResolvers
+  JourneyResolvers,
+  AiChatResolvers
 )
 
 let typeDefs: string[] = ScalarTypeDefs
