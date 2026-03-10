@@ -152,7 +152,6 @@ export const useCreateHealingOffer = (merchantId: string, editingService?: Exist
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['merchant-services'] });
       queryClient.invalidateQueries({ queryKey: ['practitioner-services', merchantId] });
     }
   });

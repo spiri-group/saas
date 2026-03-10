@@ -152,7 +152,6 @@ export const useCreateCoachingOffer = (merchantId: string, editingService?: Exis
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['merchant-services'] });
       queryClient.invalidateQueries({ queryKey: ['practitioner-services', merchantId] });
     }
   });

@@ -35,9 +35,9 @@ import {
     Headphones
 } from "lucide-react";
 import { VendorDocType } from "@/utils/spiriverse";
-import CreateReading from "../../m/[merchant_slug]/(manage)/manage/services/_components/CreateReading";
-import CreateHealing from "../../m/[merchant_slug]/(manage)/manage/services/_components/CreateHealing";
-import CreateCoaching from "../../m/[merchant_slug]/(manage)/manage/services/_components/CreateCoaching";
+import CreateReading from "../[practitioner_slug]/(manage)/manage/services/_components/CreateReading";
+import CreateHealing from "../[practitioner_slug]/(manage)/manage/services/_components/CreateHealing";
+import CreateCoaching from "../[practitioner_slug]/(manage)/manage/services/_components/CreateCoaching";
 import EditPractitionerBio from "./Profile/Edit/Bio";
 import EditPractitionerModalities from "./Profile/Edit/Modalities";
 import EditPractitionerTools from "./Profile/Edit/Tools";
