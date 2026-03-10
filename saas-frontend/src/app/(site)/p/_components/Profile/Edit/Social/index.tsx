@@ -51,7 +51,7 @@ const EditPractitionerSocials: React.FC<Props> = (props) => {
     const bl = useBL(props)
 
     return (
-        <DialogContent data-testid="edit-practitioner-socials-dialog">
+        <DialogContent className="w-[700px] max-w-[95vw] max-h-[90vh] overflow-y-auto" data-testid="edit-practitioner-socials-dialog">
             <DialogHeader>
                 <h2 className="text-xl font-semibold">Social Media Links</h2>
             </DialogHeader>
@@ -74,9 +74,9 @@ const EditPractitionerSocials: React.FC<Props> = (props) => {
                                     name={`socials.${index}.handle`}
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Handle <span className="text-slate-400">(Optional)</span></FormLabel>
+                                            <FormLabel dark>Handle <span className="text-slate-400">(Optional)</span></FormLabel>
                                             <FormControl>
-                                                <Input {...field}
+                                                <Input dark {...field}
                                                     data-testid={`social-handle-${index}`}
                                                     value={field.value ?? ""} />
                                             </FormControl>
@@ -87,9 +87,9 @@ const EditPractitionerSocials: React.FC<Props> = (props) => {
                                     name={`socials.${index}.url`}
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>URL</FormLabel>
+                                            <FormLabel dark>URL</FormLabel>
                                             <FormControl>
-                                                <Input {...field}
+                                                <Input dark {...field}
                                                     data-testid={`social-url-${index}`}
                                                     value={field.value ?? ""} />
                                             </FormControl>

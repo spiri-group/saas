@@ -18,13 +18,14 @@ export const formatCurrency = (value: number, currency: string, formatter?: Intl
     const fmt = formatter ?? Intl.NumberFormat('en-AU', {
         style: 'currency',
         currency,
+        currencyDisplay: 'narrowSymbol',
     })
     return fmt.format(decodeAmountFromSmallestUnit(value, currency))
 }
 
 const CurrencySpan : React.FC<Props> = ({defaultLabel="-", withAnimation=false, asDiv=false, ...props}) => {
-    const { locale } = useUserPreferences();
-    if (isNullOrWhitespace(locale)) return null;
+    const { locale: userLocale } = useUserPreferences();
+    const locale = userLocale || (typeof navigator !== 'undefined' ? navigator.language : 'en-US');
 
     const [dollarAmount, setDollarAmount] = useState<number | null>(null);
     const [newDollarAmount, setNewDollarAmount] = useState<number | null>(null);
@@ -33,7 +34,7 @@ const CurrencySpan : React.FC<Props> = ({defaultLabel="-", withAnimation=false, 
     const formatter = new Intl.NumberFormat(locale, {
         style: 'currency',
         currency: props.value.currency,
-        currencyDisplay: 'code'
+        currencyDisplay: 'narrowSymbol'
     });
     
     // we want to have a useEffect which updates the dollar amount in increments of 0.01 every 10ms

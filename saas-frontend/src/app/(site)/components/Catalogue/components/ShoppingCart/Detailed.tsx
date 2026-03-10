@@ -8,6 +8,7 @@ import { gql } from "@/lib/services/gql"
 import { useUnifiedCart, CartItem } from "./useUnifiedCart"
 import { isNullOrUndefined, isNullOrWhitespace } from "@/lib/functions"
 import CurrencySpan from "@/components/ux/CurrencySpan"
+import CurrencyNote from "@/components/ux/CurrencyNote"
 import { useUserPreferences } from "@/lib/context/UserPreferencesContext"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -401,6 +402,7 @@ const ShoppingCart = () => {
                                     <CurrencySpan withAnimation={false} value={bl.summary.total} />
                                 </div>
                                 <span className="mt-2 text-slate-600 text-sm">Shipping and Tax calculated at Checkout</span>
+                                <CurrencyNote currency={bl.summary.total.currency} className="mt-1" />
                             </div>
                         )}
 

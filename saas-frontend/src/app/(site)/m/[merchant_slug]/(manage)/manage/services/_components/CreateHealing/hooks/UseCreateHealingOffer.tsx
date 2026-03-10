@@ -111,6 +111,8 @@ export const useCreateHealingOffer = (merchantId: string, editingService?: Exist
           type: q.type,
           required: q.required,
           ...(q.options && { options: q.options.map(o => o.label) }),
+          ...(q.description && { description: q.description }),
+          ...(q.scaleMax != null && { scaleMax: q.scaleMax }),
         })),
         healingOptions: {
           healingType: data.healingType,

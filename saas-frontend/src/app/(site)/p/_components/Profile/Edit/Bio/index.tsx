@@ -171,7 +171,7 @@ const EditPractitionerBio: React.FC<Props> = (props) => {
                                                 </div>
                                             ) : (
                                                 <div
-                                                    className="w-24 h-24 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center hover:border-purple-400 transition-colors cursor-pointer"
+                                                    className="w-24 h-24 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center hover:border-purple-400 transition-colors cursor-pointer"
                                                     onClick={() => fileInputRef.current?.click()}
                                                     data-testid="upload-profile-picture-btn"
                                                 >
@@ -209,9 +209,10 @@ const EditPractitionerBio: React.FC<Props> = (props) => {
                             name="headline"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Professional Headline</FormLabel>
+                                    <FormLabel dark>Professional Headline</FormLabel>
                                     <FormControl>
                                         <Input
+                                            dark
                                             {...field}
                                             placeholder="e.g., Intuitive Tarot Reader & Spiritual Guide"
                                             maxLength={150}
@@ -231,9 +232,10 @@ const EditPractitionerBio: React.FC<Props> = (props) => {
                             name="bio"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Bio</FormLabel>
+                                    <FormLabel dark>Bio</FormLabel>
                                     <FormControl>
                                         <Textarea
+                                            dark
                                             {...field}
                                             placeholder="Tell potential clients about yourself, your experience, and your approach to readings..."
                                             className="min-h-[200px] resize-y"

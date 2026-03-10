@@ -4,7 +4,6 @@ import { escape_key } from "@/lib/functions"
 import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import CancelDialogButton from "@/components/ux/CancelDialogButton"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -62,9 +61,9 @@ const EditPractitionerTraining: React.FC<Props> = (props) => {
             <Form {...bl.form}>
                 <form className="mt-4 space-y-4" onSubmit={bl.form.handleSubmit(bl.finish)}>
                     {bl.fields.length === 0 ? (
-                        <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
-                            <GraduationCap className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-                            <p className="text-slate-500 dark:text-slate-400 mb-4">
+                        <div className="text-center py-8 border-2 border-dashed border-slate-700 rounded-lg">
+                            <GraduationCap className="w-12 h-12 mx-auto text-slate-600 mb-3" />
+                            <p className="text-slate-400 mb-4">
                                 No credentials added yet. Add your training and certifications.
                             </p>
                             <Button
@@ -125,19 +124,20 @@ interface CredentialCardProps {
 
 const CredentialCard: React.FC<CredentialCardProps> = ({ index, form, onRemove }) => {
     return (
-        <Card className="bg-slate-50 dark:bg-slate-800/50" data-testid={`credential-card-${index}`}>
-            <CardContent className="p-4">
-                <div className="flex gap-4">
-                    <div className="flex-1 space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
+        <Card dark data-testid={`credential-card-${index}`}>
+            <CardContent className="p-3">
+                <div className="flex gap-3 items-start">
+                    <div className="flex-1 space-y-2">
+                        <div className="grid grid-cols-[1fr_1fr_90px] gap-2">
                             <FormField
                                 control={form.control}
                                 name={`training.${index}.title`}
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-sm">Certification/Training Title *</FormLabel>
+                                        <FormLabel dark className="text-xs">Title *</FormLabel>
                                         <FormControl>
                                             <Input
+                                                dark
                                                 {...field}
                                                 placeholder="e.g., Reiki Master Certification"
                                                 data-testid={`credential-title-${index}`}
@@ -153,9 +153,10 @@ const CredentialCard: React.FC<CredentialCardProps> = ({ index, form, onRemove }
                                 name={`training.${index}.institution`}
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-sm">Institution (optional)</FormLabel>
+                                        <FormLabel dark className="text-xs">Institution</FormLabel>
                                         <FormControl>
                                             <Input
+                                                dark
                                                 {...field}
                                                 value={field.value || ""}
                                                 placeholder="e.g., International Reiki Association"
@@ -166,24 +167,27 @@ const CredentialCard: React.FC<CredentialCardProps> = ({ index, form, onRemove }
                                     </FormItem>
                                 )}
                             />
-                        </div>
 
-                        <div className="grid grid-cols-4 gap-3">
                             <FormField
                                 control={form.control}
                                 name={`training.${index}.year`}
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-sm">Year</FormLabel>
+                                        <FormLabel dark className="text-xs">Year</FormLabel>
                                         <FormControl>
                                             <Input
-                                                type="number"
+                                                dark
+                                                type="text"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                maxLength={4}
                                                 {...field}
                                                 value={field.value || ""}
-                                                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                                    field.onChange(val ? parseInt(val) : null);
+                                                }}
                                                 placeholder="2020"
-                                                min={1900}
-                                                max={new Date().getFullYear()}
                                                 data-testid={`credential-year-${index}`}
                                             />
                                         </FormControl>
@@ -191,29 +195,26 @@ const CredentialCard: React.FC<CredentialCardProps> = ({ index, form, onRemove }
                                     </FormItem>
                                 )}
                             />
-
-                            <div className="col-span-3">
-                                <FormField
-                                    control={form.control}
-                                    name={`training.${index}.description`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-sm">Description (optional)</FormLabel>
-                                            <FormControl>
-                                                <Textarea
-                                                    {...field}
-                                                    value={field.value || ""}
-                                                    placeholder="Brief description of this training..."
-                                                    className="resize-none h-10"
-                                                    data-testid={`credential-description-${index}`}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
                         </div>
+
+                        <FormField
+                            control={form.control}
+                            name={`training.${index}.description`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <Input
+                                            dark
+                                            {...field}
+                                            value={field.value || ""}
+                                            placeholder="Brief description (optional)"
+                                            data-testid={`credential-description-${index}`}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </div>
 
                     {/* Remove Button */}
@@ -222,7 +223,7 @@ const CredentialCard: React.FC<CredentialCardProps> = ({ index, form, onRemove }
                         variant="ghost"
                         size="icon"
                         onClick={onRemove}
-                        className="flex-shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 self-start mt-6"
+                        className="flex-shrink-0 text-red-500 hover:text-red-600 hover:bg-red-900/20 mt-5"
                         data-testid={`remove-credential-${index}`}
                     >
                         <Trash2 className="w-4 h-4" />

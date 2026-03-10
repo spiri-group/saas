@@ -25,6 +25,7 @@ const useBL = (props: BLProps) => {
     const router = useRouter();
     const params = useParams();
     const merchant_slug = params.merchant_slug as string;
+    const practitioner_slug = params.practitioner_slug as string;
     const { form, mutation, isEditing } = useCreateReadingOffer(props.merchantId, props.editingService);
     const [currentStep, setCurrentStep] = useState(1);
 
@@ -134,7 +135,10 @@ const useBL = (props: BLProps) => {
                 props.onClose();
             } else {
                 escape_key();
-                router.push(`/m/${merchant_slug}/manage/services`);
+                const servicesPath = merchant_slug
+                    ? `/m/${merchant_slug}/manage/services`
+                    : `/p/${practitioner_slug}/manage/services`;
+                router.push(servicesPath);
             }
         }
     };

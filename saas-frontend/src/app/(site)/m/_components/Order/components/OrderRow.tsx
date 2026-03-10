@@ -215,7 +215,7 @@ const OrderRow : React.FC<Props> = (props) => {
                     )}
                 </div>
                 <Drawer>
-                    <DrawerTrigger>
+                    <DrawerTrigger asChild>
                         <Button variant="link" className="ml-auto"> See details </Button>
                     </DrawerTrigger>
                     <DrawerContent className="p-4 h-[95%]">
@@ -223,7 +223,7 @@ const OrderRow : React.FC<Props> = (props) => {
                             <span> Order </span>
                         </DrawerHeader>
                         <DrawerFooter className="grid grid-cols-2 gap-2">
-                            <DrawerClose>
+                            <DrawerClose asChild>
                                 <Button variant="outline">Cancel</Button>
                             </DrawerClose>
                             {props.page === 'trackCase' ?

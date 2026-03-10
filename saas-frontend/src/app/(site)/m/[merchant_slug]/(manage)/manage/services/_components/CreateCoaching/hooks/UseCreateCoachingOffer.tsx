@@ -111,6 +111,8 @@ export const useCreateCoachingOffer = (merchantId: string, editingService?: Exis
           type: q.type,
           required: q.required,
           ...(q.options && { options: q.options.map(o => o.label) }),
+          ...(q.description && { description: q.description }),
+          ...(q.scaleMax != null && { scaleMax: q.scaleMax }),
         })),
         coachingOptions: {
           coachingType: data.coachingType,

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
@@ -39,7 +39,6 @@ import {
     CheckSquare,
     Calendar,
     Hash,
-    Mail,
     ChevronDown,
     Eye,
     Minimize2,
@@ -65,7 +64,6 @@ export type QuestionType =
     | "DROPDOWN"
     | "DATE"
     | "NUMBER"
-    | "EMAIL"
     | "RATING"
     | "LINEAR_SCALE"
     | "YES_NO"
@@ -103,7 +101,6 @@ const QUESTION_TYPES: Array<{ value: QuestionType; label: string; icon: React.Co
     { value: "DROPDOWN", label: "Dropdown", icon: ChevronDown },
     { value: "DATE", label: "Date", icon: Calendar },
     { value: "NUMBER", label: "Number", icon: Hash },
-    { value: "EMAIL", label: "Email", icon: Mail },
     { value: "RATING", label: "Star Rating", icon: Star },
     { value: "LINEAR_SCALE", label: "Linear Scale", icon: SlidersHorizontal },
     { value: "YES_NO", label: "Yes / No", icon: ToggleLeft },
@@ -266,8 +263,7 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
         update(questionIndex, updatedQuestion);
     };
 
-    // Type picker grid for "Add Question"
-    const TypePickerContent = () => (
+    const typePickerGrid = (
         <div className="grid grid-cols-2 gap-1.5 p-1">
             {QUESTION_TYPES.map((type) => {
                 const TypeIcon = type.icon;
@@ -356,20 +352,10 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                 <div className={cn("text-center py-8 border-2 border-dashed rounded-lg", dark ? "border-slate-600" : "border-slate-300")}>
                     <p className="text-slate-400 mb-4">No questions yet</p>
                     <div className="flex items-center justify-center gap-3">
-                        <Popover open={addPickerOpen} onOpenChange={setAddPickerOpen}>
-                            <PopoverTrigger asChild>
-                                <Button type="button" data-testid="add-question-btn">
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Question
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 p-2" align="center">
-                                <p className={cn("text-xs font-medium mb-2 px-2", dark ? "text-slate-400" : "text-slate-500")}>
-                                    Choose a question type
-                                </p>
-                                <TypePickerContent />
-                            </PopoverContent>
-                        </Popover>
+                        <Button type="button" data-testid="add-question-btn" onClick={() => setAddPickerOpen(!addPickerOpen)}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Question
+                        </Button>
                         {availableModules.length > 0 && (
                             <Select
                                 dark={dark}
@@ -392,6 +378,14 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                             </Select>
                         )}
                     </div>
+                    {addPickerOpen && (
+                        <div className={cn("mt-4 rounded-lg border p-3", dark ? "border-slate-700 bg-slate-800/50" : "border-slate-200 bg-white")}>
+                            <p className={cn("text-xs font-medium mb-2", dark ? "text-slate-400" : "text-slate-500")}>
+                                Choose a question type
+                            </p>
+                            {typePickerGrid}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -643,41 +637,41 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
 
             {/* Bottom actions */}
             {fields.length > 0 && (
-                <div className="flex items-center gap-3">
-                    <Popover open={addPickerOpen} onOpenChange={setAddPickerOpen}>
-                        <PopoverTrigger asChild>
-                            <Button type="button" variant="outline" className="flex-1" data-testid="add-question-btn">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Question
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80 p-2" align="start">
-                            <p className={cn("text-xs font-medium mb-2 px-2", dark ? "text-slate-400" : "text-slate-500")}>
+                <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                        <Button type="button" variant="outline" className="flex-1" data-testid="add-question-btn" onClick={() => setAddPickerOpen(!addPickerOpen)}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Question
+                        </Button>
+                        {availableModules.length > 0 && (
+                            <Select
+                                dark={dark}
+                                onValueChange={(value) => prefillFromModule(value)}
+                            >
+                                <SelectTrigger className="w-auto gap-2">
+                                    <Package className="h-4 w-4" />
+                                    <SelectValue placeholder="Prefill with module" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableModules.map((module) => (
+                                        <SelectItem key={module.type} value={module.type}>
+                                            <div className="flex flex-col">
+                                                <span>{module.label}</span>
+                                                <span className="text-xs text-slate-400">{module.prefillQuestions.length} questions</span>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    </div>
+                    {addPickerOpen && (
+                        <div className={cn("rounded-lg border p-3", dark ? "border-slate-700 bg-slate-800/50" : "border-slate-200 bg-white")}>
+                            <p className={cn("text-xs font-medium mb-2", dark ? "text-slate-400" : "text-slate-500")}>
                                 Choose a question type
                             </p>
-                            <TypePickerContent />
-                        </PopoverContent>
-                    </Popover>
-                    {availableModules.length > 0 && (
-                        <Select
-                            dark={dark}
-                            onValueChange={(value) => prefillFromModule(value)}
-                        >
-                            <SelectTrigger className="w-auto gap-2">
-                                <Package className="h-4 w-4" />
-                                <SelectValue placeholder="Prefill with module" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {availableModules.map((module) => (
-                                    <SelectItem key={module.type} value={module.type}>
-                                        <div className="flex flex-col">
-                                            <span>{module.label}</span>
-                                            <span className="text-xs text-slate-400">{module.prefillQuestions.length} questions</span>
-                                        </div>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            {typePickerGrid}
+                        </div>
                     )}
                 </div>
             )}
@@ -744,9 +738,6 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                                     )}
                                     {q.type === "NUMBER" && (
                                         <Input type="number" placeholder="0" disabled />
-                                    )}
-                                    {q.type === "EMAIL" && (
-                                        <Input type="email" placeholder="email@example.com" disabled />
                                     )}
                                     {q.type === "RATING" && (
                                         <RatingStarVisualizerComponent starSize={24} readOnly />

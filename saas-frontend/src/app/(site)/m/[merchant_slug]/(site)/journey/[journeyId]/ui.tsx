@@ -7,6 +7,7 @@ import NewReview from "../../../../../components/Review/Create/NewReview"
 import AllReview from "../../../../../components/Review/Reviews"
 import UseJourneyDetails, { JourneyTrackType } from "./hooks/UseJourneyDetails"
 import CurrencySpan from "@/components/ux/CurrencySpan"
+import CurrencyNote from "@/components/ux/CurrencyNote"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import Link from "next/link"
@@ -332,6 +333,7 @@ const UI: React.FC<Props> = (props) => {
                                                 /> ({journey.pricing.rentalDurationDays || 30} days)
                                             </div>
                                         )}
+                                        <CurrencyNote currency={journey.pricing.collectionPrice.currency} className="mt-1" />
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         <Button

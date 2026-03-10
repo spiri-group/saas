@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import CurrencySpan from "@/components/ux/CurrencySpan";
+import CurrencyNote from "@/components/ux/CurrencyNote";
 import useMerchantTheme from "@/app/(site)/m/_hooks/UseMerchantTheme";
 import MerchantFontLoader from "@/app/(site)/m/_components/MerchantFontLoader";
 import UsePendingServiceOrder from "./hooks/UsePendingServiceOrder";
@@ -248,6 +249,7 @@ const UI: React.FC<Props> = (props) => {
                                                 <CurrencySpan value={bl.order.price} withAnimation={false} />
                                             </span>
                                         </div>
+                                        <CurrencyNote currency={bl.order.price.currency} className="mt-1" />
 
                                         <Button className="w-full" size="lg">
                                             Pay Now

@@ -159,7 +159,7 @@ const EditPractitionerVideo: React.FC<Props> = (props) => {
                                         name="latestVideo"
                                         render={({field}) => (
                                             <FormItem>
-                                                <FormLabel>Video Upload</FormLabel>
+                                                <FormLabel dark>Video Upload</FormLabel>
                                                 {bl.currentVideo ? (
                                                     <div className="relative">
                                                         <video
@@ -224,7 +224,7 @@ const EditPractitionerVideo: React.FC<Props> = (props) => {
                                 {/* Caption and settings */}
                                 <div className="flex-grow space-y-4">
                                     <div className="space-y-2">
-                                        <FormLabel>Caption</FormLabel>
+                                        <FormLabel dark>Caption</FormLabel>
                                         <textarea
                                             value={bl.currentVideo?.description || bl.caption}
                                             onChange={(e) => {

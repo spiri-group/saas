@@ -90,7 +90,7 @@ export default function TierSelector({
 
             {/* Card capture messaging */}
             <p data-testid="tier-billing-note" className="text-center text-xs text-slate-400">
-                You won&apos;t be charged until your profile earns enough through payouts to cover the subscription cost.
+                Your free trial starts today. You won&apos;t be charged until it ends.
             </p>
         </div>
     );

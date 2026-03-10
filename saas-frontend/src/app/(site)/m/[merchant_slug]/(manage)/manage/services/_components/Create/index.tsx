@@ -27,6 +27,7 @@ const useBL = (props: BLProps) => {
     const router = useRouter();
     const params = useParams();
     const merchant_slug = params.merchant_slug as string;
+    const practitioner_slug = params.practitioner_slug as string;
 
     const { form, mutation, values } = UseCreateService(props.merchantId)
     const unitServiceQuery = UseChoice("unit", "EN", ["HOUR", "MINUTE"])
@@ -37,7 +38,10 @@ const useBL = (props: BLProps) => {
         submit: async (values: CreateServiceSchema) => {
             await mutation.mutateAsync(values)
             escape_key()
-            router.push(`/m/${merchant_slug}/manage/services`)
+            const servicesPath = merchant_slug
+                ? `/m/${merchant_slug}/manage/services`
+                : `/p/${practitioner_slug}/manage/services`;
+            router.push(servicesPath)
         },
         unitOptions: unitServiceQuery.data == null ? [] : unitServiceQuery.data.options
     }

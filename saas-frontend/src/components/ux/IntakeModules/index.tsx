@@ -27,7 +27,7 @@ export type IntakeModule = {
 
 // Prefill question shape (matches QuestionBuilder's Question type)
 export type PrefillQuestion = {
-    type: "SHORT_TEXT" | "LONG_TEXT" | "MULTIPLE_CHOICE" | "CHECKBOXES" | "DROPDOWN" | "DATE" | "NUMBER" | "EMAIL" | "RATING" | "LINEAR_SCALE" | "YES_NO" | "PHONE" | "TIME" | "PHOTO";
+    type: "SHORT_TEXT" | "LONG_TEXT" | "MULTIPLE_CHOICE" | "CHECKBOXES" | "DROPDOWN" | "DATE" | "NUMBER" | "RATING" | "LINEAR_SCALE" | "YES_NO" | "PHONE" | "TIME" | "PHOTO";
     question: string;
     description?: string;
     required: boolean;

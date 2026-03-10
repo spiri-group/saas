@@ -32,7 +32,7 @@ const PATH_OPTIONS: PathOption[] = [
     {
         id: 'merchant',
         label: 'I\u2019m a merchant',
-        description: 'Sell products, host practitioners, and run your store',
+        description: 'Selling products, hosting tours & events, running your store',
         icon: Store,
         tiers: ['manifest', 'transcend'],
     },
@@ -169,8 +169,8 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
                 <h1 className="font-light text-3xl text-white mb-3">Choose Your Plan</h1>
                 <p className="text-slate-300">
                     {path === 'directory'
-                        ? 'Get listed and let seekers find you. You won\u2019t be charged until after your first payout.'
-                        : 'Pick the plan that fits your goals. You won\u2019t be charged until after your first payout.'
+                        ? 'Get listed and let seekers find you.'
+                        : 'Pick the plan that fits your goals.'
                     }
                 </p>
             </div>
@@ -233,7 +233,7 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
             </div>
 
             <p className="text-center text-sm text-slate-300">
-                You won&apos;t be charged until your profile earns enough through payouts to cover the subscription cost.
+                Your free trial starts today. You won&apos;t be charged until it ends.
             </p>
 
             {/* Navigation */}

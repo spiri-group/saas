@@ -667,7 +667,7 @@ export async function cleanupTestCases(cookies: string, workerId: number = 0) {
   console.log(`[Cleanup] Purging ${trackingCodes.size} test case(s)...`);
   for (const trackingCode of trackingCodes) {
     try {
-      const result = await gqlDirect(`
+      const result = await gqlDirect<{ purge_case: { code: string; success: boolean; message: string } }>(`
         mutation purge_case($trackingCode: ID!) {
           purge_case(trackingCode: $trackingCode) {
             code

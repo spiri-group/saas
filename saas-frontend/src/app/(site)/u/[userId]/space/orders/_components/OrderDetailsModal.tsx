@@ -8,6 +8,7 @@ import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import CDNImage from "@/components/ux/CDNImage";
 import CurrencySpan from "@/components/ux/CurrencySpan";
+import CurrencyNote from "@/components/ux/CurrencyNote";
 import PaidStatusBadge from "@/components/ux/PaidStatusBadge";
 import { order_type } from "@/utils/spiriverse";
 import { DateTime } from "luxon";
@@ -141,14 +142,15 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, children }
                             )}
                             <div className="flex justify-between font-semibold text-lg border-t pt-2">
                                 <span>Total:</span>
-                                <CurrencySpan 
+                                <CurrencySpan
                                     value={{
                                         amount: total,
                                         currency: order.lines[0]?.price?.currency || 'USD'
-                                    }} 
-                                    withAnimation={false} 
+                                    }}
+                                    withAnimation={false}
                                 />
                             </div>
+                            <CurrencyNote currency={order.lines[0]?.price?.currency || 'USD'} className="mt-2" />
                         </div>
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from "react";
+import React from "react";
 import { Panel, PanelContent, PanelHeader, PanelTitle } from "@/components/ux/Panel";
 import { case_type, CommunicationModeType } from "@/utils/spiriverse";
 import { Mail, Phone } from "lucide-react";
@@ -35,7 +35,7 @@ const useBL = (props: BLProps) => {
     const resolvedCaseId = caseDetails.data?.id ?? props.caseId
     const caseInteractions = UseCaseInteractions(resolvedCaseId, ["ACTIVITY"])
     const caseApplications = UseCaseApplications(undefined, resolvedCaseId)
-    const reqReleaseCase = UseRequestReleaseCase(resolvedCaseId)
+    const reqReleaseCase = UseRequestReleaseCase(resolvedCaseId, undefined, props.trackingCode || resolvedCaseId)
 
     return {
         caseDetails: {
@@ -56,38 +56,24 @@ const useBL = (props: BLProps) => {
 
 const ViewCase: React.FC<Props> = (props) => {
     const bl = useBL(props);
-    const [dialogOpen, setDialogOpen] = useState(false)
+
 
     return (
         <>
             <div>
                 {bl.caseDetails.get?.caseStatus === 'ACTIVE' && (
                     <>
-                        {bl.caseDetails.get?.release_status === 'PENDING' && (
-                            <>
-                                <Button 
-                                    aria-label="button-request-new-investigator"
-                                    className="w-full" 
-                                    type="button"
-                                    onClick={async () => {
-                                        const caseSelected = bl.caseDetails.get as case_type
-                                        await bl.reqReleaseCase.mutation.mutateAsync(caseSelected.ref)
-                                        setDialogOpen(true)
-                                    }}> 
-                                    Request new investigator
-                                </Button>
-                                {dialogOpen && (
-                                    <Dialog open={true} onOpenChange={setDialogOpen}>
-                                        <DialogContent className="flex flex-col flex-grow">
-                                            <ViewCaseOffer 
-                                                caseOffer={bl.caseDetails.get.releaseOffer}
-                                                page={"trackCase"}
-                                                type={"RELEASE"}
-                                            />
-                                        </DialogContent>
-                                    </Dialog>
-                                )}
-                            </>
+                        {bl.caseDetails.get?.release_status !== 'PENDING' && bl.caseDetails.get?.releaseOffer == null && bl.caseDetails.get?.closeOffer == null && (
+                            <Button
+                                aria-label="button-request-new-investigator"
+                                className="w-full"
+                                type="button"
+                                onClick={async () => {
+                                    const caseSelected = bl.caseDetails.get as case_type
+                                    await bl.reqReleaseCase.mutation.mutateAsync(caseSelected.ref)
+                                }}>
+                                Request new investigator
+                            </Button>
                         )}
                         {bl.caseDetails.get?.releaseOffer != null && (
                             <Dialog open={true}>

@@ -66,9 +66,9 @@ const EditPractitionerTools: React.FC<Props> = (props) => {
             <Form {...bl.form}>
                 <form className="mt-4 space-y-4" onSubmit={bl.form.handleSubmit(bl.finish)}>
                     {bl.fields.length === 0 ? (
-                        <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
-                            <Wand2 className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-                            <p className="text-slate-500 dark:text-slate-400 mb-4">
+                        <div className="text-center py-8 border-2 border-dashed border-slate-700 rounded-lg">
+                            <Wand2 className="w-12 h-12 mx-auto text-slate-600 mb-3" />
+                            <p className="text-slate-400 mb-4">
                                 No tools added yet. Add your first tool to showcase your practice.
                             </p>
                             <Button
@@ -144,7 +144,7 @@ const ToolCard: React.FC<ToolCardProps> = ({ index, form, practitionerId, onRemo
     };
 
     return (
-        <Card className="bg-slate-50 dark:bg-slate-800/50" data-testid={`tool-card-${index}`}>
+        <Card dark data-testid={`tool-card-${index}`}>
             <CardContent className="p-4">
                 <div className="flex gap-4">
                     {/* Image Upload Section */}
@@ -176,7 +176,7 @@ const ToolCard: React.FC<ToolCardProps> = ({ index, form, practitionerId, onRemo
                                 allowMultiple={false}
                                 onDropAsync={() => {}}
                                 onUploadCompleteAsync={handleImageUpload}
-                                className="w-full h-full border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg flex items-center justify-center hover:border-purple-400 transition-colors cursor-pointer"
+                                className="w-full h-full border-2 border-dashed border-slate-600 rounded-lg flex items-center justify-center hover:border-purple-400 transition-colors cursor-pointer"
                             >
                                 <div className="text-center p-2">
                                     <ImageIcon className="w-6 h-6 mx-auto text-slate-400" />
@@ -193,9 +193,10 @@ const ToolCard: React.FC<ToolCardProps> = ({ index, form, practitionerId, onRemo
                             name={`tools.${index}.name`}
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-sm">Tool Name</FormLabel>
+                                    <FormLabel dark className="text-sm">Tool Name</FormLabel>
                                     <FormControl>
                                         <Input
+                                            dark
                                             {...field}
                                             placeholder="e.g., Rider-Waite Tarot Deck"
                                             data-testid={`tool-name-${index}`}
@@ -211,9 +212,10 @@ const ToolCard: React.FC<ToolCardProps> = ({ index, form, practitionerId, onRemo
                             name={`tools.${index}.description`}
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-sm">Description (optional)</FormLabel>
+                                    <FormLabel dark className="text-sm">Description (optional)</FormLabel>
                                     <FormControl>
                                         <Textarea
+                                            dark
                                             {...field}
                                             value={field.value || ""}
                                             placeholder="Brief description of this tool..."
@@ -233,7 +235,7 @@ const ToolCard: React.FC<ToolCardProps> = ({ index, form, practitionerId, onRemo
                         variant="ghost"
                         size="icon"
                         onClick={onRemove}
-                        className="flex-shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        className="flex-shrink-0 text-red-500 hover:text-red-600 hover:bg-red-900/20"
                         data-testid={`remove-tool-${index}`}
                     >
                         <Trash2 className="w-4 h-4" />

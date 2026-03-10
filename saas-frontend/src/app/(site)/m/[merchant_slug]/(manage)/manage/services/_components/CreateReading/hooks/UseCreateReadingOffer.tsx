@@ -59,7 +59,7 @@ type QuestionOption = {
 
 type ServiceQuestion = {
   id: string;
-  type: "SHORT_TEXT" | "LONG_TEXT" | "MULTIPLE_CHOICE" | "CHECKBOXES" | "DROPDOWN" | "DATE" | "NUMBER" | "EMAIL" | "RATING" | "LINEAR_SCALE" | "YES_NO" | "PHONE" | "TIME" | "PHOTO";
+  type: "SHORT_TEXT" | "LONG_TEXT" | "MULTIPLE_CHOICE" | "CHECKBOXES" | "DROPDOWN" | "DATE" | "NUMBER" | "RATING" | "LINEAR_SCALE" | "YES_NO" | "PHONE" | "TIME" | "PHOTO";
   question: string;
   description?: string;
   required: boolean;
@@ -278,6 +278,8 @@ export const useCreateReadingOffer = (merchantId: string, editingService?: Exist
           type: q.type,
           required: q.required,
           ...(q.options && { options: q.options.map(o => o.label) }),
+          ...(q.description && { description: q.description }),
+          ...(q.scaleMax != null && { scaleMax: q.scaleMax }),
         })),
         readingOptions: {
           readingType: data.readingType,
