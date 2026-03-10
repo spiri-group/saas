@@ -73,7 +73,7 @@ const useBL = ({ practitionerId }: BLProps) => {
 
 const useExistingVideoUpdates = (practitionerId: string) => {
     return useQuery({
-        queryKey: ['practitioner-profile', practitionerId],
+        queryKey: ['practitioner-video-updates', practitionerId],
         queryFn: async () => {
             const response = await gql<{ vendor: { videoUpdates?: ExistingVideoUpdate[] } }>(
                 `query GetPractitionerVideoUpdates($id: String!) {

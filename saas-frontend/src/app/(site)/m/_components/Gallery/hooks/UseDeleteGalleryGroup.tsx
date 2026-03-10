@@ -27,6 +27,9 @@ export const useDeleteGalleryGroup = () => {
       // Invalidate all gallery-related queries
       queryClient.invalidateQueries({ queryKey: ['gallery-groups'] });
       queryClient.invalidateQueries({ queryKey: ['gallery-items'] });
+      // Refresh public-facing gallery views
+      queryClient.invalidateQueries({ queryKey: ['catalogue-gallery'] });
+      queryClient.invalidateQueries({ queryKey: ['practitioner-gallery'] });
     },
   });
 };

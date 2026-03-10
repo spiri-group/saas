@@ -72,7 +72,7 @@ const useEditPractitionerVideo = (practitionerId: string) => {
             return response.post_vendor_video_update.vendor;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['practitioner-profile', practitionerId] });
+            queryClient.invalidateQueries({ queryKey: ['practitioner-video-updates', practitionerId] });
             queryClient.invalidateQueries({ queryKey: ['my-feed'] });
             // Reset form after successful upload
             form.reset({

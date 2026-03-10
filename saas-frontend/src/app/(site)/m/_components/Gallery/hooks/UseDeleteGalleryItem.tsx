@@ -54,6 +54,10 @@ export const useDeleteGalleryItem = () => {
         exact: false 
       });
 
+      // Refresh public-facing gallery views
+      queryClient.invalidateQueries({ queryKey: ['catalogue-gallery', variables.merchantId] });
+      queryClient.invalidateQueries({ queryKey: ['practitioner-gallery', variables.merchantId] });
+
       // Invalidate vendor storage cache to update storage usage after deletion
       queryClient.invalidateQueries({ queryKey: ['vendorStorage', variables.merchantId] });
     },
