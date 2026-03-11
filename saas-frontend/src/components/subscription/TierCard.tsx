@@ -34,7 +34,6 @@ const TIER_BULLETS: Record<string, string[]> = {
         'Up to 20 products in your shop',
         'Inventory sync across channels',
         'Host practitioners in your space',
-        'Operate and manage guided tours',
     ],
     transcend: [
         'Everything in Manifest, plus:',
