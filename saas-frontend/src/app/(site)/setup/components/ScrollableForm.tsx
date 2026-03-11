@@ -48,7 +48,10 @@ export default function ScrollableForm({ children, className, dark }: Props) {
                 <div className="flex-shrink-0 flex justify-center py-1.5 animate-bounce">
                     <button
                         type="button"
-                        onClick={() => scrollRef.current?.scrollBy({ top: 150, behavior: 'smooth' })}
+                        onClick={() => {
+                            const distance = window.innerWidth < 768 ? 100 : 150;
+                            scrollRef.current?.scrollBy({ top: distance, behavior: 'smooth' });
+                        }}
                         className={cn(
                             'rounded-full p-1.5 cursor-pointer transition-colors',
                             dark

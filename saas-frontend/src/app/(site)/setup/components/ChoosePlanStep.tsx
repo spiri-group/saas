@@ -141,20 +141,20 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
                                 data-testid={`path-option-${option.id}`}
                                 onClick={() => handlePathSelect(option.id)}
                                 className={cn(
-                                    'group flex items-center gap-5 rounded-xl border-2 p-6 text-left transition-all cursor-pointer',
+                                    'group flex items-center gap-3 md:gap-5 rounded-xl border-2 p-4 md:p-6 text-left transition-all cursor-pointer',
                                     'border-slate-700 bg-slate-800/50 hover:border-purple-500/60 hover:bg-purple-500/5',
                                 )}
                             >
-                                <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-purple-600/20 text-purple-400 group-hover:bg-purple-600/30 transition-colors">
-                                    <Icon className="w-6 h-6" />
+                                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl bg-purple-600/20 text-purple-400 group-hover:bg-purple-600/30 transition-colors">
+                                    <Icon className="w-5 h-5 md:w-6 md:h-6" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="text-lg font-semibold text-white">{option.label}</h3>
-                                    <p className="text-sm text-slate-400 mt-0.5">{option.description}</p>
+                                    <h3 className="text-base md:text-lg font-semibold text-white">{option.label}</h3>
+                                    <p className="text-xs md:text-sm text-slate-400 mt-0.5">{option.description}</p>
                                 </div>
                                 {priceLabel && (
                                     <div className="flex-shrink-0 text-right">
-                                        <span className="text-lg font-bold text-white">{priceLabel}</span>
+                                        <span className="text-sm md:text-lg font-bold text-white">{priceLabel}</span>
                                     </div>
                                 )}
                             </button>

@@ -49,10 +49,10 @@ export default function OnboardingShell({ isFullScreen, isCentered, marketingCon
 
             {/* Escape hatch — visible after the basic step */}
             {onCancel && (
-                <div className="flex-shrink-0 flex justify-center py-4">
+                <div className="flex-shrink-0 flex justify-center py-2 md:py-4">
                     <button
                         onClick={onCancel}
-                        className="text-sm text-white/40 hover:text-white/70 hover:underline transition-colors cursor-pointer"
+                        className="text-sm text-white/40 hover:text-white/70 hover:underline transition-colors cursor-pointer py-2 px-4"
                     >
                         I&apos;ll do this later
                     </button>

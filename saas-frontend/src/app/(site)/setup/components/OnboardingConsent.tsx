@@ -107,23 +107,26 @@ export default function OnboardingConsent({ onAccepted, onBack, branch }: Props)
 
     return (
         <div className="flex flex-col md:grid md:grid-cols-[220px_1fr] flex-1 min-h-0" data-testid="onboarding-consent">
-            {/* Left panel — progress tracker */}
-            <div className="bg-white/[0.05] p-4 md:p-5 flex flex-col border-r border-white/10">
-                <div className="flex items-center gap-3 mb-3">
-                    <div className="rounded-full bg-indigo-500/20 p-2">
-                        <ShieldCheck className="h-5 w-5 text-indigo-400" />
+            {/* Left panel — progress tracker (horizontal on mobile, sidebar on desktop) */}
+            <div className="bg-white/[0.05] p-3 md:p-5 flex flex-col border-b md:border-b-0 md:border-r border-white/10">
+                <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                    <div className="rounded-full bg-indigo-500/20 p-1.5 md:p-2">
+                        <ShieldCheck className="h-4 w-4 md:h-5 md:w-5 text-indigo-400" />
                     </div>
-                    <h2 className="text-lg font-semibold text-white">
+                    <h2 className="text-base md:text-lg font-semibold text-white">
                         Review & Accept
                     </h2>
+                    <span className="md:hidden text-xs text-white/40 ml-auto">
+                        {completedCount}/{outstanding.length}
+                    </span>
                 </div>
 
-                <p className="text-sm text-slate-400 leading-relaxed mb-4">
+                <p className="hidden md:block text-sm text-slate-400 leading-relaxed mb-4">
                     Please review each document to continue.
                 </p>
 
-                {/* Step list */}
-                <nav className="flex-1 space-y-1" aria-label="Document review progress">
+                {/* Step list — horizontal scroll on mobile, vertical on desktop */}
+                <nav className="flex md:flex-col md:flex-1 gap-1 overflow-x-auto md:overflow-x-visible" aria-label="Document review progress">
                     {outstanding.map((doc, index) => {
                         const isCompleted = checkedDocs.has(doc.documentType);
                         const isActive = index === activeIndex;
@@ -133,7 +136,7 @@ export default function OnboardingConsent({ onAccepted, onBack, branch }: Props)
                                 key={doc.documentType}
                                 data-testid={`consent-step-${index}`}
                                 type="button"
-                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
+                                className={`flex-shrink-0 md:flex-shrink md:w-full flex items-center gap-2 px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg text-left transition-colors ${
                                     isActive
                                         ? 'bg-indigo-500/15 border border-indigo-400/30'
                                         : isCompleted
@@ -148,14 +151,14 @@ export default function OnboardingConsent({ onAccepted, onBack, branch }: Props)
                                 disabled={!isCompleted && !isActive}
                             >
                                 {isCompleted ? (
-                                    <CheckCircle2 className="h-5 w-5 text-green-400 shrink-0" />
+                                    <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-green-400 shrink-0" />
                                 ) : isActive ? (
-                                    <div className="h-5 w-5 rounded-full bg-indigo-500 flex items-center justify-center shrink-0">
-                                        <span className="text-xs font-semibold text-white">{index + 1}</span>
+                                    <div className="h-4 w-4 md:h-5 md:w-5 rounded-full bg-indigo-500 flex items-center justify-center shrink-0">
+                                        <span className="text-[10px] md:text-xs font-semibold text-white">{index + 1}</span>
                                     </div>
                                 ) : (
-                                    <div className="h-5 w-5 rounded-full border-2 border-white/20 flex items-center justify-center shrink-0">
-                                        <span className="text-xs font-medium text-white/40">{index + 1}</span>
+                                    <div className="h-4 w-4 md:h-5 md:w-5 rounded-full border-2 border-white/20 flex items-center justify-center shrink-0">
+                                        <span className="text-[10px] md:text-xs font-medium text-white/40">{index + 1}</span>
                                     </div>
                                 )}
                                 <span
@@ -174,16 +177,16 @@ export default function OnboardingConsent({ onAccepted, onBack, branch }: Props)
                     })}
                 </nav>
 
-                {/* Progress count */}
-                <p className="text-xs text-white/40 mt-4 pt-4 border-t border-white/10">
+                {/* Progress count — desktop only (mobile shows inline above) */}
+                <p className="hidden md:block text-xs text-white/40 mt-4 pt-4 border-t border-white/10">
                     {completedCount} of {outstanding.length} reviewed
                 </p>
             </div>
 
             {/* Right panel — single document view */}
             <div className="flex flex-col flex-1 min-h-0">
-                <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col min-h-0">
-                    <h3 className="font-medium text-white mb-3 shrink-0">{activeDoc.title}</h3>
+                <div className="flex-1 overflow-y-auto p-3 md:p-6 flex flex-col min-h-0">
+                    <h3 className="font-medium text-white text-sm md:text-base mb-2 md:mb-3 shrink-0">{activeDoc.title}</h3>
                     <div
                         data-testid={`consent-content-${activeDoc.documentType}`}
                         className="border border-white/10 rounded-lg p-4 overflow-y-auto text-sm text-slate-300 bg-white/[0.03] prose prose-sm prose-invert max-w-none prose-headings:text-white prose-p:text-slate-300 prose-a:text-indigo-400 prose-strong:text-white prose-li:text-slate-300 flex-1 min-h-0"
@@ -219,7 +222,7 @@ export default function OnboardingConsent({ onAccepted, onBack, branch }: Props)
                     </div>
                 </div>
 
-                <div className="p-4 md:p-6 border-t border-white/10 space-y-3">
+                <div className="p-3 md:p-6 border-t border-white/10 space-y-2 md:space-y-3">
                     <div className="flex items-center space-x-2">
                         <Checkbox
                             id={`consent-${activeDoc.documentType}`}

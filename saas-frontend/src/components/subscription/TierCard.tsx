@@ -78,7 +78,7 @@ export default function TierCard({ tier, billingInterval, selected, onSelect, ba
             onClick={() => !disabled && onSelect(tier.tier)}
             disabled={disabled}
             className={cn(
-                'relative flex flex-col rounded-xl border-2 p-6 text-left transition-all h-full cursor-pointer',
+                'relative flex flex-col rounded-xl border-2 p-4 md:p-6 text-left transition-all h-full cursor-pointer',
                 selected
                     ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20'
                     : 'border-slate-700 bg-slate-800/50 hover:border-slate-500',
@@ -94,18 +94,18 @@ export default function TierCard({ tier, billingInterval, selected, onSelect, ba
                 </span>
             )}
 
-            <div className="mb-4">
+            <div className="mb-3 md:mb-4">
                 <h3
                     data-testid={`tier-name-${tier.tier}`}
-                    className="text-lg font-bold text-white"
+                    className="text-base md:text-lg font-bold text-white"
                 >
                     {tier.name}
                 </h3>
                 <p className="mt-1 text-sm text-slate-400">{TIER_DESCRIPTIONS[tier.tier] || tier.description}</p>
             </div>
 
-            <div className="mb-6" data-testid={`tier-price-${tier.tier}`}>
-                <span className="text-3xl font-bold text-white">{formatPrice(price)}</span>
+            <div className="mb-4 md:mb-6" data-testid={`tier-price-${tier.tier}`}>
+                <span className="text-2xl md:text-3xl font-bold text-white">{formatPrice(price)}</span>
                 <span className="text-sm text-slate-400">
                     /{billingInterval === 'monthly' ? 'month' : 'year'}
                 </span>
@@ -127,7 +127,7 @@ export default function TierCard({ tier, billingInterval, selected, onSelect, ba
 
             <div
                 data-testid={`tier-selected-${tier.tier}`}
-                className={`mt-4 -mx-6 -mb-6 flex items-center justify-center gap-1 rounded-b-[10px] py-3 text-sm font-medium ${
+                className={`mt-4 -mx-4 -mb-4 md:-mx-6 md:-mb-6 flex items-center justify-center gap-1 rounded-b-[10px] py-2.5 md:py-3 text-sm font-medium ${
                     selected ? 'bg-purple-600 text-white' : 'bg-transparent text-transparent'
                 }`}
             >
