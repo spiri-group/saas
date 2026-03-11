@@ -123,6 +123,8 @@ const CatalogueItem = forwardRef<HTMLAnchorElement, Props>(({ className, ...prop
         urlRelative  = `/m/${props.listing.vendor.slug}/services/${props.listing.slug || props.listing.id}`
     } else if (props.listing.type == "PRODUCT") {
         urlRelative  = `/m/${props.listing.vendor.slug}/product/${props.listing.slug || props.listing.id}`
+    } else if (props.listing.type == "JOURNEY") {
+        urlRelative  = `/m/${props.listing.vendor.slug}/journey/${props.listing.id}`
     }
 
     const rounded = "xl"

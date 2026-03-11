@@ -216,30 +216,35 @@ test.describe('Customer Booking Flow - STRICT', () => {
         }
         await page.waitForTimeout(500);
 
-        // Step 3: Thumbnail - Skip for test (upload not required for basic creation)
-        // The thumbnail might be required, let's check if Next is enabled
-        const nextBtn3 = page.locator('[data-testid="wizard-next-btn"]');
-        if (await nextBtn3.isVisible({ timeout: 3000 }).catch(() => false)) {
-            // Check if it's disabled (thumbnail required)
-            const isDisabled = await nextBtn3.isDisabled();
-            if (isDisabled) {
-                console.log('[Test] Thumbnail required - skipping service creation for now');
-                // Close the dialog
-                await page.keyboard.press('Escape');
-                await page.waitForTimeout(500);
-            } else {
-                await nextBtn3.click();
-                await page.waitForTimeout(500);
+        // Step 3: Thumbnail (required) - upload a test image
+        const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAtElEQVR4nO3QUQkAIBTAwBfdeMaygj8yhIMFGDdrti6b/OCjYMGClQcLFqw8WLBg5cGCBSsPFixYebBgwcqDBQtWHixYsPJgwYKVBwsWrDxYsGDlwYIFKw8WLFh5sGDByoMFC1YeLFiw8mDBgpUHCxasPFiwYOXBggUrDxYsWHmwYMHKgwULVh4sWLDyYMGClQcLFqw8WLBg5cGCBSsPFixYebBgwcqDBQtWHixYsPJgwXrTAcZgD2/Jbw1KAAAAAElFTkSuQmCC';
+        const pngBuffer = Buffer.from(pngBase64, 'base64');
+        const fileInput = page.locator('input[type="file"]').first();
+        await fileInput.setInputFiles({
+            name: 'test-thumbnail.png',
+            mimeType: 'image/png',
+            buffer: pngBuffer,
+        });
+        await page.waitForTimeout(6000);
+        console.log('[Test] Thumbnail uploaded');
 
-                // Step 4: Questions - Submit
-                const submitBtn = page.locator('[data-testid="wizard-submit-btn"]');
-                if (await submitBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-                    await submitBtn.click();
-                    // Wait for service to be created
-                    await page.waitForTimeout(3000);
-                }
-            }
-        }
+        // Step 3 -> Step 4
+        const nextBtn3 = page.locator('[data-testid="wizard-next-btn"]');
+        await expect(nextBtn3).toBeEnabled({ timeout: 10000 });
+        await nextBtn3.click();
+        await page.waitForTimeout(500);
+
+        // Step 4: Questions - Submit
+        const submitBtn = page.locator('[data-testid="wizard-submit-btn"]');
+        await expect(submitBtn).toBeVisible({ timeout: 5000 });
+        await submitBtn.click();
+
+        // STRICT: After creation, dialog closes and services page must load without errors
+        await expect(page.getByTestId('services-page-title')).toBeVisible({ timeout: 15000 });
+
+        // STRICT: The newly created service should appear in the list
+        await expect(page.getByText(serviceName)).toBeVisible({ timeout: 10000 });
+        console.log('[Test] ✓ Service created and visible on services page');
 
         // Store practitioner data
         practitionerDataPerWorker.set(workerId, {

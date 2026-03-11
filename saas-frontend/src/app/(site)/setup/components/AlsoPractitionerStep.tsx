@@ -9,9 +9,9 @@ type Props = {
 
 export default function AlsoPractitionerStep({ onYes, onNo }: Props) {
     return (
-        <div className="flex flex-col space-y-8 p-8">
+        <div className="flex flex-col space-y-5 md:space-y-8 px-5 py-4 md:p-8">
             <div>
-                <h1 className="font-light text-2xl text-slate-800 mb-2">Your shop is ready!</h1>
+                <h1 className="font-light text-2xl text-slate-800 mb-1">Your shop is ready!</h1>
                 <p className="text-base text-slate-600">
                     Would you also like to create a practitioner profile? This lets you offer personal services like readings, coaching, and healing sessions.
                 </p>

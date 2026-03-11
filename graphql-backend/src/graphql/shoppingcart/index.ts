@@ -183,6 +183,78 @@ const resolvers = {
             };
         },
 
+        add_journey_to_cart: async (_: any, args: {
+            journeyId: string
+            purchaseType?: string
+        }, context: serverContext) => {
+            if (context.userId == null) throw new Error("User must be present for this call");
+
+            const isRental = args.purchaseType === "RENTAL";
+
+            const journeys = await context.dataSources.cosmos.run_query("Main-Listing", {
+                query: "SELECT * FROM c WHERE c.id = @journeyId AND c.type = 'JOURNEY'",
+                parameters: [{ name: "@journeyId", value: args.journeyId }]
+            }, true);
+
+            if (!journeys || journeys.length === 0) {
+                throw new Error("Journey not found");
+            }
+
+            const journey = journeys[0];
+
+            if (isRental) {
+                if (!journey.pricing?.allowRental || !journey.pricing?.rentalPrice) {
+                    throw new Error("Rental is not available for this journey");
+                }
+            } else {
+                if (!journey.pricing?.collectionPrice) {
+                    throw new Error("Journey pricing not configured");
+                }
+            }
+
+            const price = isRental ? journey.pricing.rentalPrice : journey.pricing.collectionPrice;
+            const rentalDays = isRental ? (journey.pricing.rentalDurationDays || 30) : undefined;
+
+            const cartItem = {
+                id: uuidv4(),
+                itemType: "JOURNEY",
+                name: journey.name,
+                descriptor: isRental
+                    ? `${journey.name} (${rentalDays}-day rental)`
+                    : journey.name,
+                quantity: 1,
+                merchantId: journey.vendorId,
+                isService: false,
+                journeyId: journey.id,
+                purchaseType: isRental ? "RENTAL" : "PURCHASE",
+                ...(isRental && { rentalDurationDays: rentalDays }),
+                listingRef: {
+                    id: journey.id,
+                    partition: [journey.vendorId],
+                    container: "Main-Listing"
+                },
+                price: {
+                    amount: price.amount,
+                    currency: price.currency
+                }
+            };
+
+            const operations: PatchOperation[] = [{
+                op: "add",
+                value: cartItem,
+                path: `/items/0`
+            }];
+
+            await context.dataSources.cosmos.patch_record("Main-ShoppingCart", context.userId, context.userId, operations, context.userId);
+
+            return {
+                code: "200",
+                success: true,
+                message: `Journey "${journey.name}" added to shopping cart`,
+                shoppingCart: await context.dataSources.cosmos.get_record("Main-ShoppingCart", context.userId, context.userId)
+            };
+        },
+
         add_product_to_cart: async (_: any, args: {
             input: {
                 productRef: { id: string, partition: string[], container: string },

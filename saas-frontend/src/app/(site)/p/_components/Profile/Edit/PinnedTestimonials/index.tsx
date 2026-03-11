@@ -60,10 +60,10 @@ const ReviewCard: React.FC<{
             className={cn(
                 "relative p-4 rounded-lg border-2 transition-all cursor-pointer",
                 isPinned
-                    ? "border-purple-500 bg-purple-50"
+                    ? "border-purple-500 bg-purple-900/20"
                     : canPin
-                        ? "border-slate-200 bg-white hover:border-slate-300"
-                        : "border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed"
+                        ? "border-slate-700 bg-slate-800/50 hover:border-slate-500"
+                        : "border-slate-700 bg-slate-800/30 opacity-60 cursor-not-allowed"
             )}
             onClick={() => canPin || isPinned ? onToggle() : null}
             data-testid={`pinnable-review-${review.id}`}
@@ -84,7 +84,7 @@ const ReviewCard: React.FC<{
                             "w-4 h-4",
                             star <= review.rating
                                 ? "text-amber-500 fill-amber-500"
-                                : "text-slate-300"
+                                : "text-slate-600"
                         )}
                     />
                 ))}
@@ -92,11 +92,11 @@ const ReviewCard: React.FC<{
 
             {/* Headline */}
             {review.headline && (
-                <h4 className="font-medium text-slate-800 text-sm mb-1">{review.headline}</h4>
+                <h4 className="font-medium text-white text-sm mb-1">{review.headline}</h4>
             )}
 
             {/* Text preview */}
-            <p className="text-slate-600 text-sm line-clamp-2">{review.text}</p>
+            <p className="text-slate-300 text-sm line-clamp-2">{review.text}</p>
 
             {/* Reviewer name */}
             <div className="mt-2 flex items-center justify-between">
@@ -136,7 +136,7 @@ const EditPractitionerPinnedTestimonials: React.FC<Props> = (props) => {
             <Form {...bl.form}>
                 <form className="mt-4" onSubmit={bl.form.handleSubmit(bl.finish)}>
                     <div className="mb-4 flex items-center justify-between">
-                        <span className="text-sm text-slate-600">
+                        <span className="text-sm text-slate-400">
                             {pinnedCount} of 3 reviews selected
                         </span>
                         <div className="flex gap-1">
@@ -145,7 +145,7 @@ const EditPractitionerPinnedTestimonials: React.FC<Props> = (props) => {
                                     key={i}
                                     className={cn(
                                         "w-3 h-3 rounded-full",
-                                        i <= pinnedCount ? "bg-purple-500" : "bg-slate-200"
+                                        i <= pinnedCount ? "bg-purple-500" : "bg-slate-700"
                                     )}
                                 />
                             ))}
@@ -153,9 +153,9 @@ const EditPractitionerPinnedTestimonials: React.FC<Props> = (props) => {
                     </div>
 
                     {bl.reviews.length === 0 ? (
-                        <div className="text-center py-8 bg-slate-50 rounded-lg">
-                            <Star className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                            <p className="text-slate-500">No reviews yet</p>
+                        <div className="text-center py-8 bg-slate-800/50 rounded-lg">
+                            <Star className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                            <p className="text-slate-400">No reviews yet</p>
                             <p className="text-sm text-slate-400 mt-1">
                                 Once clients leave reviews for your services or readings, you can pin them here.
                             </p>

@@ -7,7 +7,7 @@ import { DateTime, Duration } from "luxon";
 import { Button } from "@/components/ui/button";
 import UseUpdateBookingService, { bookingsServiceFormType } from "../hooks/UseUpdateBooking";
 import ComboBox from "@/components/ux/ComboBox";
-import UseServicesCalendar from "@/app/(site)/m/[merchant_slug]/(manage)/manage/services/hooks/UseServicesCalendar";
+import UseServicesCalendar from "@/app/(site)/p/[practitioner_slug]/(manage)/manage/services/_hooks/UseServicesCalendar";
 
 type BLProps = {
   gql_conn: gql_conn_type;

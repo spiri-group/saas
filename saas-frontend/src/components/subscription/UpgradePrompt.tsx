@@ -42,6 +42,10 @@ const FEATURE_BENEFITS: Record<string, { headline: string; benefits: string[] }>
         headline: 'Automate your inventory',
         benefits: ['Real-time stock tracking across variants', 'Low stock and out-of-stock alerts', 'Full transaction history and reporting'],
     },
+    'Journey cross-sell': {
+        headline: 'Boost sales with product recommendations',
+        benefits: ['Link crystals, tools, and other products to journey tracks', 'Customers can add to cart while browsing or listening', 'Increase average order value with relevant suggestions'],
+    },
     'Product limit reached': {
         headline: 'Expand your catalogue',
         benefits: ['Unlimited products on the Transcend plan', 'No restrictions on variants or categories', 'Scale your store without limits'],

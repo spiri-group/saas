@@ -12,9 +12,9 @@ import useDeleteService from "./_hooks/UseDeleteService";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useTierFeatures } from "@/hooks/UseTierFeatures";
 import { decodeAmountFromSmallestUnit } from "@/lib/functions";
-import CreateReading from "@/app/(site)/m/[merchant_slug]/(manage)/manage/services/_components/CreateReading";
-import CreateHealing from "@/app/(site)/m/[merchant_slug]/(manage)/manage/services/_components/CreateHealing";
-import CreateCoaching from "@/app/(site)/m/[merchant_slug]/(manage)/manage/services/_components/CreateCoaching";
+import CreateReading from "./_components/CreateReading";
+import CreateHealing from "./_components/CreateHealing";
+import CreateCoaching from "./_components/CreateCoaching";
 
 type Props = {
     session: Session;
@@ -273,7 +273,7 @@ export default function PractitionerServicesUI({ session, practitionerId, slug }
                             <div className="p-2 rounded-lg bg-purple-500/20">
                                 <BookOpen className="w-6 h-6 text-purple-400" />
                             </div>
-                            <h1 className="text-2xl font-bold text-white">My Services</h1>
+                            <h1 className="text-2xl font-bold text-white" data-testid="services-page-title">My Services</h1>
                         </div>
                         <p className="text-slate-400">
                             Create and manage your service offerings

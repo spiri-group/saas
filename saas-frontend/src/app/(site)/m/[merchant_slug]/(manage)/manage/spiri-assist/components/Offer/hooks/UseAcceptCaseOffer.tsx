@@ -36,14 +36,14 @@ const UseAcceptCaseOffer = () => {
         return resp.accept_caseOffer.offer
       },
       onSuccess: async (data : caseOffer_type) => {
-        beforeStateReset(() => {
+        await beforeStateReset(() => {
             queryClient.setQueryData(["details-for-case", data.caseId], (old: case_type) => {
                 return {
                     ...old,
                     caseStatus: "ACTIVE"
                 }
             })
-        })
+        })()
       }
         
     })

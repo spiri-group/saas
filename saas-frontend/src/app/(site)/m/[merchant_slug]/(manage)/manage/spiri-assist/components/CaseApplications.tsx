@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { Panel, PanelContent, PanelHeader, PanelTitle } from "@/components/ux/Panel";
 import { cn } from "@/lib/utils";
 import UseCaseApplications from "../hooks/UseCaseApplications";
@@ -24,6 +24,7 @@ const useBL = (props: BLProps) => {
     const queryClient = useQueryClient();
 
     const caseApplications_query = UseCaseApplications(props.merchantId)
+    const initialized = useRef(false)
     const caseApplications = useRealTimeArrayState<caseOffer_type>({
         idFields: ["id", "merchantId"],
         initialData: undefined as any,
@@ -39,10 +40,11 @@ const useBL = (props: BLProps) => {
                 queryClient.setQueryData(["case-applications", props.merchantId, undefined], (old: caseOffer_type[]) => {
                     return (old as any[]).map(record => omit(record, ['showDialog']))
                 })
-            } else if (caseApplications_query.data != null && caseApplications.get == undefined) {
+            } else if (caseApplications_query.data != null && !initialized.current) {
                 caseApplications.set(caseApplications_query.data)
+                initialized.current = true
             }
-        } 
+        }
     }, [caseApplications_query.data])
 
     return {

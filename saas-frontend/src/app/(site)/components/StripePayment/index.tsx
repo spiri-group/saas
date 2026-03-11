@@ -51,7 +51,8 @@ type BLProps = {
     clientSecret?: string,
     return_url?: string,
     type: "SETUP" | "PAYMENT",
-    digitalOnly?: boolean
+    digitalOnly?: boolean,
+    amount?: currency_amount_type
 }
 
 const tierIcons = {
@@ -266,31 +267,41 @@ const useBL = (props: BLProps) => {
     // Generate sales tax
     const generateSalesTax = async () => {
       if (!props.orderRef) return;
-      
-      const result = await gql<{
-        generate_sales_tax: {
-          code: string,
-          tax: {
-            amount: currency_amount_type
+
+      try {
+        const result = await gql<{
+          generate_sales_tax: {
+            code: string,
+            tax: {
+              amount: currency_amount_type
+            }
           }
-        }
-      }>(`
-        mutation GenerateSalesTax($orderRef: RecordRefInput!) {
-          generate_sales_tax(orderRef: $orderRef) {
-            code
-            tax {
-              amount {
-                amount
-                currency
+        }>(`
+          mutation GenerateSalesTax($orderRef: RecordRefInput!) {
+            generate_sales_tax(orderRef: $orderRef) {
+              code
+              tax {
+                amount {
+                  amount
+                  currency
+                }
               }
             }
           }
-        }
-      `, {
-        orderRef: props.orderRef
-      });
+        `, {
+          orderRef: props.orderRef
+        });
 
-      setSalesTax(result.generate_sales_tax.tax.amount);
+        if (result.generate_sales_tax?.tax?.amount) {
+          setSalesTax(result.generate_sales_tax.tax.amount);
+        } else {
+          // No tax applicable — set to zero so checkout can proceed
+          setSalesTax({ amount: 0, currency: props.amount?.currency || 'USD' });
+        }
+      } catch {
+        // Tax calculation failed — set to zero to avoid blocking checkout
+        setSalesTax({ amount: 0, currency: props.amount?.currency || 'USD' });
+      }
     };
 
     // Generate shipments
@@ -424,7 +435,7 @@ type CheckoutItem = {
     name: string;
     quantity: number;
     price: currency_amount_type;
-    itemType?: 'PRODUCT' | 'SERVICE';
+    itemType?: 'PRODUCT' | 'SERVICE' | 'JOURNEY';
 };
 
 type Props = Omit<BLProps, 'digitalOnly'> & {

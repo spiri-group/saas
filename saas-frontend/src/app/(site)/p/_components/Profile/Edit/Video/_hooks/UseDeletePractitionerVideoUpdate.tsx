@@ -31,14 +31,14 @@ const useDeletePractitionerVideoUpdate = (practitionerId: string) => {
         },
         onSuccess: (_data, videoUpdateId) => {
             // Remove deleted video from cache before invalidating to avoid flash of missing profile data
-            queryClient.setQueryData(['practitioner-profile', practitionerId], (oldData: any) => {
+            queryClient.setQueryData(['practitioner-video-updates', practitionerId], (oldData: any) => {
                 if (!oldData?.videoUpdates) return oldData;
                 return {
                     ...oldData,
                     videoUpdates: oldData.videoUpdates.filter((v: any) => v.id !== videoUpdateId),
                 };
             });
-            queryClient.invalidateQueries({ queryKey: ['practitioner-profile', practitionerId] });
+            queryClient.invalidateQueries({ queryKey: ['practitioner-video-updates', practitionerId] });
             queryClient.invalidateQueries({ queryKey: ['my-feed'] });
         }
     });

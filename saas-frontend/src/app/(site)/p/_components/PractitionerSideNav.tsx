@@ -31,12 +31,13 @@ import {
     Settings,
     ImageIcon,
     Receipt,
-    Radio
+    Radio,
+    Headphones
 } from "lucide-react";
 import { VendorDocType } from "@/utils/spiriverse";
-import CreateReading from "../../m/[merchant_slug]/(manage)/manage/services/_components/CreateReading";
-import CreateHealing from "../../m/[merchant_slug]/(manage)/manage/services/_components/CreateHealing";
-import CreateCoaching from "../../m/[merchant_slug]/(manage)/manage/services/_components/CreateCoaching";
+import CreateReading from "../[practitioner_slug]/(manage)/manage/services/_components/CreateReading";
+import CreateHealing from "../[practitioner_slug]/(manage)/manage/services/_components/CreateHealing";
+import CreateCoaching from "../[practitioner_slug]/(manage)/manage/services/_components/CreateCoaching";
 import EditPractitionerBio from "./Profile/Edit/Bio";
 import EditPractitionerModalities from "./Profile/Edit/Modalities";
 import EditPractitionerTools from "./Profile/Edit/Tools";
@@ -144,6 +145,13 @@ const useBL = (props: BLProps) => {
                     href: `/p/${practitionerSlug}/manage/services/orders`
                 }
             ] as NavOption[],
+        }] as NavOption[] : [] as NavOption[]),
+        ...(features.canSellServices ? [{
+            label: "Journeys",
+            icon: <Headphones className="w-5 h-5" />,
+            testId: "nav-journeys",
+            href: `/p/${practitionerSlug}/manage/journeys`,
+            description: "Audio meditations & recordings",
         }] as NavOption[] : [] as NavOption[]),
         {
             label: "Schedule",

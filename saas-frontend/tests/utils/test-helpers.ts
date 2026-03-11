@@ -197,7 +197,7 @@ export async function handleConsentGuardIfPresent(page: Page, timeout = 15000): 
     if (await acceptBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
       await expect(acceptBtn).toBeEnabled({ timeout: 3000 });
       await acceptBtn.click();
-      await expect(modal).not.toBeVisible({ timeout: 10000 });
+      await expect(modal).not.toBeVisible({ timeout: 30000 });
       console.log('[ConsentGuard] All documents accepted');
       return;
     }

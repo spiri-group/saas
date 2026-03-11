@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CurrencySpan from "@/components/ux/CurrencySpan";
+import CurrencyNote from "@/components/ux/CurrencyNote";
 import { Panel, PanelContent } from "@/components/ux/Panel"
 import { isNullOrUndefined, isNullOrWhitespace, isNumeric } from "@/lib/functions";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ const AddToCart: React.FC<Props> = ({ className, productRef, image, productTitle
                             currency: variant.defaultPrice.currency,
                             amount: variant.defaultPrice.amount * quantity
                         }} />
+                    <CurrencyNote currency={variant.defaultPrice.currency} className="mt-1" />
                 </div>
                 <Input type="number"
                     min={1}

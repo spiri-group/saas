@@ -72,7 +72,7 @@ const EditPractitionerModalities: React.FC<Props> = (props) => {
                                                 'cursor-pointer transition-all',
                                                 field.value.includes(modality.value)
                                                     ? 'bg-purple-600 hover:bg-purple-700'
-                                                    : 'hover:bg-purple-100 dark:hover:bg-purple-900/30'
+                                                    : 'hover:bg-purple-900/30'
                                             )}
                                             onClick={() => bl.toggleArrayValue('modalities', modality.value)}
                                             data-testid={`modality-${modality.value}`}
@@ -102,7 +102,7 @@ const EditPractitionerModalities: React.FC<Props> = (props) => {
                                                 'cursor-pointer transition-all',
                                                 field.value.includes(spec.value)
                                                     ? 'bg-violet-600 hover:bg-violet-700'
-                                                    : 'hover:bg-violet-100 dark:hover:bg-violet-900/30'
+                                                    : 'hover:bg-violet-900/30'
                                             )}
                                             onClick={() => bl.toggleArrayValue('specializations', spec.value)}
                                             data-testid={`specialization-${spec.value}`}

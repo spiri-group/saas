@@ -144,7 +144,7 @@ const EditPractitionerOracleMessage: React.FC<Props> = (props) => {
 
     return (
         <DialogContent
-            className="w-[600px] max-w-[90vw]"
+            className="w-[600px] max-w-[95vw] max-h-[90vh] overflow-y-auto"
             data-testid="edit-practitioner-oracle-message-dialog"
         >
             <DialogHeader>
@@ -191,7 +191,7 @@ const EditPractitionerOracleMessage: React.FC<Props> = (props) => {
                                 name="oracleMessage.audio"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Voice Message</FormLabel>
+                                        <FormLabel dark>Voice Message</FormLabel>
                                         {hasNewAudio ? (
                                             <div className="space-y-3">
                                                 <AudioPlayer src={bl.currentFormAudio!.url} testId="oracle-audio-player" />
@@ -257,14 +257,15 @@ const EditPractitionerOracleMessage: React.FC<Props> = (props) => {
                                 name="oracleMessage.message"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>
+                                        <FormLabel dark>
                                             Caption <span className="text-slate-400">(Optional)</span>
                                         </FormLabel>
                                         <Textarea
+                                            dark
                                             {...field}
                                             value={field.value || ''}
                                             placeholder="Add a caption that displays while your oracle plays..."
-                                            className="resize-none bg-slate-800 border-slate-600"
+                                            className="resize-none"
                                             maxLength={200}
                                             rows={2}
                                             data-testid="oracle-message-input"

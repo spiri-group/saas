@@ -35,7 +35,7 @@ const EditPractitionerJourney: React.FC<Props> = (props) => {
 
     if (bl.isLoading || !bl.hasLoaded) {
         return (
-            <DialogContent className="w-[600px]" data-testid="edit-practitioner-journey-dialog">
+            <DialogContent className="w-[600px] max-w-[95vw]" data-testid="edit-practitioner-journey-dialog">
                 <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
                 </div>
@@ -44,7 +44,7 @@ const EditPractitionerJourney: React.FC<Props> = (props) => {
     }
 
     return (
-        <DialogContent className="w-[600px] max-h-[90vh] overflow-y-auto" data-testid="edit-practitioner-journey-dialog">
+        <DialogContent className="w-[600px] max-w-[95vw] max-h-[90vh] overflow-y-auto" data-testid="edit-practitioner-journey-dialog">
             <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                     <Compass className="w-5 h-5 text-purple-500" />
@@ -61,9 +61,10 @@ const EditPractitionerJourney: React.FC<Props> = (props) => {
                         name="spiritualJourney"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Your Spiritual Journey</FormLabel>
+                                <FormLabel dark>Your Spiritual Journey</FormLabel>
                                 <FormControl>
                                     <Textarea
+                                        dark
                                         {...field}
                                         placeholder="Share how you discovered your gifts, what drew you to this path, and the experiences that shaped your practice..."
                                         className="min-h-[150px] resize-y"
@@ -84,9 +85,10 @@ const EditPractitionerJourney: React.FC<Props> = (props) => {
                         name="approach"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Your Approach</FormLabel>
+                                <FormLabel dark>Your Approach</FormLabel>
                                 <FormControl>
                                     <Textarea
+                                        dark
                                         {...field}
                                         placeholder="Describe your reading style, methodology, and what clients can expect during a session with you..."
                                         className="min-h-[120px] resize-y"

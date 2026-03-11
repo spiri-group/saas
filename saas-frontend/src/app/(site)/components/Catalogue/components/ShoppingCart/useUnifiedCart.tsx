@@ -10,7 +10,7 @@ import { currency_amount_type, recordref_type } from '@/utils/spiriverse';
 // Types
 // ============================================================================
 
-export type CartItemType = 'PRODUCT' | 'SERVICE';
+export type CartItemType = 'PRODUCT' | 'SERVICE' | 'JOURNEY';
 
 export type CartItem = {
     id: string;
@@ -55,6 +55,10 @@ export type CartItem = {
     }>;
     selectedAddOns?: string[];
 
+    // Journey-specific
+    purchaseType?: string;
+    rentalDurationDays?: number;
+
     // Sync status (local only, not persisted to backend)
     _pendingSync?: boolean;
     _localOnly?: boolean;
@@ -93,7 +97,7 @@ const PENDING_OPERATIONS_KEY = 'spiriverse_cart_pending_ops';
 
 type PendingOperation = {
     id: string;
-    type: 'ADD_PRODUCT' | 'ADD_SERVICE' | 'UPDATE_QUANTITY' | 'REMOVE';
+    type: 'ADD_PRODUCT' | 'ADD_SERVICE' | 'ADD_JOURNEY' | 'UPDATE_QUANTITY' | 'REMOVE';
     payload: any;
     timestamp: number;
 };
@@ -232,6 +236,8 @@ async function fetchCart(): Promise<ShoppingCart> {
                         answer
                     }
                     selectedAddOns
+                    purchaseType
+                    rentalDurationDays
                 }
             }
         }
@@ -361,6 +367,44 @@ async function addServiceToCartMutation(input: AddServiceInput) {
     return response.add_service_to_cart;
 }
 
+async function addJourneyToCartMutation(input: { journeyId: string; purchaseType?: string }) {
+    const response = await gql<{
+        add_journey_to_cart: {
+            success: boolean;
+            message: string;
+            shoppingCart: ShoppingCart;
+        };
+    }>(`
+        mutation AddJourneyToCart($journeyId: ID!, $purchaseType: String) {
+            add_journey_to_cart(journeyId: $journeyId, purchaseType: $purchaseType) {
+                success
+                message
+                shoppingCart {
+                    id
+                    items {
+                        id
+                        itemType
+                        descriptor
+                        quantity
+                        price {
+                            amount
+                            currency
+                        }
+                        merchantId
+                        listingRef {
+                            id
+                            partition
+                            container
+                        }
+                    }
+                }
+            }
+        }
+    `, { journeyId: input.journeyId, purchaseType: input.purchaseType || null });
+
+    return response.add_journey_to_cart;
+}
+
 async function updateQuantityMutation(itemId: string, quantity: number) {
     const response = await gql<{
         update_cart_item_quantity: {
@@ -482,6 +526,9 @@ export function useUnifiedCart(options?: { enabled?: boolean }) {
                         break;
                     case 'ADD_SERVICE':
                         await addServiceToCartMutation(op.payload);
+                        break;
+                    case 'ADD_JOURNEY':
+                        await addJourneyToCartMutation(typeof op.payload === 'string' ? { journeyId: op.payload } : op.payload);
                         break;
                     case 'UPDATE_QUANTITY':
                         await updateQuantityMutation(op.payload.itemId, op.payload.quantity);
@@ -674,6 +721,58 @@ export function useUnifiedCart(options?: { enabled?: boolean }) {
         },
     });
 
+    // Add journey mutation with optimistic update
+    const addJourney = useMutation({
+        mutationFn: addJourneyToCartMutation,
+        onMutate: async (input: { journeyId: string; purchaseType?: string }) => {
+            await queryClient.cancelQueries({ queryKey: ['unified-cart'] });
+            const previousCart = queryClient.getQueryData<ShoppingCart>(['unified-cart']);
+
+            const isRental = input.purchaseType === 'RENTAL';
+            const optimisticItem: CartItem = {
+                id: crypto.randomUUID(),
+                itemType: 'JOURNEY',
+                descriptor: isRental ? 'Guided Journey (Rental)' : 'Guided Journey',
+                quantity: 1,
+                price: { amount: 0, currency: 'USD' },
+                merchantId: '',
+                _pendingSync: true,
+            };
+
+            queryClient.setQueryData<ShoppingCart>(['unified-cart'], (old) => {
+                if (!old) return { id: '', items: [optimisticItem] };
+                return { ...old, items: [optimisticItem, ...old.items] };
+            });
+
+            return { previousCart };
+        },
+        onError: (err, input, context) => {
+            if (context?.previousCart) {
+                queryClient.setQueryData(['unified-cart'], context.previousCart);
+                setLocalCart(context.previousCart.items);
+                dispatchCartEvent(context.previousCart.items);
+            }
+
+            addPendingOperation({ type: 'ADD_JOURNEY', payload: input });
+
+            toast.error('Failed to add journey to cart', {
+                description: 'Will retry when back online.'
+            });
+        },
+        onSuccess: (data) => {
+            queryClient.setQueryData<ShoppingCart>(['unified-cart'], {
+                id: data.shoppingCart.id,
+                items: data.shoppingCart.items
+            });
+            setLocalCart(data.shoppingCart.items);
+            dispatchCartEvent(data.shoppingCart.items);
+
+            toast.success('Added to cart', {
+                description: data.message
+            });
+        },
+    });
+
     // Update quantity mutation
     const updateQuantity = useMutation({
         mutationFn: ({ itemId, quantity }: { itemId: string; quantity: number }) =>
@@ -819,6 +918,7 @@ export function useUnifiedCart(options?: { enabled?: boolean }) {
         // Mutations
         addProduct: addProduct.mutate,
         addService: addService.mutate,
+        addJourney: (journeyId: string, purchaseType?: string) => addJourney.mutate({ journeyId, purchaseType }),
         updateQuantity: (itemId: string, quantity: number) => updateQuantity.mutate({ itemId, quantity }),
         removeItem: removeItem.mutate,
         clearCart: clearCart.mutate,
@@ -826,6 +926,7 @@ export function useUnifiedCart(options?: { enabled?: boolean }) {
         // Mutation states
         isAddingProduct: addProduct.isPending,
         isAddingService: addService.isPending,
+        isAddingJourney: addJourney.isPending,
         isUpdating: updateQuantity.isPending,
         isRemoving: removeItem.isPending,
         isClearing: clearCart.isPending,

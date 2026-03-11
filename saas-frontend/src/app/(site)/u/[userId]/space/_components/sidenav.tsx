@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import SideNav, { NavOption } from "@/components/ui/sidenav";
 import { JSX, useMemo } from "react";
-import { Sparkles, Moon, Home, Send, Inbox, Wind, Gem, Star, Droplets, Grid3X3, BookOpen, Zap, Activity, Users, BookHeart, Cross, Heart, MessageCircle, Dumbbell, BookMarked, Layers, LibraryBig, Sun, Orbit, Package, CalendarDays, User } from "lucide-react";
+import { Sparkles, Moon, Home, Send, Inbox, Wind, Gem, Star, Droplets, Grid3X3, BookOpen, Zap, Activity, Users, BookHeart, Cross, Heart, MessageCircle, Dumbbell, BookMarked, Layers, LibraryBig, Sun, Orbit, Package, CalendarDays, User, Headphones } from "lucide-react";
 import UseUserProfile from "@/hooks/user/UseUserProfile";
 import { SpiritualInterest } from "@/app/(site)/u/[userId]/onboarding/types";
 import { useUnlockStatusForInterest } from "../_hooks/useUnlockStatus";
@@ -327,6 +327,13 @@ const useBL = () => {
         navOptions.push({
             type: "divider",
             label: ""
+        });
+
+        navOptions.push({
+            icon: <Headphones className="w-5 h-5" />,
+            label: "Journeys",
+            href: `/u/${userId}/space/journeys`,
+            testId: "journeys-nav"
         });
 
         navOptions.push({

@@ -18,6 +18,7 @@ import { Calendar, Clock, MapPin, CreditCard, Loader2, CheckCircle, Lock, Bell }
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import CurrencySpan from "@/components/ux/CurrencySpan";
+import CurrencyNote from "@/components/ux/CurrencyNote";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import UseCreateTourBooking from "./hooks/UseCreateTourBooking";
@@ -636,6 +637,7 @@ const UI: React.FC<Props> = (props) => {
                                                 <CurrencySpan value={{ amount: totalPrice, currency: bl.tour.ticketVariants[0].price.currency }} />
                                             </span>
                                         </div>
+                                        <CurrencyNote currency={bl.tour.ticketVariants[0].price.currency} className="mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-merchant-default-foreground mb-2 block">

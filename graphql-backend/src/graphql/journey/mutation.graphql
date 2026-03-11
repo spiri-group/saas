@@ -1,0 +1,82 @@
+type Mutation {
+  create_journey(vendorId: ID!, input: CreateJourneyInput!): CreateJourneyResponse!
+  update_journey(vendorId: ID!, input: UpdateJourneyInput!): CreateJourneyResponse!
+  upsert_journey_track(vendorId: ID!, journeyId: ID!, input: JourneyTrackInput!): UpsertTrackResponse!
+  delete_journey_track(vendorId: ID!, journeyId: ID!, trackId: ID!): MutationResponse!
+  reorder_journey_tracks(vendorId: ID!, journeyId: ID!, trackIds: [ID!]!): CreateJourneyResponse!
+  update_journey_progress(input: UpdateJourneyProgressInput!): JourneyProgress!
+  add_track_reflection(input: AddTrackReflectionInput!): JourneyProgress!
+  set_rental_expiry(journeyId: ID!, userId: ID!, expiresAt: String!, accessType: String): JourneyProgress!
+}
+
+input CreateJourneyInput {
+  id: ID
+  name: String!
+  description: String!
+  thumbnail: ThumbnailInput
+  journeyStructure: String!
+  modalities: [String]
+  intention: String
+  difficulty: String
+  spiritualInterests: [String]
+  recommendedCrystals: [String]
+  recommendedTools: [String]
+  pricing: JourneyPricingInput!
+  previewTrackId: String
+}
+
+input UpdateJourneyInput {
+  id: ID!
+  name: String
+  description: String
+  thumbnail: ThumbnailInput
+  journeyStructure: String
+  modalities: [String]
+  intention: String
+  difficulty: String
+  spiritualInterests: [String]
+  recommendedCrystals: [String]
+  recommendedTools: [String]
+  pricing: JourneyPricingInput
+  previewTrackId: String
+  isLive: Boolean
+}
+
+input JourneyPricingInput {
+  collectionPrice: CurrencyAmountInput!
+  singleTrackPrice: CurrencyAmountInput
+  allowSingleTrackPurchase: Boolean!
+  rentalPrice: CurrencyAmountInput
+  rentalDurationDays: Int
+  allowRental: Boolean
+}
+
+input JourneyTrackInput {
+  id: ID
+  trackNumber: Int!
+  title: String!
+  description: String
+  intention: String
+  durationSeconds: Int!
+  audioFile: MediaInput!
+  previewDurationSeconds: Int
+  integrationPrompts: [String]
+  recommendedCrystals: [String]
+  linkedProductIds: [ID]
+  releaseDate: DateTime
+}
+
+input UpdateJourneyProgressInput {
+  journeyId: ID!
+  userId: ID!
+  trackId: ID!
+  lastPositionSeconds: Int!
+  completed: Boolean!
+}
+
+input AddTrackReflectionInput {
+  journeyId: ID!
+  userId: ID!
+  trackId: ID!
+  reflection: String!
+}

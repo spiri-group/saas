@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, ShoppingCart, Sparkles, Heart, MessageCircle, Loader2, X } from 'lucide-react';
+import { Search, MapPin, ShoppingCart, Sparkles, Heart, MessageCircle, Loader2, X, Headphones } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSearchMerchantListings, type MerchantListingSearchResult, type ListingType } from './_hooks/UseSearchMerchantListings';
 
@@ -19,6 +19,7 @@ const listingTypeConfig: Record<ListingType, { icon: any, label: string, color: 
     LIVESTREAM: { icon: MessageCircle, label: 'Livestream', color: 'text-pink-400' },
     VIDEO: { icon: MessageCircle, label: 'Video', color: 'text-amber-400' },
     PODCAST: { icon: MessageCircle, label: 'Podcast', color: 'text-teal-400' },
+    JOURNEY: { icon: Headphones, label: 'Journey', color: 'text-indigo-400' },
 };
 
 // Map service categories to specific icons

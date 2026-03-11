@@ -69,6 +69,7 @@ const queryFn = async (religionId?: string, zipCode?: number) => {
     }>( `query get_all_new_case($religionId: String, $zipCode: Int) {
             cases(statuses: "NEW", madeOffer: false, religionId: $religionId, zipCode: $zipCode){
                 id,
+                trackingCode,
                 description,
                 category {
                     id,

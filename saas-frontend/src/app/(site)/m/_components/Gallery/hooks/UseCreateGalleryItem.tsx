@@ -62,6 +62,7 @@ export const useCreateGalleryItem = () => {
       queryClient.invalidateQueries({ queryKey: ['gallery-items', variables.merchantId] });
       queryClient.invalidateQueries({ queryKey: ['gallery-items-infinite', variables.merchantId] });
       queryClient.invalidateQueries({ queryKey: ['catalogue-gallery', variables.merchantId] });
+      queryClient.invalidateQueries({ queryKey: ['practitioner-gallery', variables.merchantId] });
 
       // Update category items count in cache
       if (variables.categoryId) {

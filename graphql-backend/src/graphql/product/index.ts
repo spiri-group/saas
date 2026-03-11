@@ -95,8 +95,8 @@ const resolvers = {
                         defaultPrice = prices[0]
                     } else {
                         prices = prices.sort((a: any, b: any) => {
-                            const aDefault = a.metadata.default_in_currency ?? false;
-                            const bDefault = b.metadata.default_in_currency ?? false;
+                            const aDefault = a.metadata?.default_in_currency ?? false;
+                            const bDefault = b.metadata?.default_in_currency ?? false;
                             return aDefault === bDefault ? 0 : aDefault ? -1 : 1;
                         });
 

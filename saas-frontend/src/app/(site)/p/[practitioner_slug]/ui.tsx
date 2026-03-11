@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Session } from "next-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { gql } from "@/lib/services/gql";
-import { Star, Heart, MessageCircle, Calendar, CalendarDays, Clock, MapPin, Shield, Award, Sparkles, ShoppingCart, Send, Loader2, Play, Video, Mic, Sun, Pause, Pin, Store, ImageIcon } from "lucide-react";
+import { Star, Heart, MessageCircle, Calendar, CalendarDays, Clock, MapPin, Shield, Award, Sparkles, ShoppingCart, Send, Loader2, Play, Video, Mic, Sun, Pause, Pin, Store, ImageIcon, Wand2 } from "lucide-react";
 import { iconsMapping } from "@/icons/social";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { useIsFollowing, useFollowMerchant, useUnfollowMerchant } from "../../m/
 import PractitionerSideNav from "../_components/PractitionerSideNav";
 import { GalleryTile, MediaThumbnail } from "@/components/ux/GalleryTiles";
 import { gallery_item_type } from "@/utils/spiriverse";
+import CurrencySpan from "@/components/ux/CurrencySpan";
 
 interface PractitionerProfile {
     pronouns?: string;
@@ -769,7 +770,7 @@ function AudioIntroSection({ audioIntro, practitionerName }: AudioIntroSectionPr
     return (
         <section className="py-8 md:py-10" data-testid="audio-intro-section">
             <div className="px-4 md:px-8 lg:px-12">
-                <div className="flex items-center space-x-4 bg-white/5 border border-white/10 rounded-2xl p-5">
+                <div className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-5 overflow-hidden">
                     <audio
                         ref={audioRef}
                         src={audioIntro.url}
@@ -788,7 +789,7 @@ function AudioIntroSection({ audioIntro, practitionerName }: AudioIntroSectionPr
                             <Play className="h-6 w-6 text-white ml-0.5" />
                         )}
                     </button>
-                    <div className="flex-grow">
+                    <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white/80 mb-2">
                             <Mic className="w-4 h-4 text-indigo-400 inline-block mr-1.5 -mt-0.5" />
                             Meet {practitionerName}
@@ -1398,7 +1399,7 @@ export default function PractitionerProfileContent({
                                                 <div className="flex items-center gap-3 mt-3">
                                                     {service.pricing?.fixedPrice && (
                                                         <span className="text-xl font-bold text-indigo-300">
-                                                            ${(service.pricing.fixedPrice.amount / 100).toFixed(2)}
+                                                            <CurrencySpan value={service.pricing.fixedPrice} withAnimation={false} />
                                                         </span>
                                                     )}
                                                     {service.category && (
@@ -1436,7 +1437,7 @@ export default function PractitionerProfileContent({
                     <div className="px-4 md:px-8 lg:px-12">
                         <div className="grid lg:grid-cols-[1fr_2fr] gap-12 lg:gap-16">
                             {/* Left — Modalities & Specializations */}
-                            {((profile?.modalities && profile.modalities.length > 0) || (profile?.specializations && profile.specializations.length > 0)) && (
+                            {((profile?.modalities && profile.modalities.length > 0) || (profile?.specializations && profile.specializations.length > 0) || (profile?.tools && profile.tools.length > 0) || (profile?.training && profile.training.length > 0)) && (
                                 <div className="lg:sticky lg:top-8 lg:self-start">
                                     <h2 className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-6">
                                         Services & Specializations
@@ -1468,7 +1469,7 @@ export default function PractitionerProfileContent({
                                         </div>
                                     )}
 
-                                    {/* Training & Credentials — nested under modalities */}
+                                    {/* Training & Credentials */}
                                     {profile?.training && profile.training.length > 0 && (
                                         <div className="mt-8 pt-8 border-t border-white/10">
                                             <h3 className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-5">
@@ -1488,6 +1489,39 @@ export default function PractitionerProfileContent({
                                                         {cred.description && (
                                                             <p className="text-xs text-white/60 mt-1">{cred.description}</p>
                                                         )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Tools Collection */}
+                                    {profile?.tools && profile.tools.length > 0 && (
+                                        <div className="mt-8 pt-8 border-t border-white/10">
+                                            <h3 className="text-xs font-semibold uppercase tracking-widest text-purple-400 mb-5">
+                                                <Wand2 className="w-4 h-4 text-purple-400 inline-block mr-2 -mt-0.5" />
+                                                Tools Collection
+                                            </h3>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {profile.tools.map((tool) => (
+                                                    <div key={tool.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10">
+                                                        {tool.image?.url ? (
+                                                            <img
+                                                                src={tool.image.url}
+                                                                alt={tool.name}
+                                                                className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                                                                <Wand2 className="w-5 h-5 text-purple-400" />
+                                                            </div>
+                                                        )}
+                                                        <div className="min-w-0">
+                                                            <h4 className="font-medium text-white text-sm truncate">{tool.name}</h4>
+                                                            {tool.description && (
+                                                                <p className="text-xs text-white/50 line-clamp-1">{tool.description}</p>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>

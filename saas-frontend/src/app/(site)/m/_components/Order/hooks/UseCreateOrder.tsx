@@ -95,32 +95,26 @@ const UseCreateOrder = (customerEmail: string, merchantId: string, forObject?: r
                                     descriptor
                                     merchantId
                                 }
-                                balanceDue {
-                                    subtotal {
-                                        amount
-                                        currency
+                                paymentSummary {
+                                    due {
+                                        subtotal {
+                                            amount
+                                            currency
+                                        }
+                                        fees {
+                                            amount
+                                            currency
+                                        }
+                                        total {
+                                            amount
+                                            currency
+                                        }
                                     }
-                                    fees {
-                                        amount
-                                        currency
-                                    }
-                                    total {
-                                        amount
-                                        currency
-                                    }
-                                },
-                                balancePaid {
-                                    amount {
-                                        amount
-                                        currency
-                                    }
-                                    refunded {
-                                        amount
-                                        currency
-                                    }   
-                                    total {
-                                        amount
-                                        currency
+                                    charged {
+                                        subtotal
+                                        fees
+                                        tax
+                                        paid
                                     }               
                                 }
                                 stripe {

@@ -12,6 +12,7 @@ type Mutation {
   refund_case(chargeId: String!, amountToRefund: Float!): RefundCaseResponse
   mark_case_invoice_void(id: String!): MarkInvoiceResponse,
   cancel_request(ref: RecordRefInput!): CreateCaseResponse
+  purge_case(trackingCode: ID!): MutationResponse
 }
 
 type CreateCaseResponse implements MutationResponseInterface {

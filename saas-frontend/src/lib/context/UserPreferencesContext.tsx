@@ -100,14 +100,19 @@ export const UserPreferencesProvider = ({
     if (session.status === 'authenticated') {
       const user = session.data?.user;
       if (user) {
-        setLocale(user.locale);
-        setCurrency(user.currency);
-        // Optionally update localStorage for consistency
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(
-            STORAGE_KEYS.preferences,
-            JSON.stringify({ locale: user.locale, currency: user.currency })
-          );
+        // Only override if session has actual values — don't wipe browser locale fallback
+        if (user.locale) setLocale(user.locale);
+        if (user.currency) setCurrency(user.currency);
+        // Update localStorage for consistency
+        if (typeof window !== 'undefined' && (user.locale || user.currency)) {
+          const storedPrefs = localStorage.getItem(STORAGE_KEYS.preferences);
+          let prefs: { locale?: string; currency?: string } = {};
+          if (storedPrefs) {
+            try { prefs = JSON.parse(storedPrefs); } catch { prefs = {}; }
+          }
+          if (user.locale) prefs.locale = user.locale;
+          if (user.currency) prefs.currency = user.currency;
+          localStorage.setItem(STORAGE_KEYS.preferences, JSON.stringify(prefs));
         }
       }
     }

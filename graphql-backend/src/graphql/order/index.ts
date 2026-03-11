@@ -373,7 +373,10 @@ const resolvers = {
                         // Featuring source for revenue share tracking (if purchasing through merchant featured section)
                         ...(line.featuringSource && {
                             featuringSource: line.featuringSource
-                        })
+                        }),
+                        // Journey rental details
+                        ...(line.purchaseType && { purchaseType: line.purchaseType }),
+                        ...(line.rentalDurationDays && { rentalDurationDays: line.rentalDurationDays })
                     }
                 }),
                 payments: [],
@@ -2723,6 +2726,8 @@ export const restore_target_on_line = async (line: orderLine_type, cosmosClient:
         }
     } else if (listing_type === "SERVICE") {
         line.target = "SERVICE-PURCHASE"
+    } else if (listing_type === "JOURNEY") {
+        line.target = (line as any).purchaseType === "RENTAL" ? "JOURNEY-RENTAL" : "JOURNEY-PURCHASE"
     } else {
         throw new Error(`Listing type ${listing_type} is not supported`)
     }

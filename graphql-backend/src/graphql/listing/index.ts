@@ -40,7 +40,7 @@ const resolvers = {
             // Products must be explicitly isLive=true, other listing types are shown regardless
             // Use includeDrafts=true to show draft products (for merchant view)
             if (args.includeDrafts !== true) {
-                whereConditions.push("(l.type != 'PRODUCT' OR l.isLive = true)");
+                whereConditions.push("(l.type NOT IN ('PRODUCT', 'JOURNEY') OR l.isLive = true)");
             }
             
             const totalCountQuery = `
@@ -89,7 +89,7 @@ const resolvers = {
                 FROM l
                 WHERE l.vendorId = @merchantId
                 AND CONTAINS(LOWER(l.name), @search)
-                AND (l.type = 'TOUR' OR l.type = 'PRODUCT' OR l.type = 'SERVICE')
+                AND (l.type = 'TOUR' OR l.type = 'PRODUCT' OR l.type = 'SERVICE' OR l.type = 'JOURNEY')
                 ORDER BY l.name ASC
             `;
 
@@ -475,6 +475,15 @@ const resolvers = {
             } else if (parent.type == "SERVICE") {
                 const skus : any[] = []
                 return skus;
+            } else if (parent.type == "JOURNEY") {
+                if (parent.pricing?.collectionPrice) {
+                    return [{
+                        id: `${parent.id}-sku`,
+                        qty: "999",
+                        price: parent.pricing.collectionPrice
+                    }]
+                }
+                return (parent as listing_type).skus || [];
             } else {
                 return (parent as listing_type).skus;
             }
@@ -516,6 +525,11 @@ const resolvers = {
                 return "TBA";
               } else if (parent.type == ListingTypes.PODCAST) {
                 // aim $6.00
+                return "TBA";
+              } else if (parent.type == ListingTypes.JOURNEY) {
+                if (parent.pricing?.collectionPrice) {
+                    return `$${(parent.pricing.collectionPrice.amount / 100).toFixed(2)}`;
+                }
                 return "TBA";
               } else {
                 return "NA";

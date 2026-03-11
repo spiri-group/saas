@@ -49,17 +49,17 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
     };
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="backdrop-blur-xl bg-white/[0.07] border border-white/15 rounded-2xl shadow-2xl flex flex-col flex-1">
-                <div className="p-8 space-y-6 flex-1 flex flex-col justify-center">
+        <div className="flex flex-col h-full min-h-0">
+            <div className="backdrop-blur-xl bg-white/[0.07] border border-white/15 rounded-2xl shadow-2xl flex flex-col flex-1 min-h-0">
+                <div className="px-6 py-5 md:px-8 md:py-6 space-y-4 flex-1 flex flex-col justify-center overflow-y-auto min-h-0">
                     <div>
-                        <h1 className="text-3xl text-white tracking-wide mb-2">
+                        <h1 className="text-2xl md:text-3xl text-white tracking-wide mb-1">
                             First up, tell us a little about yourself
                         </h1>
                     </div>
 
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <FormField
                                 control={form.control}
                                 name="firstName"
@@ -148,7 +148,7 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
 
                         <div data-testid="setup-religion-picker">
                             <label className="text-slate-300 text-sm font-medium">Religion (optional)</label>
-                            <div className="mt-2">
+                            <div className="mt-1.5">
                                 <HierarchicalReligionPicker
                                     selectedReligionId={form.watch('religionId')}
                                     onReligionSelect={(id) => {
@@ -187,8 +187,8 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
                 <div className="border-t border-white/10" />
 
                 {/* CTA section */}
-                <div className="p-8 pt-6 space-y-3">
-                    <p className="text-sm text-slate-400 mb-4 text-center tracking-wide uppercase">
+                <div className="px-6 pb-5 pt-4 md:px-8 md:pb-6 md:pt-5 space-y-2.5">
+                    <p className="text-sm text-slate-400 mb-3 text-center tracking-wide uppercase">
                         What brings you here?
                     </p>
 
@@ -197,7 +197,7 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
                             type="button"
                             data-testid="setup-basic-browse-btn"
                             onClick={handleBrowse}
-                            className="flex-1 flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl bg-white/10 text-white text-lg tracking-wide hover:bg-white/20 active:scale-[0.98] transition-all duration-150 cursor-pointer"
+                            className="flex-1 flex items-center justify-center gap-2.5 px-6 py-3 md:px-8 md:py-4 rounded-xl bg-white/10 text-white text-base md:text-lg tracking-wide hover:bg-white/20 active:scale-[0.98] transition-all duration-150 cursor-pointer"
                         >
                             <Compass className="w-5 h-5" />
                             Start Your Journey
@@ -207,7 +207,7 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
                             type="button"
                             data-testid="setup-basic-setup-btn"
                             onClick={handleSetupBusiness}
-                            className="flex-1 flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-white text-lg tracking-wide hover:from-indigo-400 hover:to-cyan-400 active:scale-[0.98] transition-all duration-150 cursor-pointer"
+                            className="flex-1 flex items-center justify-center gap-2.5 px-6 py-3 md:px-8 md:py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-white text-base md:text-lg tracking-wide hover:from-indigo-400 hover:to-cyan-400 active:scale-[0.98] transition-all duration-150 cursor-pointer"
                         >
                             <Store className="w-5 h-5" />
                             Set Up a Business

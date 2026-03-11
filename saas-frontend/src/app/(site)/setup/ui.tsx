@@ -256,6 +256,41 @@ export default function SetupUI() {
         }
     }, [session?.user?.id, router]);
 
+    // Cancel / "I'll do this later" — save basic details so requiresInput is cleared, then navigate away
+    const handleCancel = useCallback(async () => {
+        if (session?.user?.id) {
+            const vals = form.getValues();
+            // Only save if they've entered at least a first name (i.e. started filling in the form)
+            if (vals.firstName) {
+                try {
+                    await gql<{ update_user: { success: boolean } }>(
+                        `mutation UpdateUser($customer: CustomerUpdateInput!) {
+                            update_user(customer: $customer) {
+                                success
+                            }
+                        }`,
+                        {
+                            customer: {
+                                id: session.user.id,
+                                firstname: vals.firstName,
+                                lastname: vals.lastName,
+                                ...(vals.religionId ? {
+                                    religionId: vals.religionId,
+                                    openToOtherExperiences: vals.openToOtherExperiences ?? true,
+                                } : {}),
+                            }
+                        }
+                    );
+                } catch (error) {
+                    console.error('Failed to save basic details:', error);
+                }
+            }
+            window.location.href = `/u/${session.user.id}/space`;
+        } else {
+            window.location.href = '/';
+        }
+    }, [session, form]);
+
     // Merchant submission
     const handleMerchantSubmit = useCallback(async () => {
         // Ensure country is set (fallback for skip path where detection resolved late)
@@ -500,7 +535,7 @@ export default function SetupUI() {
             isFullScreen={fullScreen}
             isCentered={step === 'basic'}
             marketingContent={<MarketingPanel theme={theme} />}
-            cancelHref={didSkipRef.current && session?.user?.id ? `/u/${session.user.id}/space` : undefined}
+            onCancel={handleCancel}
         >            {showCard ? (
                 <div
                     className={`flex flex-col rounded-2xl flex-1 min-h-0 transition-all duration-1000 overflow-hidden ${

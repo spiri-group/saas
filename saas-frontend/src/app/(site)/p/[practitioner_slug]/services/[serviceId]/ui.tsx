@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import CurrencySpan from "@/components/ux/CurrencySpan";
+import CurrencyNote from "@/components/ux/CurrencyNote";
 import { useUnifiedCart } from "@/app/(site)/components/Catalogue/components/ShoppingCart/useUnifiedCart";
 import { useBirthChart } from "@/app/(site)/u/[userId]/space/astrology/_hooks/useBirthChart";
 import { Clock, FileText, Package, Stars, AlertCircle, ArrowLeft, Calendar } from "lucide-react";
@@ -208,6 +209,8 @@ const useServiceDetails = (practitionerId: string, serviceSlug: string) => {
                             type
                             required
                             options
+                            description
+                            scaleMax
                         }
                         readingOptions {
                             readingType
@@ -614,6 +617,7 @@ const UI: React.FC<Props> = ({ practitionerId, practitionerSlug, serviceSlug }) 
                                                 <CurrencySpan value={totalPrice} withAnimation={false} />
                                             </span>
                                         </div>
+                                        <CurrencyNote currency={totalPrice.currency} className="mt-1" />
 
                                         {/* Birth Chart Gate for Astrology Readings */}
                                         {needsBirthChart ? (

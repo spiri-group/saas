@@ -191,11 +191,9 @@ test.describe.serial('Service Questionnaire - Full Flow', () => {
       await addBtn.click();
       await page.waitForTimeout(1000);
 
-      // Popover renders in a Radix portal — use force click to bypass potential overlay issues
       const typeBtn = page.getByTestId(`add-question-type-${type}`).first();
       await expect(typeBtn).toBeVisible({ timeout: 5000 });
-      // Use evaluate to click directly via JS — Radix popovers can intercept normal clicks
-      await typeBtn.evaluate((el) => (el as HTMLElement).click());
+      await typeBtn.click();
       await page.waitForTimeout(2000);
 
       // Question card should now be visible

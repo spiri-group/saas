@@ -17,14 +17,14 @@ type Props = {
 
 export default function PractitionerOptionalStep({ form, onSubmit, onBack, isSubmitting }: Props) {
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto p-8 space-y-6">
+        <div className="flex flex-col h-full min-h-0">
+            <div className="flex-1 overflow-y-auto px-5 py-4 md:p-8 space-y-4 md:space-y-6 min-h-0">
                 <div>
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-1">
                         <Sparkles className="w-5 h-5 text-purple-600" />
                         <h1 className="font-light text-2xl text-purple-900">Additional Details</h1>
                     </div>
-                <p className="text-base text-purple-700/70">
+                <p className="text-sm md:text-base text-purple-700/70">
                     These details are optional but help seekers get to know you better.
                 </p>
             </div>
@@ -111,7 +111,7 @@ export default function PractitionerOptionalStep({ form, onSubmit, onBack, isSub
             />
             </div>
 
-            <div className="p-8 pt-0">
+            <div className="px-5 pb-4 md:px-8 md:pb-6">
                 <div className="flex gap-3">
                     <Button
                         type="button"

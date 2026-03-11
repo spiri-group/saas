@@ -32,7 +32,6 @@ const useDeleteService = (practitionerId: string) => {
                 return old.filter((s) => s.id !== serviceId);
             });
             queryClient.invalidateQueries({ queryKey: ['practitioner-services', practitionerId] });
-            queryClient.invalidateQueries({ queryKey: ['merchant-services'] });
         },
     });
 };

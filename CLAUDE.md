@@ -160,6 +160,35 @@ If unsure whether you can complete a feature fully, **ASK FIRST**.
 
 ---
 
+## CRITICAL: No max-width on Page Content
+
+**NEVER** add `max-w-*` classes to page-level content containers. Content should use the full available screen width on desktop.
+
+### Rule
+
+Page content (inside layouts/sidebars) should expand to fill the available space. Users on wide monitors should see their content use the full screen — not a narrow centered column with wasted space on both sides.
+
+```tsx
+// ❌ Bad - artificially constrains page content
+<div className="max-w-5xl mx-auto p-6">
+  {/* Journey list, track manager, etc. */}
+</div>
+
+// ✅ Good - uses full available width
+<div className="w-full p-6">
+  {/* Journey list, track manager, etc. */}
+</div>
+```
+
+### Exceptions (where max-w IS appropriate)
+
+- **Dialogs** — size dialogs to fit their content. Don't pick an arbitrary width — look at what's inside (form fields, grids, thumbnail builders) and choose a width that gives the content room to breathe. Always add `max-w-[95vw]` so dialogs stay responsive on mobile. Reference: services create dialog uses `w-[870px]`, journey create uses `w-[800px]`, simple confirmation dialogs use `sm:max-w-md`.
+- **Readability text** — long paragraph text (e.g., empty state descriptions) can use `max-w-md` for readability
+- **Centered media** — album art, avatars, or media elements can use `max-w-md` when centering is part of the design
+- **Form inputs** — individual form fields don't need to stretch edge-to-edge
+
+---
+
 ## Code Quality Guidelines
 
 ### Before Committing

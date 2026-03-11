@@ -106,6 +106,10 @@ export const useUpsertGalleryItem = () => {
         queryClient.invalidateQueries({ queryKey: ['gallery-albums', merchantId] });
       }
       
+      // Refresh public-facing gallery views
+      queryClient.invalidateQueries({ queryKey: ['catalogue-gallery', merchantId] });
+      queryClient.invalidateQueries({ queryKey: ['practitioner-gallery', merchantId] });
+
       // Only invalidate storage if this was a new item (new files uploaded)
       if (data.isNew) {
         queryClient.invalidateQueries({ queryKey: ['vendorStorage', merchantId] });

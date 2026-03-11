@@ -185,8 +185,10 @@ const resolvers = {
             const now = new Date();
             const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
             const today = now.toISOString().slice(0, 10);
+            const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-            const filter = `PartitionKey eq '${today}' and timestamp ge '${fiveMinutesAgo.toISOString()}'`;
+            // Query both today and yesterday's partitions to handle UTC midnight boundary
+            const filter = `(PartitionKey eq '${today}' or PartitionKey eq '${yesterday}') and timestamp ge '${fiveMinutesAgo.toISOString()}'`;
             const entities = await ts.queryEntities<AnalyticsEntity>(ANALYTICS_TABLE, filter);
 
             const pageviews = entities.filter(e => e.eventType === "pageview");

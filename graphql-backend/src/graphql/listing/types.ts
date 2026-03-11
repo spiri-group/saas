@@ -11,7 +11,8 @@ export const enum ListingTypes {
     PODCAST = "PODCAST",
     TOUR = "TOUR",
     PRODUCT = "PRODUCT",
-    SERVICE = "SERVICE"
+    SERVICE = "SERVICE",
+    JOURNEY = "JOURNEY"
 }
 
 export type listing_type = {

@@ -29,22 +29,24 @@ const required_attributes = `
                 currency
             }
         }
-        balanceDue {
-            subtotal {
-                amount
-                currency
-            }
-            fees {
-                amount
-                currency
-            }
-            total {
-                amount
-                currency
-            }
-            discount {
-                amount
-                currency 
+        paymentSummary {
+            due {
+                subtotal {
+                    amount
+                    currency
+                }
+                fees {
+                    amount
+                    currency
+                }
+                total {
+                    amount
+                    currency
+                }
+                discount {
+                    amount
+                    currency
+                }
             }
         }
     }
@@ -55,7 +57,7 @@ const required_attributes = `
     }
 `
 
-const UseRequestReleaseCase = (caseId?: string, caseOffer?: caseOffer_type) => {
+const UseRequestReleaseCase = (caseId?: string, caseOffer?: caseOffer_type, queryKeyId?: string) => {
     const queryClient = useQueryClient()
 
     const request = useRealTimeObjectState<caseOffer_type>({
@@ -96,7 +98,7 @@ const UseRequestReleaseCase = (caseId?: string, caseOffer?: caseOffer_type) => {
             return resp.request_release_case.offer
         },
         onSuccess: async (data: caseOffer_type) => {
-            queryClient.setQueryData(["details-for-case", caseId], (old: case_type) => {
+            queryClient.setQueryData(["details-for-case", queryKeyId ?? caseId], (old: case_type) => {
                 const tmp = { ...old }
                 tmp.releaseOffer = data
                 if (!caseOffer) {

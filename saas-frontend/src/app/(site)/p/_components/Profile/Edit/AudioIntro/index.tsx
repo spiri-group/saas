@@ -386,7 +386,7 @@ const EditPractitionerAudioIntro: React.FC<Props> = (props) => {
 
     return (
         <DialogContent
-            className="w-[600px] max-w-[90vw]"
+            className="w-[600px] max-w-[95vw] max-h-[90vh] overflow-y-auto"
             data-testid="edit-practitioner-audio-intro-dialog"
         >
             <DialogHeader>
