@@ -285,10 +285,8 @@ export default function SetupUI() {
                     console.error('Failed to save basic details:', error);
                 }
             }
-            window.location.href = `/u/${session.user.id}/space`;
-        } else {
-            window.location.href = '/';
         }
+        window.location.href = '/';
     }, [session, form]);
 
     // Merchant submission
@@ -535,7 +533,7 @@ export default function SetupUI() {
             isFullScreen={fullScreen}
             isCentered={step === 'basic'}
             marketingContent={<MarketingPanel theme={theme} />}
-            onCancel={handleCancel}
+            onCancel={step !== 'basic' ? handleCancel : undefined}
         >            {showCard ? (
                 <div
                     className={`flex flex-col rounded-2xl flex-1 min-h-0 transition-all duration-1000 overflow-hidden ${

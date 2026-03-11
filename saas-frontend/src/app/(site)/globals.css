@@ -158,12 +158,21 @@
   --case-status-active: rgb(110, 238, 98);
   --case-status-closed: rgb(238, 98, 98);
 
+  /* Viewport height minus nav — vh fallback, dvh override below */
   --spacing-screen-minus-nav: calc(100vh - 90px - 16px);
   --spacing-screen-minus-nav-mobile: calc(100vh - 90px - 16px - 75px);
 
   --font-default: "font-sans";
   --font-headings: "font-sans";
   --font-brand: "font-sans";
+}
+
+/* Use dvh for dynamic viewport on mobile (accounts for address bar shrinking) */
+@supports (height: 100dvh) {
+  :root {
+    --spacing-screen-minus-nav: calc(100dvh - 90px - 16px);
+    --spacing-screen-minus-nav-mobile: calc(100dvh - 90px - 16px - 75px);
+  }
 }
 
 body {

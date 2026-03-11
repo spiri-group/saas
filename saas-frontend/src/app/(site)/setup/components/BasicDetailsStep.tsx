@@ -11,6 +11,7 @@ import useReverseGeocoding from '@/components/utils/useReverseGeoCoding';
 import type { OnboardingFormValues } from '../hooks/useOnboardingForm';
 import { COUNTRIES } from '../hooks/useOnboardingForm';
 import { Compass, Store } from 'lucide-react';
+import ScrollableForm from './ScrollableForm';
 
 type Props = {
     form: UseFormReturn<OnboardingFormValues>;
@@ -51,7 +52,7 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
     return (
         <div className="flex flex-col h-full min-h-0">
             <div className="backdrop-blur-xl bg-white/[0.07] border border-white/15 rounded-2xl shadow-2xl flex flex-col flex-1 min-h-0">
-                <div className="px-6 py-5 md:px-8 md:py-6 space-y-4 flex-1 flex flex-col justify-center overflow-y-auto min-h-0">
+                <ScrollableForm dark className="px-6 py-5 md:px-8 md:py-6 space-y-4 flex flex-col justify-center">
                     <div>
                         <h1 className="text-2xl md:text-3xl text-white tracking-wide mb-1">
                             First up, tell us a little about yourself
@@ -181,7 +182,7 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
                             </div>
                         )}
                     </div>
-                </div>
+                </ScrollableForm>
 
                 {/* Divider */}
                 <div className="border-t border-white/10" />
