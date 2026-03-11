@@ -61,11 +61,11 @@ export default function MerchantProfileStep({ form, onSubmit, onBack, isSubmitti
     const logoValue = form.watch('merchant.logo');
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto p-8 space-y-6">
+        <div className="flex flex-col h-full min-h-0">
+            <div className="flex-1 overflow-y-auto px-5 py-4 md:p-8 space-y-4 md:space-y-6 min-h-0">
                 <div>
-                    <h1 className="font-light text-2xl text-slate-800 mb-2">Set up your business</h1>
-                    <p className="text-base text-slate-500">Tell us about your business to get started.</p>
+                    <h1 className="font-light text-2xl text-slate-800 mb-1">Set up your business</h1>
+                    <p className="text-sm md:text-base text-slate-500">Tell us about your business to get started.</p>
                 </div>
 
                 <FormField
@@ -282,7 +282,7 @@ export default function MerchantProfileStep({ form, onSubmit, onBack, isSubmitti
                 />
             </div>
 
-            <div className="p-8 pt-0">
+            <div className="px-5 pb-4 md:px-8 md:pb-6">
                 <div className="flex gap-3">
                     <Button
                         type="button"

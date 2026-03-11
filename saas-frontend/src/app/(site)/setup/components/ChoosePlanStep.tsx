@@ -11,7 +11,20 @@ import type { OnboardingFormValues } from '../hooks/useOnboardingForm';
 
 type Path = 'directory' | 'practitioner' | 'merchant' | null;
 
-type PathOption = { id: Path & string; label: string; description: string; icon: typeof BookOpen; tiers: string[]; showPrice?: boolean };
+const ALL_PLAN_TIERS = ['awaken', 'illuminate', 'manifest', 'transcend'];
+
+type PathOption = {
+    id: Path & string;
+    label: string;
+    description: string;
+    icon: typeof BookOpen;
+    tiers: string[];
+    /** Tiers to show but greyed out (not selectable) */
+    grayscaleTiers?: string[];
+    showPrice?: boolean;
+    /** Tier to use for "from $..." pricing on the path card */
+    fromPriceTier?: string;
+};
 
 const PATH_OPTIONS: PathOption[] = [
     {
@@ -27,14 +40,18 @@ const PATH_OPTIONS: PathOption[] = [
         label: 'I\u2019m a practitioner',
         description: 'Offer services, accept bookings, and grow your practice',
         icon: Sparkles,
-        tiers: ['awaken', 'illuminate'],
+        tiers: ['awaken', 'illuminate', 'manifest'],
+        grayscaleTiers: ['transcend'],
+        fromPriceTier: 'awaken',
     },
     {
         id: 'merchant',
         label: 'I\u2019m a merchant',
         description: 'Selling products, hosting tours & events, running your store',
         icon: Store,
-        tiers: ['manifest', 'transcend'],
+        tiers: ['illuminate', 'manifest', 'transcend'],
+        grayscaleTiers: ['awaken'],
+        fromPriceTier: 'illuminate',
     },
 ];
 
@@ -101,9 +118,9 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
     // ── Stage 1: Choose your path ──────────────────────────────────
     if (!path) {
         return (
-            <div className="flex-1 flex flex-col space-y-8 p-8 min-h-0 overflow-y-auto" data-testid="choose-plan-step">
+            <div className="flex-1 flex flex-col space-y-5 md:space-y-8 px-4 py-5 md:p-8 min-h-0 overflow-y-auto" data-testid="choose-plan-step">
                 <div className="text-center">
-                    <h1 className="font-light text-3xl text-white mb-3">How will you use SpiriVerse?</h1>
+                    <h1 className="font-light text-2xl md:text-3xl text-white mb-2">How will you use SpiriVerse?</h1>
                     <p className="text-slate-300">
                         Pick what best describes you. You can always change your plan later.
                     </p>
@@ -113,7 +130,10 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
                     {PATH_OPTIONS.map((option) => {
                         const Icon = option.icon;
                         const directoryTier = option.showPrice ? tiers.find(t => t.tier === 'directory') : null;
-                        const priceLabel = directoryTier ? `$${(directoryTier.monthlyPrice / 100).toFixed(0)}/month` : null;
+                        const directoryPriceLabel = directoryTier ? `$${(directoryTier.monthlyPrice / 100).toFixed(0)}/month` : null;
+                        const fromTier = option.fromPriceTier ? tiers.find(t => t.tier === option.fromPriceTier) : null;
+                        const fromPriceLabel = fromTier ? `from $${(fromTier.monthlyPrice / 100).toFixed(0)}/month` : null;
+                        const priceLabel = directoryPriceLabel || fromPriceLabel;
                         return (
                             <button
                                 key={option.id}
@@ -161,12 +181,13 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
     // ── Stage 2: Choose your plan within the selected path ─────────
 
     const currentOption = PATH_OPTIONS.find(o => o.id === path)!;
-    const filteredTiers = tiers.filter(t => currentOption.tiers.includes(t.tier));
+    const visibleTiers = tiers.filter(t => ALL_PLAN_TIERS.includes(t.tier));
+    const grayscaleTiers = currentOption.grayscaleTiers || [];
 
     return (
-        <div className="flex-1 flex flex-col space-y-8 p-8 min-h-0 overflow-y-auto" data-testid="choose-plan-step">
+        <div className="flex-1 flex flex-col space-y-5 md:space-y-8 px-4 py-5 md:p-8 min-h-0 overflow-y-auto" data-testid="choose-plan-step">
             <div className="text-center">
-                <h1 className="font-light text-3xl text-white mb-3">Choose Your Plan</h1>
+                <h1 className="font-light text-2xl md:text-3xl text-white mb-2">Choose Your Plan</h1>
                 <p className="text-slate-300">
                     {path === 'directory'
                         ? 'Get listed and let seekers find you.'
@@ -207,29 +228,36 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
             {/* Tier cards */}
             <div
                 data-testid="plan-cards-grid"
-                className={cn(
-                    'grid gap-4 mx-auto w-full',
-                    filteredTiers.length === 1 && 'max-w-md',
-                    filteredTiers.length === 2 && 'grid-cols-1 md:grid-cols-2 max-w-3xl',
-                )}
+                className="grid gap-4 mx-auto w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-6xl"
             >
-                {filteredTiers.map((tier) => (
-                    <TierCard
-                        key={tier.tier}
-                        tier={tier}
-                        billingInterval={selectedInterval}
-                        selected={selectedTier === tier.tier}
-                        onSelect={handleTierChange}
-                        badge={
-                            tier.tier === 'directory' ? 'Get Listed'
-                                : tier.tier === 'awaken' ? 'Starter'
-                                    : tier.tier === 'illuminate' ? 'Growth'
-                                        : tier.tier === 'manifest' ? 'Most Popular'
-                                            : tier.tier === 'transcend' ? 'Everything'
-                                                : undefined
-                        }
-                    />
-                ))}
+                {visibleTiers.map((tier) => {
+                    const isGrayscale = grayscaleTiers.includes(tier.tier);
+                    return (
+                        <div
+                            key={tier.tier}
+                            className={cn(
+                                'transition-all',
+                                isGrayscale && 'grayscale opacity-40 pointer-events-none',
+                            )}
+                        >
+                            <TierCard
+                                tier={tier}
+                                billingInterval={selectedInterval}
+                                selected={selectedTier === tier.tier}
+                                onSelect={handleTierChange}
+                                disabled={isGrayscale}
+                                badge={
+                                    tier.tier === 'directory' ? 'Get Listed'
+                                        : tier.tier === 'awaken' ? 'Starter'
+                                            : tier.tier === 'illuminate' ? 'Growth'
+                                                : tier.tier === 'manifest' ? 'Most Popular'
+                                                    : tier.tier === 'transcend' ? 'Everything'
+                                                        : undefined
+                                }
+                            />
+                        </div>
+                    );
+                })}
             </div>
 
             <p className="text-center text-sm text-slate-300">
@@ -237,7 +265,7 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
             </p>
 
             {/* Navigation */}
-            <div className="flex gap-3 max-w-md mx-auto w-full">
+            <div className="flex gap-3 max-w-md mx-auto w-full pb-1">
                 <Button
                     type="button"
                     variant="outline"

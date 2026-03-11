@@ -25,7 +25,7 @@ export default function ConditionalMainWrapper({ children }: { children: ReactNo
   // Setup pages: fixed height so content is constrained to viewport (no page scroll)
   if (isSetup) {
     return (
-      <main className={cn("h-screen-minus-nav flex flex-col mt-20 overflow-hidden")}>
+      <main className={cn("h-screen-minus-nav flex flex-col mt-20 overflow-y-auto overflow-x-hidden")}>
         {children}
       </main>
     );

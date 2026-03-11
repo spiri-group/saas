@@ -106,10 +106,10 @@ export default function OnboardingConsent({ onAccepted, onBack, branch }: Props)
     };
 
     return (
-        <div className="flex flex-col md:grid md:grid-cols-[240px_1fr] flex-1 min-h-0" data-testid="onboarding-consent">
+        <div className="flex flex-col md:grid md:grid-cols-[220px_1fr] flex-1 min-h-0" data-testid="onboarding-consent">
             {/* Left panel — progress tracker */}
-            <div className="bg-white/[0.05] p-6 flex flex-col border-r border-white/10">
-                <div className="flex items-center gap-3 mb-4">
+            <div className="bg-white/[0.05] p-4 md:p-5 flex flex-col border-r border-white/10">
+                <div className="flex items-center gap-3 mb-3">
                     <div className="rounded-full bg-indigo-500/20 p-2">
                         <ShieldCheck className="h-5 w-5 text-indigo-400" />
                     </div>
@@ -118,7 +118,7 @@ export default function OnboardingConsent({ onAccepted, onBack, branch }: Props)
                     </h2>
                 </div>
 
-                <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                <p className="text-sm text-slate-400 leading-relaxed mb-4">
                     Please review each document to continue.
                 </p>
 
@@ -182,8 +182,8 @@ export default function OnboardingConsent({ onAccepted, onBack, branch }: Props)
 
             {/* Right panel — single document view */}
             <div className="flex flex-col flex-1 min-h-0">
-                <div className="flex-1 overflow-y-auto p-6 flex flex-col min-h-0">
-                    <h3 className="font-medium text-white mb-4 shrink-0">{activeDoc.title}</h3>
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col min-h-0">
+                    <h3 className="font-medium text-white mb-3 shrink-0">{activeDoc.title}</h3>
                     <div
                         data-testid={`consent-content-${activeDoc.documentType}`}
                         className="border border-white/10 rounded-lg p-4 overflow-y-auto text-sm text-slate-300 bg-white/[0.03] prose prose-sm prose-invert max-w-none prose-headings:text-white prose-p:text-slate-300 prose-a:text-indigo-400 prose-strong:text-white prose-li:text-slate-300 flex-1 min-h-0"
@@ -219,7 +219,7 @@ export default function OnboardingConsent({ onAccepted, onBack, branch }: Props)
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-white/10 space-y-4">
+                <div className="p-4 md:p-6 border-t border-white/10 space-y-3">
                     <div className="flex items-center space-x-2">
                         <Checkbox
                             id={`consent-${activeDoc.documentType}`}

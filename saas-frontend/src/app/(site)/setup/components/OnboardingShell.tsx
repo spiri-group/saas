@@ -19,16 +19,13 @@ type Props = {
 export default function OnboardingShell({ isFullScreen, isCentered, marketingContent, children, cancelHref }: Props) {
     const router = useRouter();
     return (
-        <div className={cn(
-            "w-full flex-1 flex flex-col min-h-0 relative",
-            isCentered && "justify-center",
-        )}>
+        <div className="w-full flex-1 flex flex-col min-h-0 relative">
             {/* Content grid with animated transition */}
             <div
                 className={cn(
                     "relative z-10 w-full grid gap-4 p-4 md:gap-6 md:p-6 min-h-0",
                     !isCentered && "flex-1",
-                    isCentered && "max-w-6xl mx-auto",
+                    isCentered && "max-w-6xl mx-auto my-auto",
                 )}
                 style={{
                     gridTemplateColumns: isFullScreen ? '0fr 1fr' : '1fr 1fr',
@@ -46,7 +43,7 @@ export default function OnboardingShell({ isFullScreen, isCentered, marketingCon
 
                 {/* Form panel — stretches to center when full-screen */}
                 <div className={cn(
-                    'flex flex-col min-h-0 min-w-0 overflow-hidden transition-all duration-700',
+                    'flex flex-col min-h-0 min-w-0 overflow-x-hidden overflow-y-auto transition-all duration-700',
                     isFullScreen ? 'max-w-7xl mx-auto w-full' : '',
                 )}>
                     {children}
