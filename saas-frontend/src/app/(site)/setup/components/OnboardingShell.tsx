@@ -11,7 +11,7 @@ type Props = {
     marketingContent: ReactNode;
     children: ReactNode;
     /** Called when the user bails out of onboarding */
-    onCancel: () => void;
+    onCancel?: () => void;
 };
 
 export default function OnboardingShell({ isFullScreen, isCentered, marketingContent, children, onCancel }: Props) {
@@ -47,15 +47,17 @@ export default function OnboardingShell({ isFullScreen, isCentered, marketingCon
                 </div>
             </div>
 
-            {/* Escape hatch — always visible at bottom, outside the grid */}
-            <div className="flex-shrink-0 flex justify-center py-4">
-                <button
-                    onClick={onCancel}
-                    className="text-sm text-white/40 hover:text-white/70 hover:underline transition-colors cursor-pointer"
-                >
-                    I&apos;ll do this later
-                </button>
-            </div>
+            {/* Escape hatch — visible after the basic step */}
+            {onCancel && (
+                <div className="flex-shrink-0 flex justify-center py-4">
+                    <button
+                        onClick={onCancel}
+                        className="text-sm text-white/40 hover:text-white/70 hover:underline transition-colors cursor-pointer"
+                    >
+                        I&apos;ll do this later
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
