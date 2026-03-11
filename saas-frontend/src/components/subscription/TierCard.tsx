@@ -2,10 +2,10 @@
 
 const TIER_DESCRIPTIONS: Record<string, string> = {
     directory: 'Get listed and let seekers find you',
-    awaken: 'Get discovered and start earning',
-    illuminate: 'Activate specialist tools',
-    manifest: 'Start selling products',
-    transcend: 'Remove the limits',
+    awaken: 'Your practice, online',
+    illuminate: 'Tools for every occasion',
+    manifest: 'Your shopfront awaits',
+    transcend: 'No limits',
 };
 
 const TIER_BULLETS: Record<string, string[]> = {
