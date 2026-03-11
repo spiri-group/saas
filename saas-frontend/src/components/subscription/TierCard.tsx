@@ -15,7 +15,6 @@ const TIER_BULLETS: Record<string, string[]> = {
         'Photo gallery to showcase your work',
     ],
     awaken: [
-        'Get listed and found by seekers',
         'Investigate cases with SpiriAssist',
         'Fill your calendar with bookings',
         'Accept payments instantly',
