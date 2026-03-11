@@ -248,14 +248,6 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
                                 selected={selectedTier === tier.tier}
                                 onSelect={handleTierChange}
                                 disabled={isGrayscale}
-                                badge={
-                                    tier.tier === 'directory' ? 'Get Listed'
-                                        : tier.tier === 'awaken' ? 'Starter'
-                                            : tier.tier === 'illuminate' ? 'Growth'
-                                                : tier.tier === 'manifest' ? 'Most Popular'
-                                                    : tier.tier === 'transcend' ? 'Everything'
-                                                        : undefined
-                                }
                             />
                         </div>
                     );
