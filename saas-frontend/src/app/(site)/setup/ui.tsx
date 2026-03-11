@@ -472,7 +472,6 @@ export default function SetupUI() {
                     <ChoosePlanStep
                         form={form}
                         onSelect={handlePlanSelect}
-                        onBack={handlePlanBack}
                     />
                 )}
 

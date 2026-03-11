@@ -58,10 +58,9 @@ const PATH_OPTIONS: PathOption[] = [
 type Props = {
     form: UseFormReturn<OnboardingFormValues>;
     onSelect: (tier: string) => void;
-    onBack: () => void;
 };
 
-export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
+export default function ChoosePlanStep({ form, onSelect }: Props) {
     const { data: tiers, isLoading } = useSubscriptionTiers();
     const selectedTier = useWatch({ control: form.control, name: 'subscription.tier' });
     const selectedInterval = useWatch({ control: form.control, name: 'subscription.billingInterval' }) || 'monthly';
@@ -162,18 +161,6 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
                     })}
                 </div>
 
-                {/* Navigation */}
-                <div className="flex gap-3 max-w-md mx-auto w-full">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        data-testid="plan-back-btn"
-                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                        onClick={onBack}
-                    >
-                        Back
-                    </Button>
-                </div>
             </div>
         );
     }
