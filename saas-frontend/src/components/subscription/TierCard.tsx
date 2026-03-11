@@ -31,7 +31,6 @@ const TIER_BULLETS: Record<string, string[]> = {
     ],
     manifest: [
         'Everything in Illuminate, plus:',
-        'Full merchant storefront',
         'Up to 20 products in your shop',
         'Inventory sync across channels',
         'Host practitioners in your space',
