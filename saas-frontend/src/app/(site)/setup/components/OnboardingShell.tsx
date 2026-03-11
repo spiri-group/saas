@@ -2,7 +2,6 @@
 
 import { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
 export type OnboardingTheme = 'neutral' | 'faith' | 'amber' | 'purple';
@@ -12,7 +11,7 @@ type Props = {
     isCentered?: boolean;
     marketingContent: ReactNode;
     children: ReactNode;
-    /** When set, "Not ready?" cancels to this URL instead of signing out */
+    /** Where to go when the user bails out of onboarding */
     cancelHref?: string;
 };
 
@@ -52,21 +51,12 @@ export default function OnboardingShell({ isFullScreen, isCentered, marketingCon
 
             {/* Escape hatch — always visible at bottom, outside the grid */}
             <div className="flex-shrink-0 flex justify-center py-4">
-                {cancelHref ? (
-                    <button
-                        onClick={() => router.push(cancelHref)}
-                        className="text-sm text-white/40 hover:text-white/70 hover:underline transition-colors cursor-pointer"
-                    >
-                        Not ready? Cancel
-                    </button>
-                ) : (
-                    <button
-                        onClick={() => signOut({ callbackUrl: '/' })}
-                        className="text-sm text-white/40 hover:text-white/70 hover:underline transition-colors cursor-pointer"
-                    >
-                        Not ready? Sign out
-                    </button>
-                )}
+                <button
+                    onClick={() => router.push(cancelHref || '/')}
+                    className="text-sm text-white/40 hover:text-white/70 hover:underline transition-colors cursor-pointer"
+                >
+                    I&apos;ll do this later
+                </button>
             </div>
         </div>
     );
