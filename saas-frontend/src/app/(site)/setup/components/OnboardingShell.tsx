@@ -2,7 +2,6 @@
 
 import { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { useRouter } from 'next/navigation'
 
 export type OnboardingTheme = 'neutral' | 'faith' | 'amber' | 'purple';
 
@@ -11,12 +10,11 @@ type Props = {
     isCentered?: boolean;
     marketingContent: ReactNode;
     children: ReactNode;
-    /** Where to go when the user bails out of onboarding */
-    cancelHref?: string;
+    /** Called when the user bails out of onboarding */
+    onCancel: () => void;
 };
 
-export default function OnboardingShell({ isFullScreen, isCentered, marketingContent, children, cancelHref }: Props) {
-    const router = useRouter();
+export default function OnboardingShell({ isFullScreen, isCentered, marketingContent, children, onCancel }: Props) {
     return (
         <div className="w-full flex-1 flex flex-col min-h-0 relative">
             {/* Content grid with animated transition */}
@@ -52,7 +50,7 @@ export default function OnboardingShell({ isFullScreen, isCentered, marketingCon
             {/* Escape hatch — always visible at bottom, outside the grid */}
             <div className="flex-shrink-0 flex justify-center py-4">
                 <button
-                    onClick={() => router.push(cancelHref || '/')}
+                    onClick={onCancel}
                     className="text-sm text-white/40 hover:text-white/70 hover:underline transition-colors cursor-pointer"
                 >
                     I&apos;ll do this later
