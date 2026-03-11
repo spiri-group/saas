@@ -16,7 +16,7 @@ const TIER_BULLETS: Record<string, string[]> = {
     ],
     awaken: [
         'Get listed and found by seekers',
-        'SpiriAssist for spiritual investigations',
+        'Investigate cases with SpiriAssist',
         'Fill your calendar with bookings',
         'Accept payments instantly',
         'Reach globally via SpiriReadings',
