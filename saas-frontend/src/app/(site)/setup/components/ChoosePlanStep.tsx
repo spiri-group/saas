@@ -187,50 +187,53 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
     const grayscaleTiers = currentOption.grayscaleTiers || [];
 
     return (
-        <div className="flex-1 flex flex-col space-y-5 md:space-y-8 px-4 py-5 md:p-8 min-h-0 overflow-y-auto" data-testid="choose-plan-step">
-            <div className="text-center">
-                <h1 className="font-light text-2xl md:text-3xl text-white mb-2">Choose Your Plan</h1>
-                <p className="text-slate-300">
-                    {path === 'directory'
-                        ? 'Get listed and let seekers find you.'
-                        : 'Pick the plan that fits your goals.'
-                    }
-                </p>
-            </div>
+        <div className="flex-1 flex flex-col space-y-3 md:space-y-4 px-4 py-4 md:px-8 md:py-5 min-h-0 overflow-y-auto" data-testid="choose-plan-step">
+            {/* Header row — title + interval toggle inline */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                    <h1 className="font-light text-2xl md:text-3xl text-white">Choose Your Plan</h1>
+                    <p className="text-sm text-slate-300 mt-0.5">
+                        {path === 'directory'
+                            ? 'Get listed and let seekers find you.'
+                            : 'Pick the plan that fits your goals.'
+                        }
+                    </p>
+                </div>
 
-            {/* Billing interval toggle */}
-            <div className="flex items-center justify-center gap-3" data-testid="plan-interval-toggle">
-                <button
-                    type="button"
-                    data-testid="plan-interval-monthly"
-                    onClick={() => handleIntervalChange('monthly')}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                        selectedInterval === 'monthly'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                    }`}
-                >
-                    Monthly
-                </button>
-                <button
-                    type="button"
-                    data-testid="plan-interval-annual"
-                    onClick={() => handleIntervalChange('annual')}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                        selectedInterval === 'annual'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                    }`}
-                >
-                    Annual
-                    <span className="ml-1 text-xs text-green-400">(Save up to 20%)</span>
-                </button>
+                {/* Billing interval toggle */}
+                <div className="flex items-center gap-2 flex-shrink-0" data-testid="plan-interval-toggle">
+                    <button
+                        type="button"
+                        data-testid="plan-interval-monthly"
+                        onClick={() => handleIntervalChange('monthly')}
+                        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                            selectedInterval === 'monthly'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        }`}
+                    >
+                        Monthly
+                    </button>
+                    <button
+                        type="button"
+                        data-testid="plan-interval-annual"
+                        onClick={() => handleIntervalChange('annual')}
+                        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                            selectedInterval === 'annual'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        }`}
+                    >
+                        Annual
+                        <span className="ml-1 text-xs text-green-400">(Save 20%)</span>
+                    </button>
+                </div>
             </div>
 
             {/* Tier cards */}
             <div
                 data-testid="plan-cards-grid"
-                className="grid gap-4 mx-auto w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-6xl"
+                className="grid gap-3 md:gap-4 mx-auto w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-6xl"
             >
                 {visibleTiers.map((tier) => {
                     const isGrayscale = grayscaleTiers.includes(tier.tier);
@@ -254,12 +257,8 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
                 })}
             </div>
 
-            <p className="text-center text-sm text-slate-300">
-                Your free trial starts today. You won&apos;t be charged until it ends.
-            </p>
-
-            {/* Navigation */}
-            <div className="flex gap-3 max-w-md mx-auto w-full pb-1">
+            {/* Footer — trial note + navigation inline */}
+            <div className="flex items-center gap-3 max-w-6xl mx-auto w-full">
                 <Button
                     type="button"
                     variant="outline"
@@ -270,10 +269,13 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
                     <ArrowLeft className="w-4 h-4 mr-1" />
                     Change path
                 </Button>
+                <p className="flex-1 text-center text-xs text-slate-400">
+                    Free trial starts today — no charge until it ends.
+                </p>
                 <Button
                     type="button"
                     data-testid="plan-continue-btn"
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
+                    className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
                     disabled={!selectedTier}
                     onClick={handleContinue}
                 >
