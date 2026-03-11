@@ -138,7 +138,7 @@ const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
         canCreateMerchantProfile: true,
         maxProducts: 20,
         hasInventoryAutomation: true,
-        canHostPractitioners: true,
+        canHostPractitioners: false,
         canOperateTours: true,
         // Enterprise
         hasRefundAutomation: false,
