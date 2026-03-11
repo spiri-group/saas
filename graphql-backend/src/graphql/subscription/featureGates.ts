@@ -141,7 +141,7 @@ const TIER_FEATURES: Record<subscription_tier, TierFeatures> = {
         canHostPractitioners: false,
         canOperateTours: true,
         // Enterprise
-        hasRefundAutomation: false,
+        hasRefundAutomation: true,
         hasShippingAutomation: false,
         hasPOS: false,
         hasBackorders: false,

@@ -34,12 +34,12 @@ const TIER_BULLETS: Record<string, string[]> = {
         'Everything in Illuminate, plus:',
         'Up to 20 products in your shop',
         'Inventory sync across channels',
+        'Refund automation',
     ],
     transcend: [
         'Everything in Manifest, plus:',
         'Unlimited products',
         'Host practitioners in your space',
-        'Refund automation',
         'Shipping labels and tracking',
         'POS with stock sync',
         'Backorder support',
