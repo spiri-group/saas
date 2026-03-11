@@ -6,11 +6,12 @@ import { Input } from '@/components/ui/input';
 import ComboBox from '@/components/ux/ComboBox';
 import HierarchicalReligionPicker from '@/components/ux/HierarchicalReligionPicker';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useMemo, useEffect, useRef, useState, useCallback } from 'react';
+import { useMemo, useEffect } from 'react';
 import useReverseGeocoding from '@/components/utils/useReverseGeoCoding';
 import type { OnboardingFormValues } from '../hooks/useOnboardingForm';
 import { COUNTRIES } from '../hooks/useOnboardingForm';
-import { ChevronDown, Compass, Store } from 'lucide-react';
+import { Compass, Store } from 'lucide-react';
+import ScrollableForm from './ScrollableForm';
 
 type Props = {
     form: UseFormReturn<OnboardingFormValues>;
@@ -20,25 +21,6 @@ type Props = {
 
 export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Props) {
     const countryCode = useReverseGeocoding();
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const [canScroll, setCanScroll] = useState(false);
-
-    const checkScroll = useCallback(() => {
-        const el = scrollRef.current;
-        if (!el) return;
-        // Show indicator if there's more than 8px of hidden content
-        setCanScroll(el.scrollHeight - el.scrollTop - el.clientHeight > 8);
-    }, []);
-
-    useEffect(() => {
-        const el = scrollRef.current;
-        if (!el) return;
-        checkScroll();
-        el.addEventListener('scroll', checkScroll, { passive: true });
-        const ro = new ResizeObserver(checkScroll);
-        ro.observe(el);
-        return () => { el.removeEventListener('scroll', checkScroll); ro.disconnect(); };
-    }, [checkScroll]);
 
     const sortedCountries = useMemo(() => {
         const all = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name));
@@ -70,7 +52,7 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
     return (
         <div className="flex flex-col h-full min-h-0">
             <div className="backdrop-blur-xl bg-white/[0.07] border border-white/15 rounded-2xl shadow-2xl flex flex-col flex-1 min-h-0">
-                <div ref={scrollRef} className="px-6 py-5 md:px-8 md:py-6 space-y-4 flex-1 flex flex-col justify-center overflow-y-auto min-h-0 relative">
+                <ScrollableForm dark className="px-6 py-5 md:px-8 md:py-6 space-y-4 flex flex-col justify-center">
                     <div>
                         <h1 className="text-2xl md:text-3xl text-white tracking-wide mb-1">
                             First up, tell us a little about yourself
@@ -200,20 +182,7 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
                             </div>
                         )}
                     </div>
-                </div>
-
-                {/* Scroll hint — fades out once they scroll down */}
-                {canScroll && (
-                    <div className="flex-shrink-0 flex justify-center py-1.5 animate-bounce">
-                        <button
-                            type="button"
-                            onClick={() => scrollRef.current?.scrollBy({ top: 150, behavior: 'smooth' })}
-                            className="rounded-full bg-white/10 border border-white/20 p-1.5 cursor-pointer hover:bg-white/20 transition-colors"
-                        >
-                            <ChevronDown className="w-4 h-4 text-white/50" />
-                        </button>
-                    </div>
-                )}
+                </ScrollableForm>
 
                 {/* Divider */}
                 <div className="border-t border-white/10" />

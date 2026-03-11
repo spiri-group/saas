@@ -11,6 +11,7 @@ import { MODALITIES, SPECIALIZATIONS } from '../../p/_constants/practitionerOpti
 import { useSlugGeneration } from '../hooks/useSlugGeneration';
 import type { OnboardingFormValues } from '../hooks/useOnboardingForm';
 import { PRACTITIONER_REQUIRED_FIELDS } from '../hooks/useOnboardingForm';
+import ScrollableForm from './ScrollableForm';
 
 type Props = {
     form: UseFormReturn<OnboardingFormValues>;
@@ -47,7 +48,7 @@ export default function PractitionerProfileStep({ form, onNext, onBack }: Props)
 
     return (
         <div className="flex flex-col h-full min-h-0">
-            <div className="flex-1 overflow-y-auto px-5 py-4 md:p-8 space-y-4 md:space-y-6 min-h-0">
+            <ScrollableForm className="px-5 py-4 md:p-8 space-y-4 md:space-y-6">
                 <div>
                     <h1 className="font-light text-2xl text-purple-900 mb-1">Practitioner Profile</h1>
                     <p className="text-sm md:text-base text-purple-700/70">Tell seekers about your practice.</p>
@@ -161,7 +162,7 @@ export default function PractitionerProfileStep({ form, onNext, onBack }: Props)
                     </FormItem>
                 )}
             />
-            </div>
+            </ScrollableForm>
 
             <div className="px-5 pb-4 md:px-8 md:pb-6">
                 <div className="flex gap-3">
