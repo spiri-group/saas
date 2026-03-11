@@ -181,7 +181,9 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
     // ── Stage 2: Choose your plan within the selected path ─────────
 
     const currentOption = PATH_OPTIONS.find(o => o.id === path)!;
-    const visibleTiers = tiers.filter(t => ALL_PLAN_TIERS.includes(t.tier));
+    const visibleTiers = tiers
+        .filter(t => ALL_PLAN_TIERS.includes(t.tier))
+        .sort((a, b) => ALL_PLAN_TIERS.indexOf(a.tier) - ALL_PLAN_TIERS.indexOf(b.tier));
     const grayscaleTiers = currentOption.grayscaleTiers || [];
 
     return (
