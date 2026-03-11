@@ -205,9 +205,13 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
                 {/* Scroll hint — fades out once they scroll down */}
                 {canScroll && (
                     <div className="flex-shrink-0 flex justify-center py-1.5 animate-bounce">
-                        <div className="rounded-full bg-white/10 border border-white/20 p-1.5">
+                        <button
+                            type="button"
+                            onClick={() => scrollRef.current?.scrollBy({ top: 150, behavior: 'smooth' })}
+                            className="rounded-full bg-white/10 border border-white/20 p-1.5 cursor-pointer hover:bg-white/20 transition-colors"
+                        >
                             <ChevronDown className="w-4 h-4 text-white/50" />
-                        </div>
+                        </button>
                     </div>
                 )}
 
