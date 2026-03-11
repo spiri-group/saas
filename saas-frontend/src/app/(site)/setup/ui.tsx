@@ -285,10 +285,8 @@ export default function SetupUI() {
                     console.error('Failed to save basic details:', error);
                 }
             }
-            window.location.href = `/u/${session.user.id}/space`;
-        } else {
-            window.location.href = '/';
         }
+        window.location.href = '/';
     }, [session, form]);
 
     // Merchant submission
