@@ -34,6 +34,7 @@ const TIER_BULLETS: Record<string, string[]> = {
         'Everything in Illuminate, plus:',
         'Up to 20 products in your shop',
         'Inventory sync across channels',
+        'Operate and manage guided tours',
         'Refund automation',
     ],
     transcend: [
