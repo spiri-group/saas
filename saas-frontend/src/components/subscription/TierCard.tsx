@@ -2,10 +2,10 @@
 
 const TIER_DESCRIPTIONS: Record<string, string> = {
     directory: 'Get listed and let seekers find you',
-    awaken: 'Get discovered and start earning',
-    illuminate: 'Send payment links and collect payments from clients',
-    manifest: 'Start selling alongside your services',
-    transcend: 'Remove the limits and grow your way',
+    awaken: 'Your practice, online',
+    illuminate: 'Tools for every occasion',
+    manifest: 'Your shopfront awaits',
+    transcend: 'No limits',
 };
 
 const TIER_BULLETS: Record<string, string[]> = {
@@ -15,7 +15,7 @@ const TIER_BULLETS: Record<string, string[]> = {
         'Photo gallery to showcase your work',
     ],
     awaken: [
-        'Get listed and found by seekers',
+        'Investigate cases with SpiriAssist',
         'Fill your calendar with bookings',
         'Accept payments instantly',
         'Reach globally via SpiriReadings',
@@ -31,16 +31,15 @@ const TIER_BULLETS: Record<string, string[]> = {
     ],
     manifest: [
         'Everything in Illuminate, plus:',
-        'Full merchant storefront',
         'Up to 20 products in your shop',
         'Inventory sync across channels',
-        'Host practitioners in your space',
         'Operate and manage guided tours',
+        'Refund automation',
     ],
     transcend: [
         'Everything in Manifest, plus:',
         'Unlimited products',
-        'Refund automation',
+        'Host practitioners in your space',
         'Shipping labels and tracking',
         'POS with stock sync',
         'Backorder support',
@@ -94,17 +93,17 @@ export default function TierCard({ tier, billingInterval, selected, onSelect, ba
                 </span>
             )}
 
-            <div className="mb-3 md:mb-4">
+            <div className="mb-2 md:mb-3">
                 <h3
                     data-testid={`tier-name-${tier.tier}`}
                     className="text-base md:text-lg font-bold text-white"
                 >
                     {tier.name}
                 </h3>
-                <p className="mt-1 text-sm text-slate-400">{TIER_DESCRIPTIONS[tier.tier] || tier.description}</p>
+                <p className="mt-0.5 text-xs md:text-sm text-slate-400">{TIER_DESCRIPTIONS[tier.tier] || tier.description}</p>
             </div>
 
-            <div className="mb-4 md:mb-6" data-testid={`tier-price-${tier.tier}`}>
+            <div className="mb-3 md:mb-4" data-testid={`tier-price-${tier.tier}`}>
                 <span className="text-2xl md:text-3xl font-bold text-white">{formatPrice(price)}</span>
                 <span className="text-sm text-slate-400">
                     /{billingInterval === 'monthly' ? 'month' : 'year'}
@@ -116,10 +115,10 @@ export default function TierCard({ tier, billingInterval, selected, onSelect, ba
                 )}
             </div>
 
-            <ul className="space-y-2 flex-1">
+            <ul className="space-y-1.5 flex-1">
                 {TIER_BULLETS[tier.tier]?.map((bullet, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-sm text-slate-200">
-                        <Check className="h-4 w-4 flex-shrink-0 text-green-400 mt-0.5" />
+                    <li key={idx} className="flex items-start gap-1.5 text-xs md:text-sm text-slate-200">
+                        <Check className="h-3.5 w-3.5 flex-shrink-0 text-green-400 mt-0.5" />
                         <span>{bullet}</span>
                     </li>
                 ))}
