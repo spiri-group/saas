@@ -189,6 +189,57 @@ Page content (inside layouts/sidebars) should expand to fill the available space
 
 ---
 
+## CRITICAL: Use `dark` Prop, NOT Tailwind `dark:` Prefix
+
+**NEVER** use Tailwind's `dark:` prefix for dark mode styling. The manage dashboards use hardcoded dark backgrounds (`bg-slate-900`) and never add `.dark` to the HTML element, so `dark:` classes are dead code that never activates.
+
+### Rule
+
+UI components (Input, Textarea, Badge, Checkbox, Card, Label, Select) support a `dark` prop. Pass `dark` or `dark={true}` when the component is on a dark background.
+
+```tsx
+// ❌ Bad - dark: prefix never activates in manage dashboards
+<Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+  Checked In
+</Badge>
+
+// ❌ Bad - hardcoding dark colors on non-component elements
+<div className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+
+// ✅ Good - use semantic variants (Badge has success, warning, danger, info)
+<Badge variant="success">Checked In</Badge>
+<Badge variant="danger">Unpaid</Badge>
+<Badge variant="warning">No-Show</Badge>
+
+// ✅ Good - use dark prop when on dark backgrounds
+<Input dark placeholder="Search..." />
+<Textarea dark value={notes} />
+<Badge variant="success" dark>Checked In</Badge>
+```
+
+### Available Badge Variants
+
+| Variant | Light | Dark (via `dark` prop) |
+|---------|-------|------------------------|
+| `success` | green-100/green-800 | green-900/30/green-400 |
+| `warning` | yellow-100/yellow-800 | yellow-900/30/yellow-400 |
+| `danger` | red-100/red-800 | red-900/30/red-400 |
+| `info` | blue-100/blue-800 | blue-900/30/blue-400 |
+
+### For Non-Component Elements
+
+When styling raw `<div>`, `<span>`, etc. on dark backgrounds, use colors designed for dark backgrounds directly — don't use `dark:` prefix:
+
+```tsx
+// ❌ Bad
+<div className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+
+// ✅ Good - use dark-appropriate colors directly since manage is always dark
+<div className="bg-green-900/30 text-green-400">
+```
+
+---
+
 ## Code Quality Guidelines
 
 ### Before Committing

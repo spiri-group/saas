@@ -15,6 +15,14 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        success:
+          "border-transparent bg-green-100 text-green-800",
+        warning:
+          "border-transparent bg-yellow-100 text-yellow-800",
+        danger:
+          "border-transparent bg-red-100 text-red-800",
+        info:
+          "border-transparent bg-blue-100 text-blue-800",
       },
     },
     defaultVariants: {
@@ -23,13 +31,32 @@ const badgeVariants = cva(
   }
 )
 
+/** Dark-mode class overrides for semantic color variants */
+const darkVariantClasses: Record<string, string> = {
+  success: "border-transparent bg-green-900/30 text-green-400",
+  warning: "border-transparent bg-yellow-900/30 text-yellow-400",
+  danger: "border-transparent bg-red-900/30 text-red-400",
+  info: "border-transparent bg-blue-900/30 text-blue-400",
+  secondary: "border-transparent bg-slate-800 text-slate-300",
+  outline: "text-slate-300",
+}
+
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+    VariantProps<typeof badgeVariants> {
+  dark?: boolean;
+}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
+function Badge({ className, variant, dark = false, ...props }: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div
+      className={cn(
+        badgeVariants({ variant }),
+        dark && variant && darkVariantClasses[variant],
+        className
+      )}
+      {...props}
+    />
   )
 }
 

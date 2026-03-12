@@ -87,6 +87,7 @@
     "framer-motion": "^12.9.2",
     "fuse.js": "^7.1.0",
     "gray-matter": "^4.0.3",
+    "html5-qrcode": "^2.3.8",
     "input-otp": "^1.2.4",
     "lexical": "^0.31.0",
     "libphonenumber-js": "^1.11.8",

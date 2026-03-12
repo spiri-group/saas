@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { X, Building2, CreditCard, Calendar, Loader2, DollarSign, ExternalLink, Zap } from 'lucide-react';
+import { X, Building2, CreditCard, Calendar, Loader2, DollarSign, ExternalLink, Zap, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface VendorDetailPanelProps {
@@ -24,6 +24,25 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
     const unblockPayouts = useUnblockPayouts();
     const forcePublish = useForcePublish();
     const resetBillingRetry = useResetBillingRetry();
+
+    const [isImpersonating, setIsImpersonating] = useState(false);
+
+    const handleViewAs = async () => {
+        if (!vendor.ownerEmail) return;
+        setIsImpersonating(true);
+        try {
+            const res = await fetch('/api/console/impersonate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: vendor.ownerEmail }),
+            });
+            if (res.ok) {
+                window.open('/', '_blank');
+            }
+        } finally {
+            setIsImpersonating(false);
+        }
+    };
 
     const [waived, setWaived] = useState(sub?.waived || false);
     const [waivedUntil, setWaivedUntil] = useState(sub?.waivedUntil || '');
@@ -119,6 +138,36 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
                         )}
                     </div>
                 </div>
+
+                {/* View As */}
+                {vendor.ownerEmail && (
+                    <div className="space-y-3">
+                        <h3 className="text-sm font-medium text-white flex items-center">
+                            <Eye className="h-4 w-4 mr-2 text-indigo-400" />
+                            Impersonate
+                        </h3>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10"
+                            onClick={handleViewAs}
+                            disabled={isImpersonating}
+                            data-testid="view-as-vendor-btn"
+                        >
+                            {isImpersonating ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Opening...
+                                </>
+                            ) : (
+                                <>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View As {vendor.ownerEmail}
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                )}
 
                 {/* Stripe Links */}
                 {(stripeAccountId || stripeCustomerId) && (

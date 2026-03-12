@@ -10,8 +10,10 @@ import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, XCircle, AlertCircle, Search, User, Ticket, Calendar, Clock, Loader2 } from "lucide-react";
 import UseBookingByCode, { BookingWithDetails } from "./hooks/UseBookingByCode";
 import UseCheckInBooking from "./hooks/UseCheckInBooking";
+import useOfflineCheckIn from "./hooks/useOfflineCheckIn";
 import { format } from "date-fns";
 import { StatusType, recordref_type } from "@/utils/spiriverse";
+import { WifiOff } from "lucide-react";
 
 type Props = {
     merchantId: string;
@@ -24,9 +26,13 @@ const useBL = (props: Props) => {
     const [searchCode, setSearchCode] = useState("");
     const [checkInSuccess, setCheckInSuccess] = useState<string | null>(null);
     const [checkInError, setCheckInError] = useState<string | null>(null);
+    const [lastCheckedIn, setLastCheckedIn] = useState<{ name: string; code: string } | null>(null);
 
     const bookingQuery = UseBookingByCode(searchCode, props.merchantId, searchCode.length >= 6);
     const checkInMutation = UseCheckInBooking(props.sessionRef);
+    const offlineQueue = useOfflineCheckIn(async (params) => {
+        await checkInMutation.mutateAsync(params);
+    });
 
     const handleSearch = useCallback(() => {
         if (bookingCode.length >= 6) {
@@ -43,25 +49,45 @@ const useBL = (props: Props) => {
     }, [handleSearch]);
 
     const handleCheckIn = useCallback(async (booking: BookingWithDetails) => {
-        // Use the session ID from props since we're already in the operate page for this session
         const sessionId = props.sessionId;
+        const checkInParams = {
+            bookingCode: booking.code,
+            sessionId: sessionId,
+            vendorId: props.merchantId,
+        };
+
+        // If offline, queue the check-in for later
+        if (!navigator.onLine) {
+            offlineQueue.addToQueue(checkInParams);
+            const name = booking.user
+                ? `${booking.user.firstname} ${booking.user.lastname}`.trim()
+                : booking.customerEmail || booking.code;
+            setCheckInSuccess(`${name} queued for check-in (offline)`);
+            setCheckInError(null);
+            setLastCheckedIn({ name, code: booking.code });
+            setTimeout(() => {
+                setBookingCode("");
+                setSearchCode("");
+                setCheckInSuccess(null);
+            }, 5000);
+            return;
+        }
 
         try {
-            const result = await checkInMutation.mutateAsync({
-                bookingCode: booking.code,
-                sessionId: sessionId,
-                vendorId: props.merchantId,
-            });
+            const result = await checkInMutation.mutateAsync(checkInParams);
 
             if (result.success) {
                 setCheckInSuccess(result.message);
                 setCheckInError(null);
-                // Clear the form after a short delay for next scan
+                const name = booking.user
+                    ? `${booking.user.firstname} ${booking.user.lastname}`.trim()
+                    : booking.customerEmail || booking.code;
+                setLastCheckedIn({ name, code: booking.code });
                 setTimeout(() => {
                     setBookingCode("");
                     setSearchCode("");
                     setCheckInSuccess(null);
-                }, 3000);
+                }, 5000);
             } else {
                 setCheckInError(result.message);
             }
@@ -69,7 +95,7 @@ const useBL = (props: Props) => {
             const errorMessage = error?.message || "Failed to check in booking";
             setCheckInError(errorMessage);
         }
-    }, [checkInMutation, props.merchantId, props.sessionId]);
+    }, [checkInMutation, props.merchantId, props.sessionId, offlineQueue]);
 
     const clearSearch = useCallback(() => {
         setBookingCode("");
@@ -92,6 +118,9 @@ const useBL = (props: Props) => {
         checkInSuccess,
         checkInError,
         clearSearch,
+        lastCheckedIn,
+        offlineQueueLength: offlineQueue.queueLength,
+        isReplayingQueue: offlineQueue.isReplaying,
     };
 };
 
@@ -120,25 +149,25 @@ const BookingDetails: React.FC<{
             {/* Status Badges */}
             <div className="flex flex-wrap gap-2">
                 {isAlreadyCheckedIn && (
-                    <Badge variant="default" className="bg-green-600" data-testid="checked-in-badge">
+                    <Badge variant="success" data-testid="checked-in-badge">
                         <CheckCircle2 className="w-4 h-4 mr-1" />
                         Checked In
                     </Badge>
                 )}
                 {isPending && (
-                    <Badge variant="destructive" data-testid="payment-pending-badge">
+                    <Badge variant="danger" data-testid="payment-pending-badge">
                         <AlertCircle className="w-4 h-4 mr-1" />
                         Payment Pending
                     </Badge>
                 )}
                 {isCancelled && (
-                    <Badge variant="destructive" data-testid="cancelled-badge">
+                    <Badge variant="danger" data-testid="cancelled-badge">
                         <XCircle className="w-4 h-4 mr-1" />
                         Cancelled
                     </Badge>
                 )}
                 {!isAlreadyCheckedIn && !isPending && !isCancelled && (
-                    <Badge variant="outline" className="border-yellow-500 text-yellow-600" data-testid="not-checked-in-badge">
+                    <Badge variant="warning" data-testid="not-checked-in-badge">
                         Not Checked In
                     </Badge>
                 )}
@@ -146,7 +175,7 @@ const BookingDetails: React.FC<{
 
             {/* Tour & Session Info */}
             {booking.tourDetails && (
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+                <div className="bg-muted rounded-lg p-4">
                     <h3 className="font-semibold text-lg" data-testid="tour-name">
                         {booking.tourDetails.name}
                     </h3>
@@ -175,7 +204,7 @@ const BookingDetails: React.FC<{
                     <User className="w-4 h-4" />
                     Customer Details
                 </h4>
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 space-y-1">
+                <div className="bg-muted rounded-lg p-4 space-y-1">
                     {booking.user && (
                         <p className="font-medium" data-testid="customer-name">
                             {booking.user.firstname} {booking.user.lastname}
@@ -205,7 +234,7 @@ const BookingDetails: React.FC<{
                         session.tickets.map((ticket) => (
                             <div
                                 key={ticket.id}
-                                className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 flex justify-between items-center"
+                                className="bg-muted rounded-lg p-3 flex justify-between items-center"
                                 data-testid={`ticket-${ticket.id}`}
                             >
                                 <div>
@@ -225,8 +254,8 @@ const BookingDetails: React.FC<{
             {isAlreadyCheckedIn && booking.checkedIn && (
                 <>
                     <Separator />
-                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                        <p className="text-sm text-green-700 dark:text-green-400" data-testid="check-in-time">
+                    <div className="bg-green-50 rounded-lg p-4">
+                        <p className="text-sm text-green-700" data-testid="check-in-time">
                             Checked in at: {format(new Date(booking.checkedIn.datetime), "PPpp")}
                         </p>
                     </div>
@@ -238,18 +267,17 @@ const BookingDetails: React.FC<{
                 <Button
                     onClick={onCheckIn}
                     disabled={isCheckingIn}
-                    className="w-full"
-                    size="lg"
+                    className="w-full h-12 text-base"
                     data-testid="check-in-btn"
                 >
                     {isCheckingIn ? (
                         <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                             Checking In...
                         </>
                     ) : (
                         <>
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            <CheckCircle2 className="w-5 h-5 mr-2" />
                             Check In
                         </>
                     )}
@@ -306,33 +334,38 @@ const CheckInComponent: React.FC<Props> = (props) => {
                         <Input
                             ref={inputRef}
                             type="text"
+                            inputMode="numeric"
                             placeholder="Enter booking code (e.g., 123456)"
                             value={bl.bookingCode}
                             onChange={(e) => bl.setBookingCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                             onKeyDown={bl.handleKeyPress}
-                            className="pr-10"
+                            className="pr-10 h-11 text-base"
                             maxLength={6}
+                            aria-label="Booking code"
                             data-testid="booking-code-input"
                         />
                         {bl.bookingCode && (
                             <button
                                 onClick={bl.clearSearch}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
+                                aria-label="Clear search"
                                 data-testid="clear-search-btn"
                             >
-                                <XCircle className="w-4 h-4" />
+                                <XCircle className="w-5 h-5" />
                             </button>
                         )}
                     </div>
                     <Button
                         onClick={bl.handleSearch}
                         disabled={bl.bookingCode.length < 6 || bl.isLoading}
+                        className="h-11 w-11 p-0"
+                        aria-label="Search booking"
                         data-testid="search-btn"
                     >
                         {bl.isLoading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
-                            <Search className="w-4 h-4" />
+                            <Search className="w-5 h-5" />
                         )}
                     </Button>
                 </div>
@@ -340,13 +373,35 @@ const CheckInComponent: React.FC<Props> = (props) => {
 
             {/* Success Message */}
             {bl.checkInSuccess && (
-                <Alert className="border-green-500 bg-green-50 dark:bg-green-900/20" data-testid="success-alert">
+                <Alert className="border-green-500 bg-green-50" data-testid="success-alert">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertTitle className="text-green-700 dark:text-green-400">Success</AlertTitle>
-                    <AlertDescription className="text-green-600 dark:text-green-300">
+                    <AlertTitle className="text-green-700">Success</AlertTitle>
+                    <AlertDescription className="text-green-600">
                         {bl.checkInSuccess}
                     </AlertDescription>
                 </Alert>
+            )}
+
+            {/* Last checked in — persists until next check-in so operator has a log */}
+            {!bl.checkInSuccess && bl.lastCheckedIn && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground px-1" data-testid="last-checked-in">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    Last: <span className="font-medium text-foreground">{bl.lastCheckedIn.name}</span>
+                    <span className="font-mono text-xs">#{bl.lastCheckedIn.code}</span>
+                </div>
+            )}
+
+            {/* Offline queue indicator */}
+            {bl.offlineQueueLength > 0 && (
+                <div className="flex items-center gap-2 text-sm px-1" data-testid="offline-queue-indicator">
+                    <WifiOff className="h-4 w-4 text-yellow-500" />
+                    <span className="text-yellow-700">
+                        {bl.isReplayingQueue
+                            ? "Syncing queued check-ins..."
+                            : `${bl.offlineQueueLength} check-in${bl.offlineQueueLength !== 1 ? 's' : ''} queued offline`
+                        }
+                    </span>
+                </div>
             )}
 
             {/* Error Message */}

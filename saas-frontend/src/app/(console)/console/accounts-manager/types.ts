@@ -37,6 +37,7 @@ export interface ConsoleVendorAccount {
         customerId?: string;
         accountId?: string;
     };
+    ownerEmail?: string;
 }
 
 export interface BillingRecord {

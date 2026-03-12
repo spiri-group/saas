@@ -2,7 +2,8 @@
 
 import { ConsoleCustomerAccount } from '../types';
 import { Button } from '@/components/ui/button';
-import { X, User, Mail, ShoppingBag, Store, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { X, User, Mail, ShoppingBag, Store, Sparkles, Eye, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface CustomerDetailPanelProps {
@@ -11,6 +12,25 @@ interface CustomerDetailPanelProps {
 }
 
 export default function CustomerDetailPanel({ customer, onClose }: CustomerDetailPanelProps) {
+    const [isImpersonating, setIsImpersonating] = useState(false);
+
+    const handleViewAs = async () => {
+        if (!customer.email) return;
+        setIsImpersonating(true);
+        try {
+            const res = await fetch('/api/console/impersonate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: customer.email }),
+            });
+            if (res.ok) {
+                window.open('/', '_blank');
+            }
+        } finally {
+            setIsImpersonating(false);
+        }
+    };
+
     return (
         <div className="h-full flex flex-col bg-slate-900 border-l border-slate-800" data-testid="customer-detail-panel">
             {/* Header */}
@@ -55,6 +75,36 @@ export default function CustomerDetailPanel({ customer, onClose }: CustomerDetai
                         )}
                     </div>
                 </div>
+
+                {/* View As */}
+                {customer.email && (
+                    <div className="space-y-3">
+                        <h3 className="text-sm font-medium text-white flex items-center">
+                            <Eye className="h-4 w-4 mr-2 text-indigo-400" />
+                            Impersonate
+                        </h3>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10"
+                            onClick={handleViewAs}
+                            disabled={isImpersonating}
+                            data-testid="view-as-customer-btn"
+                        >
+                            {isImpersonating ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Opening...
+                                </>
+                            ) : (
+                                <>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View As {customer.email}
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                )}
 
                 {/* Activity */}
                 <div className="space-y-3">
