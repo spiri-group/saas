@@ -212,7 +212,7 @@ const usePractitionerServices = (practitionerId: string) => {
             `, { merchantId: practitionerId });
 
             // Filter out null entries and legacy "Working days" records
-            return (response.services || []).filter(
+            return (response?.services || []).filter(
                 (s) => s != null && s.name !== 'Working days'
             );
         },

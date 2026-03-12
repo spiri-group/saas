@@ -169,9 +169,9 @@ const resolvers = {
         },
         services: async (_: any, args: any, { dataSources }: serverContext) => {
             const services = await dataSources.cosmos.get_all<any>("Main-Listing", args.merchantId)
-            const workingDays = services.find(x => x.name == "Working days")
-            const remaining = services.filter(x => x.name != "Working days")
-            return [workingDays, ...remaining.reverse()]
+            return services
+                .filter(x => x != null && x.type === ListingTypes.SERVICE && x.name !== "Working days")
+                .reverse()
         },
         myServicesSchedule: async (_: any, args: any, context: serverContext, __: any) => {
             if (context.userId == null) throw "User must be present for this call";
