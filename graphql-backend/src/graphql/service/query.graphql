@@ -35,7 +35,9 @@ type Service  {
   # NEW - Async service fields
   category: String
   deliveryMode: String
+  consultationType: String
   bookingType: String
+  scheduleConfig: ServiceScheduleConfig
   pricing: ServicePricing
   turnaroundDays: Int
   deliveryFormats: [ServiceDeliveryFormat]
@@ -45,6 +47,12 @@ type Service  {
   readingOptions: ReadingServiceOptions
   healingOptions: HealingServiceOptions
   coachingOptions: CoachingServiceOptions
+}
+
+type ServiceScheduleConfig {
+  useAllSlots: Boolean!
+  selectedSlotIds: [ID!]
+  bufferMinutes: Int!
 }
 
 type ServiceCancellationPolicy {

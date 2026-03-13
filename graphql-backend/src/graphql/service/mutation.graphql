@@ -169,6 +169,12 @@ type CreateCheckoutLinkResponse implements MutationResponseInterface {
   expiresAt: DateTime
 }
 
+input ServiceScheduleConfigInput {
+  useAllSlots: Boolean!
+  selectedSlotIds: [ID]
+  bufferMinutes: Int!
+}
+
 # NEW - Async service input types
 input CreateReadingOfferInput {
   id: ID
@@ -184,7 +190,9 @@ input CreateReadingOfferInput {
   questionnaire: [ServiceQuestionInput]
   targetTimezones: [String]
   requiresConsultation: Boolean
+  consultationType: String
   scheduleId: ID
+  scheduleConfig: ServiceScheduleConfigInput
   readingOptions: ReadingServiceOptionsInput
   bookingType: String
 }
@@ -203,7 +211,9 @@ input CreateHealingOfferInput {
   questionnaire: [ServiceQuestionInput]
   targetTimezones: [String]
   requiresConsultation: Boolean
+  consultationType: String
   scheduleId: ID
+  scheduleConfig: ServiceScheduleConfigInput
   healingOptions: HealingServiceOptionsInput!
 }
 
@@ -222,7 +232,9 @@ input CreateCoachingOfferInput {
   questionnaire: [ServiceQuestionInput]
   targetTimezones: [String]
   requiresConsultation: Boolean
+  consultationType: String
   scheduleId: ID
+  scheduleConfig: ServiceScheduleConfigInput
   coachingOptions: CoachingServiceOptionsInput!
 }
 
@@ -304,7 +316,9 @@ input UpdateReadingOfferInput {
   questionnaire: [ServiceQuestionInput]
   targetTimezones: [String]
   requiresConsultation: Boolean
+  consultationType: String
   scheduleId: ID
+  scheduleConfig: ServiceScheduleConfigInput
   readingOptions: ReadingServiceOptionsInput
   bookingType: String
 }
@@ -323,7 +337,9 @@ input UpdateHealingOfferInput {
   questionnaire: [ServiceQuestionInput]
   targetTimezones: [String]
   requiresConsultation: Boolean
+  consultationType: String
   scheduleId: ID
+  scheduleConfig: ServiceScheduleConfigInput
   healingOptions: HealingServiceOptionsInput
 }
 
@@ -342,7 +358,9 @@ input UpdateCoachingOfferInput {
   questionnaire: [ServiceQuestionInput]
   targetTimezones: [String]
   requiresConsultation: Boolean
+  consultationType: String
   scheduleId: ID
+  scheduleConfig: ServiceScheduleConfigInput
   coachingOptions: CoachingServiceOptionsInput
 }
 

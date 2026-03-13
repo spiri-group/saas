@@ -659,21 +659,7 @@ export default function PractitionerAvailabilityUI({ session, practitionerId, sl
                                     <CardDescription>Configure how customers can book with you</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div>
-                                            <Label htmlFor="buffer" className="text-slate-300">Buffer Between Sessions (min)</Label>
-                                            <Input
-                                                id="buffer"
-                                                type="number"
-                                                min={0}
-                                                max={60}
-                                                value={bufferMinutes}
-                                                onChange={e => setBufferMinutes(parseInt(e.target.value) || 15)}
-                                                className="mt-2 bg-slate-800 border-slate-600 text-white"
-                                                data-testid="buffer-minutes-input"
-                                            />
-                                            <p className="text-xs text-slate-500 mt-1">Time between appointments</p>
-                                        </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <Label htmlFor="advance" className="text-slate-300">Advance Booking (days)</Label>
                                             <Input

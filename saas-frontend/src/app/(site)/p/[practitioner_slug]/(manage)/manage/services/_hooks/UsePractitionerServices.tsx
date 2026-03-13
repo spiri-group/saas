@@ -17,6 +17,7 @@ export type PractitionerService = {
     name: string;
     category: string;
     deliveryMode: string;
+    consultationType?: string;
     description: string;
     thumbnail?: {
         image?: {
@@ -58,6 +59,11 @@ export type PractitionerService = {
             amount: number;
             currency: string;
         };
+    };
+    scheduleConfig?: {
+        useAllSlots: boolean;
+        selectedSlotIds?: string[];
+        bufferMinutes: number;
     };
     turnaroundDays?: number;
     bookingType?: string;
@@ -105,6 +111,7 @@ const usePractitionerServices = (practitionerId: string) => {
                         name
                         category
                         deliveryMode
+                        consultationType
                         description
                         thumbnail {
                             image {
@@ -173,6 +180,11 @@ const usePractitionerServices = (practitionerId: string) => {
                                 amount
                                 currency
                             }
+                        }
+                        scheduleConfig {
+                            useAllSlots
+                            selectedSlotIds
+                            bufferMinutes
                         }
                         turnaroundDays
                         bookingType
