@@ -4,10 +4,11 @@ import React, { useState } from "react";
 import { Session } from "next-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Sparkles, Heart, MessageCircle, Plus, Trash2, Pencil, Clock, DollarSign, Tag } from "lucide-react";
+import { BookOpen, Sparkles, Heart, MessageCircle, Plus, Trash2, Pencil, Clock, DollarSign, Tag, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import PractitionerSideNav from "../../../../_components/PractitionerSideNav";
 import usePractitionerServices, { PractitionerService } from "./_hooks/UsePractitionerServices";
+import { usePractitionerSchedule } from "../availability/hooks/UsePractitionerSchedule";
 import useDeleteService from "./_hooks/UseDeleteService";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useTierFeatures } from "@/hooks/UseTierFeatures";
@@ -244,6 +245,8 @@ export default function PractitionerServicesUI({ session, practitionerId, slug }
     const services = usePractitionerServices(practitionerId);
     const deleteMutation = useDeleteService(practitionerId);
     const { features } = useTierFeatures(practitionerId);
+    const schedule = usePractitionerSchedule(practitionerId);
+    const hasSchedule = schedule.data !== null && schedule.data !== undefined;
     const [editingService, setEditingService] = useState<PractitionerService | null>(null);
     const [deletingService, setDeletingService] = useState<PractitionerService | null>(null);
 
@@ -281,7 +284,30 @@ export default function PractitionerServicesUI({ session, practitionerId, slug }
                     </div>
 
                     {/* Create New Service Section */}
-                    {features.canSellServices && (
+                    {features.canSellServices && !hasSchedule && (
+                        <Card className="bg-slate-800/30 border-slate-700/50 mb-8">
+                            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                                <div className="p-4 rounded-full bg-purple-500/10 mb-4">
+                                    <Clock className="w-10 h-10 text-purple-400" />
+                                </div>
+                                <h2 className="text-lg font-semibold text-white mb-2">
+                                    Set up your availability first
+                                </h2>
+                                <p className="text-slate-400 mb-6 max-w-md">
+                                    Before creating services, you need to set your working hours and availability so clients know when they can book you.
+                                </p>
+                                <Button
+                                    onClick={() => window.location.href = `/p/${slug}/manage/availability`}
+                                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                                    data-testid="setup-availability-btn"
+                                >
+                                    Set Up Availability
+                                    <ArrowRight className="w-4 h-4 ml-2" />
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    )}
+                    {features.canSellServices && hasSchedule && (
                         <div className="mb-8">
                             <h2 className="text-lg font-semibold text-white mb-4">Create New Service</h2>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
