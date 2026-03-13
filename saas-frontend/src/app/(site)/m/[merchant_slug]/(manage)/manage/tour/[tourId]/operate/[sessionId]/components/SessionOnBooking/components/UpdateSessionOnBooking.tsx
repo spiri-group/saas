@@ -57,12 +57,12 @@ const UpdateSessionOnBooking : React.FC<Props> = (props) => {
                     <DialogHeader>Update booking</DialogHeader>
                 </div>
                 {bl.values.tickets != undefined && (
-                <form onSubmit={bl.form.handleSubmit(bl.submit)} className="flex flex-col h-full">
+                <form onSubmit={bl.form.handleSubmit(bl.submit)} className="flex flex-col h-full" data-testid="update-booking-form">
                     <div className="lg:flex-grow">
                             {props.order != null && <span className="-mt-2 text-sm">Order code: {props.order.code}</span>}
                         <div className="flex flex-row items-center justify-between">
                             <FormLabel>Tickets</FormLabel>
-                            <Button variant="link" onClick={() => {
+                            <Button variant="link" data-testid="update-booking-add-ticket" onClick={() => {
                                 const {notes, tickets} = bl.form.getValues()
                                 bl.form.reset({
                                     notes: notes,
@@ -100,14 +100,15 @@ const UpdateSessionOnBooking : React.FC<Props> = (props) => {
                             const refund_request = ticket.refund_request_log?.find(x => x.status == "PENDING")
 
                             return (
-                            <div key={ticket.id} className="flex flex-col lg:flex-row mt-2 space-x-2">
+                            <div key={ticket.id} className="flex flex-col lg:flex-row mt-2 space-x-2" data-testid={`update-booking-ticket-${idx}`}>
                                 <FormField 
                                     control={bl.form.control}
                                     name={`tickets.${idx}.person`}
                                     render={({ field }) => (
                                     <FormItem className="flex flex-row space-x-6 items-center">
                                         <FormControl>
-                                            <Input placeholder="Person" 
+                                            <Input placeholder="Person"
+                                                data-testid={`update-booking-person-${idx}`}
                                                 {...field}
                                                 onChange={(value) => {
                                                     field.onChange(value)
@@ -127,7 +128,7 @@ const UpdateSessionOnBooking : React.FC<Props> = (props) => {
                                             {price_log_grouped_array.map((entry) =>{
                                                 const {name, value} = entry;
                                                 return (
-                                                    <>
+                                                    <div key={name}>
                                                         <span>{name}</span>
                                                         {value.map(({price, type, status}, index) => (
                                                             <div key={index} className="flex flex-row space-x-2">
@@ -140,7 +141,7 @@ const UpdateSessionOnBooking : React.FC<Props> = (props) => {
                                                                 <span className="ml-auto"> {status.toLowerCase() as string} </span>
                                                             </div>
                                                         ))}
-                                                    </>
+                                                    </div>
                                                 )
                                             })}
                                         </>
@@ -212,6 +213,7 @@ const UpdateSessionOnBooking : React.FC<Props> = (props) => {
                                             className="mr-2 mt-2"
                                             checked={field.value}
                                             onCheckedChange={field.onChange}
+                                            data-testid="update-booking-require-payment"
                                         />
                                     </FormControl>
                                     <FormLabel>Require payment</FormLabel>
@@ -226,7 +228,7 @@ const UpdateSessionOnBooking : React.FC<Props> = (props) => {
                         <FormItem className="flex flex-row space-x-6 items-center">
                             <FormLabel>Notes</FormLabel>
                                 <FormControl>
-                                    <Textarea placeholder="Any comments for the booking" {...field} value={field.value ?? ""} />
+                                    <Textarea placeholder="Any comments for the booking" data-testid="update-booking-notes" {...field} value={field.value ?? ""} />
                                 </FormControl>
                         </FormItem>
                     )} />
@@ -234,7 +236,8 @@ const UpdateSessionOnBooking : React.FC<Props> = (props) => {
                         <CancelDialogButton />
                         { bl.rejectRequestRefund != null ?  
                             <div className="grid grid-cols-2 space-x-2">
-                                <Button 
+                                <Button
+                                    data-testid="update-booking-reject-refund"
                                     aria-label="button-rejectRefund"
                                     onClick={async () => {
                                         if (bl.rejectRequestRefund != null) {
@@ -242,12 +245,13 @@ const UpdateSessionOnBooking : React.FC<Props> = (props) => {
                                             escape_key()
                                         }
                                     }}> Reject </Button>
-                                <Button 
-                                    disabled={!bl.form.formState.isValid} 
+                                <Button
+                                    disabled={!bl.form.formState.isValid}
                                     type="submit"
+                                    data-testid="update-booking-approve-refund"
                                     aria-label="button-approveRefund">Approve</Button>
                             </div> : 
-                            <Button type="submit" aria-label="button-updateSessionOnBooking">Update</Button> 
+                            <Button type="submit" data-testid="update-booking-submit" aria-label="button-updateSessionOnBooking">Update</Button> 
                         }
                     </div>
                 </form>

@@ -5,7 +5,7 @@ import { UseFormReturn, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { useSubscriptionTiers } from '@/hooks/UseSubscriptionTiers';
 import TierCard from '@/components/subscription/TierCard';
-import { ArrowLeft, BookOpen, Sparkles, Store } from 'lucide-react';
+import { ArrowLeft, BookOpen, Check, Sparkles, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { OnboardingFormValues } from '../hooks/useOnboardingForm';
 
@@ -24,6 +24,8 @@ type PathOption = {
     showPrice?: boolean;
     /** Tier to use for "from $..." pricing on the path card */
     fromPriceTier?: string;
+    /** Inline feature labels shown on the card */
+    features?: string[];
 };
 
 const PATH_OPTIONS: PathOption[] = [
@@ -34,6 +36,7 @@ const PATH_OPTIONS: PathOption[] = [
         icon: BookOpen,
         tiers: ['directory'],
         showPrice: true,
+        features: ['Directory listing', 'SpiriAssist', 'Photo gallery'],
     },
     {
         id: 'practitioner',
@@ -58,10 +61,9 @@ const PATH_OPTIONS: PathOption[] = [
 type Props = {
     form: UseFormReturn<OnboardingFormValues>;
     onSelect: (tier: string) => void;
-    onBack: () => void;
 };
 
-export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
+export default function ChoosePlanStep({ form, onSelect }: Props) {
     const { data: tiers, isLoading } = useSubscriptionTiers();
     const selectedTier = useWatch({ control: form.control, name: 'subscription.tier' });
     const selectedInterval = useWatch({ control: form.control, name: 'subscription.billingInterval' }) || 'monthly';
@@ -151,6 +153,16 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
                                 <div className="flex-1 min-w-0">
                                     <h3 className="text-base md:text-lg font-semibold text-white">{option.label}</h3>
                                     <p className="text-xs md:text-sm text-slate-400 mt-0.5">{option.description}</p>
+                                    {option.features && (
+                                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                                            {option.features.map((feature) => (
+                                                <span key={feature} className="flex items-center gap-1 text-xs text-slate-300">
+                                                    <Check className="h-3 w-3 text-green-400 flex-shrink-0" />
+                                                    {feature}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                                 {priceLabel && (
                                     <div className="flex-shrink-0 text-right">
@@ -162,18 +174,6 @@ export default function ChoosePlanStep({ form, onSelect, onBack }: Props) {
                     })}
                 </div>
 
-                {/* Navigation */}
-                <div className="flex gap-3 max-w-md mx-auto w-full">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        data-testid="plan-back-btn"
-                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                        onClick={onBack}
-                    >
-                        Back
-                    </Button>
-                </div>
             </div>
         );
     }

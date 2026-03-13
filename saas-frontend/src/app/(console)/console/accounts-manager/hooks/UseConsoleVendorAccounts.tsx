@@ -64,6 +64,7 @@ const useConsoleVendorAccounts = (options: UseConsoleVendorAccountsOptions = {})
                                 customerId
                                 accountId
                             }
+                            ownerEmail
                         }
                         totalCount
                         hasMore

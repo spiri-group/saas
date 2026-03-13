@@ -20,6 +20,7 @@ import ResolveStripeSuccess from './components/ResolveStripeSuccess';
 import ConsentGuard from './components/ConsentGuard';
 import CookieBanner from './components/CookieBanner';
 import AnalyticsTracker from './components/AnalyticsTracker';
+import ImpersonationBanner from '@/components/ImpersonationBanner';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -37,12 +38,13 @@ export default function SiteLayout({
   return (
     <div className={classNames(inter.className, 'flex flex-col min-h-screen')}>
       <Providers>
+        <ImpersonationBanner />
         {/* Global animated background */}
         <SacredAnimatedBackground />
 
         <ConditionalNav>
           <div
-             style={{}}
+             style={{ top: 'var(--impersonation-banner-height, 0px)' }}
              className="flex flex-row items-center justify-between h-20 w-full fixed z-50 bg-slate-950 shadow-xl px-3 border-b border-white/10 overflow-hidden">
             {/* Orbs layer inside nav — matches global background animation */}
             <NavOrbs />

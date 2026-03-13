@@ -406,7 +406,7 @@ const usePractitionerServices = (practitionerId: string) => {
                 }`,
                 { merchantId: practitionerId }
             );
-            return response.services || [];
+            return (response?.services || []).filter(s => s != null);
         },
         enabled: !!practitionerId,
     });

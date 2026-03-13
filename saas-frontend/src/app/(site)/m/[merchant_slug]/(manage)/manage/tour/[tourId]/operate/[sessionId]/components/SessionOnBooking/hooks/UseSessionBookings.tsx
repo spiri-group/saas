@@ -89,7 +89,8 @@ const queryFn = async (sessionRef: recordref_type) => {
 const UseSessionBookings = (sessionRef: recordref_type) => {
     return useQuery({
         queryKey: [key, sessionRef],
-        queryFn: () => queryFn(sessionRef)
+        queryFn: () => queryFn(sessionRef),
+        refetchInterval: 5000,
     });
 }
 

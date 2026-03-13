@@ -24,10 +24,9 @@ const TIER_BULLETS: Record<string, string[]> = {
     illuminate: [
         'Everything in Awaken, plus:',
         'Payment links via SMS and email',
-        'Ticketed events',
+        'Sell tickets for events and tours',
         'Live Assist for streaming shows',
         'Expo Mode for fairs and markets',
-        'List and sell tours',
     ],
     manifest: [
         'Everything in Illuminate, plus:',

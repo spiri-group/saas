@@ -44,7 +44,7 @@ const resolvers = {
 
             // Get all matching vendors (we filter lifecycle in JS since it's computed)
             const querySpec = {
-                query: `SELECT c.id, c.name, c.slug, c.docType, c.publishedAt, c.subscription, c.stripe, c.createdDate FROM c ${whereClause} ORDER BY c.createdDate DESC`,
+                query: `SELECT c.id, c.name, c.slug, c.docType, c.publishedAt, c.subscription, c.stripe, c.createdDate, c.customers FROM c ${whereClause} ORDER BY c.createdDate DESC`,
                 parameters
             }
 
@@ -63,8 +63,33 @@ const resolvers = {
             const totalCount = filtered.length
             const paginated = filtered.slice(offset, offset + limit)
 
+            // Resolve owner emails for paginated vendors
+            const ownerIds = paginated
+                .map(v => (v as any).customers?.[0]?.id)
+                .filter((id: string | undefined): id is string => !!id)
+
+            let ownerMap: Record<string, string> = {}
+            if (ownerIds.length > 0) {
+                const uniqueIds = [...new Set(ownerIds)]
+                const owners = await context.dataSources.cosmos.run_query<user_type>(
+                    USER_CONTAINER,
+                    {
+                        query: `SELECT c.id, c.email FROM c WHERE ARRAY_CONTAINS(@ids, c.id)`,
+                        parameters: [{ name: "@ids", value: uniqueIds }]
+                    },
+                    true
+                )
+                ownerMap = Object.fromEntries(owners.map(o => [o.id, o.email]))
+            }
+
+            const vendorsWithOwner = paginated.map(v => ({
+                ...v,
+                ownerEmail: ownerMap[(v as any).customers?.[0]?.id] || null,
+                customers: undefined
+            }))
+
             return {
-                vendors: paginated,
+                vendors: vendorsWithOwner,
                 totalCount,
                 hasMore: offset + paginated.length < totalCount
             }

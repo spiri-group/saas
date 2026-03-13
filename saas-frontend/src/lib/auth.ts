@@ -76,6 +76,7 @@ export const authOptions: NextAuthConfig = {
             credentials: {
                 email: {},
                 otp: {},
+                timezone: {},
             },
             authorize: async (credentials) => {
                 if (isNullOrUndefined(credentials)) {
@@ -105,6 +106,8 @@ export const authOptions: NextAuthConfig = {
                     }
                 }
 
+                const timezone = credentials["timezone"] as string | undefined;
+
                 let user = await dbAdapter.getUserByEmail!(email.toString());
                 if (user == null) {
                     await dbAdapter.createUser!({
@@ -115,7 +118,7 @@ export const authOptions: NextAuthConfig = {
                 }
                 user = await dbAdapter.getUserByEmail!(email.toString());
 
-                return user;
+                return { ...user, timezone };
             },
         }),
     ],
@@ -141,13 +144,15 @@ export const authOptions: NextAuthConfig = {
                     ).toString("base64")}`,
                 };
 
+                const timezone = (user as any).timezone || null;
+
                 await gql<any>(
                     `
-                    mutation create_user {
-                        create_user
+                    mutation create_user($timezone: String) {
+                        create_user(timezone: $timezone)
                     }
                 `,
-                    {},
+                    { timezone },
                     gql_conn.auth
                 );
             }
