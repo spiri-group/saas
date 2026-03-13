@@ -1,5 +1,5 @@
 type Mutation {
-  create_user: Boolean!
+  create_user(timezone: String): Boolean!
   update_user(customer: CustomerUpdateInput!): CreateCustomerResponse
   delete_user(userId: ID!): MutationResponse
   purge_user(userId: ID!): MutationResponse

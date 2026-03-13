@@ -122,7 +122,8 @@ export const SignIn = () => {
       setOtpValidating(true);
 
       try {
-        const result = await signIn("credentials", { email, otp: otpValue, redirect: false });
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+        const result = await signIn("credentials", { email, otp: otpValue, timezone, redirect: false });
 
         // Check if sign in succeeded
         // NOTE: NextAuth returns { ok: true, error: "CredentialsSignin" } on credential failure

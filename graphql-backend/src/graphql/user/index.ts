@@ -13,7 +13,8 @@ const resolvers = {
             
             let dbUser = await context.dataSources.cosmos.get_record("Main-User", context.userId, context.userId)
             if (dbUser == null) {
-                // we will create them with default currency
+                // Fallback user creation — no timezone available here so default to USD.
+                // The primary path (create_user mutation) detects currency from browser timezone.
                 dbUser = await context.dataSources.cosmos.add_record("Main-User", {
                     id: context.userId,
                     requiresSetup: true,
@@ -78,11 +79,11 @@ const resolvers = {
         }
     },
     Mutation: {
-        create_user: async(_: any, _args: any, context: serverContext) => {
+        create_user: async(_: any, args: { timezone?: string }, context: serverContext) => {
             if (context.userEmail == null) throw "Create user requires an email";
 
-            await user_business_logic.create(context.userEmail, context.dataSources.cosmos)            
-            
+            await user_business_logic.create(context.userEmail, context.dataSources.cosmos, args.timezone)
+
             return true
         },
         update_user: async (_: any, args: any, context: serverContext) => {
@@ -1121,16 +1122,40 @@ const resolvers = {
     }
 }
 
+function currencyFromTimezone(timezone?: string): string {
+    if (!timezone) return "USD";
+
+    // Region-based matching (covers all cities in a region)
+    if (timezone.startsWith('Australia/')) return "AUD";
+    if (timezone.startsWith('Pacific/Auckland') || timezone.startsWith('Pacific/Chatham')) return "NZD";
+    if (timezone.startsWith('Europe/London') || timezone.startsWith('Europe/Belfast') || timezone.startsWith('Europe/Jersey') || timezone.startsWith('Europe/Guernsey') || timezone.startsWith('Europe/Isle_of_Man')) return "GBP";
+    if (timezone.startsWith('America/')) return "USD";
+    if (timezone.startsWith('Canada/')) return "CAD";
+    if (timezone.startsWith('Asia/Kolkata') || timezone.startsWith('Asia/Calcutta')) return "INR";
+    if (timezone.startsWith('Asia/Tokyo')) return "JPY";
+    if (timezone.startsWith('Asia/Singapore')) return "SGD";
+    if (timezone.startsWith('Asia/Hong_Kong')) return "HKD";
+
+    // European timezones → EUR
+    const eurTimezones = ['Europe/Paris', 'Europe/Berlin', 'Europe/Rome', 'Europe/Madrid',
+        'Europe/Amsterdam', 'Europe/Brussels', 'Europe/Vienna', 'Europe/Dublin',
+        'Europe/Lisbon', 'Europe/Helsinki', 'Europe/Athens', 'Europe/Warsaw'];
+    if (eurTimezones.some(tz => timezone.startsWith(tz))) return "EUR";
+
+    return "USD";
+}
+
 export const user_business_logic = {
-    create: async (userEmail: string, cosmos: CosmosDataSource) => {
+    create: async (userEmail: string, cosmos: CosmosDataSource, timezone?: string) => {
         const userId = uuidv4()
         const userQuery = await cosmos.run_query('Main-User', { query: 'SELECT c.id FROM c WHERE c.email = @email', parameters: [{ name:"@email", value: userEmail }] }, true);
         if (userQuery.length == 0) {
+            const currency = currencyFromTimezone(timezone);
             await cosmos.add_record("Main-User", {
                 id: userId,
                 email: userEmail,
                 requiresInput: true,
-                currency: "USD"
+                currency
             }, userId, "SYSTEM")
         } else {
             // this shouldn't error as this is used by the client to check if the user exists
