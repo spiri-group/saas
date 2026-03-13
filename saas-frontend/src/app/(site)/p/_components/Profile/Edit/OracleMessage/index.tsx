@@ -1,7 +1,7 @@
 import useFormStatus from "@/components/utils/UseFormStatus"
 import useEditPractitionerOracleMessage, { UpdateOracleMessageFormSchema } from "./_hooks/UseEditPractitionerOracleMessage"
 import { escape_key } from "@/lib/functions"
-import { DialogContent, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog"
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormField, FormItem, FormLabel, FormDescription } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import FileUploader from "@/components/ux/FileUploader"
@@ -143,15 +143,12 @@ const EditPractitionerOracleMessage: React.FC<Props> = (props) => {
     const hasNewAudio = bl.currentFormAudio?.url;
 
     return (
-        <DialogContent
-            className="w-[600px] max-w-[95vw] max-h-[90vh] overflow-y-auto"
-            data-testid="edit-practitioner-oracle-message-dialog"
-        >
+        <div data-testid="edit-practitioner-oracle-message-dialog">
             <DialogHeader>
-                <div className="flex items-center space-x-2">
+                <DialogTitle className="flex items-center space-x-2">
                     <Sparkles className="h-5 w-5 text-purple-400" />
                     <span>Daily Oracle Message</span>
-                </div>
+                </DialogTitle>
             </DialogHeader>
             <DialogDescription>
                 Share a voice message with divine guidance for your followers. Your oracle message will be visible for 24 hours.
@@ -298,7 +295,7 @@ const EditPractitionerOracleMessage: React.FC<Props> = (props) => {
                     </DialogFooter>
                 </form>
             </Form>
-        </DialogContent>
+        </div>
     )
 }
 

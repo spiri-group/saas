@@ -4,6 +4,11 @@ import { gql } from '@/lib/services/gql';
 interface ServiceOrder {
   id: string;
   customerId: string;
+  customer?: {
+    id: string;
+    name: string;
+    email: string;
+  };
   vendorId: string;
   purchaseDate: string;
   // Using "orderStatus" instead of "status" to avoid conflict with Cosmos soft-delete
@@ -49,6 +54,11 @@ export const useMyServiceOrders = (vendorId: string | undefined, status?: string
           myServiceOrders(vendorId: $vendorId, status: $status, category: $category) {
             id
             customerId
+            customer {
+              id
+              name
+              email
+            }
             vendorId
             purchaseDate
             orderStatus

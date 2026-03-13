@@ -1,7 +1,7 @@
 import useFormStatus from "@/components/utils/UseFormStatus"
 import useEditPractitionerBio, { EditPractitionerBioSchema } from "./_hooks/UseEditPractitionerBio"
 import { escape_key } from "@/lib/functions"
-import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -121,17 +121,15 @@ const EditPractitionerBio: React.FC<Props> = (props) => {
 
     if (bl.isLoading || !bl.hasLoaded) {
         return (
-            <DialogContent className="w-[600px]" data-testid="edit-practitioner-bio-dialog">
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-                </div>
-            </DialogContent>
+            <div className="flex items-center justify-center py-12" data-testid="edit-practitioner-bio-dialog">
+                <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            </div>
         )
     }
 
     return (
         <>
-            <DialogContent className="w-[600px] max-h-[90vh] overflow-y-auto" data-testid="edit-practitioner-bio-dialog">
+            <div data-testid="edit-practitioner-bio-dialog">
                 <DialogHeader>
                     <DialogTitle>Edit Profile</DialogTitle>
                     <DialogDescription>
@@ -263,7 +261,7 @@ const EditPractitionerBio: React.FC<Props> = (props) => {
                         </DialogFooter>
                     </form>
                 </Form>
-            </DialogContent>
+            </div>
 
             <ProfilePictureCropDialog
                 file={selectedFile}
