@@ -9,14 +9,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, ArrowLeft, X } from "lucide-react";
+import { ArrowRight, ArrowLeft, X, Music } from "lucide-react";
 import { StepIndicator } from "@/components/ui/step-indicator";
 import ThumbnailBuilder from "@/components/ux/ThumbnailBuilder";
 import VisuallyHidden from "@/components/ux/VisuallyHidden";
+import FileUploader from "@/components/ux/FileUploader";
 import { useForm } from "react-hook-form";
 import { v4 as uuidv4 } from "uuid";
+import { gql } from "@/lib/services/gql";
 import useCreateJourney from "../_hooks/UseCreateJourney";
 import { JourneyListItem } from "../_hooks/UseJourneys";
+import { media_type } from "@/utils/spiriverse";
 
 type Props = {
     practitionerId: string;
@@ -104,6 +107,10 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
     });
 
     const journeyId = form.watch('id');
+    const [audioFile, setAudioFile] = useState<media_type | null>(null);
+    const [creatingTrack, setCreatingTrack] = useState(false);
+
+    const isSingleTrack = form.watch('journeyStructure') === 'SINGLE_TRACK';
 
     const uploadToAzure = async (file: File, fileType: 'IMAGE' | 'VIDEO') => {
         const formData = new FormData();
@@ -197,19 +204,50 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
             onClose();
         } else {
             const result = await createMutation.mutateAsync(input);
-            if (onCreated && result?.journey) {
-                onCreated(result.journey as JourneyListItem);
+            const createdJourney = result?.journey as JourneyListItem | undefined;
+
+            // For single track, auto-create the track with the uploaded audio
+            if (createdJourney && values.journeyStructure === 'SINGLE_TRACK' && audioFile) {
+                setCreatingTrack(true);
+                try {
+                    await gql<{ upsert_journey_track: { success: boolean } }>(`
+                        mutation UpsertJourneyTrack($vendorId: ID!, $journeyId: ID!, $input: JourneyTrackInput!) {
+                            upsert_journey_track(vendorId: $vendorId, journeyId: $journeyId, input: $input) {
+                                code success message
+                            }
+                        }
+                    `, {
+                        vendorId: practitionerId,
+                        journeyId: createdJourney.id,
+                        input: {
+                            trackNumber: 1,
+                            title: values.name,
+                            durationSeconds: audioFile.durationSeconds || 0,
+                            audioFile,
+                        },
+                    });
+                } finally {
+                    setCreatingTrack(false);
+                }
+            }
+
+            if (onCreated && createdJourney) {
+                onCreated(createdJourney);
             } else {
                 onClose();
             }
         }
     };
 
-    const isPending = createMutation.isPending || updateMutation.isPending;
+    const isPending = createMutation.isPending || updateMutation.isPending || creatingTrack;
 
     const canProceed = () => {
         const values = form.getValues();
-        if (step === 1) return values.name.length > 0;
+        if (step === 1) {
+            if (!values.name.length) return false;
+            if (values.journeyStructure === 'SINGLE_TRACK' && !audioFile) return false;
+            return true;
+        }
         return true;
     };
 
@@ -298,27 +336,29 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
                                     )}
                                 />
 
-                                <FormField
-                                    name="journeyStructure"
-                                    control={form.control}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel dark>Type</FormLabel>
-                                            <Select dark onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger data-testid="journey-structure-select">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="SINGLE_TRACK">Single Track</SelectItem>
-                                                    <SelectItem value="COLLECTION">Collection</SelectItem>
-                                                    <SelectItem value="SERIES">Series (Drip Release)</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </FormItem>
-                                    )}
-                                />
+                                {!defaultStructure && (
+                                    <FormField
+                                        name="journeyStructure"
+                                        control={form.control}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel dark>Type</FormLabel>
+                                                <Select dark onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger data-testid="journey-structure-select">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="SINGLE_TRACK">Single Track</SelectItem>
+                                                        <SelectItem value="COLLECTION">Collection</SelectItem>
+                                                        <SelectItem value="SERIES">Series (Drip Release)</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <FormField
@@ -387,6 +427,67 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
                                         </FormItem>
                                     )}
                                 />
+
+                                {isSingleTrack && (
+                                    <div className="border border-slate-700 rounded-lg p-3">
+                                        <FormLabel dark>Audio File *</FormLabel>
+                                        <p className="text-xs text-slate-400 mb-2">Upload your audio recording (MP3, WAV, OGG, or FLAC)</p>
+
+                                        {audioFile ? (
+                                            <div className="flex items-center justify-between bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="p-2 rounded-lg bg-purple-500/20">
+                                                        <Music className="w-4 h-4 text-purple-400" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm text-white truncate">{audioFile.name}</p>
+                                                        {audioFile.durationSeconds ? (
+                                                            <p className="text-xs text-slate-400">
+                                                                {Math.floor(audioFile.durationSeconds / 60)}:{String(Math.floor(audioFile.durationSeconds % 60)).padStart(2, '0')}
+                                                            </p>
+                                                        ) : null}
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setAudioFile(null)}
+                                                    className="text-slate-400 hover:text-red-400"
+                                                    data-testid="remove-audio-btn"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <FileUploader
+                                                id={`journey-audio-upload`}
+                                                connection={{
+                                                    container: 'public',
+                                                    relative_path: `merchant/${practitionerId}/journey/${journeyId}/tracks`
+                                                }}
+                                                acceptOnly={{ type: 'AUDIO' }}
+                                                allowMultiple={false}
+                                                onDropAsync={() => {}}
+                                                onUploadCompleteAsync={(files) => {
+                                                    if (files.length > 0) {
+                                                        const uploaded = files[0];
+                                                        setAudioFile(uploaded);
+
+                                                        if (uploaded.url) {
+                                                            const audio = new Audio();
+                                                            audio.src = uploaded.url;
+                                                            audio.addEventListener('loadedmetadata', () => {
+                                                                const duration = Math.round(audio.duration);
+                                                                setAudioFile(prev => prev ? { ...prev, durationSeconds: duration } : prev);
+                                                            });
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        )}
+                                    </div>
+                                )}
 
                                 {watchedJourneyStructure !== "SINGLE_TRACK" && (
                                     <div className="border border-slate-700 rounded-lg p-3">

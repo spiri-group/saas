@@ -225,6 +225,19 @@ test.describe.serial('Guided Journeys - Full E2E Customer Journey', () => {
     const priceInput = page.getByTestId('journey-price-input');
     await priceInput.fill('15.00');
 
+    // Upload audio file for single track — the dialog now includes audio upload
+    const audioBuffer = generateTestAudioBuffer();
+    const audioUploadInput = page.locator('#journey-audio-upload input[type="file"]');
+    await audioUploadInput.setInputFiles({
+      name: 'earth-connection.wav',
+      mimeType: 'audio/wav',
+      buffer: audioBuffer,
+    });
+    console.log('[Test 1] Audio file uploaded');
+
+    // Wait for upload to complete (file name should appear)
+    await expect(page.locator('text=earth-connection')).toBeVisible({ timeout: 30000 });
+
     // Click Next to go to Details step
     const nextBtn = page.getByTestId('journey-next-btn');
     await expect(nextBtn).toBeEnabled({ timeout: 5000 });
@@ -256,9 +269,10 @@ test.describe.serial('Guided Journeys - Full E2E Customer Journey', () => {
     console.log('[Test 1] Journey creation submitted');
 
     // After creation, the UI switches to JourneyTrackManager
-    // Wait for track manager header's "Add Track" button (always visible in track manager)
-    const addTrackBtn = page.getByTestId('add-track-btn');
-    await expect(addTrackBtn).toBeVisible({ timeout: 15000 });
+    // For single track, the track was auto-created by the dialog — "Add Track" button is hidden
+    // Wait for the track manager to appear (back button is always visible)
+    const trackManagerBack = page.getByTestId('track-manager-back-btn');
+    await expect(trackManagerBack).toBeVisible({ timeout: 15000 });
     console.log('[Test 1] Track manager visible');
 
     // Get the journey ID via the catalogue GraphQL query
@@ -302,45 +316,9 @@ test.describe.serial('Guided Journeys - Full E2E Customer Journey', () => {
       throw new Error(`[Test 1] FAILED: Journey was not created. Result: ${JSON.stringify(journeyResult)}`);
     }
 
-    // Create a track and publish the journey via GraphQL API
-    const trackAndPublish = await page.evaluate(async ({ vendorId, jId }) => {
-      const results: string[] = [];
+    // Track was auto-created by the dialog — just publish the journey via GraphQL API
+    const publishResult = await page.evaluate(async ({ vendorId, jId }) => {
       try {
-        // Create a track
-        const trackResp = await fetch('/api/graphql', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: `mutation UpsertJourneyTrack($vendorId: ID!, $journeyId: ID!, $input: JourneyTrackInput!) {
-              upsert_journey_track(vendorId: $vendorId, journeyId: $journeyId, input: $input) {
-                code success message track { id title }
-              }
-            }`,
-            variables: {
-              vendorId,
-              journeyId: jId,
-              input: {
-                trackNumber: 1,
-                title: 'Earth Connection',
-                description: 'A guided meditation connecting you to the energy of the earth.',
-                durationSeconds: 60,
-                audioFile: {
-                  code: 'test-audio-' + Date.now(),
-                  name: 'earth-connection.wav',
-                  urlRelative: 'public/test/earth-connection.wav',
-                  type: 'AUDIO',
-                  size: 'RECTANGLE_HORIZONTAL',
-                  sizeBytes: 16044,
-                  durationSeconds: 60,
-                },
-              },
-            },
-          }),
-        });
-        const trackData = await trackResp.json();
-        results.push(`Track: ${JSON.stringify(trackData)}`);
-
-        // Publish the journey (set isLive: true)
         const publishResp = await fetch('/api/graphql', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -357,20 +335,14 @@ test.describe.serial('Guided Journeys - Full E2E Customer Journey', () => {
           }),
         });
         const publishData = await publishResp.json();
-        results.push(`Publish: ${JSON.stringify(publishData)}`);
-
-        return results;
+        return `Publish: ${JSON.stringify(publishData)}`;
       } catch (error) {
-        results.push(`Error: ${String(error)}`);
-        return results;
+        return `Error: ${String(error)}`;
       }
     }, { vendorId: practitionerId, jId: journeyId });
 
-    for (const r of trackAndPublish) {
-      console.log(`[Test 1] ${r}`);
-    }
-
-    console.log(`[Test 1] Journey created, track added, and published. Ready for customer purchase.`);
+    console.log(`[Test 1] ${publishResult}`);
+    console.log(`[Test 1] Journey created with track and published. Ready for customer purchase.`);
     await page.screenshot({ path: 'test-results/journey-created.png' });
   });
 

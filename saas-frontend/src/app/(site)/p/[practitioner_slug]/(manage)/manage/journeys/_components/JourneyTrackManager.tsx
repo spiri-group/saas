@@ -765,52 +765,60 @@ export default function JourneyTrackManager({ practitionerId, journey, onBack }:
                 </div>
 
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-white">Tracks</h2>
-                    <div className="flex items-center gap-2">
-                        <input
-                            ref={bulkInputRef}
-                            type="file"
-                            multiple
-                            accept="audio/*"
-                            className="hidden"
-                            onChange={(e) => {
-                                if (e.target.files && e.target.files.length > 0) {
-                                    handleBulkUpload(e.target.files);
-                                    e.target.value = '';
-                                }
-                            }}
-                            data-testid="bulk-upload-input"
-                        />
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => bulkInputRef.current?.click()}
-                            disabled={bulkUploading}
-                            className="border-purple-500/30 text-purple-400 hover:bg-purple-500/20"
-                            data-testid="bulk-upload-btn"
-                        >
-                            {bulkUploading ? (
+                    <h2 className="text-lg font-semibold text-white">
+                        {journey.journeyStructure === 'SINGLE_TRACK' ? 'Track' : 'Tracks'}
+                    </h2>
+                    {!(journey.journeyStructure === 'SINGLE_TRACK' && trackList.length >= 1) && (
+                        <div className="flex items-center gap-2">
+                            {journey.journeyStructure !== 'SINGLE_TRACK' && (
                                 <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Uploading...
-                                </>
-                            ) : (
-                                <>
-                                    <Files className="w-4 h-4 mr-2" />
-                                    Bulk Upload
+                                    <input
+                                        ref={bulkInputRef}
+                                        type="file"
+                                        multiple
+                                        accept="audio/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            if (e.target.files && e.target.files.length > 0) {
+                                                handleBulkUpload(e.target.files);
+                                                e.target.value = '';
+                                            }
+                                        }}
+                                        data-testid="bulk-upload-input"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => bulkInputRef.current?.click()}
+                                        disabled={bulkUploading}
+                                        className="border-purple-500/30 text-purple-400 hover:bg-purple-500/20"
+                                        data-testid="bulk-upload-btn"
+                                    >
+                                        {bulkUploading ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                Uploading...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Files className="w-4 h-4 mr-2" />
+                                                Bulk Upload
+                                            </>
+                                        )}
+                                    </Button>
                                 </>
                             )}
-                        </Button>
-                        <Button
-                            type="button"
-                            onClick={() => setShowAddTrack(true)}
-                            className="bg-purple-600 hover:bg-purple-700"
-                            data-testid="add-track-btn"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Track
-                        </Button>
-                    </div>
+                            <Button
+                                type="button"
+                                onClick={() => setShowAddTrack(true)}
+                                className="bg-purple-600 hover:bg-purple-700"
+                                data-testid="add-track-btn"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Track
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
 
