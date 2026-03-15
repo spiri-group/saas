@@ -316,6 +316,34 @@ test.describe.serial('Guided Journeys - Full E2E Customer Journey', () => {
       throw new Error(`[Test 1] FAILED: Journey was not created. Result: ${JSON.stringify(journeyResult)}`);
     }
 
+    // Verify the track was auto-created with a valid audio file
+    const trackCheck = await page.evaluate(async ({ vendorId, jId }) => {
+      try {
+        const resp = await fetch('/api/graphql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `query GetJourneyTracks($journeyId: ID!, $vendorId: ID!) {
+              journeyTracks(journeyId: $journeyId, vendorId: $vendorId) {
+                id title audioFile { url name }
+              }
+            }`,
+            variables: { journeyId: jId, vendorId },
+          }),
+        });
+        const data = await resp.json();
+        return data.data?.journeyTracks || [];
+      } catch (error) {
+        return [{ error: String(error) }];
+      }
+    }, { vendorId: practitionerId, jId: journeyId });
+
+    console.log(`[Test 1] Track check: ${JSON.stringify(trackCheck)}`);
+    expect(trackCheck).toHaveLength(1);
+    expect(trackCheck[0].audioFile?.url).toBeTruthy();
+    expect(trackCheck[0].title).toBeTruthy();
+    console.log(`[Test 1] Track verified: "${trackCheck[0].title}" with audio URL`);
+
     // Track was auto-created by the dialog — just publish the journey via GraphQL API
     const publishResult = await page.evaluate(async ({ vendorId, jId }) => {
       try {
