@@ -248,7 +248,7 @@ export default function UI({ merchantId }: UIProps) {
 
   return (
     <div className="min-h-screen p-4 md:p-6 bg-slate-950">
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">

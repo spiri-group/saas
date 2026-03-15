@@ -1,7 +1,7 @@
 import useFormStatus from "@/components/utils/UseFormStatus"
 import useEditPractitionerJourney, { EditPractitionerJourneySchema } from "./_hooks/UseEditPractitionerJourney"
 import { escape_key } from "@/lib/functions"
-import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Textarea } from "@/components/ui/textarea"
 import CancelDialogButton from "@/components/ux/CancelDialogButton"
@@ -35,16 +35,14 @@ const EditPractitionerJourney: React.FC<Props> = (props) => {
 
     if (bl.isLoading || !bl.hasLoaded) {
         return (
-            <DialogContent className="w-[600px] max-w-[95vw]" data-testid="edit-practitioner-journey-dialog">
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-                </div>
-            </DialogContent>
+            <div className="flex items-center justify-center py-12" data-testid="edit-practitioner-journey-dialog">
+                <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            </div>
         )
     }
 
     return (
-        <DialogContent className="w-[600px] max-w-[95vw] max-h-[90vh] overflow-y-auto" data-testid="edit-practitioner-journey-dialog">
+        <div data-testid="edit-practitioner-journey-dialog">
             <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                     <Compass className="w-5 h-5 text-purple-500" />
@@ -117,7 +115,7 @@ const EditPractitionerJourney: React.FC<Props> = (props) => {
                     </DialogFooter>
                 </form>
             </Form>
-        </DialogContent>
+        </div>
     )
 }
 

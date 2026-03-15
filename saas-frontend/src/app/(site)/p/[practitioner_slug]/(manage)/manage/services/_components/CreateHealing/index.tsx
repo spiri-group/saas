@@ -9,10 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { escape_key } from "@/lib/functions";
-import { Heart } from "lucide-react";
+import { Heart, Monitor, MapPin } from "lucide-react";
 import QuestionBuilder from "@/components/ux/QuestionBuilder";
 import { useCreateHealingOffer } from "./hooks/UseCreateHealingOffer";
 import { Label } from "@/components/ui/label";
+import { usePractitionerSchedule } from "../../../availability/hooks/UsePractitionerSchedule";
+import ServiceScheduleSelector from "@/components/scheduling/ServiceScheduleSelector";
 import TargetTimezoneSelector from "@/components/scheduling/TargetTimezoneSelector";
 import TimezoneImpactMap from "@/components/scheduling/TimezoneImpactMap";
 import SmartSchedulingRecommendations from "@/components/scheduling/SmartSchedulingRecommendations";
@@ -30,10 +32,14 @@ const useBL = (props: BLProps) => {
     const merchant_slug = params.merchant_slug as string;
     const practitioner_slug = params.practitioner_slug as string;
     const { form, mutation, isEditing } = useCreateHealingOffer(props.merchantId, props.editingService);
+    const schedule = usePractitionerSchedule(props.merchantId);
+    const inPersonEnabled = schedule.data?.deliveryMethods?.atPractitionerLocation?.enabled === true;
 
     return {
         form,
         isEditing,
+        inPersonEnabled,
+        schedule,
         mutation,
         submit: async (values: any) => {
             await mutation.mutateAsync(values);
@@ -109,15 +115,66 @@ const CreateHealing: React.FC<Props> = (props) => {
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
                                     <FormLabel className="font-medium cursor-pointer">
-                                        Requires Live Consultation
+                                        This is a live session
                                     </FormLabel>
                                     <p className="text-sm text-muted-foreground">
-                                        Check this if you&apos;ll deliver this service via live session instead of recorded file
+                                        Tick this if you&apos;ll meet with the client in real time (video call or in person)
                                     </p>
                                 </div>
                             </FormItem>
                         )}
                     />
+
+                    {bl.form.watch('requiresConsultation') && (
+                        <>
+                            <FormField
+                                name="consultationType"
+                                control={bl.form.control}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Where will you meet?</FormLabel>
+                                        <div className="flex gap-2" data-testid="consultation-type-tabs">
+                                            <Button
+                                                type="button"
+                                                variant={field.value === 'ONLINE' ? 'default' : 'outline'}
+                                                className={field.value === 'ONLINE'
+                                                    ? 'flex-1 bg-purple-600 hover:bg-purple-700 text-white'
+                                                    : 'flex-1'
+                                                }
+                                                onClick={() => field.onChange('ONLINE')}
+                                                data-testid="consultation-type-online"
+                                            >
+                                                <Monitor className="w-4 h-4 mr-2" />
+                                                Online
+                                            </Button>
+                                            {bl.inPersonEnabled && (
+                                                <Button
+                                                    type="button"
+                                                    variant={field.value === 'IN_PERSON' ? 'default' : 'outline'}
+                                                    className={field.value === 'IN_PERSON'
+                                                        ? 'flex-1 bg-purple-600 hover:bg-purple-700 text-white'
+                                                        : 'flex-1'
+                                                    }
+                                                    onClick={() => field.onChange('IN_PERSON')}
+                                                    data-testid="consultation-type-inperson"
+                                                >
+                                                    <MapPin className="w-4 h-4 mr-2" />
+                                                    In Person
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </FormItem>
+                                )}
+                            />
+
+                            <ServiceScheduleSelector
+                                weekdays={bl.schedule.data?.weekdays || []}
+                                value={bl.form.watch('scheduleConfig')}
+                                onChange={(config) => bl.form.setValue('scheduleConfig', config)}
+                                consultationType={bl.form.watch('consultationType')}
+                            />
+                        </>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                         <FormField
@@ -166,7 +223,7 @@ const CreateHealing: React.FC<Props> = (props) => {
                                 control={bl.form.control}
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Delivery Format</FormLabel>
+                                        <FormLabel>How will you share it?</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
@@ -188,7 +245,7 @@ const CreateHealing: React.FC<Props> = (props) => {
                                 control={bl.form.control}
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Delivery (days)</FormLabel>
+                                        <FormLabel>Deliver within (days)</FormLabel>
                                         <FormControl>
                                             <Input
                                                 {...field}

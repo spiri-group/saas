@@ -2,7 +2,7 @@ import useFormStatus from "@/components/utils/UseFormStatus"
 import useEditPractitionerVideo, { UpdatePractitionerVideoFormSchema } from "./_hooks/UseEditPractitionerVideo"
 import useDeletePractitionerVideoUpdate from "./_hooks/UseDeletePractitionerVideoUpdate"
 import { escape_key } from "@/lib/functions"
-import { DialogContent, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog"
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormField, FormItem, FormLabel, FormDescription } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import FileUploader from "@/components/ux/FileUploader"
@@ -132,15 +132,12 @@ const EditPractitionerVideo: React.FC<Props> = (props) => {
     const hasExisting = existingUpdates && existingUpdates.length > 0;
 
     return (
-        <DialogContent
-            className={`max-h-[85vh] overflow-hidden ${hasExisting ? 'w-[1100px] max-w-[95vw]' : 'w-[900px] max-w-[90vw]'}`}
-            data-testid="edit-practitioner-video-dialog"
-        >
+        <div data-testid="edit-practitioner-video-dialog">
             <DialogHeader>
-                <div className="flex items-center space-x-2">
+                <DialogTitle className="flex items-center space-x-2">
                     <VideoIcon className="h-5 w-5" />
                     <span>Video Updates</span>
-                </div>
+                </DialogTitle>
             </DialogHeader>
             <DialogDescription>
                 {hasExisting ? 'Manage your video updates or post a new one.' : 'Share a video update with your followers.'}
@@ -331,7 +328,7 @@ const EditPractitionerVideo: React.FC<Props> = (props) => {
                     </div>
                 )}
             </div>
-        </DialogContent>
+        </div>
     )
 }
 

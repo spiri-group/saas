@@ -1,7 +1,7 @@
 import useFormStatus from "@/components/utils/UseFormStatus"
 import useEditPractitionerAudioIntro, { UpdateAudioIntroFormSchema } from "./_hooks/UseEditPractitionerAudioIntro"
 import { escape_key } from "@/lib/functions"
-import { DialogContent, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog"
+import { DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog"
 import { Form, FormField, FormItem, FormLabel, FormDescription } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import FileUploader from "@/components/ux/FileUploader"
@@ -385,10 +385,7 @@ const EditPractitionerAudioIntro: React.FC<Props> = (props) => {
     if (!bl.hasLoaded) return <></>
 
     return (
-        <DialogContent
-            className="w-[600px] max-w-[95vw] max-h-[90vh] overflow-y-auto"
-            data-testid="edit-practitioner-audio-intro-dialog"
-        >
+        <div data-testid="edit-practitioner-audio-intro-dialog">
             <DialogHeader>
                 <div className="flex items-center space-x-2">
                     <Mic className="h-5 w-5" />
@@ -503,7 +500,7 @@ const EditPractitionerAudioIntro: React.FC<Props> = (props) => {
                     </DialogFooter>
                 </form>
             </Form>
-        </DialogContent>
+        </div>
     )
 }
 

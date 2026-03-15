@@ -634,7 +634,7 @@ const resolvers = {
                 ? (service.duration.unit?.id === "hour" ? service.duration.amount * 60 : service.duration.amount)
                 : 60;
 
-            const bufferMinutes = schedule.bufferMinutes || 15;
+            const bufferMinutes = service.scheduleConfig?.bufferMinutes ?? schedule.bufferMinutes ?? 15;
             const minimumNoticeHours = schedule.minimumNoticeHours || 24;
             const practitionerTz = schedule.timezone || "America/New_York";
             const customerTz = customerTimezone || "America/New_York";
@@ -678,11 +678,25 @@ const resolvers = {
                     continue; // Not available on this weekday
                 }
 
-                const timeSlots = dateOverride?.type === "CUSTOM"
+                let timeSlots = dateOverride?.type === "CUSTOM"
                     ? dateOverride.timeSlots
                     : weekdayConfig?.timeSlots || [];
 
                 if (!timeSlots || timeSlots.length === 0) {
+                    continue;
+                }
+
+                // Filter slots by service schedule config
+                if (service.scheduleConfig && !service.scheduleConfig.useAllSlots && service.scheduleConfig.selectedSlotIds?.length > 0) {
+                    timeSlots = timeSlots.filter((slot: any) => service.scheduleConfig.selectedSlotIds.includes(slot.id));
+                }
+
+                // Filter to in-person-only slots when service requires in-person
+                if (service.consultationType === 'IN_PERSON') {
+                    timeSlots = timeSlots.filter((slot: any) => slot.location != null);
+                }
+
+                if (timeSlots.length === 0) {
                     continue;
                 }
 
@@ -1377,6 +1391,8 @@ const resolvers = {
                 questionnaire: args.input.questionnaire || [],
                 targetTimezones: args.input.targetTimezones || [],
                 readingOptions: args.input.readingOptions,
+                ...(args.input.consultationType && { consultationType: args.input.consultationType }),
+                ...(args.input.scheduleConfig && { scheduleConfig: args.input.scheduleConfig }),
                 ...(args.input.scheduleId && { scheduleId: args.input.scheduleId })
             };
 
@@ -1468,6 +1484,8 @@ const resolvers = {
                 questionnaire: args.input.questionnaire || [],
                 targetTimezones: args.input.targetTimezones || [],
                 healingOptions: args.input.healingOptions,
+                ...(args.input.consultationType && { consultationType: args.input.consultationType }),
+                ...(args.input.scheduleConfig && { scheduleConfig: args.input.scheduleConfig }),
                 ...(args.input.scheduleId && { scheduleId: args.input.scheduleId })
             };
 
@@ -1560,6 +1578,8 @@ const resolvers = {
                 questionnaire: args.input.questionnaire || [],
                 targetTimezones: args.input.targetTimezones || [],
                 coachingOptions: args.input.coachingOptions,
+                ...(args.input.consultationType && { consultationType: args.input.consultationType }),
+                ...(args.input.scheduleConfig && { scheduleConfig: args.input.scheduleConfig }),
                 ...(args.input.scheduleId && { scheduleId: args.input.scheduleId })
             };
 
@@ -1617,6 +1637,8 @@ const resolvers = {
                 ops.push({ op: "set", path: "/deliveryMode", value: deliveryMode });
             }
             if (args.input.bookingType !== undefined) ops.push({ op: "set", path: "/bookingType", value: args.input.bookingType });
+            if (args.input.consultationType !== undefined) ops.push({ op: "set", path: "/consultationType", value: args.input.consultationType });
+            if (args.input.scheduleConfig !== undefined) ops.push({ op: "set", path: "/scheduleConfig", value: args.input.scheduleConfig });
             if (args.input.scheduleId !== undefined) ops.push({ op: "set", path: "/scheduleId", value: args.input.scheduleId });
 
             if (ops.length > 0) {
@@ -1673,6 +1695,8 @@ const resolvers = {
                 ops.push({ op: "set", path: "/deliveryMode", value: deliveryMode });
             }
             if (args.input.bookingType !== undefined) ops.push({ op: "set", path: "/bookingType", value: args.input.bookingType });
+            if (args.input.consultationType !== undefined) ops.push({ op: "set", path: "/consultationType", value: args.input.consultationType });
+            if (args.input.scheduleConfig !== undefined) ops.push({ op: "set", path: "/scheduleConfig", value: args.input.scheduleConfig });
             if (args.input.scheduleId !== undefined) ops.push({ op: "set", path: "/scheduleId", value: args.input.scheduleId });
 
             if (ops.length > 0) {
@@ -1730,6 +1754,8 @@ const resolvers = {
                 ops.push({ op: "set", path: "/deliveryMode", value: deliveryMode });
             }
             if (args.input.bookingType !== undefined) ops.push({ op: "set", path: "/bookingType", value: args.input.bookingType });
+            if (args.input.consultationType !== undefined) ops.push({ op: "set", path: "/consultationType", value: args.input.consultationType });
+            if (args.input.scheduleConfig !== undefined) ops.push({ op: "set", path: "/scheduleConfig", value: args.input.scheduleConfig });
             if (args.input.scheduleId !== undefined) ops.push({ op: "set", path: "/scheduleId", value: args.input.scheduleId });
 
             if (ops.length > 0) {

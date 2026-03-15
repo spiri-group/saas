@@ -1,7 +1,7 @@
 import useFormStatus from "@/components/utils/UseFormStatus"
 import useEditPractitionerPinnedTestimonials, { UpdatePinnedTestimonialsFormSchema, PractitionerReview } from "./_hooks/UseEditPractitionerPinnedTestimonials"
 import { escape_key } from "@/lib/functions"
-import { DialogContent, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog"
+import { DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog"
 import { Form } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import CancelDialogButton from "@/components/ux/CancelDialogButton"
@@ -120,10 +120,7 @@ const EditPractitionerPinnedTestimonials: React.FC<Props> = (props) => {
     const canPinMore = pinnedCount < 3;
 
     return (
-        <DialogContent
-            className="w-[700px] max-w-[90vw] max-h-[80vh] overflow-y-auto"
-            data-testid="edit-practitioner-pinned-testimonials-dialog"
-        >
+        <div data-testid="edit-practitioner-pinned-testimonials-dialog">
             <DialogHeader>
                 <div className="flex items-center space-x-2">
                     <Pin className="h-5 w-5 text-purple-500" />
@@ -195,7 +192,7 @@ const EditPractitionerPinnedTestimonials: React.FC<Props> = (props) => {
                     </DialogFooter>
                 </form>
             </Form>
-        </DialogContent>
+        </div>
     )
 }
 

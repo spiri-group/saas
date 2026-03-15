@@ -1,7 +1,7 @@
 import useFormStatus from "@/components/utils/UseFormStatus"
 import useEditPractitionerTraining, { EditPractitionerTrainingSchema } from "./_hooks/UseEditPractitionerTraining"
 import { escape_key } from "@/lib/functions"
-import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import CancelDialogButton from "@/components/ux/CancelDialogButton"
@@ -39,16 +39,14 @@ const EditPractitionerTraining: React.FC<Props> = (props) => {
 
     if (bl.isLoading || !bl.hasLoaded) {
         return (
-            <DialogContent className="w-[700px]" data-testid="edit-practitioner-training-dialog">
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-                </div>
-            </DialogContent>
+            <div className="flex items-center justify-center py-12" data-testid="edit-practitioner-training-dialog">
+                <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            </div>
         )
     }
 
     return (
-        <DialogContent className="w-[700px] max-h-[90vh] overflow-y-auto" data-testid="edit-practitioner-training-dialog">
+        <div data-testid="edit-practitioner-training-dialog">
             <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                     <GraduationCap className="w-5 h-5 text-purple-500" />
@@ -112,7 +110,7 @@ const EditPractitionerTraining: React.FC<Props> = (props) => {
                     </DialogFooter>
                 </form>
             </Form>
-        </DialogContent>
+        </div>
     )
 }
 
