@@ -210,6 +210,8 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
             if (createdJourney && values.journeyStructure === 'SINGLE_TRACK' && audioFile) {
                 setCreatingTrack(true);
                 try {
+                    // Strip fields not in MediaInput (url is output-only, not accepted as input)
+                    const { url, ...audioFileInput } = audioFile as media_type & { url?: string };
                     await gql<{ upsert_journey_track: { success: boolean } }>(`
                         mutation UpsertJourneyTrack($vendorId: ID!, $journeyId: ID!, $input: JourneyTrackInput!) {
                             upsert_journey_track(vendorId: $vendorId, journeyId: $journeyId, input: $input) {
@@ -223,7 +225,7 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
                             trackNumber: 1,
                             title: values.name,
                             durationSeconds: audioFile.durationSeconds || 0,
-                            audioFile,
+                            audioFile: audioFileInput,
                         },
                     });
                 } finally {

@@ -227,7 +227,7 @@ test.describe.serial('Guided Journeys - Full E2E Customer Journey', () => {
 
     // Upload audio file for single track — the dialog now includes audio upload
     const audioBuffer = generateTestAudioBuffer();
-    const audioUploadInput = page.locator('#journey-audio-upload input[type="file"]');
+    const audioUploadInput = page.locator('#input-file-upload-journey-audio-upload');
     await audioUploadInput.setInputFiles({
       name: 'earth-connection.wav',
       mimeType: 'audio/wav',
