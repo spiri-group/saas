@@ -258,8 +258,8 @@ const useBL = (props: BLProps) => {
                 },
                 {
                     icon: <StoreIcon className="w-5 h-5" />,
-                    label: "Listing Appearance",
-                    dialogId: "Merchant Listing Appearance"
+                    label: "Directory Appearance",
+                    dialogId: "Merchant Directory Appearance"
                 },
                 {
                     icon: <ImageIcon className="w-5 h-5" />,
@@ -375,7 +375,7 @@ const useBL = (props: BLProps) => {
         "Edit Tour Details": () => <EditTourDetails merchantId={merchantId} vendorId={merchantId} />,
         "Edit Itinerary": () => <EditItinerary merchantId={merchantId} />,
         "Merchant Returns & Cancels": () => <UpsertRefundPolicies merchantId={merchantId} />,
-        "Merchant Listing Appearance": () => <EditListingAppearance merchantId={merchantId} />,
+        "Merchant Directory Appearance": () => <EditListingAppearance merchantId={merchantId} />,
         "Merchant Events": () => <MerchantEventsComponent merchantId={merchantId} />,
         "Merchant Gallery": () => <MerchantGalleryComponent merchantId={merchantId} />
     } : {};

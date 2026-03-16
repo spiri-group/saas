@@ -45,6 +45,7 @@ import EditPractitionerSocials from "./Profile/Edit/Social";
 import EditPractitionerAudioIntro from "./Profile/Edit/AudioIntro";
 import EditPractitionerOracleMessage from "./Profile/Edit/OracleMessage";
 import EditPractitionerPinnedTestimonials from "./Profile/Edit/PinnedTestimonials";
+import EditListingAppearance from "../../m/_components/Profile/Edit/ListingAppearance";
 import MerchantEventsComponent from "../../m/_components/Events";
 import MerchantGalleryComponent from "../../m/_components/Gallery";
 import MerchantBankingComponent from "../../m/_components/Banking";
@@ -154,6 +155,11 @@ const useBL = (props: BLProps) => {
                     dialogId: "Edit Video",
                     className: "w-[900px] max-w-[95vw]"
                 }] : []),
+                {
+                    icon: <Store className="w-5 h-5" />,
+                    label: "Directory Appearance",
+                    dialogId: "Practitioner Directory Appearance",
+                },
                 {
                     icon: <ImageIcon className="w-5 h-5" />,
                     label: "Gallery",
@@ -309,6 +315,7 @@ const useBL = (props: BLProps) => {
             "Edit Journey": () => <EditPractitionerJourney practitionerId={practitionerId} />,
             "Edit Video": () => <EditPractitionerVideo practitionerId={practitionerId} />,
             "Practitioner Gallery": () => <MerchantGalleryComponent merchantId={practitionerId} />,
+            "Practitioner Directory Appearance": () => <EditListingAppearance merchantId={practitionerId} />,
             "Edit Socials": () => <EditPractitionerSocials practitionerId={practitionerId} />,
             "Edit Audio Intro": () => <EditPractitionerAudioIntro practitionerId={practitionerId} />,
             "Edit Oracle Message": () => <EditPractitionerOracleMessage practitionerId={practitionerId} />,
