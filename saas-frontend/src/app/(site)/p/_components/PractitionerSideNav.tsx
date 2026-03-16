@@ -315,7 +315,7 @@ const useBL = (props: BLProps) => {
             "Edit Journey": () => <EditPractitionerJourney practitionerId={practitionerId} />,
             "Edit Video": () => <EditPractitionerVideo practitionerId={practitionerId} />,
             "Practitioner Gallery": () => <MerchantGalleryComponent merchantId={practitionerId} />,
-            "Practitioner Directory Appearance": () => <EditListingAppearance merchantId={practitionerId} />,
+            "Practitioner Directory Appearance": () => <EditListingAppearance merchantId={practitionerId} thumbnailType="square" />,
             "Edit Socials": () => <EditPractitionerSocials practitionerId={practitionerId} />,
             "Edit Audio Intro": () => <EditPractitionerAudioIntro practitionerId={practitionerId} />,
             "Edit Oracle Message": () => <EditPractitionerOracleMessage practitionerId={practitionerId} />,

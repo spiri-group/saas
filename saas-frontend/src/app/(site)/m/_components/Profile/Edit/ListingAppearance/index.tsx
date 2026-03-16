@@ -6,7 +6,8 @@ import { escape_key, isNullOrUndefined } from "@/lib/functions"
 import { ThumbnailSchema } from "@/shared/schemas/thumbnail"
 
 type BLProps = {
-    merchantId: string
+    merchantId: string,
+    thumbnailType?: "rectangle" | "square"
 }
 
 const default_thumbnail = {
@@ -31,12 +32,13 @@ const default_thumbnail = {
 }
 
 const useBL = (props: BLProps) => {
-    const { merchantId } = props
+    const { merchantId, thumbnailType = "rectangle" } = props
 
     const thumbnailQuery = UseVendorThumbnail(merchantId)
 
     return {
         merchantId,
+        thumbnailType,
         thumbnail: thumbnailQuery?.query,
         onSuccess: (value: ThumbnailSchema) => {
             thumbnailQuery.upsert(value);
@@ -53,22 +55,39 @@ const EditListingAppearance: React.FC<Props> = (props) => {
     const bl = useBL(props)
     const { thumbnail } = bl
 
+    const getDefaultThumbnail = () => {
+        const base = {
+            ...default_thumbnail,
+            title: {
+                ...default_thumbnail.title,
+                content: thumbnail.data!.name
+            }
+        };
+
+        // For square thumbnails (practitioners), use their profile picture as the default image
+        if (bl.thumbnailType === "square" && thumbnail.data!.logo) {
+            return {
+                ...base,
+                image: {
+                    media: thumbnail.data!.logo,
+                    zoom: 1
+                }
+            };
+        }
+
+        return base;
+    };
+
     return (
         <DialogContent>
-            {thumbnail.isLoading ? 
+            {thumbnail.isLoading ?
             <BouncingDots /> :
                !isNullOrUndefined(thumbnail.data) ? (
                 <EditThumbnail
                     withPrice={false}
-                    thumbnailType="rectangle"
+                    thumbnailType={bl.thumbnailType}
                     forObject={bl.thumbnail.data!.ref}
-                    existingThumbnail={thumbnail.data!.thumbnail ?? {
-                        ...default_thumbnail,
-                        title: {
-                            ...default_thumbnail.title,
-                            content: thumbnail.data!.name
-                        }
-                    }}
+                    existingThumbnail={thumbnail.data!.thumbnail ?? getDefaultThumbnail()}
                     onSuccess={(value) => {
                         bl.onSuccess(value)
                     }}
