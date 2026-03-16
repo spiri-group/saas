@@ -355,7 +355,7 @@ const CreateTour : React.FC<Props> = (props) => {
                                                             {...field}
                                                             onChange={(data) => {
                                                                 field.onChange(data);
-                                                                if (!isNullOrUndefined(data.title.content)) {
+                                                                if (!isNullOrUndefined(data.image?.media)) {
                                                                     bl.form.setValue('thumbnail_content_set', true, { shouldValidate: true });
                                                                 }
                                                             }} />

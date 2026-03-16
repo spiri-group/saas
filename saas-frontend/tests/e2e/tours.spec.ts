@@ -215,12 +215,9 @@ test.describe.serial('Tour Customer Journey', () => {
     tourName = `Sydney Harbour Tour ${timestamp}`;
 
     // Restore merchant session from Test 1
-    if (merchantStorageState) {
-      await page.context().addCookies(merchantStorageState.cookies);
-      console.log('[Test 2] Restored merchant session');
-    } else {
-      throw new Error('Merchant storage state not available - Test 1 must run first');
-    }
+    expect(merchantStorageState).toBeTruthy();
+    await page.context().addCookies(merchantStorageState!.cookies);
+    console.log('[Test 2] Restored merchant session');
 
     const tourPage = new TourPage(page);
 
@@ -231,134 +228,121 @@ test.describe.serial('Tour Customer Journey', () => {
     // Open create tour dialog
     console.log('[Test 2] Opening tour creation wizard...');
     await tourPage.openCreateTourDialog();
-    console.log('[Test 2] ✓ Tour wizard opened');
+    console.log('[Test 2] Tour wizard opened');
 
-    // Step 1: Tour Details
+    // === Step 1: Tour Details ===
     console.log('[Test 2] Step 1: Filling tour details...');
+
+    // Fill tour name
+    const nameInput = page.locator('input[name="name"]');
+    await expect(nameInput).toBeVisible({ timeout: 10000 });
+    await nameInput.fill(tourName);
+
+    // Select country (required for timezone)
     await tourPage.fillTourDetails({
       name: tourName,
-      description: 'Experience the beauty of Sydney Harbour on this guided walking tour. Visit iconic landmarks including the Opera House and Harbour Bridge.',
+      description: 'Experience the beauty of Sydney Harbour on this guided walking tour.',
       country: 'Australia',
     });
 
-    // Click Next and wait for Step 2 to appear
-    // Use evaluate to scroll within the dialog and click
-    await page.locator('button:has-text("Next")').evaluate((el) => {
-      el.scrollIntoView({ behavior: 'instant', block: 'center' });
-      (el as HTMLElement).click();
-    });
-    await page.waitForTimeout(1000);
+    // Click Next via data-testid
+    await page.getByTestId('tour-wizard-next-btn').click();
+    // Verify we moved to Step 2 (Thumbnail)
+    await expect(page.locator('text=Tour Thumbnail')).toBeVisible({ timeout: 10000 });
+    console.log('[Test 2] Step 1 complete — on thumbnail step');
 
-    // Verify we're on Step 2 (Thumbnail) by checking for file upload input or thumbnail-related elements
-    const step2Visible = await page.locator('input[type="file"], text=Upload, text=Drop').first().isVisible({ timeout: 10000 }).catch(() => false);
-    if (step2Visible) {
-      console.log('[Test 2] ✓ Step 1 complete - on thumbnail step');
-    } else {
-      // Take screenshot to debug what step we're on
-      await page.screenshot({ path: 'test-results/tour-step1-result.png' });
-      console.log('[Test 2] ⚠️ May still be on step 1 - check screenshot');
-    }
+    // === Step 2: Thumbnail (required) ===
+    console.log('[Test 2] Step 2: Uploading thumbnail...');
+    await tourPage.uploadThumbnail();
 
-    // Helper to click Next button using JavaScript (handles viewport issues in dialog)
-    const clickNextBtn = async () => {
-      await page.evaluate(() => {
-        const btn = document.querySelector('[data-testid="tour-wizard-next-btn"]') as HTMLButtonElement;
-        if (btn) {
-          btn.scrollIntoView({ behavior: 'instant', block: 'center' });
-          btn.click();
-        }
-      });
-      await page.waitForTimeout(1500);
-    };
+    // Wait for the image upload to trigger onChange with image.media set
+    // This sets thumbnail_content_set = true in the wizard form
+    await page.waitForTimeout(2000);
 
-    // Helper to click Create Tour button using JavaScript
-    const clickCreateBtn = async () => {
-      await page.evaluate(() => {
-        // Look for Create Tour button or just Create button on the last step
-        const btn = document.querySelector('[data-testid="tour-wizard-create-btn"]') as HTMLButtonElement
-          || document.querySelector('button:not([disabled])') as HTMLButtonElement;
-        if (btn && (btn.textContent?.includes('Create') || btn.textContent?.includes('Save'))) {
-          btn.scrollIntoView({ behavior: 'instant', block: 'center' });
-          btn.click();
-        }
-      });
-      await page.waitForTimeout(2000);
-    };
+    await page.getByTestId('tour-wizard-next-btn').click();
+    // Verify we moved to Step 3 (Itinerary)
+    await expect(page.locator('text=Tour Itinerary')).toBeVisible({ timeout: 10000 });
+    console.log('[Test 2] Step 2 complete — on itinerary step');
 
-    // Step 2: Thumbnail (skip upload for now, it's optional)
-    console.log('[Test 2] Step 2: Skipping thumbnail upload (optional)...');
-    // await tourPage.uploadThumbnail();
-    await clickNextBtn();
-    console.log('[Test 2] ✓ Step 2 complete');
-
-    // Step 3: Itinerary
+    // === Step 3: Itinerary ===
     console.log('[Test 2] Step 3: Adding itinerary...');
-    await tourPage.fillItinerary([
-      { name: 'Meet at Circular Quay', time: '09:00' },
-      { name: 'Sydney Opera House Tour', time: '09:30' },
-      { name: 'Walk to Harbour Bridge', time: '11:00' },
-      { name: 'Lunch at The Rocks', time: '12:30' },
-    ]);
-    await clickNextBtn();
-    console.log('[Test 2] ✓ Step 3 complete');
 
-    // Step 4: Tickets
+    // The activity list should have default entries — fill the first two at minimum
+    const activityName0 = page.getByTestId('activity-name-0');
+    await expect(activityName0).toBeVisible({ timeout: 10000 });
+    await activityName0.fill('Meet at Circular Quay');
+
+    const activityTime0 = page.getByTestId('activity-time-0');
+    await activityTime0.fill('09:00');
+
+    const activityName1 = page.getByTestId('activity-name-1');
+    await expect(activityName1).toBeVisible({ timeout: 5000 });
+    await activityName1.fill('Sydney Opera House');
+
+    const activityTime1 = page.getByTestId('activity-time-1');
+    await activityTime1.fill('11:00');
+
+    console.log('[Test 2] Itinerary filled');
+
+    await page.getByTestId('tour-wizard-next-btn').click();
+    // Verify we moved to Step 4 (Tickets)
+    await expect(page.locator('text=Ticket Variants')).toBeVisible({ timeout: 10000 });
+    console.log('[Test 2] Step 3 complete — on tickets step');
+
+    // === Step 4: Tickets ===
     console.log('[Test 2] Step 4: Adding ticket variants...');
-    await tourPage.fillTicketVariants([
-      { name: 'Adult', price: '49.00', description: 'Full price adult ticket' },
-      { name: 'Child (5-12)', price: '29.00', description: 'Children aged 5-12 years' },
-      { name: 'Family (2+2)', price: '140.00', description: '2 adults + 2 children', peopleCount: 4 },
-    ]);
 
-    // Create the tour
+    // Fill the default first ticket
+    const ticketName0 = page.getByTestId('ticket-name-0');
+    await expect(ticketName0).toBeVisible({ timeout: 10000 });
+    await ticketName0.fill('Adult');
+
+    const ticketPrice0 = page.getByTestId('ticket-price-0');
+    await expect(ticketPrice0).toBeVisible({ timeout: 5000 });
+    await ticketPrice0.click();
+    await ticketPrice0.press('Control+a');
+    await page.keyboard.type('49');
+    await page.waitForTimeout(1500); // Wait for CurrencyInput debounce
+
+    console.log('[Test 2] Ticket filled');
+
+    // === Create the tour ===
     console.log('[Test 2] Creating tour...');
-    await clickCreateBtn();
+    const createBtn = page.getByTestId('tour-wizard-create-btn');
+    await expect(createBtn).toBeVisible({ timeout: 5000 });
+    await createBtn.click();
 
-    // Wait for success and extract tour ID from URL or toast
-    await page.waitForTimeout(3000);
+    // Wait for dialog to close and navigation to events-and-tours page
+    await expect(page.locator('text=Tour Thumbnail, text=Ticket Variants').first()).not.toBeVisible({ timeout: 30000 });
+    console.log('[Test 2] Tour creation dialog closed');
 
-    // Check for success indicators
+    // The wizard navigates to /m/{merchantId}/events-and-tours?listingId={id}
+    await page.waitForURL(/events-and-tours/, { timeout: 30000 });
     const currentUrl = page.url();
-    const successToast = await page.locator('[data-sonner-toast]:has-text("success"), [data-sonner-toast]:has-text("created")').isVisible({ timeout: 5000 }).catch(() => false);
+    console.log(`[Test 2] Navigated to: ${currentUrl}`);
 
-    if (successToast || currentUrl.includes('events-and-tours')) {
-      console.log('[Test 2] ✓ Tour created successfully!');
-
-      // Try to extract tour ID - navigate to Events & Tours and get from dropdown
-      await tourPage.navigateToEventsAndTours(merchantSlug);
-      await page.waitForTimeout(2000);
-
-      // Take screenshot to see the page state
-      await page.screenshot({ path: 'test-results/events-and-tours-page.png' });
-
-      // Click on tour selector to see available tours (ComboBox adds -trigger suffix to aria-label)
-      const tourCombobox = page.locator('[aria-label="combobox-schedule-tour-trigger"]');
-      if (await tourCombobox.isVisible({ timeout: 5000 }).catch(() => false)) {
-        console.log('[Test 2] Tour combobox is visible, clicking...');
-        await tourCombobox.click();
-        await page.waitForTimeout(500);
-
-        // Find our tour in the dropdown and extract ID (CommandItem uses cmdk-item attribute)
-        const tourOption = page.locator(`[cmdk-item]:has-text("${tourName}")`).first();
-        if (await tourOption.isVisible({ timeout: 5000 }).catch(() => false)) {
-          // Get the data-value attribute which contains the tour ID
-          tourId = await tourOption.getAttribute('data-value') || '';
-          console.log(`[Test 2] Tour ID: ${tourId}`);
-          await tourOption.click();
-        } else {
-          console.log('[Test 2] Tour option not found in dropdown');
-        }
-      } else {
-        console.log('[Test 2] Tour combobox not visible - page may not have loaded correctly');
-      }
-    } else {
-      // Take screenshot for debugging
-      await page.screenshot({ path: 'test-results/tour-creation-result.png' });
-      console.log('[Test 2] Tour creation result unclear - check screenshot');
+    // Extract tour/listing ID from URL params
+    const urlObj = new URL(currentUrl);
+    const listingId = urlObj.searchParams.get('listingId');
+    if (listingId) {
+      tourId = listingId;
+      console.log(`[Test 2] Tour ID from URL: ${tourId}`);
     }
 
-    expect(tourName).toBeDefined();
-    console.log('[Test 2] ✓ Tour creation test complete');
+    // Verify the tour appears in the schedule combobox
+    const tourCombobox = page.locator('[aria-label="combobox-schedule-tour-trigger"]');
+    await expect(tourCombobox).toBeVisible({ timeout: 15000 });
+    await tourCombobox.click();
+    await page.waitForTimeout(500);
+
+    const tourOption = page.locator(`[cmdk-item]:has-text("${tourName}")`).first();
+    await expect(tourOption).toBeVisible({ timeout: 10000 });
+    tourId = await tourOption.getAttribute('data-value') || tourId;
+    await tourOption.click();
+    console.log(`[Test 2] Tour ID: ${tourId}`);
+    expect(tourId).toBeTruthy();
+
+    console.log('[Test 2] Tour creation complete');
   });
 
   test('3. Schedule tour sessions', async ({ page }) => {

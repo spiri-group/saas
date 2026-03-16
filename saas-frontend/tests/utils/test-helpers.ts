@@ -246,6 +246,25 @@ export async function getTableRowCount(page: Page, tableSelector: string): Promi
 /**
  * Mock Stripe payment for testing
  */
+// Valid 100x100 blue PNG for test thumbnail uploads
+const TEST_THUMBNAIL_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAtElEQVR4nO3QUQkAIBTAwBfdeMaygj8yhIMFGDdrti6b/OCjYMGClQcLFqw8WLBg5cGCBSsPFixYebBgwcqDBQtWHixYsPJgwYKVBwsWrDxYsGDlwYIFKw8WLFh5sGDByoMFC1YeLFiw8mDBgpUHCxasPFiwYOXBggUrDxYsWHmwYMHKgwULVh4sWLDyYMGClQcLFqw8WLBg5cGCBSsPFixYebBgwcqDBQtWHixYsPJgwXrTAcZgD2/Jbw1KAAAAAElFTkSuQmCC';
+
+/**
+ * Upload a test thumbnail image via a file input.
+ * Use this for any wizard/form that requires a thumbnail upload.
+ */
+export async function uploadTestThumbnail(page: Page, selector = 'input[type="file"]') {
+  const pngBuffer = Buffer.from(TEST_THUMBNAIL_PNG, 'base64');
+  const fileInput = page.locator(selector).first();
+  await fileInput.setInputFiles({
+    name: 'test-thumbnail.png',
+    mimeType: 'image/png',
+    buffer: pngBuffer,
+  });
+  // Wait for upload processing
+  await page.waitForTimeout(5000);
+}
+
 export async function mockStripePayment(page: Page, success = true) {
   await page.route('**/api.stripe.com/**', async (route) => {
     if (success) {
