@@ -10,7 +10,7 @@ import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
 import Calendar from "@/components/ux/Calendar";
 import { tour_type } from "@/utils/spiriverse";
 import { DateTime } from "luxon"
-import { useParams, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import UseMerchantTour from "../../hooks/UseMerchantTour";
 import UseMerchantTours from "../../hooks/UseMerchantTours";
 import UseScheduleSession, { formSchemaType } from "./hooks/UseScheduleSession";
@@ -124,13 +124,7 @@ const Summary: React.FC<{ selectedTour: tour_type | null, form: UseFormReturn<fo
 }
 
 const CreateScheduleComponent: React.FC<Props> = (props) => {
-    const params = useParams();
-    if (params == null || params.merchantId == null) throw new Error("No merchantId provided in URL");
-
-    const bl = useBL({
-        ...props,
-        vendorId: params.merchantId as string
-    })
+    const bl = useBL(props)
 
     return (
         <Form {...bl.form}>

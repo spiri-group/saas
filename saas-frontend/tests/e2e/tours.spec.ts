@@ -67,18 +67,16 @@ async function getMerchantIdFromSlug(page: any, slug: string): Promise<string | 
 
 /** Helper to add location (prerequisite for tours) */
 async function setupLocation(page: any) {
-  // Open Profile > Setup menu
-  const profileButton = page.locator('button[aria-label="Profile"]');
-  await profileButton.waitFor({ state: 'visible', timeout: 10000 });
-  await profileButton.click();
+  // Navigate to Profile page which shows Setup options including Locations
+  const profileLink = page.locator('a:has-text("Profile"), button:has-text("Profile")').first();
+  await profileLink.waitFor({ state: 'visible', timeout: 10000 });
+  await profileLink.click();
+  await page.waitForTimeout(2000);
 
-  const setupButton = page.locator('button[aria-label="Setup"]');
-  await setupButton.waitFor({ state: 'visible', timeout: 10000 });
-  await setupButton.click();
-
-  const locationsButton = page.locator('button[aria-label="Locations"]');
+  // Click Locations in the Setup grid
+  const locationsButton = page.locator('a:has-text("Locations"), button:has-text("Locations")').first();
   await locationsButton.waitFor({ state: 'visible', timeout: 10000 });
-  await locationsButton.click({ force: true });
+  await locationsButton.click();
 
   const dialog = page.locator('[role="dialog"]:not([aria-hidden="true"])');
   await expect(dialog).toBeVisible({ timeout: 10000 });
