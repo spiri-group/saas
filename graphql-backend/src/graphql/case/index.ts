@@ -32,7 +32,11 @@ const resolvers = {
             var caseFromDb = undefined as case_type | undefined;
 
             if (args.caseId) {
-                caseFromDb = await dataSources.cosmos.get_record<case_type>("Main-Cases", args.caseId, args.caseId)
+                try {
+                    caseFromDb = await dataSources.cosmos.get_record<case_type>("Main-Cases", args.caseId, args.caseId)
+                } catch {
+                    return undefined;
+                }
             } else if (args.trackingCode) {
                 var results = await dataSources.cosmos.run_query("Main-Cases", {
                     query: "SELECT * FROM c WHERE c.trackingCode=@trackingCode",
@@ -901,6 +905,8 @@ const resolvers = {
             // quickly create the order
             const order = {
                 id: orderId,
+                orderId: orderId,
+                docType: "ORDER",
                 code: await generate_order_no(customerEmail, context.dataSources.cosmos),
                 userId: context.userId,
                 customerEmail,
@@ -911,14 +917,30 @@ const resolvers = {
                         sale_price: line.amount,
                         interactionId: line.interactionId,
                         quantity: 1,
+                        descriptor: line.invoiceDescription,
                         description: line.invoiceDescription,
                         userId: args.invoice.userId,
                         merchantId: args.merchantId,
+                        price_log: [
+                            {
+                                id: uuidv4(),
+                                datetime: DateTime.now().toISO(),
+                                type: "CHARGE",
+                                status: "NEW",
+                                price: {
+                                    ...line.amount,
+                                    quantity: 1
+                                }
+                            }
+                        ],
+                        paid_status_log: [],
+                        refund_request_log: [],
                         stripe: {},
                         target: "CASE-INTERACTION"
                     }
                 }),
                 payments: [],
+                credits: [],
                 stripe: {
                     setupIntentId: intent.data["id"],
                     setupIntentSecret: intent.data["client_secret"]

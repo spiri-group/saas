@@ -248,7 +248,7 @@ const ViewCase: React.FC<Props> = (props) => {
                         {bl.caseDetails.get.caseStatus === "ACTIVE" && (
                             <>
                                 {/* desktop screen */}
-                                <div className="hidden md:grid grid-cols-2 gap-2 flex-grow">
+                                <div data-testid="case-desktop-view" className="hidden md:grid grid-cols-2 gap-2 flex-grow">
                                     <div className="grid grid-rows-2 grid-cols-1 gap-2">
                                         <Panel className="h-full min-h-0">
                                             <PanelContent className="h-full min-h-0">

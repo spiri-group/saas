@@ -34,13 +34,6 @@ test.describe.serial('SpiriAssist Case Flows', () => {
         const workerId = testInfo.parallelIndex;
         const cookies = customerCookiesPerWorker.get(workerId);
 
-        // Close browser context first to stop background React Query refetches
-        const ctx = customerContextPerWorker.get(workerId);
-        if (ctx) {
-            try { await ctx.close(); } catch { /* ignore */ }
-            customerContextPerWorker.delete(workerId);
-        }
-
         // 1. Purge cases first (they reference the customer)
         if (cookies) {
             try {

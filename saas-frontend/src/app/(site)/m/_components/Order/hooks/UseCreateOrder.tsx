@@ -74,7 +74,7 @@ const UseCreateOrder = (customerEmail: string, merchantId: string, forObject?: r
                             order {
                                 id,
                                 customerEmail
-                                no
+                                code
                                 forObject {
                                     id
                                     partition
