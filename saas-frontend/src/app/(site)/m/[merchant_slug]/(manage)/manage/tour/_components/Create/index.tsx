@@ -69,12 +69,6 @@ const useBL = (props: BLProps) => {
     };
 
     const validateStep2 = async () => {
-        // Validate thumbnail
-        if (!values.thumbnail_content_set) {
-            toast.error("Tour image is required");
-            return false;
-        }
-
         return true;
     };
 

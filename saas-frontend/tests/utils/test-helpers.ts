@@ -261,8 +261,8 @@ export async function uploadTestThumbnail(page: Page, selector = 'input[type="fi
     mimeType: 'image/png',
     buffer: pngBuffer,
   });
-  // Wait for upload processing
-  await page.waitForTimeout(5000);
+  // Wait for upload to blob storage and onUploadCompleteAsync callback
+  await page.waitForTimeout(8000);
 }
 
 export async function mockStripePayment(page: Page, success = true) {

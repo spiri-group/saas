@@ -255,10 +255,6 @@ test.describe.serial('Tour Customer Journey', () => {
     console.log('[Test 2] Step 2: Uploading thumbnail...');
     await tourPage.uploadThumbnail();
 
-    // Wait for the image upload to trigger onChange with image.media set
-    // This sets thumbnail_content_set = true in the wizard form
-    await page.waitForTimeout(2000);
-
     await page.getByTestId('tour-wizard-next-btn').click();
     // Verify we moved to Step 3 (Itinerary)
     await expect(page.locator('text=Tour Itinerary')).toBeVisible({ timeout: 10000 });
