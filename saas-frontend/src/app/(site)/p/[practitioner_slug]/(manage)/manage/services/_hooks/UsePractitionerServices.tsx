@@ -60,6 +60,10 @@ export type PractitionerService = {
             currency: string;
         };
     };
+    duration?: {
+        amount: number;
+        unit: { id: string; defaultLabel: string };
+    };
     scheduleConfig?: {
         useAllSlots: boolean;
         selectedSlotIds?: string[];
@@ -179,6 +183,13 @@ const usePractitionerServices = (practitionerId: string) => {
                             fixedPrice {
                                 amount
                                 currency
+                            }
+                        }
+                        duration {
+                            amount
+                            unit {
+                                id
+                                defaultLabel
                             }
                         }
                         scheduleConfig {
