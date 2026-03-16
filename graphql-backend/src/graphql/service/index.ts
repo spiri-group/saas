@@ -1391,6 +1391,7 @@ const resolvers = {
                 questionnaire: args.input.questionnaire || [],
                 targetTimezones: args.input.targetTimezones || [],
                 readingOptions: args.input.readingOptions,
+                ...(args.input.duration && { duration: { amount: args.input.duration.amount, unit: { id: args.input.duration.unitId } } }),
                 ...(args.input.consultationType && { consultationType: args.input.consultationType }),
                 ...(args.input.scheduleConfig && { scheduleConfig: args.input.scheduleConfig }),
                 ...(args.input.scheduleId && { scheduleId: args.input.scheduleId })
@@ -1626,6 +1627,7 @@ const resolvers = {
                 ops.push({ op: "set", path: "/pricing", value: args.input.pricing });
                 ops.push({ op: "set", path: "/skus/0/price", value: { amount: basePrice, currency: currency } });
             }
+            if (args.input.duration !== undefined) ops.push({ op: "set", path: "/duration", value: { amount: args.input.duration.amount, unit: { id: args.input.duration.unitId } } });
             if (args.input.turnaroundDays !== undefined) ops.push({ op: "set", path: "/turnaroundDays", value: args.input.turnaroundDays });
             if (args.input.deliveryFormats !== undefined) ops.push({ op: "set", path: "/deliveryFormats", value: args.input.deliveryFormats.map((f: string) => ({ format: f })) });
             if (args.input.addOns !== undefined) ops.push({ op: "set", path: "/addOns", value: args.input.addOns });

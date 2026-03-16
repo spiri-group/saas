@@ -277,6 +277,7 @@ const CreateReading: React.FC<Props> = (props) => {
                             />
 
                             {bl.form.watch('requiresConsultation') && (
+                                <>
                                 <FormField
                                     name="consultationType"
                                     control={bl.form.control}
@@ -316,6 +317,49 @@ const CreateReading: React.FC<Props> = (props) => {
                                         </FormItem>
                                     )}
                                 />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                        name="durationAmount"
+                                        control={bl.form.control}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel dark>Session Duration</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        dark
+                                                        type="number"
+                                                        min={5}
+                                                        placeholder="30"
+                                                        {...field}
+                                                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                        data-testid="duration-amount-input"
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        name="durationUnit"
+                                        control={bl.form.control}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel dark>Unit</FormLabel>
+                                                <Select dark onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger data-testid="duration-unit-select">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="minute">Minutes</SelectItem>
+                                                        <SelectItem value="hour">Hours</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                                </>
                             )}
 
                             {!bl.form.watch('requiresConsultation') && (

@@ -677,13 +677,15 @@ export default function ScheduledBookingFlow({
                         {travelSurcharge > 0 && (
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-600">Travel Fee</span>
-                                <span>+${travelSurcharge.toFixed(2)}</span>
+                                <span>+<CurrencySpan value={{ amount: travelSurcharge, currency: basePrice.currency }} withAnimation={false} /></span>
                             </div>
                         )}
                         <Separator />
                         <div className="flex justify-between font-semibold">
                             <span>Total</span>
-                            <span className="text-indigo-700">${totalPrice.toFixed(2)}</span>
+                            <span className="text-indigo-700">
+                                <CurrencySpan value={{ amount: totalPrice, currency: basePrice.currency }} withAnimation={false} />
+                            </span>
                         </div>
                     </div>
                 </div>

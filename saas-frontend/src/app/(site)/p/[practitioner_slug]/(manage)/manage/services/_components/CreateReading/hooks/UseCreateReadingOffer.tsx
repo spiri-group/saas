@@ -83,6 +83,8 @@ interface CreateReadingOfferSchema {
   deliveryFormat: string;
   price: string;
   currency: string;
+  durationAmount: number;
+  durationUnit: string;
   turnaroundDays: number;
   includePullCardSummary: boolean;
   includeVoiceNote: boolean;
@@ -117,6 +119,7 @@ export type ExistingServiceData = {
     fixedPrice?: { amount: number; currency: string };
   };
   turnaroundDays?: number;
+  duration?: { amount: number; unit: { id: string; defaultLabel: string } };
   deliveryFormats?: { format: string }[];
   targetTimezones?: string[];
   questionnaire?: {
@@ -223,6 +226,8 @@ export const useCreateReadingOffer = (merchantId: string, editingService?: Exist
       deliveryFormat: editingService.deliveryFormats?.[0]?.format || 'RECORDED_VIDEO',
       price: editingService.pricing?.fixedPrice ? String(editingService.pricing.fixedPrice.amount / 100) : '',
       currency: editingService.pricing?.fixedPrice?.currency || 'AUD',
+      durationAmount: editingService.duration?.amount || 30,
+      durationUnit: editingService.duration?.unit?.id || 'minute',
       turnaroundDays: editingService.turnaroundDays || 3,
       includePullCardSummary: editingService.readingOptions?.includePullCardSummary || false,
       includeVoiceNote: editingService.readingOptions?.includeVoiceNote || false,
@@ -257,6 +262,8 @@ export const useCreateReadingOffer = (merchantId: string, editingService?: Exist
       deliveryFormat: 'RECORDED_VIDEO',
       price: '',
       currency: 'AUD',
+      durationAmount: 30,
+      durationUnit: 'minute',
       turnaroundDays: 3,
       includePullCardSummary: false,
       includeVoiceNote: false,
@@ -294,6 +301,7 @@ export const useCreateReadingOffer = (merchantId: string, editingService?: Exist
             currency: data.currency
           }
         },
+        duration: data.requiresConsultation ? { amount: data.durationAmount, unitId: data.durationUnit } : undefined,
         turnaroundDays: data.requiresConsultation ? undefined : parseInt(String(data.turnaroundDays), 10),
         deliveryFormats: data.requiresConsultation ? undefined : [data.deliveryFormat],
         thumbnail,
