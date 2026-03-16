@@ -213,7 +213,21 @@ const CreateReading: React.FC<Props> = (props) => {
                         {/* Step 1: Basic Info */}
                         {bl.currentStep === 1 && (
                         <div className="space-y-4 mt-4">
-                            {/* Reading Type — first question */}
+                            {/* Service Name — first question */}
+                            <FormField
+                                name="name"
+                                control={bl.form.control}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel dark>Service Name *</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} dark placeholder="e.g., 30-Minute Tarot Reading" data-testid="service-name-input" />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Reading Type */}
                             <FormField
                                 name="readingType"
                                 control={bl.form.control}
@@ -435,19 +449,6 @@ const CreateReading: React.FC<Props> = (props) => {
                                             />
                                         </div>
                                     )}
-
-                                    <FormField
-                                        name="name"
-                                        control={bl.form.control}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel dark>Service Name *</FormLabel>
-                                                <FormControl>
-                                                    <Input {...field} dark placeholder="e.g., 30-Minute Tarot Reading" data-testid="service-name-input" />
-                                                </FormControl>
-                                            </FormItem>
-                                        )}
-                                    />
 
                                     <FormField
                                         name="description"
