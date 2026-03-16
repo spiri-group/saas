@@ -44,6 +44,7 @@ const useBL = (props: BLProps) => {
 
     // Check if the practitioner has availability set up for the chosen consultation type
     const weekdays = schedule.data?.weekdays || [];
+    const onlineEnabled = schedule.data?.deliveryMethods?.online?.enabled !== false;
     const filteredWeekdays = weekdays
         .filter(d => d.enabled && d.timeSlots.length > 0)
         .map(day => {
@@ -54,8 +55,13 @@ const useBL = (props: BLProps) => {
         })
         .filter(d => d.timeSlots.length > 0);
 
-    const hasAvailability = !requiresConsultation || filteredWeekdays.length > 0;
-    const availabilityBlocked = requiresConsultation && filteredWeekdays.length === 0 && !schedule.isLoading;
+    // Block if: no slots for the chosen type, OR online selected but not enabled in delivery methods
+    const deliveryMethodDisabled = requiresConsultation && (
+        (consultationType === 'ONLINE' && !onlineEnabled) ||
+        (consultationType === 'IN_PERSON' && !inPersonEnabled)
+    );
+    const noSlots = requiresConsultation && filteredWeekdays.length === 0;
+    const availabilityBlocked = (deliveryMethodDisabled || noSlots) && !schedule.isLoading;
 
     const uploadToAzure = async (file: File, fileType: 'IMAGE' | 'VIDEO'): Promise<any> => {
         const formData = new FormData();
@@ -152,7 +158,6 @@ const useBL = (props: BLProps) => {
         canProceedToNextStep,
         schedule,
         availabilityBlocked,
-        hasAvailability,
         mockUploadCoverPhoto,
         mockUploadVideo,
         mockUploadCollageImage,
@@ -331,12 +336,12 @@ const CreateReading: React.FC<Props> = (props) => {
                                             <p className="font-semibold text-amber-300 text-base">
                                                 {bl.form.watch('consultationType') === 'IN_PERSON'
                                                     ? 'No in-person availability set up'
-                                                    : 'No availability set up'}
+                                                    : 'No online availability set up'}
                                             </p>
                                             <p className="text-sm text-slate-300">
                                                 {bl.form.watch('consultationType') === 'IN_PERSON'
                                                     ? 'You need to add in-person time slots with a location on your Availability page before you can create an in-person live service.'
-                                                    : 'You need to set up your weekly availability before you can create a live service. Go to your Availability page to add your schedule.'}
+                                                    : 'You need to enable online sessions and set up time slots on your Availability page before you can create an online live service.'}
                                             </p>
                                             <Button
                                                 type="button"
