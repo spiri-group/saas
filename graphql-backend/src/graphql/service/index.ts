@@ -631,7 +631,7 @@ const resolvers = {
 
             // Calculate service duration in minutes
             const serviceDurationMinutes = service.duration?.amount
-                ? (service.duration.unit?.id === "hour" ? service.duration.amount * 60 : service.duration.amount)
+                ? (service.duration.unitId === "hour" ? service.duration.amount * 60 : service.duration.amount)
                 : 60;
 
             const bufferMinutes = service.scheduleConfig?.bufferMinutes ?? schedule.bufferMinutes ?? 15;
@@ -1391,7 +1391,7 @@ const resolvers = {
                 questionnaire: args.input.questionnaire || [],
                 targetTimezones: args.input.targetTimezones || [],
                 readingOptions: args.input.readingOptions,
-                ...(args.input.duration && { duration: { amount: args.input.duration.amount, unit: { id: args.input.duration.unitId } } }),
+                ...(args.input.duration && { duration: { amount: args.input.duration.amount, unitId: args.input.duration.unitId } }),
                 ...(args.input.consultationType && { consultationType: args.input.consultationType }),
                 ...(args.input.scheduleConfig && { scheduleConfig: args.input.scheduleConfig }),
                 ...(args.input.scheduleId && { scheduleId: args.input.scheduleId })
@@ -1627,7 +1627,7 @@ const resolvers = {
                 ops.push({ op: "set", path: "/pricing", value: args.input.pricing });
                 ops.push({ op: "set", path: "/skus/0/price", value: { amount: basePrice, currency: currency } });
             }
-            if (args.input.duration !== undefined) ops.push({ op: "set", path: "/duration", value: { amount: args.input.duration.amount, unit: { id: args.input.duration.unitId } } });
+            if (args.input.duration !== undefined) ops.push({ op: "set", path: "/duration", value: { amount: args.input.duration.amount, unitId: args.input.duration.unitId } });
             if (args.input.turnaroundDays !== undefined) ops.push({ op: "set", path: "/turnaroundDays", value: args.input.turnaroundDays });
             if (args.input.deliveryFormats !== undefined) ops.push({ op: "set", path: "/deliveryFormats", value: args.input.deliveryFormats.map((f: string) => ({ format: f })) });
             if (args.input.addOns !== undefined) ops.push({ op: "set", path: "/addOns", value: args.input.addOns });
@@ -2277,12 +2277,12 @@ const resolvers = {
                 currency = service.pricing.fixedPrice.currency || "usd";
             } else if (service.pricing?.type === "HOURLY" && service.pricing.ratePerHour) {
                 const durationMinutes = service.duration?.amount || 60;
-                const durationHours = service.duration?.unit?.id === "hour" ? service.duration.amount : durationMinutes / 60;
+                const durationHours = service.duration?.unitId === "hour" ? service.duration.amount : durationMinutes / 60;
                 price = service.pricing.ratePerHour.amount * durationHours;
                 currency = service.pricing.ratePerHour.currency || "usd";
             } else if (service.ratePerHour) {
                 const durationMinutes = service.duration?.amount || 60;
-                const durationHours = service.duration?.unit?.id === "hour" ? service.duration.amount : durationMinutes / 60;
+                const durationHours = service.duration?.unitId === "hour" ? service.duration.amount : durationMinutes / 60;
                 price = service.ratePerHour.amount * durationHours;
                 currency = service.ratePerHour.currency || "usd";
             }
