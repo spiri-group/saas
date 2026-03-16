@@ -11,7 +11,7 @@ export type searchResponse = {
 export type searchResult = {
     id: string,
     title: string,
-    link: string,
+    link?: string,
     thumbnail?: thumbnail_type,
     price?: currency_amount_type,
     additionalInfo?: string,

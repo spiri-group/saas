@@ -9,26 +9,40 @@ import Link from "next/link";
 import { convert_color, isNullOrWhitespace } from "@/lib/functions";
 import CurrencySpan from "@/components/ux/CurrencySpan";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import type DomPurifyType from "dompurify";
 
 type Props = {
     frontItems?: JSX.Element[],
 }
 
+const sanitize = (html: string) => {
+    if (typeof window === 'undefined') return html;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const DomPurify = require('dompurify') as typeof DomPurifyType;
+    return DomPurify.sanitize(html);
+};
+
+const formatViewLabel = (additionalInfo?: string) => {
+    if (!additionalInfo) return 'View';
+    const label = additionalInfo.charAt(0).toUpperCase() + additionalInfo.slice(1);
+    return `View ${label}`;
+};
+
 const CatalogueItems: React.FC<Props> = ({ frontItems }) => {
     const searchParams = useSearchParams();
     const searchQuery = searchParams.get("search") || "";
 
-    const listingsQuery = UseSearch("listings", true, searchQuery).query;
-    const merchantsQuery = UseSearch("merchants", !isNullOrWhitespace(searchQuery), searchQuery).query;
-    const isLoading = listingsQuery.isLoading || merchantsQuery.isLoading;
-    const isFetchingNextPage = listingsQuery.isFetchingNextPage || merchantsQuery.isFetchingNextPage;
-    const data = [...listingsQuery.data?.pages ?? [], ...merchantsQuery.data?.pages ?? []];
-    const hasNextPage = !isLoading && (listingsQuery.hasNextPage || merchantsQuery.hasNextPage);
+    const isSearching = !isNullOrWhitespace(searchQuery);
+    const browseQuery = UseSearch("listings", !isSearching, searchQuery).query;
+    const searchAllQuery = UseSearch("all", isSearching, searchQuery).query;
+    const activeQuery = isSearching ? searchAllQuery : browseQuery;
+    const isLoading = activeQuery.isLoading;
+    const isFetchingNextPage = activeQuery.isFetchingNextPage;
+    const data = activeQuery.data?.pages ?? [];
+    const hasNextPage = !isLoading && activeQuery.hasNextPage;
     const fetchNextPage = () => {
-        if (listingsQuery.hasNextPage) {
-            listingsQuery.fetchNextPage();
-        } else if (merchantsQuery.hasNextPage) {
-            merchantsQuery.fetchNextPage();
+        if (activeQuery.hasNextPage) {
+            activeQuery.fetchNextPage();
         }
     }
 
@@ -43,7 +57,7 @@ const CatalogueItems: React.FC<Props> = ({ frontItems }) => {
                     fetchNextPage();
                 }
             },
-            { threshold: 0.5 } // Trigger when 50% of the sentinel is visible
+            { threshold: 0.5 }
         );
 
         observer.observe(sentinelRef.current);
@@ -51,8 +65,19 @@ const CatalogueItems: React.FC<Props> = ({ frontItems }) => {
         return () => observer.disconnect();
     }, [hasNextPage, fetchNextPage, data]);
 
-    const dataToRender = data?.flatMap(page => page.results) || [];
+    const dataToRender = (data?.flatMap(page => page.results).filter((r): r is typeof r & { link: string } => !!r.link)) || [];
     const rounded = "xl";
+
+    if (!isLoading && dataToRender.length === 0 && !isNullOrWhitespace(searchQuery)) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 px-4">
+                <p className="text-lg font-medium text-gray-600 mb-2">No results found</p>
+                <p className="text-sm text-muted-foreground max-w-md text-center">
+                    We couldn&apos;t find anything matching &quot;{searchQuery}&quot;. Try a different search term or browse our catalogue.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-2">
@@ -62,7 +87,7 @@ const CatalogueItems: React.FC<Props> = ({ frontItems }) => {
                     const panelBgColor = result.thumbnail?.title?.panel?.bgColor;
                     const panelBgOpacity = result.thumbnail?.title?.panel?.bgOpacity ?? 1;
                     const text_panel_bg = `rgba(${panelBgColor ? convert_color(panelBgColor, "hex", "rgb").replace(/ /g, ",") : "255,255,255"}, ${panelBgOpacity})`;
-                    const isNearEnd = i === dataToRender.length - 10; // Adjust this number to preload earlier
+                    const isNearEnd = i === dataToRender.length - 10;
 
                     return (
                         <Link
@@ -76,10 +101,10 @@ const CatalogueItems: React.FC<Props> = ({ frontItems }) => {
                                     <div
                                         style={{
                                             background: result.thumbnail?.bgColor === "#ffffff"
-                                                ? "linear-gradient(to bottom, #ffffff, #f8fafc, #e2e8f0)" // light theme gradient
+                                                ? "linear-gradient(to bottom, #ffffff, #f8fafc, #e2e8f0)"
                                                 : result.thumbnail?.bgColor === "#000000"
-                                                ? "linear-gradient(to bottom, #000000, #0f172a, #1e293b)" // dark theme gradient
-                                                : result.thumbnail?.bgColor ?? "#ffffff" // custom color
+                                                ? "linear-gradient(to bottom, #000000, #0f172a, #1e293b)"
+                                                : result.thumbnail?.bgColor ?? "#ffffff"
                                         }}
                                         className={cn("w-full h-48 relative group overflow-hidden", `rounded-t-${rounded}`)}
                                     >
@@ -93,11 +118,10 @@ const CatalogueItems: React.FC<Props> = ({ frontItems }) => {
                                             fill={true}
                                             alt=""
                                         />
-                                        {/* Stamp overlay */}
                                         {result.thumbnail.stamp?.enabled && result.thumbnail.stamp?.text && (
-                                            <div 
+                                            <div
                                                 className="absolute top-2 left-2 z-10 px-2 py-1 text-xs font-bold rounded shadow-lg group-hover:opacity-0 transition-opacity duration-200"
-                                                style={{ 
+                                                style={{
                                                     backgroundColor: result.thumbnail.stamp.bgColor || "#dc2626",
                                                     color: result.thumbnail.stamp.textColor || "#ffffff"
                                                 }}
@@ -110,16 +134,16 @@ const CatalogueItems: React.FC<Props> = ({ frontItems }) => {
                                 <div className={`p-2 px-4 h-20 w-full flex flex-col gap-1 rounded-b-${rounded}`}
                                     style={{
                                         backgroundColor: result.thumbnail?.bgColor === "#000000"
-                                            ? "rgba(15, 23, 42, 0.55)" // dark theme panel
+                                            ? "rgba(15, 23, 42, 0.55)"
                                             : result.thumbnail?.bgColor === "#ffffff"
-                                            ? "rgba(255, 255, 255, 0.7)" // light theme panel
-                                            : text_panel_bg, // custom panel background
+                                            ? "rgba(255, 255, 255, 0.7)"
+                                            : text_panel_bg,
                                         border: `1px solid ${result.thumbnail?.bgColor === "#000000" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}`,
                                         color: result.thumbnail?.bgColor === "#000000"
-                                            ? "#ffffff" // dark theme text
+                                            ? "#ffffff"
                                             : result.thumbnail?.bgColor === "#ffffff"
-                                            ? "#000000" // light theme text
-                                            : (result.thumbnail?.title?.panel?.textColor ?? "#000000") // custom text color
+                                            ? "#000000"
+                                            : (result.thumbnail?.title?.panel?.textColor ?? "#000000")
                                     }}>
                                     <HoverCard>
                                         <HoverCardTrigger className="text-sm font-bold truncate">
@@ -128,14 +152,21 @@ const CatalogueItems: React.FC<Props> = ({ frontItems }) => {
                                         <HoverCardContent className="flex flex-col gap-2">
                                             <h2 className="text-md font-bold">{result.title}</h2>
                                             {result.thumbnail?.moreInfo?.content && !isNullOrWhitespace(result.thumbnail.moreInfo.content) && (
-                                                <p className="text-sm" dangerouslySetInnerHTML={{ __html: result.thumbnail.moreInfo.content }} />
+                                                <p className="text-sm" dangerouslySetInnerHTML={{ __html: sanitize(result.thumbnail.moreInfo.content) }} />
                                             )}
-                                            <a href={result.link} className="text-sm text-blue-500 hover:underline">View Item</a>
+                                            <a href={result.link} className="text-sm text-blue-500 hover:underline">{formatViewLabel(result.additionalInfo)}</a>
                                         </HoverCardContent>
                                     </HoverCard>
-                                    {result.price != undefined && result.price.amount > 0 && (
-                                        <CurrencySpan value={result.price} withAnimation={false} className="text-md" />
-                                    )}
+                                    <div className="flex items-center justify-between">
+                                        {result.price != undefined && result.price.amount > 0 ? (
+                                            <CurrencySpan value={result.price} withAnimation={false} className="text-md" />
+                                        ) : (
+                                            <span />
+                                        )}
+                                        {result.additionalInfo && (
+                                            <span className="text-xs opacity-60 capitalize">{result.additionalInfo}</span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </Link>
@@ -148,7 +179,7 @@ const CatalogueItems: React.FC<Props> = ({ frontItems }) => {
             {!hasNextPage && dataToRender.length > 1 && (
                 <div className="flex flex-col items-center mt-6 mb-8">
                     <div className="w-full mx-2 border-t border-border mb-2"></div>
-                    <p className="text-muted-foreground text-sm">You’ve reached the end.</p>
+                    <p className="text-muted-foreground text-sm">You&apos;ve reached the end.</p>
                 </div>
             )}
         </div>

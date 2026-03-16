@@ -4,8 +4,10 @@ import { gql } from "@/lib/services/gql";
 import { searchResponse } from "@/utils/spiriverse";
 import { useInfiniteQuery } from "@tanstack/react-query";
 
+type SearchSource = "listings" | "merchants" | "practitioners" | "all";
+
 const queryFn = async (
-    source: "listings" | "merchants",
+    source: SearchSource,
     term: string,
     pageParam: { offset: number; limit: number }
 ) => {
@@ -58,7 +60,7 @@ const queryFn = async (
     return resp.search;
 };
 
-const UseSearch = (source: "listings" | "merchants", enabled: boolean, term = '') => {
+const UseSearch = (source: SearchSource, enabled: boolean, term = '') => {
     const queryKey = ['search', source, term];
     return {
         key: queryKey,
