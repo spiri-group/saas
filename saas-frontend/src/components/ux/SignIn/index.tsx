@@ -14,7 +14,7 @@ import Link from "next/link";
 
 export const SignIn = () => {
   const queryClient = useQueryClient();
-  const { update } = useSession();
+  const { data: session, update } = useSession();
 
   const [showEmailInput, setShowEmailInput] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -63,6 +63,13 @@ export const SignIn = () => {
     setResendCooldown(false);
     setFirstSend(true);
   };
+
+  // Reset when user signs out
+  useEffect(() => {
+    if (!session) {
+      setIsValid(false);
+    }
+  }, [session]);
 
   useEffect(() => {
     if (otpSent) {
