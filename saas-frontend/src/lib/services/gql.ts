@@ -6,7 +6,9 @@ export async function gql<T>(
   auth?: string
 ): Promise<T> {
 
-  const endpoint = process.env.NEXT_PUBLIC_graphql_proxy || 'http://localhost:3000/api/graphql';
+  const endpoint = typeof window !== 'undefined'
+    ? '/api/graphql'
+    : (process.env.NEXT_PUBLIC_graphql_proxy || 'http://localhost:3000/api/graphql');
 
   try {
     const response = await axios.post(endpoint, 

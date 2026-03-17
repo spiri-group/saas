@@ -250,6 +250,15 @@ const HierarchicalReligionPicker: React.FC<HierarchicalReligionPickerProps> = ({
                 </div>
               )}
             </div>
+
+            <Button
+              variant="outline"
+              className="w-full mt-2"
+              onClick={() => setIsOpen(false)}
+              data-testid="religion-picker-close"
+            >
+              Close
+            </Button>
           </>
         )}
       </DialogContent>

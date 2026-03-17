@@ -15,9 +15,26 @@ async function decodeWithCandidates(req: NextRequest, bases: string[], secret: s
   return null;
 }
 
+const CANONICAL_HOST = 'www.spiriverse.com';
+
 export async function proxy(request: NextRequest) {
   const url = request.nextUrl;
   const path = url.pathname;
+  const host = request.headers.get('host') || '';
+
+  // Redirect non-canonical domains to www.spiriverse.com in production
+  if (
+    isProd &&
+    host !== CANONICAL_HOST &&
+    !host.includes('localhost') &&
+    !host.includes('azurecontainerapps.io')
+  ) {
+    const redirectUrl = url.clone();
+    redirectUrl.host = CANONICAL_HOST;
+    redirectUrl.protocol = 'https';
+    redirectUrl.port = '';
+    return NextResponse.redirect(redirectUrl, 301);
+  }
 
   const newHeaders = new Headers(request.headers);
   const auth = request.cookies.get("Authorization");
