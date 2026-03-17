@@ -23,17 +23,13 @@ const queryFn = async (merchantId?: string, tourId?: string) => {
                             }
                             time
                         }
-                    },
-                    ticketLists {
+                    }
+                    ticketVariants {
                         id
                         name
-                        tickets {
-                            id
-                            name
-                            price {
-                                amount
-                                currency
-                            }
+                        price {
+                            amount
+                            currency
                         }
                     }
                 }
