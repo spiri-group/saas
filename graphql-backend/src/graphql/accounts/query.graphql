@@ -35,6 +35,9 @@ type ConsoleVendorAccount {
     subscription: VendorSubscription
     stripe: StripeAccount
     ownerEmail: String
+    accountBlocked: Boolean
+    accountBlockedAt: String
+    accountBlockedReason: String
 }
 
 type ConsoleCustomerAccountsResponse {

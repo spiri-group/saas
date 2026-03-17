@@ -65,6 +65,9 @@ const useConsoleVendorAccounts = (options: UseConsoleVendorAccountsOptions = {})
                                 accountId
                             }
                             ownerEmail
+                            accountBlocked
+                            accountBlockedAt
+                            accountBlockedReason
                         }
                         totalCount
                         hasMore

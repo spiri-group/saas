@@ -4,14 +4,22 @@ import { useState, useEffect } from 'react';
 import { ConsoleVendorAccount } from '../types';
 import { LifecycleStageBadge, DocTypeBadge, BillingOverrideBadge } from './AccountBadges';
 import useUpdateSubscriptionOverride from '../hooks/UseUpdateSubscriptionOverride';
-import { useUnblockPayouts, useResetBillingRetry } from '../hooks/UseVendorQuickActions';
+import { useUnblockPayouts, useResetBillingRetry, usePurgeVendorAccount, useBlockVendorAccount, useUnblockVendorAccount } from '../hooks/UseVendorQuickActions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { X, Building2, CreditCard, Calendar, Loader2, DollarSign, ExternalLink, Zap, Eye } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { X, Building2, CreditCard, Calendar, Loader2, DollarSign, ExternalLink, Zap, Eye, ShieldBan, ShieldCheck, Trash2, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 
 interface VendorDetailPanelProps {
     vendor: ConsoleVendorAccount;
@@ -23,8 +31,15 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
     const updateOverride = useUpdateSubscriptionOverride();
     const unblockPayouts = useUnblockPayouts();
     const resetBillingRetry = useResetBillingRetry();
+    const purgeVendor = usePurgeVendorAccount();
+    const blockVendor = useBlockVendorAccount();
+    const unblockVendor = useUnblockVendorAccount();
 
     const [isImpersonating, setIsImpersonating] = useState(false);
+    const [showPurgeDialog, setShowPurgeDialog] = useState(false);
+    const [purgeConfirmName, setPurgeConfirmName] = useState('');
+    const [showBlockDialog, setShowBlockDialog] = useState(false);
+    const [blockReason, setBlockReason] = useState('');
 
     const handleViewAs = async () => {
         if (!vendor.ownerEmail) return;
@@ -68,6 +83,56 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
         });
     };
 
+    const handlePurge = async () => {
+        try {
+            const result = await purgeVendor.mutateAsync({
+                vendorId: vendor.id,
+                confirmName: purgeConfirmName,
+            });
+            if (result.success) {
+                toast.success(result.message);
+                setShowPurgeDialog(false);
+                setPurgeConfirmName('');
+                onClose();
+            } else {
+                toast.error(result.message);
+            }
+        } catch {
+            toast.error('Failed to purge vendor account');
+        }
+    };
+
+    const handleBlock = async () => {
+        try {
+            const result = await blockVendor.mutateAsync({
+                vendorId: vendor.id,
+                reason: blockReason || undefined,
+            });
+            if (result.success) {
+                toast.success(result.message);
+                setShowBlockDialog(false);
+                setBlockReason('');
+            } else {
+                toast.error(result.message);
+            }
+        } catch {
+            toast.error('Failed to block vendor account');
+        }
+    };
+
+    const handleUnblock = async () => {
+        try {
+            const result = await unblockVendor.mutateAsync(vendor.id);
+            if (result.success) {
+                toast.success(result.message);
+            } else {
+                toast.error(result.message);
+            }
+        } catch {
+            toast.error('Failed to unblock vendor account');
+        }
+    };
+
     const hasOverrideChanges =
         waived !== (sub?.waived || false) ||
         waivedUntil !== (sub?.waivedUntil || '') ||
@@ -101,6 +166,46 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                {/* Account Blocked Banner */}
+                {vendor.accountBlocked && (
+                    <div className="bg-red-900/30 border border-red-500/30 rounded-lg p-3 space-y-2" data-testid="account-blocked-banner">
+                        <div className="flex items-center space-x-2">
+                            <ShieldBan className="h-4 w-4 text-red-400" />
+                            <span className="text-sm font-medium text-red-400">Account Blocked</span>
+                        </div>
+                        {vendor.accountBlockedAt && (
+                            <p className="text-xs text-red-400/70">
+                                Blocked {formatDistanceToNow(new Date(vendor.accountBlockedAt), { addSuffix: true })}
+                            </p>
+                        )}
+                        {vendor.accountBlockedReason && (
+                            <p className="text-xs text-red-400/70">
+                                Reason: {vendor.accountBlockedReason}
+                            </p>
+                        )}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-green-500/30 text-green-400 hover:bg-green-500/10"
+                            onClick={handleUnblock}
+                            disabled={unblockVendor.isPending}
+                            data-testid="unblock-vendor-btn"
+                        >
+                            {unblockVendor.isPending ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Unblocking...
+                                </>
+                            ) : (
+                                <>
+                                    <ShieldCheck className="mr-2 h-4 w-4" />
+                                    Unblock Account
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                )}
+
                 {/* Overview */}
                 <div className="space-y-3">
                     <h3 className="text-sm font-medium text-white">Overview</h3>
@@ -420,7 +525,163 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
                         </Button>
                     </div>
                 </div>
+
+                {/* Danger Zone */}
+                <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-red-400 flex items-center">
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        Danger Zone
+                    </h3>
+                    <div className="border border-red-500/20 rounded-lg p-4 space-y-3">
+                        {/* Block / Unblock Account */}
+                        {!vendor.accountBlocked && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
+                                onClick={() => setShowBlockDialog(true)}
+                                data-testid="block-vendor-btn"
+                            >
+                                <ShieldBan className="mr-2 h-4 w-4" />
+                                Block Account
+                            </Button>
+                        )}
+
+                        {/* Purge Account */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10"
+                            onClick={() => setShowPurgeDialog(true)}
+                            data-testid="purge-vendor-btn"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Purge Account
+                        </Button>
+                    </div>
+                </div>
             </div>
+
+            {/* Purge Confirmation Dialog */}
+            <Dialog open={showPurgeDialog} onOpenChange={setShowPurgeDialog} data-testid="purge-vendor-dialog">
+                <DialogContent className="sm:max-w-md max-w-[95vw]" data-testid="purge-vendor-dialog-content">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center space-x-2 text-red-400">
+                            <Trash2 className="h-5 w-5" />
+                            <span>Purge Vendor Account</span>
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            This will permanently delete all data for <span className="font-semibold text-white">{vendor.name}</span>. This action cannot be undone. All listings, bookings, orders, gallery items, social posts, and Stripe accounts will be removed.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label className="text-sm text-slate-300">
+                                Type the vendor name to confirm
+                            </Label>
+                            <Input
+                                data-testid="purge-confirm-name-input"
+                                value={purgeConfirmName}
+                                onChange={(e) => setPurgeConfirmName(e.target.value)}
+                                placeholder={vendor.name}
+                                dark
+                            />
+                        </div>
+                        <div className="flex flex-col space-y-2">
+                            <Button
+                                data-testid="purge-confirm-btn"
+                                onClick={handlePurge}
+                                disabled={purgeConfirmName !== vendor.name || purgeVendor.isPending}
+                                className="w-full bg-red-600 hover:bg-red-700 text-white"
+                            >
+                                {purgeVendor.isPending ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Purging...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Permanently Delete All Data
+                                    </>
+                                )}
+                            </Button>
+                            <Button
+                                data-testid="purge-cancel-btn"
+                                variant="outline"
+                                onClick={() => {
+                                    setShowPurgeDialog(false);
+                                    setPurgeConfirmName('');
+                                }}
+                                className="w-full"
+                            >
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Block Account Dialog */}
+            <Dialog open={showBlockDialog} onOpenChange={setShowBlockDialog} data-testid="block-vendor-dialog">
+                <DialogContent className="sm:max-w-md max-w-[95vw]" data-testid="block-vendor-dialog-content">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center space-x-2 text-orange-400">
+                            <ShieldBan className="h-5 w-5" />
+                            <span>Block Vendor Account</span>
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Blocking <span className="font-semibold text-white">{vendor.name}</span> will unpublish them from the marketplace and pause their Stripe payouts. They will not be able to receive new orders.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label className="text-sm text-slate-300">
+                                Reason (optional)
+                            </Label>
+                            <Textarea
+                                data-testid="block-reason-input"
+                                value={blockReason}
+                                onChange={(e) => setBlockReason(e.target.value)}
+                                placeholder="Why is this account being blocked?"
+                                className="min-h-[80px]"
+                                dark
+                            />
+                        </div>
+                        <div className="flex flex-col space-y-2">
+                            <Button
+                                data-testid="block-confirm-btn"
+                                onClick={handleBlock}
+                                disabled={blockVendor.isPending}
+                                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                            >
+                                {blockVendor.isPending ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Blocking...
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShieldBan className="mr-2 h-4 w-4" />
+                                        Block Account
+                                    </>
+                                )}
+                            </Button>
+                            <Button
+                                data-testid="block-cancel-btn"
+                                variant="outline"
+                                onClick={() => {
+                                    setShowBlockDialog(false);
+                                    setBlockReason('');
+                                }}
+                                className="w-full"
+                            >
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

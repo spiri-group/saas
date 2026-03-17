@@ -6,6 +6,9 @@ type Mutation {
 
     unblockVendorPayouts(vendorId: String!): UpdateSubscriptionOverrideResponse!
     resetVendorBillingRetry(vendorId: String!): UpdateSubscriptionOverrideResponse!
+    purgeVendorAccount(vendorId: String!, confirmName: String!): UpdateSubscriptionOverrideResponse!
+    blockVendorAccount(vendorId: String!, reason: String): UpdateSubscriptionOverrideResponse!
+    unblockVendorAccount(vendorId: String!): UpdateSubscriptionOverrideResponse!
 }
 
 input SubscriptionOverrideInput {
