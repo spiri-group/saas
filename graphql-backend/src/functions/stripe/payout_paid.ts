@@ -6,9 +6,7 @@ import { merchant_card_status, vendor_type } from "../../graphql/vendor/types";
  * Handles payout.paid webhook for connected accounts.
  *
  * Flow:
- * 1. Add payout amount to vendor's subscription.cumulativePayouts
- * 2. If first payout ever: switch to manual payouts, block until card added
- * 3. Billing processor picks up vendors who reach cumulative threshold
+ * 1. If first payout ever: switch to manual payouts, block until card added
  */
 const handler: StripeHandler = async (event, logger, services) => {
     const { stripe, cosmos } = services;
@@ -40,20 +38,9 @@ const handler: StripeHandler = async (event, logger, services) => {
     const merchant = merchants[0];
     logger.logMessage(`[payout_paid] Found merchant ${merchant.id} (${merchant.name})`);
 
-    // Add payout amount to cumulative payouts
-    const currentCumulative = merchant.subscription?.cumulativePayouts || 0;
-    const newCumulative = currentCumulative + payout.amount;
-
-    logger.logMessage(`[payout_paid] Cumulative payouts: ${currentCumulative} + ${payout.amount} = ${newCumulative}`);
-
-    await cosmos.patch_record("Main-Vendor", merchant.id, merchant.id, [
-        { op: "set", path: "/subscription/cumulativePayouts", value: newCumulative },
-    ], "STRIPE");
-
     // If merchant already has a card, nothing more to do
-    // The billing processor will pick up vendors who have reached the threshold
     if (merchant.subscription?.card_status === merchant_card_status.saved) {
-        logger.logMessage(`[payout_paid] Merchant already has card on file - cumulative payouts updated`);
+        logger.logMessage(`[payout_paid] Merchant already has card on file`);
         return;
     }
 

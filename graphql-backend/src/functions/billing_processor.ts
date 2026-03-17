@@ -222,7 +222,6 @@ async function processTrialExpiredWithCard(
             const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
             await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
                 { op: "set", path: "/subscription/billingStatus", value: "active" as billing_status },
-                { op: "set", path: "/subscription/firstBillingTriggeredAt", value: now.toISO() },
                 { op: "set", path: "/subscription/subscriptionExpiresAt", value: periodEnd.toISO() },
                 { op: "set", path: "/subscription/lastBilledAt", value: now.toISO() },
             ], "BILLING_PROCESSOR");
@@ -238,7 +237,6 @@ async function processTrialExpiredWithCard(
         const periodEnd = now.plus(interval === "annual" ? { years: 1 } : { months: 1 });
         await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
             { op: "set", path: "/subscription/billingStatus", value: "active" as billing_status },
-            { op: "set", path: "/subscription/firstBillingTriggeredAt", value: now.toISO() },
             { op: "set", path: "/subscription/subscriptionExpiresAt", value: periodEnd.toISO() },
             { op: "set", path: "/subscription/lastBilledAt", value: now.toISO() },
         ], "BILLING_PROCESSOR");
@@ -296,7 +294,6 @@ async function processTrialExpiredWithCard(
 
         await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
             { op: "set", path: "/subscription/billingStatus", value: "active" as billing_status },
-            { op: "set", path: "/subscription/firstBillingTriggeredAt", value: now.toISO() },
             { op: "set", path: "/subscription/lastBilledAt", value: now.toISO() },
             { op: "set", path: "/subscription/lastPaymentAttemptAt", value: now.toISO() },
             { op: "set", path: "/subscription/subscriptionExpiresAt", value: periodEnd.toISO() },
@@ -548,13 +545,11 @@ async function applyDowngrade(
     const fromTier = sub.subscriptionTier;
     const toTier = sub.pendingDowngradeTo as subscription_tier;
     const interval = (sub.billingInterval || "monthly") as 'monthly' | 'annual';
-    const newThreshold = getTierAmount(toTier, "monthly", feeConfig);
 
     logger.logMessage(`Applying downgrade for vendor ${vendor.id}: ${fromTier} -> ${toTier}`);
 
     await cosmos.patch_record("Main-Vendor", vendor.id, vendor.id, [
         { op: "set", path: "/subscription/subscriptionTier", value: toTier },
-        { op: "set", path: "/subscription/subscriptionCostThreshold", value: newThreshold },
         { op: "set", path: "/subscription/pendingDowngradeTo", value: null },
         { op: "set", path: "/subscription/downgradeEffectiveAt", value: null },
     ], "BILLING_PROCESSOR");

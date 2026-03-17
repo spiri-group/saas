@@ -8,9 +8,6 @@ type VendorSubscriptionDetail {
   subscriptionTier: String!
   billingInterval: String!
   billingStatus: String!
-  cumulativePayouts: Int!
-  subscriptionCostThreshold: Int!
-  firstBillingTriggeredAt: String
   lastBilledAt: String
   subscriptionExpiresAt: String
   failedPaymentAttempts: Int!

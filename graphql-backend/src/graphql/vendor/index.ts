@@ -11,15 +11,6 @@ import { sender_details } from '../../client/email_templates';
 import { googleplace_type, recordref_type } from '../0_shared/types';
 import { ReadingRequestManager } from '../reading-request/manager';
 
-// Monthly price in cents for each tier (used as default subscriptionCostThreshold)
-const TIER_MONTHLY_PRICE: Record<subscription_tier, number> = {
-    directory: 900,
-    awaken: 1900,
-    illuminate: 2900,
-    manifest: 3900,
-    transcend: 5900,
-};
-
 const resolvers = {
     Query: {
         vendors: async (_: any, args: { search?: string }, context: serverContext) => {
@@ -750,8 +741,6 @@ const resolvers = {
                 billingStatus: 'trial',
                 trialStartedAt: DateTime.now().toISO(),
                 trialEndsAt: DateTime.now().plus({ days: 14 }).toISO(),
-                cumulativePayouts: 0,
-                subscriptionCostThreshold: TIER_MONTHLY_PRICE[(subscription?.tier || 'manifest') as subscription_tier] ?? 3900,
                 failedPaymentAttempts: 0,
                 // Legacy fields kept for compatibility
                 payment_retry_count: 0,
@@ -974,8 +963,6 @@ const resolvers = {
                     billingStatus: 'trial' as const,
                     trialStartedAt: DateTime.now().toISO(),
                     trialEndsAt: DateTime.now().plus({ days: 14 }).toISO(),
-                    cumulativePayouts: 0,
-                    subscriptionCostThreshold: TIER_MONTHLY_PRICE[subscription?.tier as subscription_tier] ?? 1900,
                     failedPaymentAttempts: 0,
                     // Legacy fields
                     payment_retry_count: 0,

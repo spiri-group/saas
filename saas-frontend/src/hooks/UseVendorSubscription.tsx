@@ -8,9 +8,6 @@ export type VendorSubscriptionDetail = {
     subscriptionTier: string;
     billingInterval: string;
     billingStatus: string;
-    cumulativePayouts: number;
-    subscriptionCostThreshold: number;
-    firstBillingTriggeredAt?: string;
     lastBilledAt?: string;
     subscriptionExpiresAt?: string;
     failedPaymentAttempts: number;
@@ -57,9 +54,6 @@ export const useVendorSubscription = (vendorId: string) => {
                         subscriptionTier
                         billingInterval
                         billingStatus
-                        cumulativePayouts
-                        subscriptionCostThreshold
-                        firstBillingTriggeredAt
                         lastBilledAt
                         subscriptionExpiresAt
                         failedPaymentAttempts

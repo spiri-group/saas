@@ -63,9 +63,6 @@ const resolvers = {
                 subscriptionTier: tier,
                 billingInterval: sub.billingInterval || "monthly",
                 billingStatus: sub.billingStatus || "trial",
-                cumulativePayouts: sub.cumulativePayouts || 0,
-                subscriptionCostThreshold: sub.subscriptionCostThreshold || 0,
-                firstBillingTriggeredAt: sub.firstBillingTriggeredAt,
                 lastBilledAt: sub.lastBilledAt,
                 subscriptionExpiresAt: sub.subscriptionExpiresAt,
                 failedPaymentAttempts: sub.failedPaymentAttempts || 0,
@@ -169,15 +166,10 @@ const resolvers = {
             if (!VALID_TIERS.includes(tier)) throw new GraphQLError("Invalid tier", { extensions: { code: "BAD_REQUEST" } });
             if (!VALID_INTERVALS.includes(interval)) throw new GraphQLError("Invalid billing interval", { extensions: { code: "BAD_REQUEST" } });
 
-            const feeConfig = await loadFeeConfig(context);
-            const monthlyPrice = getTierPrice(tier, "monthly", feeConfig);
-
             await context.dataSources.cosmos.patch_record("Main-Vendor", args.vendorId, args.vendorId, [
                 { op: "set", path: "/subscription/subscriptionTier", value: tier },
                 { op: "set", path: "/subscription/billingInterval", value: interval },
-                { op: "set", path: "/subscription/billingStatus", value: "pendingFirstBilling" as billing_status },
-                { op: "set", path: "/subscription/cumulativePayouts", value: 0 },
-                { op: "set", path: "/subscription/subscriptionCostThreshold", value: monthlyPrice },
+                { op: "set", path: "/subscription/billingStatus", value: "trial" as billing_status },
                 { op: "set", path: "/subscription/failedPaymentAttempts", value: 0 },
             ], context.userId);
 
@@ -260,7 +252,6 @@ const resolvers = {
                     { op: "set", path: "/subscription/billingInterval", value: targetInterval },
                     { op: "set", path: "/subscription/subscriptionExpiresAt", value: newPeriodEnd.toISO() },
                     { op: "set", path: "/subscription/lastBilledAt", value: now.toISO() },
-                    { op: "set", path: "/subscription/subscriptionCostThreshold", value: getTierPrice(targetTier, "monthly", feeConfig) },
                     { op: "set", path: "/subscription/pendingDowngradeTo", value: null },
                     { op: "set", path: "/subscription/downgradeEffectiveAt", value: null },
                     historyPatch,
@@ -273,7 +264,6 @@ const resolvers = {
             await context.dataSources.cosmos.patch_record("Main-Vendor", args.vendorId, args.vendorId, [
                 { op: "set", path: "/subscription/subscriptionTier", value: targetTier },
                 { op: "set", path: "/subscription/billingInterval", value: targetInterval },
-                { op: "set", path: "/subscription/subscriptionCostThreshold", value: getTierPrice(targetTier, "monthly", feeConfig) },
                 { op: "set", path: "/subscription/pendingDowngradeTo", value: null },
                 { op: "set", path: "/subscription/downgradeEffectiveAt", value: null },
             ], context.userId);
