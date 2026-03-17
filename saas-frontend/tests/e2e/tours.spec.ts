@@ -438,33 +438,38 @@ test.describe.serial('Tour Customer Journey', () => {
     await page.keyboard.type('123456');
     await page.waitForURL('/', { timeout: 15000 });
 
-    // Complete user profile
-    await homePage.waitForCompleteProfileLink();
-    await homePage.clickCompleteProfile();
-    await expect(page).toHaveURL(/\/u\/.*\/setup/, { timeout: 10000 });
+    // Handle consent guard if present
+    const { handleConsentGuardIfPresent } = await import('../utils/test-helpers');
+    await handleConsentGuardIfPresent(page);
 
-    const url = page.url();
-    const userIdMatch = url.match(/\/u\/([^\/]+)\/setup/);
-    if (userIdMatch) {
-      customerUserId = userIdMatch[1];
+    // New users are redirected to /setup after login
+    await page.goto('/setup');
+    await userSetupPage.waitForForm();
+
+    // Get user ID from session for cleanup
+    const userId = await page.evaluate(async () => {
+      const response = await fetch('/api/auth/session');
+      const session = await response.json();
+      return session?.user?.id;
+    });
+    if (userId) {
+      customerUserId = userId;
       registerTestUser({ id: customerUserId, email: customerEmail }, workerId);
     }
 
     await userSetupPage.fillUserProfile({
       firstName: 'Tour',
       lastName: 'Customer',
-      phone: '0498765432',
-      address: 'Melbourne CBD',
-      securityQuestion: 'What is your favorite color?',
-      securityAnswer: 'Green',
     });
 
-    // Click "Start Browsing" to complete setup
-    const startBrowsingBtn = page.getByRole('button', { name: 'Start Browsing SpiriVerse' });
-    if (await startBrowsingBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await startBrowsingBtn.click();
-      await page.waitForURL('/', { timeout: 15000 });
-    }
+    // Click "Let's Get Started" to complete customer setup
+    const getStartedBtn = page.locator('button:has-text("Get Started"), button:has-text("Start Browsing")').first();
+    await expect(getStartedBtn).toBeVisible({ timeout: 10000 });
+    await getStartedBtn.click();
+
+    // Handle consent guard after setup if it appears
+    await handleConsentGuardIfPresent(page);
+    await page.waitForTimeout(3000);
 
     console.log('[Test 4] ✓ Customer profile complete');
 
@@ -475,18 +480,10 @@ test.describe.serial('Tour Customer Journey', () => {
     console.log('[Test 4] Navigating to tour page...');
     const tourPage = new TourPage(page);
 
-    if (tourId) {
-      await tourPage.navigateToPublicTour(merchantSlug, tourId);
-    } else {
-      // Fallback: navigate to merchant page and find tour
-      await page.goto(`/m/${merchantSlug}`);
-      await page.waitForLoadState('networkidle');
-      const tourLink = page.locator(`a:has-text("${tourName}")`).first();
-      if (await tourLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await tourLink.click();
-        await page.waitForLoadState('networkidle');
-      }
-    }
+    expect(tourId).toBeTruthy();
+    await page.goto(`/m/${merchantSlug}/tour/${tourId}`);
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(5000);
 
     // Verify tour page loaded
     await expect(page.locator('h1, [data-testid="tour-title"]').filter({ hasText: /Sydney Harbour|Tour/ })).toBeVisible({ timeout: 10000 });
