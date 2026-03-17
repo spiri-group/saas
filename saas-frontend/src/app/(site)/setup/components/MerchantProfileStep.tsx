@@ -69,42 +69,64 @@ export default function MerchantProfileStep({ form, onSubmit, onBack, isSubmitti
                     <p className="text-sm md:text-base text-slate-500">Tell us about your business to get started.</p>
                 </div>
 
-                <FormField
-                    control={form.control}
-                    name="merchant.name"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Business Name</FormLabel>
-                            <FormControl>
-                                <Input
-                                    {...field}
-                                    data-testid="setup-merchant-name"
-                                    placeholder="Your Business Name"
-                                    onChange={(ev) => {
-                                        field.onChange(ev);
-                                        handleNameChange(ev.target.value);
-                                    }}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="merchant.name"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Business Name</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        {...field}
+                                        data-testid="setup-merchant-name"
+                                        placeholder="Your Business Name"
+                                        onChange={(ev) => {
+                                            field.onChange(ev);
+                                            handleNameChange(ev.target.value);
+                                        }}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
 
-                <FormField
-                    control={form.control}
-                    name="merchant.logo"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Logo <span className="text-slate-400 font-normal">(optional)</span></FormLabel>
-                            <FormControl>
-                                <div className="flex items-center gap-3">
+                    <FormField
+                        control={form.control}
+                        name="merchant.email"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Business Email</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        {...field}
+                                        data-testid="setup-merchant-email"
+                                        type="email"
+                                        placeholder="business@example.com"
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <div className="flex items-start gap-4">
+                    <FormField
+                        control={form.control}
+                        name="merchant.logo"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Logo <span className="text-slate-400 font-normal">(optional)</span></FormLabel>
+                                <FormControl>
+                                    <div className="flex items-center gap-3">
                                     {logoValue?.url ? (
                                         <div className="relative group">
                                             <img
                                                 src={logoValue.url}
                                                 alt="Business logo"
-                                                className="w-16 h-16 rounded-lg object-cover border border-slate-200"
+                                                className="w-24 h-16 rounded-lg object-cover border border-slate-200"
                                             />
                                             <button
                                                 type="button"
@@ -115,7 +137,7 @@ export default function MerchantProfileStep({ form, onSubmit, onBack, isSubmitti
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="w-16 h-16 rounded-lg border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300">
+                                        <div className="w-24 h-16 rounded-lg border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300">
                                             <ImageIcon className="w-6 h-6" />
                                         </div>
                                     )}
@@ -154,64 +176,46 @@ export default function MerchantProfileStep({ form, onSubmit, onBack, isSubmitti
                     )}
                 />
 
-                <FormField
-                    control={form.control}
-                    name="merchant.slug"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Your Web Address</FormLabel>
-                            <FormDescription>This is how customers will find your shop online</FormDescription>
-                            <FormControl>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-slate-500 whitespace-nowrap">spiriverse.com/</span>
-                                    <Input
-                                        {...field}
-                                        data-testid="setup-merchant-slug"
-                                        disabled={slug.isGenerating}
-                                        placeholder="your-business-name"
-                                        onChange={(ev) => {
-                                            field.onChange(ev);
-                                            slug.setManualSlug(ev.target.value);
-                                        }}
-                                    />
-                                </div>
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                    <FormField
+                        control={form.control}
+                        name="merchant.slug"
+                        render={({ field }) => (
+                            <FormItem className="flex-grow">
+                                <FormLabel>Your SpiriVerse URL</FormLabel>
+                                <FormDescription>Your unique page on SpiriVerse where customers can find you</FormDescription>
+                                <FormControl>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-slate-500 whitespace-nowrap">spiriverse.com/</span>
+                                        <Input
+                                            {...field}
+                                            data-testid="setup-merchant-slug"
+                                            disabled={slug.isGenerating}
+                                            placeholder="your-business-name"
+                                            onChange={(ev) => {
+                                                field.onChange(ev);
+                                                slug.setManualSlug(ev.target.value);
+                                            }}
+                                        />
+                                    </div>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
                 <FormField
                     control={form.control}
                     name="merchant.website"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Website <span className="text-slate-400 font-normal">(optional)</span></FormLabel>
+                            <FormLabel>Your Current Website <span className="text-slate-400 font-normal">(optional)</span></FormLabel>
                             <FormControl>
                                 <Input
                                     {...field}
                                     data-testid="setup-merchant-website"
                                     type="url"
                                     placeholder="https://www.yourbusiness.com"
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="merchant.email"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Business Email</FormLabel>
-                            <FormControl>
-                                <Input
-                                    {...field}
-                                    data-testid="setup-merchant-email"
-                                    type="email"
-                                    placeholder="business@example.com"
                                 />
                             </FormControl>
                             <FormMessage />

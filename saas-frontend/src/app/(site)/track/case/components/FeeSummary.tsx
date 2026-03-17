@@ -39,7 +39,7 @@ const FeeSummary: React.FC<Props> = (props) => {
 
     return (
         <div className="flex flex-col h-full">
-            <h2 className="text-lg font-bold"> Fee Summary </h2>
+            <h2 data-testid="fee-summary-title" className="text-lg font-bold"> Fee Summary </h2>
             {
                 bl.orders.isLoading ? (
                     <span className="text-xs">Loading...</span>
@@ -65,7 +65,7 @@ const FeeSummary: React.FC<Props> = (props) => {
                             <CarouselNext style="RECTANGLE" className="flex-none w-full mt-3" />
                             </Carousel>
                         ) : (
-                                <span className="p-2">No fees requiring to be paid yet.</span>
+                                <span data-testid="no-fees-message" className="p-2">No fees requiring to be paid yet.</span>
                         )}
                     </>
                 )

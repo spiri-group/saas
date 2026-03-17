@@ -4048,6 +4048,14 @@ export type service_type = {
     questionnaire?: serviceQuestion_type[],
     targetTimezones?: string[], // Target customer regions/timezones for scheduling optimization
 
+    // Consultation & scheduling
+    consultationType?: string,
+    scheduleConfig?: {
+        useAllSlots: boolean,
+        selectedSlotIds?: string[],
+        bufferMinutes: number
+    },
+
     // Category-specific options
     readingOptions?: readingServiceOptions_type,
     healingOptions?: healingServiceOptions_type,

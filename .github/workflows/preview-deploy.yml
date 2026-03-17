@@ -32,8 +32,39 @@ env:
   IMAGE_NAME: spiriverse-frontend
 
 jobs:
+  check-changes:
+    name: Check for frontend changes
+    runs-on: ubuntu-latest
+    outputs:
+      has_frontend_changes: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check changed files
+        id: filter
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs, check if the latest push commit touched frontend files
+            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'saas-frontend/' | head -1)
+          else
+            # For workflow_dispatch, always run
+            CHANGED="yes"
+          fi
+          if [ -n "$CHANGED" ]; then
+            echo "frontend=true" >> "$GITHUB_OUTPUT"
+            echo "Frontend changes detected — deploying preview"
+          else
+            echo "frontend=false" >> "$GITHUB_OUTPUT"
+            echo "No frontend changes in latest push — skipping preview"
+          fi
+
   preview:
     name: Deploy Preview
+    needs: check-changes
+    if: needs.check-changes.outputs.has_frontend_changes == 'true'
     runs-on: ubuntu-latest
     environment: DEV
 

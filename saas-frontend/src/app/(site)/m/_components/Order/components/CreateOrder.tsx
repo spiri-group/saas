@@ -61,7 +61,7 @@ const CreateOrder: React.FC<Props> = (props) => {
                 <form onSubmit={bl.form.handleSubmit(bl.submit)} className="flex flex-col flex-grow min-h-0">
                     <div className="flex flex-row justify-between items-center">
                         <span>{bl.values.lines.length} line/s</span>
-                        <Button type="button" onClick={bl.addNewLine} variant="link">Add new line</Button>
+                        <Button data-testid="btn-add-order-line" type="button" onClick={bl.addNewLine} variant="link">Add new line</Button>
                     </div>
                     <Table className="relative flex flex-col flex-grow min-h-0 w-full mb-6">
                         <TableHeader>
@@ -81,7 +81,7 @@ const CreateOrder: React.FC<Props> = (props) => {
                                             render={({ field }) => (
                                                 <FormItem className="flex flex-col w-72">
                                                     <FormControl>
-                                                        <Textarea {...field} placeholder="Descriptor" />
+                                                        <Textarea data-testid={`order-line-descriptor-${idx}`} {...field} placeholder="Descriptor" />
                                                     </FormControl>
                                                 </FormItem>
                                             )}
@@ -94,7 +94,7 @@ const CreateOrder: React.FC<Props> = (props) => {
                                             render={({ field }) => (
                                                 <FormItem className="flex flex-col">
                                                     <FormControl>
-                                                        <Input type="number" {...field} placeholder="Quantity" />
+                                                        <Input data-testid={`order-line-quantity-${idx}`} type="number" {...field} placeholder="Quantity" />
                                                     </FormControl>
                                                 </FormItem>
                                             )}
@@ -131,7 +131,7 @@ const CreateOrder: React.FC<Props> = (props) => {
                     </Table>
                     <div className="flex flex-row space-x-2 ">
                         <CancelDialogButton />
-                        <Button type="submit" className="flex-grow">Confirm and email fee</Button>
+                        <Button data-testid="btn-submit-order" type="submit" className="flex-grow">Confirm and email fee</Button>
                     </div>
                 </form>
             </Form>

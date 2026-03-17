@@ -29,7 +29,13 @@ interface CreateHealingOfferSchema {
   includeFollowUp: boolean;
   targetTimezones?: string[];
   requiresConsultation: boolean;
+  consultationType: 'ONLINE' | 'IN_PERSON';
   scheduleId?: string;
+  scheduleConfig: {
+    useAllSlots: boolean;
+    selectedSlotIds: string[];
+    bufferMinutes: number;
+  };
   questionnaire?: ServiceQuestion[];
 }
 
@@ -66,7 +72,17 @@ export const useCreateHealingOffer = (merchantId: string, editingService?: Exist
       includeFollowUp: false,
       targetTimezones: editingService.targetTimezones || [],
       requiresConsultation: editingService.deliveryMode === 'SYNC',
+      consultationType: (editingService.consultationType as 'ONLINE' | 'IN_PERSON') || 'ONLINE',
       scheduleId: undefined,
+      scheduleConfig: editingService.scheduleConfig ? {
+        useAllSlots: editingService.scheduleConfig.useAllSlots,
+        selectedSlotIds: editingService.scheduleConfig.selectedSlotIds || [],
+        bufferMinutes: editingService.scheduleConfig.bufferMinutes,
+      } : {
+        useAllSlots: true,
+        selectedSlotIds: [],
+        bufferMinutes: 15,
+      },
       questionnaire: mapQuestionnaireFromApi(editingService.questionnaire),
     } : {
       id: uuidv4(),
@@ -83,7 +99,13 @@ export const useCreateHealingOffer = (merchantId: string, editingService?: Exist
       includeFollowUp: false,
       targetTimezones: [],
       requiresConsultation: false,
+      consultationType: 'ONLINE' as const,
       scheduleId: undefined,
+      scheduleConfig: {
+        useAllSlots: true,
+        selectedSlotIds: [],
+        bufferMinutes: 15,
+      },
       questionnaire: []
     }
   });
@@ -104,7 +126,13 @@ export const useCreateHealingOffer = (merchantId: string, editingService?: Exist
         deliveryFormats: data.requiresConsultation ? undefined : [data.deliveryFormat],
         targetTimezones: data.targetTimezones,
         requiresConsultation: data.requiresConsultation,
+        consultationType: data.requiresConsultation ? data.consultationType : undefined,
         scheduleId: data.scheduleId,
+        scheduleConfig: data.requiresConsultation ? {
+          useAllSlots: data.scheduleConfig.useAllSlots,
+          selectedSlotIds: data.scheduleConfig.useAllSlots ? [] : data.scheduleConfig.selectedSlotIds,
+          bufferMinutes: data.scheduleConfig.bufferMinutes,
+        } : undefined,
         questionnaire: (data.questionnaire || []).map(q => ({
           id: q.id,
           question: q.question,

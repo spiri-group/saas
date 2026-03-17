@@ -64,6 +64,9 @@ const UseCreateTour = (merchantId: string) => {
         resolver: zodResolver(createTourSchema),
         defaultValues: {
             id: tourId,
+            name: "",
+            description: "",
+            terms: "",
             ticketVariants: [],
             thumbnail: default_thumbnail,
             faq: [],

@@ -27,9 +27,10 @@ export default defineConfig({
   timeout: isExternalEnv ? 120000 : 60000, // longer timeout for external environments
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
-    ['html', { outputFolder: 'playwright-report' }],
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['json', { outputFile: 'test-results/results.json' }],
-    ['list']
+    ['list'],
+    ['./tests/utils/history-reporter.ts'],
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {

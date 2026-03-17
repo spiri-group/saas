@@ -31,6 +31,10 @@ const CurrencySpan : React.FC<Props> = ({defaultLabel="-", withAnimation=false, 
     const [newDollarAmount, setNewDollarAmount] = useState<number | null>(null);
     const [oldDollarAmount, setOldDollarAmount] = useState<number | null>(null);
 
+    if (!props.value?.currency) {
+        return asDiv ? <div className={props.className}>{defaultLabel}</div> : <span className={props.className}>{defaultLabel}</span>;
+    }
+
     const formatter = new Intl.NumberFormat(locale, {
         style: 'currency',
         currency: props.value.currency,

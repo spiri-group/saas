@@ -12,6 +12,13 @@ const queryFn = async (merchantId: string) => {
               vendor(id:$vendorId)  {
                 id
                 name
+                logo {
+                    name
+                    url
+                    urlRelative
+                    size
+                    type
+                }
                 ref {
                     id
                     partition

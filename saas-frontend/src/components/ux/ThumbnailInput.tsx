@@ -43,7 +43,7 @@ export const default_thumbnail = {
   },
   dynamicMode: undefined,
   title: {
-    content: undefined,
+    content: "",
     panel: {
       bgColor: "#ffffff",
       textColor: "#000000",
@@ -52,10 +52,10 @@ export const default_thumbnail = {
     bgColor: "#ffffff",
   },
   moreInfo: {
-    content: undefined,
+    content: "",
   },
   stamp: {
-    text: undefined,
+    text: "",
     enabled: false,
     bgColor: "#dc2626",
     textColor: "#ffffff",

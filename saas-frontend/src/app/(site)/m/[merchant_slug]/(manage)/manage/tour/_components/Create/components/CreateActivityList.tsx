@@ -145,9 +145,8 @@ const CreateActivityList: React.FC<Props> = (props) => {
             <div className="flex flex-col w-full items-center space-y-2 mt-2 p-2">
                 {currentList.activities.map((activity, ai) => {
                     return (
-                        <>
+                        <React.Fragment key={activity.id}>
                         <ActivityForm
-                            key={activity.id} 
                             icon={ai == 0 ? 
                                 <LocateFixed height={30} /> 
                                 : (ai == currentList.activities.length - 1) ? <Goal height={30} /> : null}
@@ -162,7 +161,7 @@ const CreateActivityList: React.FC<Props> = (props) => {
                                 </div>
                             </div>
                         )}
-                        </>
+                        </React.Fragment>
                     )
                 })}
             </div>

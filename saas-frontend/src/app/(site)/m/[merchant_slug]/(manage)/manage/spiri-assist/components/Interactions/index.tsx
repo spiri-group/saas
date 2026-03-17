@@ -103,7 +103,7 @@ const Interactions : React.FC<Props> = (props) => {
                     <div className="space-x-2 ml-auto">
                         <Dialog>
                             <DialogTrigger asChild>
-                                <Button disabled={bl.case.get.releaseOffer != null}> Create Order </Button>
+                                <Button data-testid="btn-create-order" disabled={bl.case.get.releaseOffer != null}> Create Order </Button>
                             </DialogTrigger>
                             <DialogContent className="flex flex-col h-4/5">
                                 <CreateOrder

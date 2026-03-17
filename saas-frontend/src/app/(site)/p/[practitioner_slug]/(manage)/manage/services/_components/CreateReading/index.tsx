@@ -14,6 +14,9 @@ import { StepIndicator } from "@/components/ui/step-indicator";
 import ThumbnailBuilder from "@/components/ux/ThumbnailBuilder";
 import QuestionBuilder from "@/components/ux/QuestionBuilder";
 import VisuallyHidden from "@/components/ux/VisuallyHidden";
+import { usePractitionerSchedule } from "../../../availability/hooks/UsePractitionerSchedule";
+import ServiceScheduleSelector from "@/components/scheduling/ServiceScheduleSelector";
+import { Monitor, MapPin, AlertTriangle } from "lucide-react";
 
 type BLProps = {
     merchantId: string;
@@ -26,9 +29,39 @@ const useBL = (props: BLProps) => {
     const params = useParams();
     const practitioner_slug = params.practitioner_slug as string;
     const { form, mutation, isEditing } = useCreateReadingOffer(props.merchantId, props.editingService);
+    const schedule = usePractitionerSchedule(props.merchantId);
+    const inPersonEnabled = schedule.data?.deliveryMethods?.atPractitionerLocation?.enabled === true;
     const [currentStep, setCurrentStep] = useState(1);
 
     const serviceId = form.watch('id');
+    const requiresConsultation = form.watch('requiresConsultation');
+    const consultationType = form.watch('consultationType');
+    const totalSteps = requiresConsultation ? 5 : 4;
+
+    const stepLabels = requiresConsultation
+        ? [{ label: 'Basic Info' }, { label: 'Details' }, { label: 'Thumbnail' }, { label: 'Schedule' }, { label: 'Questions' }]
+        : [{ label: 'Basic Info' }, { label: 'Details' }, { label: 'Thumbnail' }, { label: 'Questions' }];
+
+    // Check if the practitioner has availability set up for the chosen consultation type
+    const weekdays = schedule.data?.weekdays || [];
+    const onlineEnabled = schedule.data?.deliveryMethods?.online?.enabled !== false;
+    const filteredWeekdays = weekdays
+        .filter(d => d.enabled && d.timeSlots.length > 0)
+        .map(day => {
+            if (consultationType === 'IN_PERSON') {
+                return { ...day, timeSlots: day.timeSlots.filter(slot => slot.location != null) };
+            }
+            return day;
+        })
+        .filter(d => d.timeSlots.length > 0);
+
+    // Block if: no slots for the chosen type, OR online selected but not enabled in delivery methods
+    const deliveryMethodDisabled = requiresConsultation && (
+        (consultationType === 'ONLINE' && !onlineEnabled) ||
+        (consultationType === 'IN_PERSON' && !inPersonEnabled)
+    );
+    const noSlots = requiresConsultation && filteredWeekdays.length === 0;
+    const availabilityBlocked = (deliveryMethodDisabled || noSlots) && !schedule.isLoading;
 
     const uploadToAzure = async (file: File, fileType: 'IMAGE' | 'VIDEO'): Promise<any> => {
         const formData = new FormData();
@@ -85,28 +118,23 @@ const useBL = (props: BLProps) => {
     };
 
     const canProceedToNextStep = () => {
+        if (availabilityBlocked) return false;
         const values = form.getValues();
         if (currentStep === 1) {
             return values.name && values.description && values.price;
         }
         if (currentStep === 2) {
-            // Details step - no required fields, just optional details
             return true;
         }
         if (currentStep === 3) {
             return values.thumbnail?.image?.media;
         }
-        // Step 4 (questions) is optional
         return true;
     };
 
     const handleNext = () => {
-        console.log('handleNext called', { currentStep, canProceed: canProceedToNextStep() });
-        if (currentStep < 4 && canProceedToNextStep()) {
-            console.log('Moving to step', currentStep + 1);
+        if (currentStep < totalSteps && canProceedToNextStep()) {
             setCurrentStep(currentStep + 1);
-        } else {
-            console.log('Cannot proceed - either at step 4 or validation failed');
         }
     };
 
@@ -120,11 +148,16 @@ const useBL = (props: BLProps) => {
         form,
         mutation,
         isEditing,
+        inPersonEnabled,
         currentStep,
+        totalSteps,
+        stepLabels,
         setCurrentStep,
         handleNext,
         handlePrevious,
         canProceedToNextStep,
+        schedule,
+        availabilityBlocked,
         mockUploadCoverPhoto,
         mockUploadVideo,
         mockUploadCollageImage,
@@ -156,12 +189,7 @@ const CreateReading: React.FC<Props> = (props) => {
             <div className="flex items-center justify-between mb-4 px-4 pt-2">
                 <StepIndicator
                     dark
-                    steps={[
-                        { label: 'Basic Info' },
-                        { label: 'Details' },
-                        { label: 'Thumbnail' },
-                        { label: 'Questions' },
-                    ]}
+                    steps={bl.stepLabels}
                     currentStep={bl.currentStep}
                     onStepClick={bl.setCurrentStep}
                 />
@@ -181,8 +209,7 @@ const CreateReading: React.FC<Props> = (props) => {
                 <form
                     onSubmit={bl.form.handleSubmit(bl.submit)}
                     onKeyDown={(e) => {
-                        // Prevent Enter key from submitting when not on final step
-                        if (e.key === 'Enter' && bl.currentStep < 4) {
+                        if (e.key === 'Enter' && bl.currentStep < bl.totalSteps) {
                             e.preventDefault();
                         }
                     }}
@@ -191,6 +218,7 @@ const CreateReading: React.FC<Props> = (props) => {
                         {/* Step 1: Basic Info */}
                         {bl.currentStep === 1 && (
                         <div className="space-y-4 mt-4">
+                            {/* Service Name — first question */}
                             <FormField
                                 name="name"
                                 control={bl.form.control}
@@ -204,25 +232,7 @@ const CreateReading: React.FC<Props> = (props) => {
                                 )}
                             />
 
-                            <FormField
-                                name="description"
-                                control={bl.form.control}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel dark>About this service *</FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                {...field}
-                                                dark
-                                                placeholder="Describe what clients can expect..."
-                                                rows={4}
-                                                data-testid="service-description-input"
-                                            />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-
+                            {/* Reading Type */}
                             <FormField
                                 name="readingType"
                                 control={bl.form.control}
@@ -248,6 +258,7 @@ const CreateReading: React.FC<Props> = (props) => {
                                 )}
                             />
 
+                            {/* Live Session toggle — second question */}
                             <FormField
                                 name="requiresConsultation"
                                 control={bl.form.control}
@@ -263,109 +274,253 @@ const CreateReading: React.FC<Props> = (props) => {
                                         </FormControl>
                                         <div className="space-y-1 leading-none">
                                             <FormLabel dark className="font-medium cursor-pointer">
-                                                Requires Live Consultation
+                                                This is a live session
                                             </FormLabel>
                                             <p className="text-sm text-slate-400">
-                                                Check this if you&apos;ll deliver this service via live session instead of recorded file
+                                                Tick this if you&apos;ll meet with the client in real time (video call or in person)
                                             </p>
                                         </div>
                                     </FormItem>
                                 )}
                             />
 
-                            {!bl.form.watch('requiresConsultation') && (
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        name="deliveryFormat"
-                                        control={bl.form.control}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel dark>Delivery Format</FormLabel>
-                                                <Select dark onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="RECORDED_VIDEO">Recorded Video</SelectItem>
-                                                        <SelectItem value="RECORDED_AUDIO">Recorded Audio</SelectItem>
-                                                        <SelectItem value="WRITTEN_PDF">Written PDF</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </FormItem>
-                                        )}
-                                    />
+                            {/* If live: Online or In Person — third question */}
+                            {bl.form.watch('requiresConsultation') && (
+                                <FormField
+                                    name="consultationType"
+                                    control={bl.form.control}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel dark>Where will you meet?</FormLabel>
+                                            <div className="flex gap-2" data-testid="consultation-type-tabs">
+                                                <Button
+                                                    type="button"
+                                                    variant={field.value === 'ONLINE' ? 'default' : 'outline'}
+                                                    className={field.value === 'ONLINE'
+                                                        ? 'flex-1 bg-purple-600 hover:bg-purple-700 text-white'
+                                                        : 'flex-1 border-slate-600 text-slate-300 hover:bg-slate-700'
+                                                    }
+                                                    onClick={() => field.onChange('ONLINE')}
+                                                    data-testid="consultation-type-online"
+                                                >
+                                                    <Monitor className="w-4 h-4 mr-2" />
+                                                    Online
+                                                </Button>
+                                                {bl.inPersonEnabled && (
+                                                    <Button
+                                                        type="button"
+                                                        variant={field.value === 'IN_PERSON' ? 'default' : 'outline'}
+                                                        className={field.value === 'IN_PERSON'
+                                                            ? 'flex-1 bg-purple-600 hover:bg-purple-700 text-white'
+                                                            : 'flex-1 border-slate-600 text-slate-300 hover:bg-slate-700'
+                                                        }
+                                                        onClick={() => field.onChange('IN_PERSON')}
+                                                        data-testid="consultation-type-inperson"
+                                                    >
+                                                        <MapPin className="w-4 h-4 mr-2" />
+                                                        In Person
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
+
+                            {/* Availability gate — blocks the rest of the form if no slots */}
+                            {bl.availabilityBlocked && (
+                                <div className="rounded-lg border-2 border-amber-500/50 bg-amber-500/10 p-5">
+                                    <div className="flex items-start gap-3">
+                                        <AlertTriangle className="w-6 h-6 text-amber-400 flex-shrink-0 mt-0.5" />
+                                        <div className="space-y-2">
+                                            <p className="font-semibold text-amber-300 text-base">
+                                                {bl.form.watch('consultationType') === 'IN_PERSON'
+                                                    ? 'No in-person availability set up'
+                                                    : 'No online availability set up'}
+                                            </p>
+                                            <p className="text-sm text-slate-300">
+                                                {bl.form.watch('consultationType') === 'IN_PERSON'
+                                                    ? 'You need to add in-person time slots with a location on your Availability page before you can create an in-person live service.'
+                                                    : 'You need to enable online sessions and set up time slots on your Availability page before you can create an online live service.'}
+                                            </p>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="mt-2 border-amber-500/50 text-amber-300 hover:bg-amber-500/20"
+                                                onClick={() => {
+                                                    escape_key();
+                                                    window.location.href = window.location.pathname.replace(/\/services$/, '/availability');
+                                                }}
+                                                data-testid="go-to-availability-btn"
+                                            >
+                                                Go to Availability Settings
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Rest of the form — only show if not blocked */}
+                            {!bl.availabilityBlocked && (
+                                <>
+                                    {/* Live session fields: duration */}
+                                    {bl.form.watch('requiresConsultation') && (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField
+                                                name="durationAmount"
+                                                control={bl.form.control}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel dark>Session Duration</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                dark
+                                                                type="number"
+                                                                min={5}
+                                                                placeholder="30"
+                                                                {...field}
+                                                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                data-testid="duration-amount-input"
+                                                            />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                name="durationUnit"
+                                                control={bl.form.control}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel dark>Unit</FormLabel>
+                                                        <Select dark onValueChange={field.onChange} defaultValue={field.value}>
+                                                            <FormControl>
+                                                                <SelectTrigger data-testid="duration-unit-select">
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="minute">Minutes</SelectItem>
+                                                                <SelectItem value="hour">Hours</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Async fields: delivery format + turnaround */}
+                                    {!bl.form.watch('requiresConsultation') && (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField
+                                                name="deliveryFormat"
+                                                control={bl.form.control}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel dark>How will you share it?</FormLabel>
+                                                        <Select dark onValueChange={field.onChange} defaultValue={field.value}>
+                                                            <FormControl>
+                                                                <SelectTrigger>
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="RECORDED_VIDEO">Recorded Video</SelectItem>
+                                                                <SelectItem value="RECORDED_AUDIO">Recorded Audio</SelectItem>
+                                                                <SelectItem value="WRITTEN_PDF">Written PDF</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                name="turnaroundDays"
+                                                control={bl.form.control}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel dark>Deliver within (days)</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                {...field}
+                                                                dark
+                                                                type="number"
+                                                                min="1"
+                                                                max="30"
+                                                            />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    )}
 
                                     <FormField
-                                        name="turnaroundDays"
+                                        name="description"
                                         control={bl.form.control}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel dark>Delivery (days)</FormLabel>
+                                                <FormLabel dark>About this service *</FormLabel>
                                                 <FormControl>
-                                                    <Input
+                                                    <Textarea
                                                         {...field}
                                                         dark
-                                                        type="number"
-                                                        min="1"
-                                                        max="30"
+                                                        placeholder="Describe what clients can expect..."
+                                                        rows={4}
+                                                        data-testid="service-description-input"
                                                     />
                                                 </FormControl>
                                             </FormItem>
                                         )}
                                     />
-                                </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            name="price"
+                                            control={bl.form.control}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel dark>Price *</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            {...field}
+                                                            dark
+                                                            type="number"
+                                                            step="0.01"
+                                                            placeholder="0.00"
+                                                            data-testid="service-price-input"
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            name="currency"
+                                            control={bl.form.control}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel dark>Currency</FormLabel>
+                                                    <Select dark onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="USD">USD</SelectItem>
+                                                            <SelectItem value="EUR">EUR</SelectItem>
+                                                            <SelectItem value="GBP">GBP</SelectItem>
+                                                            <SelectItem value="AUD">AUD</SelectItem>
+                                                            <SelectItem value="CAD">CAD</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                </>
                             )}
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                    name="price"
-                                    control={bl.form.control}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel dark>Price *</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    {...field}
-                                                    dark
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="0.00"
-                                                    data-testid="service-price-input"
-                                                />
-                                            </FormControl>
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <FormField
-                                    name="currency"
-                                    control={bl.form.control}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel dark>Currency</FormLabel>
-                                            <Select dark onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="USD">USD</SelectItem>
-                                                    <SelectItem value="EUR">EUR</SelectItem>
-                                                    <SelectItem value="GBP">GBP</SelectItem>
-                                                    <SelectItem value="AUD">AUD</SelectItem>
-                                                    <SelectItem value="CAD">CAD</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-
-
-
                         </div>
                     )}
 
@@ -663,8 +818,27 @@ const CreateReading: React.FC<Props> = (props) => {
                         </div>
                     )}
 
-                    {/* Step 4: Intake Questionnaire (Optional) */}
-                    {bl.currentStep === 4 && (
+                    {/* Step 4: Schedule (only when requiresConsultation) */}
+                    {bl.currentStep === 4 && bl.form.watch('requiresConsultation') && (
+                        <div className="space-y-4 mt-4">
+                            <div className="mb-2">
+                                <h2 className="text-lg font-semibold">Schedule</h2>
+                                <p className="text-sm text-slate-400">
+                                    Choose when customers can book this service
+                                </p>
+                            </div>
+                            <ServiceScheduleSelector
+                                dark
+                                weekdays={bl.schedule.data?.weekdays || []}
+                                value={bl.form.watch('scheduleConfig')}
+                                onChange={(config) => bl.form.setValue('scheduleConfig', config)}
+                                consultationType={bl.form.watch('consultationType')}
+                            />
+                        </div>
+                    )}
+
+                    {/* Questions step (step 4 without consultation, step 5 with) */}
+                    {bl.currentStep === bl.totalSteps && (
                         <div className="space-y-4">
                             <QuestionBuilder
                                 dark
@@ -691,7 +865,7 @@ const CreateReading: React.FC<Props> = (props) => {
                             <div></div>
                         )}
 
-                        {bl.currentStep < 4 ? (
+                        {bl.currentStep < bl.totalSteps ? (
                             <Button
                                 type="button"
                                 onClick={bl.handleNext}

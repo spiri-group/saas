@@ -3,7 +3,7 @@ import useEditPractitionerSocials, { UpdatePractitionerSocialsSchema } from "./_
 import { useFieldArray } from "react-hook-form"
 import { useEffect } from "react"
 import { capitalize, escape_key } from "@/lib/functions"
-import { DialogContent, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog"
+import { DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog"
 import CancelDialogButton from "@/components/ux/CancelDialogButton"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
@@ -51,7 +51,7 @@ const EditPractitionerSocials: React.FC<Props> = (props) => {
     const bl = useBL(props)
 
     return (
-        <DialogContent className="w-[700px] max-w-[95vw] max-h-[90vh] overflow-y-auto" data-testid="edit-practitioner-socials-dialog">
+        <div data-testid="edit-practitioner-socials-dialog">
             <DialogHeader>
                 <h2 className="text-xl font-semibold">Social Media Links</h2>
             </DialogHeader>
@@ -112,7 +112,7 @@ const EditPractitionerSocials: React.FC<Props> = (props) => {
                 </DialogFooter>
                 </form>
             </Form>
-        </DialogContent>
+        </div>
     )
 
 }

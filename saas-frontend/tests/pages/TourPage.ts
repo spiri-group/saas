@@ -278,20 +278,9 @@ export class TourPage extends BasePage {
    * Upload tour thumbnail (Step 2)
    */
   async uploadThumbnail() {
-    // Minimal valid PNG image buffer
-    const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAYAAAB5fY51AAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAOwgAADsIBFShKgAAAABl0RVh0U29mdHdhcmUAcGFpbnQubmV0IDQuMC4xMkMEa+wAAAGfSURBVHic7dMxAQAACAOgaf+/OxODI0AisBIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLEChIrSKwgsYLECvoALPIAO/BwANgAAAAASUVORK5CYII=';
-    const pngBuffer = Buffer.from(pngBase64, 'base64');
-
-    const fileInput = this.page.locator('input[type="file"]').first();
-    await fileInput.setInputFiles({
-      name: 'test-tour-thumbnail.png',
-      mimeType: 'image/png',
-      buffer: pngBuffer,
-    });
-
-    // Wait for upload to complete
+    const { uploadTestThumbnail } = await import('../utils/test-helpers');
     console.log('[TourPage] Uploading thumbnail...');
-    await this.page.waitForTimeout(6000);
+    await uploadTestThumbnail(this.page);
     console.log('[TourPage] Thumbnail upload complete');
   }
 

@@ -5,15 +5,12 @@ import SideNav, { NavOption } from "@/components/ui/sidenav";
 import {
     LayoutDashboard,
     Sparkles,
-    Heart,
-    MessageCircle,
     Calendar,
     CalendarDays,
     Clock,
     User,
     ExternalLink,
     BookOpen,
-    ClipboardList,
     Mail,
     FileText,
     Tags,
@@ -48,6 +45,7 @@ import EditPractitionerSocials from "./Profile/Edit/Social";
 import EditPractitionerAudioIntro from "./Profile/Edit/AudioIntro";
 import EditPractitionerOracleMessage from "./Profile/Edit/OracleMessage";
 import EditPractitionerPinnedTestimonials from "./Profile/Edit/PinnedTestimonials";
+import EditListingAppearance from "../../m/_components/Profile/Edit/ListingAppearance";
 import MerchantEventsComponent from "../../m/_components/Events";
 import MerchantGalleryComponent from "../../m/_components/Gallery";
 import MerchantBankingComponent from "../../m/_components/Banking";
@@ -101,94 +99,13 @@ const useBL = (props: BLProps) => {
             href: `/p/${practitionerSlug}/manage/messages`,
             testId: "nav-messages"
         },
-        ...(features.canSellServices ? [{
-            label: "Services",
-            icon: <BookOpen className="w-5 h-5" />,
-            testId: "nav-services",
-            description: "Readings, Healings, Coaching",
-            navOptions: [
-                {
-                    icon: <Sparkles className="w-5 h-5" />,
-                    label: "New Reading",
-                    dialogId: "Create Reading",
-                    className: "w-[1000px] max-w-[95vw] h-[800px]"
-                },
-                {
-                    icon: <Heart className="w-5 h-5" />,
-                    label: "New Healing",
-                    dialogId: "Create Healing",
-                    className: "w-[870px] max-w-[95vw] h-[700px]"
-                },
-                {
-                    icon: <MessageCircle className="w-5 h-5" />,
-                    label: "New Coaching",
-                    dialogId: "Create Coaching",
-                    className: "w-[870px] max-w-[95vw] h-[700px]"
-                },
-                {
-                    type: "divider" as const,
-                    label: ""
-                },
-                {
-                    icon: <BookOpen className="w-5 h-5" />,
-                    label: "View All Services",
-                    href: `/p/${practitionerSlug}/manage/services`
-                },
-                {
-                    icon: <Sparkles className="w-5 h-5 text-purple-400" />,
-                    label: "Reading Requests",
-                    href: `/p/${practitionerSlug}/manage/readings`
-                },
-                {
-                    icon: <ClipboardList className="w-5 h-5" />,
-                    label: "Client Orders",
-                    href: `/p/${practitionerSlug}/manage/services/orders`
-                }
-            ] as NavOption[],
-        }] as NavOption[] : [] as NavOption[]),
-        ...(features.canSellServices ? [{
-            label: "Journeys",
-            icon: <Headphones className="w-5 h-5" />,
-            testId: "nav-journeys",
-            href: `/p/${practitionerSlug}/manage/journeys`,
-            description: "Audio meditations & recordings",
-        }] as NavOption[] : [] as NavOption[]),
-        {
-            label: "Schedule",
-            icon: <CalendarDays className="w-5 h-5" />,
-            testId: "nav-schedule",
-            description: features.canCreateEvents ? "Bookings, Availability, Events" : "Bookings & Availability",
-            navOptions: [
-                {
-                    icon: <Calendar className="w-5 h-5" />,
-                    label: "Bookings",
-                    href: `/p/${practitionerSlug}/manage/bookings`
-                },
-                {
-                    icon: <Clock className="w-5 h-5" />,
-                    label: "Availability",
-                    href: `/p/${practitionerSlug}/manage/availability`
-                },
-                ...(features.canCreateEvents ? [{
-                    icon: <CalendarDays className="w-5 h-5 text-purple-400" />,
-                    label: "Events",
-                    dialogId: "Manage Events",
-                    className: "w-[1000px] max-w-[95vw] h-[850px]"
-                }] : []),
-            ] as NavOption[],
-        },
         {
             label: "Profile",
             icon: <User className="w-5 h-5" />,
             testId: "nav-profile",
-            description: "Bio, Media, Reviews",
+            description: "Bio, Media, Availability",
             columns: 2,
             navOptions: [
-                {
-                    icon: <User className="w-5 h-5" />,
-                    label: "Overview",
-                    href: `/p/${practitionerSlug}/manage/profile`
-                },
                 {
                     icon: <Quote className="w-5 h-5 text-amber-400" />,
                     label: "Testimonials",
@@ -239,6 +156,11 @@ const useBL = (props: BLProps) => {
                     className: "w-[900px] max-w-[95vw]"
                 }] : []),
                 {
+                    icon: <Store className="w-5 h-5" />,
+                    label: "Directory Appearance",
+                    dialogId: "Practitioner Directory Appearance",
+                },
+                {
                     icon: <ImageIcon className="w-5 h-5" />,
                     label: "Gallery",
                     dialogId: "Practitioner Gallery",
@@ -272,7 +194,41 @@ const useBL = (props: BLProps) => {
                     dialogId: "Edit Pinned Reviews",
                     className: "w-[700px] max-w-[95vw]"
                 },
+                ...(features.canCreateEvents ? [{
+                    icon: <CalendarDays className="w-5 h-5 text-purple-400" />,
+                    label: "Events",
+                    dialogId: "Manage Events",
+                    className: "w-[1000px] max-w-[95vw] h-[850px]"
+                }] : []),
+                {
+                    type: "divider" as const,
+                    label: "Settings"
+                },
+                {
+                    icon: <Clock className="w-5 h-5" />,
+                    label: "Availability",
+                    href: `/p/${practitionerSlug}/manage/availability`
+                },
             ] as NavOption[],
+        },
+        ...(features.canSellServices ? [{
+            label: "Services",
+            icon: <BookOpen className="w-5 h-5" />,
+            testId: "nav-services",
+            href: `/p/${practitionerSlug}/manage/services`,
+        }] as NavOption[] : [] as NavOption[]),
+        ...(features.canSellServices ? [{
+            label: "Journeys",
+            icon: <Headphones className="w-5 h-5" />,
+            testId: "nav-journeys",
+            href: `/p/${practitionerSlug}/manage/journeys`,
+            description: "Audio meditations & recordings",
+        }] as NavOption[] : [] as NavOption[]),
+        {
+            label: "Bookings",
+            icon: <Calendar className="w-5 h-5" />,
+            testId: "nav-bookings",
+            href: `/p/${practitionerSlug}/manage/bookings`,
         },
         // Feature items — unlocked ones appear inline, locked ones grouped under a divider at the bottom
         ...(() => {
@@ -281,6 +237,7 @@ const useBL = (props: BLProps) => {
                 { label: "Payment Links", icon: <Receipt className="w-5 h-5" />, testId: "nav-payment-links", href: `/p/${practitionerSlug}/manage/payment-links`, dialogId: "Upgrade Payment Links", unlocked: features.hasPaymentLinks },
                 { label: "Live Assist", icon: <Radio className="w-5 h-5" />, testId: "nav-live-assist", href: `/p/${practitionerSlug}/manage/live-assist`, dialogId: "Upgrade Live Assist", unlocked: features.hasLiveAssist },
                 { label: "Expo Mode", icon: <Store className="w-5 h-5" />, testId: "nav-expo-mode", href: `/p/${practitionerSlug}/manage/expo-mode`, dialogId: "Upgrade Expo Mode", unlocked: features.hasExpoMode },
+                { label: "SpiriReadings", icon: <Sparkles className="w-5 h-5 text-purple-400" />, testId: "nav-spiri-readings", href: `/p/${practitionerSlug}/manage/readings`, dialogId: "Upgrade SpiriReadings", unlocked: features.hasSpiriReadings },
                 { label: "SpiriAssist", icon: <div className="flex items-center justify-center"><SpiriAssistLogo height={20} /></div>, testId: "nav-spiri-assist", href: `/p/${practitionerSlug}/manage/spiri-assist`, dialogId: "Upgrade SpiriAssist", unlocked: features.hasSpiriAssist },
             ];
 
@@ -344,6 +301,7 @@ const useBL = (props: BLProps) => {
 
     const dialogMapping: Record<string, (onClose: () => void) => JSX.Element> = !isNullOrUndefined(practitioner)
         ? {
+            // Create service dialogs (triggered from services page)
             "Create Reading": () => <CreateReading merchantId={practitionerId} />,
             "Create Healing": () => <CreateHealing merchantId={practitionerId} />,
             "Create Coaching": () => <CreateCoaching merchantId={practitionerId} />,
@@ -357,6 +315,7 @@ const useBL = (props: BLProps) => {
             "Edit Journey": () => <EditPractitionerJourney practitionerId={practitionerId} />,
             "Edit Video": () => <EditPractitionerVideo practitionerId={practitionerId} />,
             "Practitioner Gallery": () => <MerchantGalleryComponent merchantId={practitionerId} />,
+            "Practitioner Directory Appearance": () => <EditListingAppearance merchantId={practitionerId} thumbnailType="square" />,
             "Edit Socials": () => <EditPractitionerSocials practitionerId={practitionerId} />,
             "Edit Audio Intro": () => <EditPractitionerAudioIntro practitionerId={practitionerId} />,
             "Edit Oracle Message": () => <EditPractitionerOracleMessage practitionerId={practitionerId} />,
@@ -371,6 +330,7 @@ const useBL = (props: BLProps) => {
             "Upgrade Payment Links": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Payment Links" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Send payment links via email", "Collect payments at expos and events", "Track payment status and history"]} />,
             "Upgrade Live Assist": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Live Assist" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Go live on any platform", "Collect requests and payments in real-time", "Track revenue and session stats"]} />,
             "Upgrade Expo Mode": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="Expo Mode" targetTier="illuminate" targetTierName="Illuminate" onClose={onClose} benefits={["Create popup shops with QR codes", "Take payments at expos and markets", "Track inventory in real-time"]} />,
+            "Upgrade SpiriReadings": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="SpiriReadings" targetTier="awaken" targetTierName="Awaken" onClose={onClose} benefits={["Claim and fulfill reading requests from the community", "Earn payouts for tarot, astrology, and oracle readings", "Build your reputation with client reviews"]} />,
             "Upgrade SpiriAssist": (onClose) => <FeatureUpgradeDialog vendorId={practitionerId} featureName="SpiriAssist" targetTier="directory" targetTierName="Directory" onClose={onClose} benefits={["Browse and apply to paranormal cases", "Submit proposals with your own pricing", "Manage investigations end-to-end"]} />,
         }
         : {};

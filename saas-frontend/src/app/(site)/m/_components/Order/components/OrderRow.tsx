@@ -40,10 +40,10 @@ const OrderRow : React.FC<Props> = (props) => {
     return (  
         <>
             <div className="hidden md:block">
-            <Card className="flex flex-col">
+            <Card data-testid={`order-card-${props.order.code}`} className="flex flex-col">
                 <CardHeader className="flex flex-row items-center">
                     <div className="flex flex-row space-x-2">
-                        <span>{props.order.code}</span>
+                        <span data-testid={`order-code-${props.order.code}`}>{props.order.code}</span>
                         <span>-</span>
                         <HoverCard>
                             <HoverCardTrigger asChild>

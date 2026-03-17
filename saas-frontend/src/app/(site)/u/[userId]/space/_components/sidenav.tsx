@@ -108,6 +108,14 @@ const useBL = () => {
             });
         }
 
+        // Journey Reflections - always available (not gated on interest)
+        journalNavOptions.push({
+            icon: <Headphones className="w-5 h-5" />,
+            label: "Journeys",
+            href: `/u/${userId}/space/journal/journeys`,
+            testId: "journal-journeys-nav"
+        });
+
         // Only add Journal as expandable item if there are journal types
         if (journalNavOptions.length > 0) {
             navOptions.push({

@@ -134,11 +134,20 @@ export class MerchantSetupPage extends BasePage {
     });
     await userSetupPage.setupBusiness();
 
-    // ── Step 5: ChoosePlanStep → select "manifest" (Merchant) tier ──
+    // ── Step 5: ChoosePlanStep → select "I'm a merchant" path, then Manifest tier ──
     await expect(this.page.locator('[data-testid="choose-plan-step"]')).toBeVisible({ timeout: 10000 });
+
+    // First: select the merchant path
+    const merchantPath = this.page.locator('[data-testid="path-option-merchant"]');
+    await expect(merchantPath).toBeVisible({ timeout: 10000 });
+    await merchantPath.click();
+    console.log('[MerchantSetup] Selected "I\'m a merchant" path');
+
+    // Then: select the Manifest tier
     const manifestCard = this.page.locator('[data-testid="tier-card-manifest"]');
     await expect(manifestCard).toBeVisible({ timeout: 10000 });
     await manifestCard.click();
+    console.log('[MerchantSetup] Selected Manifest tier');
 
     const planContinueBtn = this.page.locator('[data-testid="plan-continue-btn"]');
     await expect(planContinueBtn).toBeEnabled({ timeout: 5000 });
@@ -159,7 +168,17 @@ export class MerchantSetupPage extends BasePage {
     await expect(submitBtn).toBeEnabled({ timeout: 5000 });
     await submitBtn.click();
 
-    // ── Step 8: AlsoPractitionerStep → click "No" ──
+    // ── Step 8: CardCaptureStep → skip card capture ──
+    // The card form loads Stripe asynchronously and may show an error state.
+    // Both states have a "Skip for now" link — wait for either to appear.
+    const skipBtn = this.page.locator('[data-testid="card-capture-skip-btn"]');
+    const skipLink = this.page.locator('button:has-text("Skip for now"), a:has-text("Skip for now")');
+    await expect(skipBtn.or(skipLink).first()).toBeVisible({ timeout: 20000 });
+    await (skipBtn.or(skipLink)).first().click();
+    console.log('[MerchantSetup] Skipped card capture');
+    await this.page.waitForTimeout(2000);
+
+    // ── Step 9: AlsoPractitionerStep → click "No" ──
     const noBtn = this.page.locator('[data-testid="setup-also-practitioner-no"]');
     await expect(noBtn).toBeVisible({ timeout: 10000 });
     await noBtn.click();

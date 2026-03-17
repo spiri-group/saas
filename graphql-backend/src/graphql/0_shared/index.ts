@@ -12,56 +12,152 @@ import pluralize from "pluralize";
 
 const resolvers = {
     Query: {
-        search: async (_: any, args: { source: "merchants" | "listings", term: string, offset: number, limit: number}, { dataSources: { cosmos }}: serverContext, __: any) => {
+        search: async (_: any, args: { source: "merchants" | "listings" | "practitioners" | "all", term: string, offset: number, limit: number}, { dataSources: { cosmos }}: serverContext, __: any) => {
             const searchTerm = args.term.toLowerCase();
-        
-            const merchantsQuery = args.source === "merchants" ? cosmos.run_query("Main-Vendor", {
+            const isAll = args.source === "all";
+
+            // For "all" mode, over-fetch from each source then rank and paginate in JS
+            const dataOffset = isAll ? 0 : args.offset;
+            const dataLimit = isAll ? args.offset + args.limit : args.limit;
+
+            const practitionersQuery = (args.source === "practitioners" || isAll) ? cosmos.run_query("Main-Vendor", {
                 query: `
-                    SELECT DISTINCT 
+                    SELECT DISTINCT
                         c.id,
                         c.name AS title,
                         c.id as vendorId,
+                        c.slug,
                         c.thumbnail as thumbnail,
-                        'company profile' AS additionalInfo
+                        c.practitioner.headline as headline,
+                        'practitioner' AS additionalInfo
                     FROM c
                     WHERE
-                        c.thumbnail != null
+                        c.docType = 'PRACTITIONER'
                         AND c.status = 'ACTIVE'
+                        AND IS_DEFINED(c.publishedAt)
                         AND (
                             CONTAINS(LOWER(c.name), @search) OR
-        
+                            CONTAINS(LOWER(c.practitioner.headline), @search) OR
+                            CONTAINS(LOWER(c.practitioner.bio), @search) OR
+
                             EXISTS (
-                                SELECT VALUE d FROM d IN c.descriptions 
-                                WHERE CONTAINS(LOWER(d.title), @search) OR CONTAINS(LOWER(d.body), @search)
+                                SELECT VALUE m FROM m IN c.practitioner.modalities
+                                WHERE CONTAINS(LOWER(m), @search)
                             ) OR
-        
+
                             EXISTS (
-                                SELECT VALUE l FROM l IN c.locations 
-                                WHERE CONTAINS(LOWER(l.address.formattedAddress), @search) OR
-                                    EXISTS (
-                                        SELECT VALUE s FROM s IN l.services 
-                                        WHERE CONTAINS(LOWER(s), @search)
-                                    )
+                                SELECT VALUE s FROM s IN c.practitioner.specializations
+                                WHERE CONTAINS(LOWER(s), @search)
+                            ) OR
+
+                            EXISTS (
+                                SELECT VALUE cs FROM cs IN c.practitioner.customSpecializations
+                                WHERE CONTAINS(LOWER(cs), @search)
+                            ) OR
+
+                            EXISTS (
+                                SELECT VALUE g FROM g IN c.practitioner.gifts
+                                WHERE CONTAINS(LOWER(g), @search)
                             )
                         )
-                    OFFSET @offset 
+                    OFFSET @offset
                     LIMIT @limit
                 `,
                 parameters: [
                     { name: "@search", value: searchTerm },
-                    { name: "@offset", value: args.offset },
-                    { name: "@limit", value: args.limit }
+                    { name: "@offset", value: dataOffset },
+                    { name: "@limit", value: dataLimit }
                 ]
             }, true) : Promise.resolve([]);
-        
-            const listingsQuery = args.source === "listings" ? cosmos.run_query("Main-Listing", {
+
+            const practitionerCountQuery = (args.source === "practitioners" || isAll) ? cosmos.run_query("Main-Vendor", {
+                query: `
+                    SELECT VALUE COUNT(1) FROM c
+                    WHERE
+                        c.docType = 'PRACTITIONER'
+                        AND c.status = 'ACTIVE'
+                        AND IS_DEFINED(c.publishedAt)
+                        AND (
+                            CONTAINS(LOWER(c.name), @search) OR
+                            CONTAINS(LOWER(c.practitioner.headline), @search) OR
+                            CONTAINS(LOWER(c.practitioner.bio), @search) OR
+
+                            EXISTS (
+                                SELECT VALUE m FROM m IN c.practitioner.modalities
+                                WHERE CONTAINS(LOWER(m), @search)
+                            ) OR
+
+                            EXISTS (
+                                SELECT VALUE s FROM s IN c.practitioner.specializations
+                                WHERE CONTAINS(LOWER(s), @search)
+                            ) OR
+
+                            EXISTS (
+                                SELECT VALUE cs FROM cs IN c.practitioner.customSpecializations
+                                WHERE CONTAINS(LOWER(cs), @search)
+                            ) OR
+
+                            EXISTS (
+                                SELECT VALUE g FROM g IN c.practitioner.gifts
+                                WHERE CONTAINS(LOWER(g), @search)
+                            )
+                        )
+                `,
+                parameters: [
+                    { name: "@search", value: searchTerm }
+                ]
+            }, true) : Promise.resolve([0]);
+
+            const merchantsQuery = (args.source === "merchants" || isAll) ? cosmos.run_query("Main-Vendor", {
+                query: `
+                    SELECT DISTINCT
+                        c.id,
+                        c.name AS title,
+                        c.id as vendorId,
+                        c.thumbnail as thumbnail,
+                        c.docType as vendorDocType,
+                        'merchant' AS additionalInfo
+                    FROM c
+                    WHERE
+                        c.thumbnail != null
+                        AND c.status = 'ACTIVE'
+                        AND IS_DEFINED(c.publishedAt)
+                        AND (
+                            CONTAINS(LOWER(c.name), @search) OR
+
+                            EXISTS (
+                                SELECT VALUE d FROM d IN c.descriptions
+                                WHERE CONTAINS(LOWER(d.title), @search) OR CONTAINS(LOWER(d.body), @search)
+                            ) OR
+
+                            EXISTS (
+                                SELECT VALUE l FROM l IN c.locations
+                                WHERE CONTAINS(LOWER(l.address.formattedAddress), @search) OR
+                                    EXISTS (
+                                        SELECT VALUE s FROM s IN l.services
+                                        WHERE CONTAINS(LOWER(s), @search)
+                                    )
+                            )
+                        )
+                    OFFSET @offset
+                    LIMIT @limit
+                `,
+                parameters: [
+                    { name: "@search", value: searchTerm },
+                    { name: "@offset", value: dataOffset },
+                    { name: "@limit", value: dataLimit }
+                ]
+            }, true) : Promise.resolve([]);
+
+            const listingsQuery = (args.source === "listings" || isAll) ? cosmos.run_query("Main-Listing", {
                 query: `
                     SELECT
                         l.id,
                         l.name AS title,
                         l.vendorId as vendorId,
                         l.thumbnail as thumbnail,
-                        'product page' AS additionalInfo,
+                        l.type as listingType,
+                        l.slug as listingSlug,
                         l.preview as decription
                     FROM l
                     WHERE
@@ -69,18 +165,18 @@ const resolvers = {
                         AND l.status = 'ACTIVE'
                         AND l.vendorId <> 'spiriverse'
                         AND (NOT IS_DEFINED(l.docType) OR l.docType != 'CRYSTAL_LISTING')
+                        AND (l.type NOT IN ('PRODUCT', 'JOURNEY') OR l.isLive = true)
                     ORDER BY l.displayScore DESC
                     OFFSET @offset LIMIT @limit
                 `,
                 parameters: [
                     { name: "@search", value: pluralize.singular(searchTerm) },
-                    { name: "@offset", value: args.offset },
-                    { name: "@limit", value: args.limit }
+                    { name: "@offset", value: dataOffset },
+                    { name: "@limit", value: dataLimit }
                 ]
             }, true) : Promise.resolve([]);
 
-            // Query crystal listings separately
-            const crystalListingsQuery = args.source === "listings" ? cosmos.run_query("Main-Listing", {
+            const crystalListingsQuery = (args.source === "listings" || isAll) ? cosmos.run_query("Main-Listing", {
                 query: `
                     SELECT
                         l.id,
@@ -101,30 +197,31 @@ const resolvers = {
                 `,
                 parameters: [
                     { name: "@search", value: pluralize.singular(searchTerm) },
-                    { name: "@offset", value: args.offset },
-                    { name: "@limit", value: args.limit }
+                    { name: "@offset", value: dataOffset },
+                    { name: "@limit", value: dataLimit }
                 ]
             }, true) : Promise.resolve([]);
-            
-            const merchantCountQuery = args.source === "merchants" ? cosmos.run_query("Main-Vendor", {
+
+            const merchantCountQuery = (args.source === "merchants" || isAll) ? cosmos.run_query("Main-Vendor", {
                 query: `
                     SELECT VALUE COUNT(1) FROM c
-                    WHERE 
+                    WHERE
                         c.thumbnail != null
                         AND c.status = 'ACTIVE'
+                        AND IS_DEFINED(c.publishedAt)
                         AND (
                             CONTAINS(LOWER(c.name), @search) OR
-        
+
                             EXISTS (
-                                SELECT VALUE d FROM d IN c.descriptions 
+                                SELECT VALUE d FROM d IN c.descriptions
                                 WHERE CONTAINS(LOWER(d.title), @search) OR CONTAINS(LOWER(d.body), @search)
                             ) OR
-        
+
                             EXISTS (
-                                SELECT VALUE l FROM l IN c.locations 
+                                SELECT VALUE l FROM l IN c.locations
                                 WHERE CONTAINS(LOWER(l.address.formattedAddress), @search) OR
                                     EXISTS (
-                                        SELECT VALUE s FROM s IN l.services 
+                                        SELECT VALUE s FROM s IN l.services
                                         WHERE CONTAINS(LOWER(s), @search)
                                     )
                             )
@@ -134,28 +231,54 @@ const resolvers = {
                     { name: "@search", value: searchTerm }
                 ]
             }, true) : Promise.resolve([0]);
-        
-            const listingCountQuery = args.source === "listings" ? cosmos.run_query("Main-Listing", {
+
+            const listingCountQuery = (args.source === "listings" || isAll) ? cosmos.run_query("Main-Listing", {
                 query: `
                     SELECT VALUE COUNT(1) FROM l
-                    WHERE 
+                    WHERE
                         CONTAINS(LOWER(l.name), @search)
                         AND l.status = 'ACTIVE'
+                        AND (l.type NOT IN ('PRODUCT', 'JOURNEY') OR l.isLive = true)
                 `,
                 parameters: [
                     { name: "@search", value: pluralize.singular(searchTerm) }
                 ]
             }, true) : Promise.resolve([0]);
-        
-            const [merchantsData, listingsData, crystalListingsData, merchantCount, listingCount] = await Promise.all([
-                merchantsQuery, listingsQuery, crystalListingsQuery, merchantCountQuery, listingCountQuery
+
+            const [merchantsData, listingsData, crystalListingsData, practitionersData, merchantCount, listingCount, practitionerCount] = await Promise.all([
+                merchantsQuery, listingsQuery, crystalListingsQuery, practitionersQuery, merchantCountQuery, listingCountQuery, practitionerCountQuery
             ]);
 
-            const data = [...merchantsData, ...listingsData, ...crystalListingsData];
-            const grand_total = merchantCount[0] + listingCount[0];
-        
-            const product_ids = data.filter(x => x.additionalInfo == "product page").map(x => x.id);
-        
+            let data: any[] = [...merchantsData, ...listingsData, ...crystalListingsData, ...practitionersData];
+            const grand_total = merchantCount[0] + listingCount[0] + practitionerCount[0];
+
+            // For "all" mode: score by relevance, sort, then paginate
+            if (isAll) {
+                data.forEach(x => {
+                    let score = 0;
+                    const title = (x.title || '').toLowerCase();
+
+                    // Title match quality (highest weight)
+                    if (title === searchTerm) score += 20;
+                    else if (title.startsWith(searchTerm)) score += 15;
+                    else if (title.includes(searchTerm)) score += 10;
+
+                    // Practitioner headline match
+                    if (x.headline && x.headline.toLowerCase().includes(searchTerm)) score += 5;
+
+                    // If nothing matched on returned fields, it matched on a secondary field
+                    // (bio, description, location, modalities, etc.) — still relevant but lower
+                    if (score === 0) score = 2;
+
+                    x._relevance = score;
+                });
+
+                data.sort((a, b) => b._relevance - a._relevance);
+                data = data.slice(args.offset, args.offset + args.limit);
+            }
+
+            const product_ids = data.filter(x => x.listingType === 'PRODUCT').map(x => x.id);
+
             const [prices, vendors] = await Promise.all([
                 cosmos.run_query<{
                     listingId: string,
@@ -163,7 +286,7 @@ const resolvers = {
                     defaultPrice: currency_amount_type
                 }>("Main-Listing", {
                     query: `
-                        SELECT 
+                        SELECT
                             l.id as listingId,
                             v.id as variantId,
                             v.defaultPrice
@@ -175,33 +298,35 @@ const resolvers = {
                 }, true),
                 cosmos.run_query("Main-Vendor", {
                     query: `
-                        SELECT c.id, c.slug FROM c
+                        SELECT c.id, c.slug, c.docType FROM c
                         WHERE ARRAY_CONTAINS(@ids, c.id)
                     `,
                     parameters: [{ name: "@ids", value: distinct(data.map(x => x.vendorId)) }]
                 }, true)
             ]);
-        
+
             const prices_map = prices.reduce((acc, x) => {
                 if (acc[x.listingId] == null || x.defaultPrice.amount < acc[x.listingId].amount) {
                     acc[x.listingId] = x.defaultPrice;
                 }
                 return acc;
             }, {} as Record<string, currency_amount_type>);
-        
+
             const vendors_to_slug_map = vendors.reduce((acc, x) => {
-                acc[x.id] = x.slug;
+                acc[x.id] = { slug: x.slug, docType: x.docType };
                 return acc;
-            }, {} as Record<string, string>);
-        
+            }, {} as Record<string, { slug: string, docType: string }>);
+
             data.forEach((x) => {
-                if (x.additionalInfo == "product page") {
-                    x.price = prices_map[x.id] || null;
-                    x.link = `/m/${vendors_to_slug_map[x.vendorId]}/product/${x.id}`;
+                const vendor = vendors_to_slug_map[x.vendorId];
+                const vendorSlug = vendor?.slug;
+                const docType = x.vendorDocType || vendor?.docType;
+                const prefix = docType === 'PRACTITIONER' ? '/p' : '/m';
+
+                if (x.additionalInfo == "practitioner") {
+                    x.link = `/p/${x.slug}`;
                 } else if (x.additionalInfo == "crystal listing") {
-                    // Crystal listings already have price from query, link to crystal page
-                    x.link = `/m/${vendors_to_slug_map[x.vendorId]}/crystal/${x.id}`;
-                    // Transform simple thumbnail URL to complex thumbnail object format
+                    x.link = `/m/${vendorSlug}/crystal/${x.id}`;
                     if (typeof x.thumbnail === "string") {
                         x.thumbnail = {
                             image: {
@@ -211,19 +336,49 @@ const resolvers = {
                             bgColor: "#ffffff"
                         };
                     } else if (x.thumbnail == null) {
-                        // Create a default thumbnail for crystal listings without images
                         x.thumbnail = {
                             image: null,
                             bgColor: "#f8fafc"
                         };
                     }
-                } else if (x.additionalInfo == "company profile") {
-                    x.link = `/m/${vendors_to_slug_map[x.vendorId]}`;
+                } else if (x.additionalInfo == "merchant") {
+                    x.link = `${prefix}/${vendorSlug}`;
+                } else if (x.listingType) {
+                    switch (x.listingType) {
+                        case 'PRODUCT':
+                            x.additionalInfo = 'product';
+                            x.price = prices_map[x.id] || null;
+                            x.link = `${prefix}/${vendorSlug}/product/${x.id}`;
+                            break;
+                        case 'SERVICE':
+                            x.additionalInfo = 'service';
+                            x.link = `${prefix}/${vendorSlug}/services/${x.listingSlug || x.id}`;
+                            break;
+                        case 'TOUR':
+                            x.additionalInfo = 'tour';
+                            x.link = `${prefix}/${vendorSlug}/tour/${x.id}`;
+                            break;
+                        case 'JOURNEY':
+                            x.additionalInfo = 'journey';
+                            x.link = `${prefix}/${vendorSlug}/journey/${x.id}`;
+                            break;
+                        default:
+                            x.link = undefined;
+                            break;
+                    }
                 } else {
                     x.link = undefined;
                 }
+
+                // Clean up temp fields
+                delete x.listingType;
+                delete x.listingSlug;
+                delete x.vendorDocType;
+                delete x.slug;
+                delete x.headline;
+                delete x._relevance;
             });
-        
+
             return {
                 results: data,
                 hasMore: args.offset + data.length < grand_total,

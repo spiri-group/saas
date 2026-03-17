@@ -363,7 +363,7 @@ const resolvers = {
                         paid_status_log: [],
                         refund_request_log: [],
                         stripe: {},
-                        target: line.target,
+                        target: line.target ?? args.target,
                         merchantId: args.merchantId ?? line.merchantId,
                         // Service-specific fields (from optional service input)
                         ...(line.service && {
@@ -385,8 +385,9 @@ const resolvers = {
             }
 
             // now that each line has a for object we can
-            // assign the relevant tax code
+            // assign the relevant tax code (skip lines with "inherit" — e.g. case invoice lines)
             for (var line of order.lines) {
+                if (line.forObject === "inherit") continue;
                 const forObjectRef = line.forObject as recordref_type
                 const tax_code = await context.dataSources.cosmos.get_scalar<{ tax_code: string }>("Main-Listing", "vendorId", "stripe.tax_code as tax_code", forObjectRef.id, forObjectRef.partition)
                 if (tax_code) {
@@ -2177,23 +2178,8 @@ const resolvers = {
             if (parent.linesRequiringPayment.length == 0) return null;
             const userResult = await context.dataSources.cosmos.get_scalar<{ currency: string }>("Main-User", "id", "currency", context.userId, context.userId);
             const currency = userResult?.currency || "USD";
-            const defaultAddress = await context.dataSources.cosmos.run_query<stripeplace_type>("Main-User", {
-                query: `
-                    SELECT VALUE a.address.components 
-                    FROM c 
-                    JOIN a on c.addresses
-                    WHERE a.isDefault = true
-                    AND c.id = @id
-                `, parameters: [
-                    { name: "@id", value: context.userId }
-                ]
-            }, true)
-            if (defaultAddress.length == 0) {
-                throw new Error("No default address found for user, unable to determine tax rate and what is due")
-            }
-
             const estimate = await estimate_order(parent.linesRequiringPayment, currency, context);
-            
+
             return estimate;
         },
         currency: (parent: { currency: string, payments: order_payment_type[] }, _: any, __: serverContext) => {
@@ -2576,6 +2562,9 @@ const estimate_order = async (
     lines: orderLine_type[],
     customerCurrency: string,
     { dataSources: { cosmos, exchangeRate }} : serverContext) => {
+        // Ensure price is restored from price_log on all lines before estimating
+        restore_price_on_lines(lines);
+
         const user_currency = customerCurrency
             
         if (lines.length === 0) {
@@ -2690,7 +2679,10 @@ export const restore_price_on_lines = (lines: orderLine_type[]) => {
 export const restore_target_on_line = async (line: orderLine_type, cosmosClient: serverContext["dataSources"]["cosmos"]) => {
     if (!isNullOrUndefined(line.target)) return; // target is already restored
     if (line.merchantId === "SPIRIVERSE") return "NO-FEES"
-    
+
+    // skip lines without forObject (e.g. raw input lines for case invoices)
+    if (isNullOrUndefined(line.forObject)) return;
+
     // if the line is set to inherit, we throw an error as this needs to be restored first
     if (line.forObject == "inherit") {
         throw new Error("For object is not restored on the line")

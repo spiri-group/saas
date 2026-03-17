@@ -1,7 +1,7 @@
 import useFormStatus from "@/components/utils/UseFormStatus"
 import useEditPractitionerModalities, { EditPractitionerModalitiesSchema } from "./_hooks/UseEditPractitionerModalities"
 import { escape_key } from "@/lib/functions"
-import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import CancelDialogButton from "@/components/ux/CancelDialogButton"
 import { Button } from "@/components/ui/button"
@@ -38,16 +38,14 @@ const EditPractitionerModalities: React.FC<Props> = (props) => {
 
     if (bl.isLoading || !bl.hasLoaded) {
         return (
-            <DialogContent className="w-[600px]" data-testid="edit-practitioner-modalities-dialog">
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-                </div>
-            </DialogContent>
+            <div className="flex items-center justify-center py-12" data-testid="edit-practitioner-modalities-dialog">
+                <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            </div>
         )
     }
 
     return (
-        <DialogContent className="w-[600px] max-h-[90vh] overflow-y-auto" data-testid="edit-practitioner-modalities-dialog">
+        <div data-testid="edit-practitioner-modalities-dialog">
             <DialogHeader>
                 <DialogTitle>Edit Modalities &amp; Specializations</DialogTitle>
                 <DialogDescription>
@@ -129,7 +127,7 @@ const EditPractitionerModalities: React.FC<Props> = (props) => {
                     </DialogFooter>
                 </form>
             </Form>
-        </DialogContent>
+        </div>
     )
 }
 

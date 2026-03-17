@@ -519,86 +519,15 @@ export default function PractitionerAvailabilityUI({ session, practitionerId, sl
                                 </CardContent>
                             </Card>
 
-                            <Card className="bg-slate-800/30 border-slate-700/50">
+                            <Card className="bg-slate-800/30 border-slate-700/50 opacity-60">
                                 <CardHeader>
                                     <CardTitle className="text-white flex items-center gap-2">
-                                        <Car className="w-5 h-5 text-purple-400" />
+                                        <Car className="w-5 h-5 text-slate-500" />
                                         Mobile Service
+                                        <span className="text-xs font-normal bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full ml-2">Coming Soon</span>
                                     </CardTitle>
-                                    <CardDescription>You travel to the customer&apos;s location</CardDescription>
+                                    <CardDescription>You travel to the customer&apos;s location — this feature is being built</CardDescription>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="mobile-enabled" className="text-white">Enable mobile service</Label>
-                                        <Switch
-                                            id="mobile-enabled"
-                                            checked={deliveryMethods.mobile.enabled}
-                                            onCheckedChange={checked =>
-                                                setDeliveryMethods(prev => ({
-                                                    ...prev,
-                                                    mobile: { ...prev.mobile, enabled: checked },
-                                                }))
-                                            }
-                                            data-testid="toggle-mobile-delivery"
-                                        />
-                                    </div>
-                                    {deliveryMethods.mobile.enabled && (
-                                        <>
-                                            <div>
-                                                <Label htmlFor="service-radius" className="text-slate-300">
-                                                    Service Radius (km)
-                                                </Label>
-                                                <Input
-                                                    id="service-radius"
-                                                    type="number"
-                                                    min={1}
-                                                    max={100}
-                                                    value={deliveryMethods.mobile.serviceRadiusKm || 25}
-                                                    onChange={e =>
-                                                        setDeliveryMethods(prev => ({
-                                                            ...prev,
-                                                            mobile: {
-                                                                ...prev.mobile,
-                                                                serviceRadiusKm: parseInt(e.target.value) || 25,
-                                                            },
-                                                        }))
-                                                    }
-                                                    className="mt-2 w-32 bg-slate-800 border-slate-600 text-white"
-                                                    data-testid="service-radius-input"
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label htmlFor="travel-surcharge" className="text-slate-300">
-                                                    Travel Surcharge ($)
-                                                </Label>
-                                                <Input
-                                                    id="travel-surcharge"
-                                                    type="number"
-                                                    min={0}
-                                                    step={5}
-                                                    value={deliveryMethods.mobile.travelSurcharge?.amount || 0}
-                                                    onChange={e =>
-                                                        setDeliveryMethods(prev => ({
-                                                            ...prev,
-                                                            mobile: {
-                                                                ...prev.mobile,
-                                                                travelSurcharge: {
-                                                                    amount: parseFloat(e.target.value) || 0,
-                                                                    currency: "USD",
-                                                                },
-                                                            },
-                                                        }))
-                                                    }
-                                                    className="mt-2 w-32 bg-slate-800 border-slate-600 text-white"
-                                                    data-testid="travel-surcharge-input"
-                                                />
-                                                <p className="text-xs text-slate-500 mt-1">
-                                                    Additional charge for travel. Set to 0 for no surcharge.
-                                                </p>
-                                            </div>
-                                        </>
-                                    )}
-                                </CardContent>
                             </Card>
                         </TabsContent>
 
@@ -659,21 +588,7 @@ export default function PractitionerAvailabilityUI({ session, practitionerId, sl
                                     <CardDescription>Configure how customers can book with you</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div>
-                                            <Label htmlFor="buffer" className="text-slate-300">Buffer Between Sessions (min)</Label>
-                                            <Input
-                                                id="buffer"
-                                                type="number"
-                                                min={0}
-                                                max={60}
-                                                value={bufferMinutes}
-                                                onChange={e => setBufferMinutes(parseInt(e.target.value) || 15)}
-                                                className="mt-2 bg-slate-800 border-slate-600 text-white"
-                                                data-testid="buffer-minutes-input"
-                                            />
-                                            <p className="text-xs text-slate-500 mt-1">Time between appointments</p>
-                                        </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <Label htmlFor="advance" className="text-slate-300">Advance Booking (days)</Label>
                                             <Input

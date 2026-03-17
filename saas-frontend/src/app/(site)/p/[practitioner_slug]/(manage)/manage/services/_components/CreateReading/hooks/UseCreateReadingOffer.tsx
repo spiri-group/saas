@@ -83,6 +83,8 @@ interface CreateReadingOfferSchema {
   deliveryFormat: string;
   price: string;
   currency: string;
+  durationAmount: number;
+  durationUnit: string;
   turnaroundDays: number;
   includePullCardSummary: boolean;
   includeVoiceNote: boolean;
@@ -90,7 +92,13 @@ interface CreateReadingOfferSchema {
   questionnaire?: ServiceQuestion[];
   targetTimezones?: string[];
   requiresConsultation: boolean;
+  consultationType: 'ONLINE' | 'IN_PERSON';
   scheduleId?: string;
+  scheduleConfig: {
+    useAllSlots: boolean;
+    selectedSlotIds: string[];
+    bufferMinutes: number;
+  };
 }
 
 export type ExistingServiceData = {
@@ -98,6 +106,12 @@ export type ExistingServiceData = {
   name: string;
   category: string;
   deliveryMode: string;
+  consultationType?: string;
+  scheduleConfig?: {
+    useAllSlots: boolean;
+    selectedSlotIds?: string[];
+    bufferMinutes: number;
+  };
   description: string;
   thumbnail?: any;
   pricing?: {
@@ -105,6 +119,7 @@ export type ExistingServiceData = {
     fixedPrice?: { amount: number; currency: string };
   };
   turnaroundDays?: number;
+  duration?: { amount: number; unit: { id: string; defaultLabel: string } };
   deliveryFormats?: { format: string }[];
   targetTimezones?: string[];
   questionnaire?: {
@@ -211,6 +226,8 @@ export const useCreateReadingOffer = (merchantId: string, editingService?: Exist
       deliveryFormat: editingService.deliveryFormats?.[0]?.format || 'RECORDED_VIDEO',
       price: editingService.pricing?.fixedPrice ? String(editingService.pricing.fixedPrice.amount / 100) : '',
       currency: editingService.pricing?.fixedPrice?.currency || 'AUD',
+      durationAmount: editingService.duration?.amount || 30,
+      durationUnit: editingService.duration?.unit?.id || 'minute',
       turnaroundDays: editingService.turnaroundDays || 3,
       includePullCardSummary: editingService.readingOptions?.includePullCardSummary || false,
       includeVoiceNote: editingService.readingOptions?.includeVoiceNote || false,
@@ -218,7 +235,17 @@ export const useCreateReadingOffer = (merchantId: string, editingService?: Exist
       questionnaire: mapQuestionnaireFromApi(editingService.questionnaire),
       targetTimezones: editingService.targetTimezones || [],
       requiresConsultation: editingService.deliveryMode === 'SYNC',
+      consultationType: (editingService.consultationType as 'ONLINE' | 'IN_PERSON') || 'ONLINE',
       scheduleId: undefined,
+      scheduleConfig: editingService.scheduleConfig ? {
+        useAllSlots: editingService.scheduleConfig.useAllSlots,
+        selectedSlotIds: editingService.scheduleConfig.selectedSlotIds || [],
+        bufferMinutes: editingService.scheduleConfig.bufferMinutes,
+      } : {
+        useAllSlots: true,
+        selectedSlotIds: [],
+        bufferMinutes: 15,
+      },
     } : {
       id: uuidv4(),
       merchantId,
@@ -235,12 +262,20 @@ export const useCreateReadingOffer = (merchantId: string, editingService?: Exist
       deliveryFormat: 'RECORDED_VIDEO',
       price: '',
       currency: 'AUD',
+      durationAmount: 30,
+      durationUnit: 'minute',
       turnaroundDays: 3,
       includePullCardSummary: false,
       includeVoiceNote: false,
       targetTimezones: [],
       requiresConsultation: false,
+      consultationType: 'ONLINE' as const,
       scheduleId: undefined,
+      scheduleConfig: {
+        useAllSlots: true,
+        selectedSlotIds: [],
+        bufferMinutes: 15,
+      },
       questionnaire: []
     }
   });
@@ -266,12 +301,19 @@ export const useCreateReadingOffer = (merchantId: string, editingService?: Exist
             currency: data.currency
           }
         },
+        duration: data.requiresConsultation ? { amount: data.durationAmount, unitId: data.durationUnit } : undefined,
         turnaroundDays: data.requiresConsultation ? undefined : parseInt(String(data.turnaroundDays), 10),
         deliveryFormats: data.requiresConsultation ? undefined : [data.deliveryFormat],
         thumbnail,
         targetTimezones: data.targetTimezones,
         requiresConsultation: data.requiresConsultation,
+        consultationType: data.requiresConsultation ? data.consultationType : undefined,
         scheduleId: data.scheduleId,
+        scheduleConfig: data.requiresConsultation ? {
+          useAllSlots: data.scheduleConfig.useAllSlots,
+          selectedSlotIds: data.scheduleConfig.useAllSlots ? [] : data.scheduleConfig.selectedSlotIds,
+          bufferMinutes: data.scheduleConfig.bufferMinutes,
+        } : undefined,
         questionnaire: (data.questionnaire || []).map(q => ({
           id: q.id,
           question: q.question,

@@ -19,8 +19,8 @@
     "test:mobile": "playwright test --project='Mobile Chrome' --project='Mobile Safari'",
     "test:report": "playwright show-report",
     "test:codegen": "playwright codegen localhost:3000",
-    "test:e2e": "playwright test tests/e2e/ --reporter=list",
-    "test:grep": "playwright test --reporter=list --project=chromium --grep",
+    "test:e2e": "playwright test tests/e2e/",
+    "test:grep": "playwright test --project=chromium --grep",
     "test:remote": "cross-env playwright test --reporter=list --project=chromium --grep",
     "test:remote:headed": "cross-env playwright test --headed --project=chromium --grep"
   },
