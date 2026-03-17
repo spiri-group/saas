@@ -16,14 +16,33 @@ export const SignIn = () => {
   const queryClient = useQueryClient();
   const { update } = useSession();
 
-  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [showEmailInput, setShowEmailInput] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !!localStorage.getItem('sv_login_email');
+    }
+    return false;
+  });
   const [otpCaptureActive, setOtpCaptureActive] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
   const [otpValidating, setOtpValidating] = useState(false);
   const [isValid, setIsValid] = useState(false);
 
-  const [email, setEmail] = useState<string | null>(null);
+  const [email, setEmailState] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sv_login_email') || null;
+    }
+    return null;
+  });
+
+  const setEmail = (value: string | null) => {
+    setEmailState(value);
+    if (typeof window !== 'undefined') {
+      if (value) {
+        localStorage.setItem('sv_login_email', value);
+      }
+    }
+  };
   const [, setOtp] = useState<string>("");
   const [otpKey, setOtpKey] = useState(0); // Key to force OTP input reset
 
@@ -303,6 +322,7 @@ export const SignIn = () => {
             placeholder="Enter your email"
             autoComplete="email"
             glass={false}
+            defaultValue={email || ''}
             onChange={(ev) => setEmail(ev.target.value)}
             data-testid="signin-email-input"
           />
