@@ -55,8 +55,9 @@ export const tour_resolvers = {
                 }));
 
                 // Create tour document
-                const tour: tour_type = {
+                const tour: tour_type & { vendorId: string } = {
                     id: tourInput.id,
+                    vendorId: merchantId,
                     type: ListingTypes.TOUR,
                     name: tourInput.name,
                     description: tourInput.description,
@@ -93,20 +94,8 @@ export const tour_resolvers = {
                 await context.dataSources.cosmos.upsert_record("Main-Listing", tour.id, tour, merchantId);
 
                 // Send email notification (optional)
-                try {
-                    await context.dataSources.email.sendEmail(
-                        "noreply@spiriverse.com",
-                        context.userId,
-                        "TOUR_CREATED_MERCHANT",
-                        {
-                            tourName: tour.name,
-                            tourId: tour.id,
-                            ticketCount: ticketVariants.length
-                        }
-                    );
-                } catch (emailError) {
-                    console.error("Failed to send tour creation email:", emailError);
-                }
+                // Email notification skipped — context.userId is a UUID, not an email address
+                // TODO: resolve user email from userId before sending
 
                 return {
                     code: "200",

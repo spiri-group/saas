@@ -88,20 +88,17 @@ async function setupLocation(page: any) {
   await titleInput.clear();
   await titleInput.fill('Tour Meeting Point');
 
-  // Fill address
+  // Fill address — type slowly to trigger Google Places autocomplete
   const addressInput = dialog.locator('input[placeholder="Physical address"]').first();
   await addressInput.click();
-  await addressInput.pressSequentially('Sydney Opera House', { delay: 50 });
-  await page.waitForTimeout(3000);
+  await addressInput.pressSequentially('Sydney', { delay: 100 });
+  await page.waitForTimeout(4000);
 
-  const autocompleteListbox = page.locator('[role="listbox"]');
-  if (await autocompleteListbox.isVisible({ timeout: 5000 }).catch(() => false)) {
-    const firstOption = page.locator('[role="option"]').first();
-    if (await firstOption.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await firstOption.click();
-      await page.waitForTimeout(1000);
-    }
-  }
+  // Select first autocomplete result
+  const firstOption = page.locator('[role="option"]').first();
+  await expect(firstOption).toBeVisible({ timeout: 10000 });
+  await firstOption.click();
+  await page.waitForTimeout(1000);
 
   const saveButton = dialog.locator('button:has-text("Save & Close")');
   await expect(saveButton).toBeEnabled({ timeout: 5000 });
@@ -363,8 +360,22 @@ test.describe.serial('Tour Customer Journey', () => {
     expect(tourId).toBeTruthy();
     await page.goto(`/m/${merchantSlug}/manage/events-and-tours?listingId=${tourId}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000);
-    console.log('[Test 3] On events-and-tours page with tour pre-selected');
+    await page.waitForTimeout(5000);
+
+    // Debug: check what the catalogue query returns
+    const queryResult = await page.evaluate(async (vars: { merchantId: string }) => {
+      const resp = await fetch('/api/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `query($merchantId: ID!) { catalogue(vendorId: $merchantId, types:["TOUR"], includeDrafts: true) { listings { id name } totalCount } }`,
+          variables: { merchantId: vars.merchantId }
+        })
+      });
+      return resp.json();
+    }, { merchantId });
+    console.log('[Test 3] Catalogue query result:', JSON.stringify(queryResult));
+    console.log('[Test 3] On events-and-tours page');
 
     // Capacity input should now be visible
     const capacityInput = page.locator('input[name="schedule.capacity"]');
