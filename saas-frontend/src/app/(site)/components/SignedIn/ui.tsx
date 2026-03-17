@@ -356,7 +356,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
 
     return (
         <Dialog open onOpenChange={() => onClose()}>
-            <DialogContent data-testid="get-started-dialog" className="sm:max-w-3xl max-w-[95vw]">
+            <DialogContent data-testid="get-started-dialog" className="sm:max-w-4xl max-w-[95vw]">
                 <DialogHeader>
                     <div className="flex items-center gap-4">
                         <div className={`rounded-full p-3.5 ${isPurple ? 'bg-purple-500/20' : 'bg-amber-500/20'}`}>
@@ -485,7 +485,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                         >
                             <Sparkles className="h-5 w-5 text-purple-400 shrink-0" />
                             <p className="text-sm text-white/80">
-                                Both plans include a practitioner account. Just need to practise? View practitioner plans.
+                                All plans above include Directory, Awaken &amp; Illuminate suited for a practitioner etc.
                             </p>
                         </Button>
                     )}
