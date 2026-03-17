@@ -205,6 +205,9 @@ export type vendor_type = {
     slug: string,
     docType?: VendorDocType,
     publishedAt?: string,
+    accountBlocked?: boolean,
+    accountBlockedAt?: string,
+    accountBlockedReason?: string,
     practitioner?: practitioner_profile_type,
     onStart?: string,
     mode?: string,
@@ -298,9 +301,6 @@ export type vendorSubscription_type = {
   subscriptionTier: subscription_tier,
   billingInterval: billing_interval,
   billingStatus: billing_status,
-  cumulativePayouts: number,            // all-time payout total (cents) for this vendor
-  subscriptionCostThreshold: number,    // tier monthly price (cents) — triggers first billing
-  firstBillingTriggeredAt?: string,     // ISO date when first billing was triggered
   lastBilledAt?: string,               // ISO date of last successful charge
   subscriptionExpiresAt?: string,       // ISO date when current period ends
   stripePaymentMethodId?: string,       // Stripe PaymentMethod ID (replaces saved_payment_method)
@@ -346,7 +346,7 @@ export type plan_type =  {
 
 export type subscription_tier = 'directory' | 'awaken' | 'illuminate' | 'manifest' | 'transcend'
 
-export type billing_status = 'pendingFirstBilling' | 'trial' | 'active' | 'suspended' | 'cancelled'
+export type billing_status = 'trial' | 'active' | 'suspended' | 'cancelled'
 
 export type teamMember_type ={
     id: string,

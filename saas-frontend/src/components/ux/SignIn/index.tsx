@@ -14,14 +14,9 @@ import Link from "next/link";
 
 export const SignIn = () => {
   const queryClient = useQueryClient();
-  const { update } = useSession();
+  const { data: session, update } = useSession();
 
-  const [showEmailInput, setShowEmailInput] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return !!localStorage.getItem('sv_login_email');
-    }
-    return false;
-  });
+  const [showEmailInput, setShowEmailInput] = useState(false);
   const [otpCaptureActive, setOtpCaptureActive] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
@@ -63,6 +58,13 @@ export const SignIn = () => {
     setResendCooldown(false);
     setFirstSend(true);
   };
+
+  // Reset when user signs out
+  useEffect(() => {
+    if (!session) {
+      setIsValid(false);
+    }
+  }, [session]);
 
   useEffect(() => {
     if (otpSent) {

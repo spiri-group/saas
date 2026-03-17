@@ -157,7 +157,7 @@ export default function SetupUI() {
             form.setValue('subscription.tier', tierParam);
             if (intervalParam) form.setValue('subscription.billingInterval', intervalParam);
 
-            const newBranch: Branch = (tierParam === 'directory' || tierParam === 'awaken') ? 'practitioner' : 'merchant';
+            const newBranch: Branch = (tierParam === 'directory' || tierParam === 'awaken' || tierParam === 'illuminate') ? 'practitioner' : 'merchant';
             setBranch(newBranch);
             if (newBranch === 'merchant') {
                 initMerchant();
@@ -216,7 +216,7 @@ export default function SetupUI() {
     }, []);
 
     const handlePlanSelect = useCallback((tier: string) => {
-        const newBranch: Branch = (tier === 'directory' || tier === 'awaken') ? 'practitioner' : 'merchant';
+        const newBranch: Branch = (tier === 'directory' || tier === 'awaken' || tier === 'illuminate') ? 'practitioner' : 'merchant';
         setBranch(newBranch);
 
         if (newBranch === 'merchant') {

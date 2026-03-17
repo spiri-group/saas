@@ -15,13 +15,11 @@ const EMPTY_PHONE = { raw: "", displayAs: "", value: "" };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function makeSubscription(tier: string, monthlyPriceCents: number) {
+function makeSubscription(tier: string) {
     return {
         subscriptionTier: tier,
         billingInterval: "monthly",
         billingStatus: "active",
-        cumulativePayouts: 0,
-        subscriptionCostThreshold: monthlyPriceCents,
         failedPaymentAttempts: 0,
         card_status: "not_saved",
         payment_status: "not_attempted",
@@ -145,7 +143,7 @@ export const migration: Migration = {
             reviews: [],
             socialPosts: [],
             ref: { id: vendorId("awaken"), partition: [vendorId("awaken")], container: "Main-Vendor" },
-            subscription: makeSubscription("awaken", 1600),
+            subscription: makeSubscription("awaken"),
             practitioner: {
                 headline: "Intuitive Tarot & Oracle Reader",
                 bio: "With over 8 years of experience reading the cards, I bring intuitive guidance to help you navigate life's crossroads. My readings blend traditional tarot wisdom with deep intuitive insight, offering clarity on relationships, decisions, and your path of self-discovery.",
@@ -238,7 +236,7 @@ export const migration: Migration = {
             reviews: [],
             socialPosts: [],
             ref: { id: vendorId("illuminate"), partition: [vendorId("illuminate")], container: "Main-Vendor" },
-            subscription: makeSubscription("illuminate", 2900),
+            subscription: makeSubscription("illuminate"),
             practitioner: {
                 headline: "Reiki Master & Energy Healer",
                 bio: "For over 12 years, I have dedicated my practice to the art of energy healing. As a certified Reiki Master and crystal healing practitioner, I work with subtle energies to restore balance, release blockages, and support your body's natural healing process. My approach integrates Reiki, crystal therapy, and sound healing to create deeply transformative sessions.",
@@ -351,7 +349,7 @@ export const migration: Migration = {
             reviews: [],
             socialPosts: [],
             ref: { id: vendorId("manifest"), partition: [vendorId("manifest")], container: "Main-Vendor" },
-            subscription: makeSubscription("manifest", 3900),
+            subscription: makeSubscription("manifest"),
         };
 
         const manifestServices = [
@@ -462,7 +460,7 @@ export const migration: Migration = {
             reviews: [],
             socialPosts: [],
             ref: { id: vendorId("transcend"), partition: [vendorId("transcend")], container: "Main-Vendor" },
-            subscription: makeSubscription("transcend", 5900),
+            subscription: makeSubscription("transcend"),
         };
 
         const transcendServices = [

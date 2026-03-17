@@ -34,7 +34,7 @@ const TIER_DISPLAY: Record<string, string> = {
 
 const STATUS_CONFIG: Record<string, { icon: typeof Check; color: string; label: string }> = {
     active: { icon: Check, color: 'text-green-400', label: 'Active' },
-    pendingFirstBilling: { icon: Clock, color: 'text-amber-400', label: 'Pending First Billing' },
+    trial: { icon: Clock, color: 'text-amber-400', label: 'Trial' },
     suspended: { icon: XCircle, color: 'text-red-400', label: 'Suspended' },
     cancelled: { icon: XCircle, color: 'text-slate-400', label: 'Cancelled' },
 };
@@ -75,12 +75,8 @@ export default function SubscriptionManagement({ vendorId, profileType }: Subscr
         );
     }
 
-    const statusConfig = STATUS_CONFIG[billingStatus || 'pendingFirstBilling'] || STATUS_CONFIG.pendingFirstBilling;
+    const statusConfig = STATUS_CONFIG[billingStatus || 'trial'] || STATUS_CONFIG.trial;
     const StatusIcon = statusConfig.icon;
-    const isPendingFirstBilling = billingStatus === 'pendingFirstBilling';
-    const payoutProgress = isPendingFirstBilling && subscription.subscriptionCostThreshold > 0
-        ? Math.min(100, (subscription.cumulativePayouts / subscription.subscriptionCostThreshold) * 100)
-        : null;
 
     const TIER_ORDER = ['directory', 'awaken', 'illuminate', 'manifest', 'transcend'];
     const currentTierIndex = TIER_ORDER.indexOf(tier || '');
@@ -219,27 +215,6 @@ export default function SubscriptionManagement({ vendorId, profileType }: Subscr
                         )}
                     </div>
                 </div>
-
-                {/* Payout progress for pending first billing */}
-                {payoutProgress !== null && (
-                    <div data-testid="subscription-payout-progress" className="mt-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-slate-400">Payouts toward first billing</span>
-                            <span className="text-sm text-slate-300">
-                                {formatPrice(subscription.cumulativePayouts)} / {formatPrice(subscription.subscriptionCostThreshold)}
-                            </span>
-                        </div>
-                        <div className="h-2 rounded-full bg-slate-700 overflow-hidden">
-                            <div
-                                className="h-full rounded-full bg-purple-500 transition-all"
-                                style={{ width: `${payoutProgress}%` }}
-                            />
-                        </div>
-                        <p className="mt-1 text-xs text-slate-500">
-                            Your first subscription charge happens once your payouts reach this threshold.
-                        </p>
-                    </div>
-                )}
 
                 {/* Next billing info */}
                 {billingStatus === 'active' && subscription.subscriptionExpiresAt && (

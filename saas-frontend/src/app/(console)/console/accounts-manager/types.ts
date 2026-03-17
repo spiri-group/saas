@@ -38,6 +38,9 @@ export interface ConsoleVendorAccount {
         accountId?: string;
     };
     ownerEmail?: string;
+    accountBlocked?: boolean;
+    accountBlockedAt?: string;
+    accountBlockedReason?: string;
 }
 
 export interface BillingRecord {

@@ -1,7 +1,7 @@
 'use client';
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Package, Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard, LoaderIcon } from "lucide-react";
+import { Package, Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard, LoaderIcon, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -176,12 +176,8 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                             data-testid="user-menu-become-merchant"
                                             className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
                                             onClick={() => {
-                                                if (session.user && session.user.requiresInput) {
-                                                    setShowProfileDialog(true);
-                                                } else {
-                                                    setMenuOpen(false);
-                                                    setShowGetStarted('merchant');
-                                                }
+                                                setMenuOpen(false);
+                                                setShowGetStarted('merchant');
                                             }}
                                         >
                                             <Plus className="w-4 h-4 mr-3 text-amber-400" />
@@ -193,12 +189,8 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                             data-testid="user-menu-become-practitioner"
                                             className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
                                             onClick={() => {
-                                                if (session.user && session.user.requiresInput) {
-                                                    setShowProfileDialog(true);
-                                                } else {
-                                                    setMenuOpen(false);
-                                                    setShowGetStarted('practitioner');
-                                                }
+                                                setMenuOpen(false);
+                                                setShowGetStarted('practitioner');
                                             }}
                                         >
                                             <Plus className="w-4 h-4 mr-3 text-amber-400" />
@@ -346,7 +338,9 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
     const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
     const { data: tiers, isLoading: tiersLoading } = useSubscriptionTiers(config.profileType);
 
-    const availableTiers = tiers?.filter(t => (config.tiers as readonly string[]).includes(t.tier)) || [];
+    const tierOrder = config.tiers as readonly string[];
+    const availableTiers = (tiers?.filter(t => tierOrder.includes(t.tier)) || [])
+        .sort((a, b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier));
 
     const selectedTierDef = availableTiers.find(t => t.tier === selectedTier);
     const price = selectedTierDef
@@ -363,7 +357,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
 
     return (
         <Dialog open onOpenChange={() => onClose()}>
-            <DialogContent data-testid="get-started-dialog" className="sm:max-w-2xl">
+            <DialogContent data-testid="get-started-dialog" className="sm:max-w-4xl max-w-[95vw]">
                 <DialogHeader>
                     <div className="flex items-center gap-4">
                         <div className={`rounded-full p-3.5 ${isPurple ? 'bg-purple-500/20' : 'bg-amber-500/20'}`}>
@@ -432,29 +426,29 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                                 ? isPurple
                                                     ? 'border-purple-500 bg-purple-500/10 hover:bg-purple-500/10'
                                                     : 'border-amber-500 bg-amber-500/10 hover:bg-amber-500/10'
-                                                : 'border-white/10 hover:border-white/20 hover:bg-transparent'
+                                                : 'border-white/20 bg-white/[0.03] hover:border-white/30 hover:bg-white/[0.05]'
                                         }`}
                                     >
                                         <div className="space-y-3 w-full">
-                                            <div className="flex items-baseline justify-between gap-2 flex-nowrap">
-                                                <p className={`text-base font-semibold whitespace-nowrap ${
+                                            <div>
+                                                <p className={`text-lg font-semibold ${
                                                     isSelected
                                                         ? isPurple ? 'text-purple-300' : 'text-amber-300'
-                                                        : 'text-white/90'
+                                                        : 'text-white'
                                                 }`}>
                                                     {tier.name}
                                                 </p>
-                                                <div className="whitespace-nowrap">
-                                                    <span className="text-xl font-bold">{formatPrice(tierPrice)}</span>
-                                                    <span className="text-muted-foreground text-sm">
+                                                <div className="mt-1">
+                                                    <span className={`text-2xl font-bold ${isSelected ? 'text-white' : 'text-white/90'}`}>{formatPrice(tierPrice)}</span>
+                                                    <span className="text-white/50 text-sm ml-0.5">
                                                         /{billingInterval === 'monthly' ? 'mo' : 'yr'}
                                                     </span>
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
                                                 {(TIER_OUTCOMES[tier.tier] || []).map((outcome, i) => (
-                                                    <p key={i} className="text-sm leading-relaxed text-muted-foreground">
-                                                        <span className={`inline-block mr-1.5 ${isPurple ? 'text-purple-400/70' : 'text-amber-400/70'}`}>&#x2022;</span>
+                                                    <p key={i} className="flex items-center gap-2 text-sm leading-relaxed text-white">
+                                                        <Check className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
                                                         {outcome}
                                                     </p>
                                                 ))}
@@ -492,7 +486,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                         >
                             <Sparkles className="h-5 w-5 text-purple-400 shrink-0" />
                             <p className="text-sm text-white/80">
-                                Both plans include a practitioner account. Just need to practise? View practitioner plans.
+                                All plans above include Directory, Awaken &amp; Illuminate suited for a practitioner etc.
                             </p>
                         </Button>
                     )}

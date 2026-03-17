@@ -1,7 +1,7 @@
 import { serverContext } from "../../services/azFunction"
 import { vendor_type, VendorDocType } from "../vendor/types"
 import { user_type } from "../user/types"
-import { PatchOperation } from "@azure/cosmos"
+import { HTTPMethod, PatchOperation } from "@azure/cosmos"
 import { VendorLifecycleStage, computeLifecycleStage } from "./types"
 import { DateTime } from "luxon"
 import { journeysResolvers } from "./journeys"
@@ -44,7 +44,7 @@ const resolvers = {
 
             // Get all matching vendors (we filter lifecycle in JS since it's computed)
             const querySpec = {
-                query: `SELECT c.id, c.name, c.slug, c.docType, c.publishedAt, c.subscription, c.stripe, c.createdDate, c.customers FROM c ${whereClause} ORDER BY c.createdDate DESC`,
+                query: `SELECT c.id, c.name, c.slug, c.docType, c.publishedAt, c.subscription, c.stripe, c.createdDate, c.customers, c.accountBlocked, c.accountBlockedAt, c.accountBlockedReason FROM c ${whereClause} ORDER BY c.createdDate DESC`,
                 parameters
             }
 
@@ -469,33 +469,6 @@ const resolvers = {
             }
         },
 
-        forcePublishVendor: async (_: any, args: { vendorId: string }, context: serverContext) => {
-            try {
-                const patchOps: PatchOperation[] = [
-                    { op: "set", path: "/publishedAt", value: DateTime.now().toISO() },
-                ]
-
-                await context.dataSources.cosmos.patch_record(
-                    VENDOR_CONTAINER,
-                    args.vendorId,
-                    args.vendorId,
-                    patchOps,
-                    context.userId || "CONSOLE_ADMIN"
-                )
-
-                return {
-                    code: "200",
-                    success: true,
-                    message: "Vendor published successfully"
-                }
-            } catch (err: any) {
-                return {
-                    code: "500",
-                    success: false,
-                    message: err.message || "Failed to publish vendor"
-                }
-            }
-        },
 
         resetVendorBillingRetry: async (_: any, args: { vendorId: string }, context: serverContext) => {
             try {
@@ -525,6 +498,280 @@ const resolvers = {
                     code: "500",
                     success: false,
                     message: err.message || "Failed to reset billing retry"
+                }
+            }
+        },
+
+        purgeVendorAccount: async (_: any, args: { vendorId: string, confirmName: string }, context: serverContext) => {
+            try {
+                const vendorId = args.vendorId
+
+                // Fetch the vendor
+                const vendor = await context.dataSources.cosmos.get_record<vendor_type>(
+                    VENDOR_CONTAINER, vendorId, vendorId
+                )
+
+                if (!vendor) {
+                    return { code: "404", success: false, message: "Vendor not found" }
+                }
+
+                // Verify confirmName matches
+                if (vendor.name !== args.confirmName) {
+                    return { code: "400", success: false, message: "Confirmation name does not match vendor name" }
+                }
+
+                const ownerId = vendor.customers?.[0]?.id
+                context.logger.logMessage(`[PURGE_VENDOR] Starting purge for vendor: ${vendor.name} (${vendorId})`)
+
+                // Delete Stripe connected account
+                if (vendor.stripe?.accountId) {
+                    try {
+                        await context.dataSources.stripe.callApi(HTTPMethod.delete, `accounts/${vendor.stripe.accountId}`, null)
+                        context.logger.logMessage(`[PURGE_VENDOR] Deleted Stripe connected account ${vendor.stripe.accountId}`)
+                    } catch (err) {
+                        context.logger.error(`[PURGE_VENDOR] Failed to delete Stripe account: ${err}`)
+                    }
+                }
+
+                // Delete Stripe customer
+                if (vendor.stripe?.customerId) {
+                    try {
+                        await context.dataSources.stripe.callApi(HTTPMethod.delete, `customers/${vendor.stripe.customerId}`, null)
+                        context.logger.logMessage(`[PURGE_VENDOR] Deleted Stripe customer ${vendor.stripe.customerId}`)
+                    } catch (err) {
+                        context.logger.error(`[PURGE_VENDOR] Failed to delete Stripe customer: ${err}`)
+                    }
+                }
+
+                // Helper to purge all records from a container matching a query
+                const purgeContainer = async (containerName: string, query: string, partitionKeyFn: (record: any) => string | string[]) => {
+                    try {
+                        const records = await context.dataSources.cosmos.run_query<any>(containerName, {
+                            query,
+                            parameters: [{ name: "@id", value: vendorId }]
+                        }, true)
+
+                        if (records.length > 0) {
+                            context.logger.logMessage(`[PURGE_VENDOR] Deleting ${records.length} records from ${containerName}`)
+                            for (const record of records) {
+                                try {
+                                    await context.dataSources.cosmos.purge_record(containerName, record.id, partitionKeyFn(record))
+                                } catch (err) {
+                                    context.logger.error(`[PURGE_VENDOR] Failed to delete ${containerName}/${record.id}: ${err}`)
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        context.logger.error(`[PURGE_VENDOR] Failed to query ${containerName}: ${err}`)
+                    }
+                }
+
+                // Vendor-partitioned containers
+                await purgeContainer("Main-Listing", "SELECT c.id FROM c WHERE c.vendorId = @id", () => vendorId)
+                await purgeContainer("Main-Gallery", "SELECT c.id FROM c WHERE c.vendorId = @id", () => vendorId)
+                await purgeContainer("Main-SocialPost", "SELECT c.id FROM c WHERE c.vendorId = @id", () => vendorId)
+                await purgeContainer("Main-VendorSettings", "SELECT c.id FROM c WHERE c.vendorId = @id", () => vendorId)
+                await purgeContainer("Main-FeaturingRelationship", "SELECT c.id FROM c WHERE c.merchantId = @id", () => vendorId)
+                await purgeContainer("Main-PaymentLinks", "SELECT c.id FROM c WHERE c.vendorId = @id", (r) => r.id)
+                await purgeContainer("Main-ShoppingCart", "SELECT c.id FROM c WHERE c.vendorId = @id", (r) => r.id)
+                await purgeContainer("Main-LiveAssist", "SELECT c.id FROM c WHERE c.partitionKey = @id", () => vendorId)
+                await purgeContainer("Main-ExpoMode", "SELECT c.id FROM c WHERE c.partitionKey = @id", () => vendorId)
+                await purgeContainer("Main-Follow", "SELECT c.id, c.userId FROM c WHERE c.targetId = @id", (r) => r.userId)
+
+                // Practitioner schedules (partition: practitionerId)
+                await purgeContainer("Main-PractitionerSchedules", "SELECT c.id, c.practitionerId FROM c WHERE c.practitionerId = @id", (r) => r.practitionerId)
+
+                // Bookings (partition: [type, customerEmail])
+                try {
+                    const bookings = await context.dataSources.cosmos.run_query<any>("Main-Bookings", {
+                        query: "SELECT c.id, c.type, c.customerEmail FROM c WHERE c.vendorId = @id",
+                        parameters: [{ name: "@id", value: vendorId }]
+                    }, true)
+                    if (bookings.length > 0) {
+                        context.logger.logMessage(`[PURGE_VENDOR] Deleting ${bookings.length} records from Main-Bookings`)
+                        for (const booking of bookings) {
+                            try {
+                                await context.dataSources.cosmos.purge_record("Main-Bookings", booking.id, [booking.type, booking.customerEmail])
+                            } catch (err) {
+                                context.logger.error(`[PURGE_VENDOR] Failed to delete booking ${booking.id}: ${err}`)
+                            }
+                        }
+                    }
+                } catch (err) {
+                    context.logger.error(`[PURGE_VENDOR] Failed to query Main-Bookings: ${err}`)
+                }
+
+                // Orders (partition: id)
+                await purgeContainer("Main-Orders", "SELECT c.id FROM c WHERE c.vendorId = @id", (r) => r.id)
+
+                // Cases + CaseOffers + CaseInteractions
+                try {
+                    const cases = await context.dataSources.cosmos.run_query<any>("Main-Cases", {
+                        query: "SELECT c.id FROM c WHERE c.vendorId = @id",
+                        parameters: [{ name: "@id", value: vendorId }]
+                    }, true)
+                    if (cases.length > 0) {
+                        // Purge case offers and interactions for each case
+                        for (const caseDoc of cases) {
+                            await purgeContainer("Main-CaseOffers", `SELECT c.id FROM c WHERE c.caseId = '${caseDoc.id}'`, (r) => r.id)
+                            await purgeContainer("Main-CaseInteraction", `SELECT c.id FROM c WHERE c.caseId = '${caseDoc.id}'`, (r) => r.id)
+                        }
+                        // Purge the cases themselves
+                        for (const caseDoc of cases) {
+                            try {
+                                await context.dataSources.cosmos.purge_record("Main-Cases", caseDoc.id, caseDoc.id)
+                            } catch (err) {
+                                context.logger.error(`[PURGE_VENDOR] Failed to delete case ${caseDoc.id}: ${err}`)
+                            }
+                        }
+                    }
+                } catch (err) {
+                    context.logger.error(`[PURGE_VENDOR] Failed to query Main-Cases: ${err}`)
+                }
+
+                // Comments related to vendor
+                await purgeContainer("Main-Comments", "SELECT c.id FROM c WHERE c.vendorId = @id", (r) => r.id)
+
+                // Messages related to vendor
+                await purgeContainer("Main-Message", "SELECT c.id FROM c WHERE c.vendorId = @id", (r) => r.id)
+
+                // Tour sessions
+                await purgeContainer("Tour-Session", "SELECT c.id FROM c WHERE c.vendorId = @id", (r) => r.id)
+
+                // Remove vendor reference from owner user's vendors array
+                if (ownerId) {
+                    try {
+                        const owner = await context.dataSources.cosmos.get_record<user_type>(USER_CONTAINER, ownerId, ownerId)
+                        if (owner?.vendors) {
+                            const updatedVendors = owner.vendors.filter((v: any) => v.id !== vendorId)
+                            const patchOps: PatchOperation[] = [
+                                { op: "set", path: "/vendors", value: updatedVendors }
+                            ]
+                            await context.dataSources.cosmos.patch_record(
+                                USER_CONTAINER, ownerId, ownerId, patchOps, context.userId || "CONSOLE_ADMIN"
+                            )
+                            context.logger.logMessage(`[PURGE_VENDOR] Removed vendor ref from owner user ${ownerId}`)
+                        }
+                    } catch (err) {
+                        context.logger.error(`[PURGE_VENDOR] Failed to update owner user: ${err}`)
+                    }
+                }
+
+                // Delete the vendor document itself
+                await context.dataSources.cosmos.purge_record(VENDOR_CONTAINER, vendorId, vendorId)
+                context.logger.logMessage(`[PURGE_VENDOR] Purged vendor document ${vendorId}`)
+
+                return {
+                    code: "200",
+                    success: true,
+                    message: `Vendor "${vendor.name}" has been permanently deleted`
+                }
+            } catch (err: any) {
+                return {
+                    code: "500",
+                    success: false,
+                    message: err.message || "Failed to purge vendor account"
+                }
+            }
+        },
+
+        blockVendorAccount: async (_: any, args: { vendorId: string, reason?: string }, context: serverContext) => {
+            try {
+                const vendor = await context.dataSources.cosmos.get_record<vendor_type>(
+                    VENDOR_CONTAINER, args.vendorId, args.vendorId
+                )
+
+                if (!vendor) {
+                    return { code: "404", success: false, message: "Vendor not found" }
+                }
+
+                const patchOps: PatchOperation[] = [
+                    { op: "set", path: "/accountBlocked", value: true },
+                    { op: "set", path: "/accountBlockedAt", value: DateTime.now().toISO() },
+                ]
+
+                if (args.reason) {
+                    patchOps.push({ op: "set", path: "/accountBlockedReason", value: args.reason })
+                }
+
+                // Remove publishedAt to unpublish
+                if (vendor.publishedAt) {
+                    patchOps.push({ op: "remove", path: "/publishedAt" })
+                }
+
+                await context.dataSources.cosmos.patch_record(
+                    VENDOR_CONTAINER,
+                    args.vendorId,
+                    args.vendorId,
+                    patchOps,
+                    context.userId || "CONSOLE_ADMIN"
+                )
+
+                // Set Stripe payouts to manual if vendor has a connected account
+                if (vendor.stripe?.accountId) {
+                    try {
+                        await context.dataSources.stripe.callApi("POST", `accounts/${vendor.stripe.accountId}`, {
+                            settings: {
+                                payouts: {
+                                    schedule: {
+                                        interval: "manual"
+                                    }
+                                }
+                            }
+                        })
+                    } catch (err) {
+                        context.logger.error(`[BLOCK_VENDOR] Failed to set Stripe payouts to manual: ${err}`)
+                    }
+                }
+
+                return {
+                    code: "200",
+                    success: true,
+                    message: `Vendor "${vendor.name}" has been blocked`
+                }
+            } catch (err: any) {
+                return {
+                    code: "500",
+                    success: false,
+                    message: err.message || "Failed to block vendor account"
+                }
+            }
+        },
+
+        unblockVendorAccount: async (_: any, args: { vendorId: string }, context: serverContext) => {
+            try {
+                const vendor = await context.dataSources.cosmos.get_record<vendor_type>(
+                    VENDOR_CONTAINER, args.vendorId, args.vendorId
+                )
+
+                if (!vendor) {
+                    return { code: "404", success: false, message: "Vendor not found" }
+                }
+
+                const patchOps: PatchOperation[] = [
+                    { op: "remove", path: "/accountBlocked" },
+                    { op: "remove", path: "/accountBlockedAt" },
+                    { op: "remove", path: "/accountBlockedReason" },
+                ]
+
+                await context.dataSources.cosmos.patch_record(
+                    VENDOR_CONTAINER,
+                    args.vendorId,
+                    args.vendorId,
+                    patchOps,
+                    context.userId || "CONSOLE_ADMIN"
+                )
+
+                return {
+                    code: "200",
+                    success: true,
+                    message: `Vendor "${vendor.name}" has been unblocked`
+                }
+            } catch (err: any) {
+                return {
+                    code: "500",
+                    success: false,
+                    message: err.message || "Failed to unblock vendor account"
                 }
             }
         }
