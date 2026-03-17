@@ -1,7 +1,7 @@
 'use client';
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Package, Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard, LoaderIcon } from "lucide-react";
+import { Package, Store, Sparkles, Settings, LogOut, PencilLine, Plus, LayoutDashboard, LoaderIcon, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -175,14 +175,7 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                         <DropdownMenuItem
                                             data-testid="user-menu-become-merchant"
                                             className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
-                                            onClick={() => {
-                                                if (session.user && session.user.requiresInput) {
-                                                    setShowProfileDialog(true);
-                                                } else {
-                                                    setMenuOpen(false);
-                                                    setShowGetStarted('merchant');
-                                                }
-                                            }}
+                                            onClick={() => router.push('/setup')}
                                         >
                                             <Plus className="w-4 h-4 mr-3 text-amber-400" />
                                             Open a Shop
@@ -192,14 +185,7 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                         <DropdownMenuItem
                                             data-testid="user-menu-become-practitioner"
                                             className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
-                                            onClick={() => {
-                                                if (session.user && session.user.requiresInput) {
-                                                    setShowProfileDialog(true);
-                                                } else {
-                                                    setMenuOpen(false);
-                                                    setShowGetStarted('practitioner');
-                                                }
-                                            }}
+                                            onClick={() => router.push('/setup')}
                                         >
                                             <Plus className="w-4 h-4 mr-3 text-amber-400" />
                                             Start Practising
@@ -364,7 +350,7 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
 
     return (
         <Dialog open onOpenChange={() => onClose()}>
-            <DialogContent data-testid="get-started-dialog" className="sm:max-w-2xl">
+            <DialogContent data-testid="get-started-dialog" className="sm:max-w-3xl max-w-[95vw]">
                 <DialogHeader>
                     <div className="flex items-center gap-4">
                         <div className={`rounded-full p-3.5 ${isPurple ? 'bg-purple-500/20' : 'bg-amber-500/20'}`}>
@@ -454,8 +440,8 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                             </div>
                                             <div className="space-y-2">
                                                 {(TIER_OUTCOMES[tier.tier] || []).map((outcome, i) => (
-                                                    <p key={i} className="text-sm leading-relaxed text-white/70">
-                                                        <span className={`inline-block mr-1.5 ${isPurple ? 'text-purple-400' : 'text-amber-400'}`}>&#x2022;</span>
+                                                    <p key={i} className="flex items-center gap-2 text-sm leading-relaxed text-white">
+                                                        <Check className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
                                                         {outcome}
                                                     </p>
                                                 ))}
