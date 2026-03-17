@@ -60,7 +60,7 @@ const UI : React.FC<Props> = (props) => {
                     <TourUpgradeBanner merchantId={props.merchantId} />
                     <CreateScheduleComponent vendorId={props.merchantId} />
                 </div>
-                <SessionsComponent />
+                <SessionsComponent merchantId={props.merchantId} />
             </div>
        </>
     )

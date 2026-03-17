@@ -1,27 +1,25 @@
 'use client'
 
-import { Separator } from "@/components/ui/separator";
 import PersonWalking from "@/icons/person-walking";
 import { DateTime } from "luxon";
 import React, { useState } from "react"
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Panel, PanelContent, PanelHeader } from "@/components/ux/Panel";
 import { Button } from "@/components/ui/button";
 import UseSessions from "./hooks/UseSessions";
 import UseActivateSession from "./hooks/UseActivateSession";
 import SessionsSummaryComponent from "../SessionsSummary";
 
-const useBL = () => {
-    const params = useParams();
+const useBL = (merchantId?: string) => {
     const router = useRouter();
 
     const [from, ] = useState<DateTime>(DateTime.local().minus({ hours: 2 }));
     const [to, ] = useState<DateTime>(DateTime.local().plus({ months: 2 }));
-    const {data, isLoading, isRefetching} = UseSessions(from, to, params == null ? undefined : params.merchantId as string);
+    const {data, isLoading, isRefetching} = UseSessions(from, to, merchantId);
 
     return {
         router,
-        merchantId: params != null && params.merchantId != null ? params.merchantId : null,
+        merchantId: merchantId ?? null,
         sessions: {
             isLoading: isLoading || isRefetching,
             get: data ?? []
@@ -29,8 +27,12 @@ const useBL = () => {
     }
 }
 
-const SessionsComponent : React.FC = () => {
-    const bl = useBL();
+type SessionsProps = {
+    merchantId?: string;
+};
+
+const SessionsComponent : React.FC<SessionsProps> = ({ merchantId }) => {
+    const bl = useBL(merchantId);
 
     const formatter = new Intl.NumberFormat('en-US', {
         style: 'percent',
@@ -100,7 +102,6 @@ const SessionsComponent : React.FC = () => {
                                                                 {current}/{max} {capacityLabel}
                                                                 {remaining === 0 && <span className="text-red-500 font-bold ml-1">(FULL)</span>}
                                                                 {remaining > 0 && remaining <= 5 && <span className="text-orange-500 ml-1">({remaining} left)</span>}
-                                                                <Button variant="link" className="">view details</Button>
                                                             </span>
                                                         </div>
                                                     </div>
@@ -114,10 +115,6 @@ const SessionsComponent : React.FC = () => {
                                                                 }} className="">
                                                                 Operate
                                                             </Button>
-                                                            {/* <Separator orientation="vertical" />
-                                                            <Button variant="link" className="">Change date</Button> */}
-                                                            <Separator orientation="vertical" />
-                                                            <Button variant="link" className="">Refund session</Button>
                                                         </div>
                                                     )}
                                                 </div>

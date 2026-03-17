@@ -197,12 +197,6 @@ const CreateTour : React.FC<Props> = (props) => {
                     currentStep={bl.currentStep}
                     onStepClick={bl.setCurrentStep}
                 />
-                <Button variant="outline" onClick={() => {
-                    const event = new CustomEvent('close-dialog');
-                    window.dispatchEvent(event);
-                }}>
-                    ✕ Close
-                </Button>
             </div>
 
             <TooltipProvider>
@@ -242,17 +236,17 @@ const CreateTour : React.FC<Props> = (props) => {
                                                     { control: "timezone", fieldName: "timezone" }
                                                 ]}  />
 
-                                            {/* Product Return Policy */}
+                                            {/* Refund Policy */}
                                             <FormField
                                                 name="productReturnPolicyId"
                                                 control={bl.form.control}
                                                 render={({field}) => (
                                                     <FormItem className="flex flex-col space-y-2">
-                                                        <FormLabel className="text-sm font-medium">Product Return Policy (Optional)</FormLabel>
+                                                        <FormLabel className="text-sm font-medium">Refund Policy (Optional)</FormLabel>
                                                         <FormControl>
                                                             <ComboBox
                                                                 withSearch={true}
-                                                                objectName="Product Return Policy"
+                                                                objectName="Refund Policy"
                                                                 onChange={(value) => {
                                                                     if (isNullOrUndefined(value)) return;
                                                                     field.onChange(value.id);
@@ -265,7 +259,7 @@ const CreateTour : React.FC<Props> = (props) => {
                                                                 }} />
                                                         </FormControl>
                                                         <FormDescription className="text-xs">
-                                                            Select a product return policy or leave blank for no refunds
+                                                            Select a refund policy or leave blank for no refunds
                                                         </FormDescription>
                                                     </FormItem>
                                                 )} />
