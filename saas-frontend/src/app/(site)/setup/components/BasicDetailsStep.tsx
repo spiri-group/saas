@@ -10,7 +10,8 @@ import { useMemo, useEffect } from 'react';
 import useReverseGeocoding from '@/components/utils/useReverseGeoCoding';
 import type { OnboardingFormValues } from '../hooks/useOnboardingForm';
 import { COUNTRIES } from '../hooks/useOnboardingForm';
-import { Compass, Store } from 'lucide-react';
+
+
 import ScrollableForm from './ScrollableForm';
 
 type Props = {
@@ -198,20 +199,20 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
                             type="button"
                             data-testid="setup-basic-browse-btn"
                             onClick={handleBrowse}
-                            className="flex-1 flex items-center justify-center gap-2.5 px-6 py-3 md:px-8 md:py-4 rounded-xl bg-white/10 text-white text-base md:text-lg tracking-wide hover:bg-white/20 active:scale-[0.98] transition-all duration-150 cursor-pointer"
+                            className="flex-1 flex flex-col items-center justify-center px-6 py-3 md:px-8 md:py-4 rounded-xl bg-white/10 text-white hover:bg-white/20 active:scale-[0.98] transition-all duration-150 cursor-pointer"
                         >
-                            <Compass className="w-5 h-5" />
-                            Start Your Journey
+                            <span className="text-base md:text-lg tracking-wide">Let&apos;s Get Started</span>
+                            <span className="text-sm text-white mt-0.5">Customer Journey</span>
                         </button>
 
                         <button
                             type="button"
                             data-testid="setup-basic-setup-btn"
                             onClick={handleSetupBusiness}
-                            className="flex-1 flex items-center justify-center gap-2.5 px-6 py-3 md:px-8 md:py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-white text-base md:text-lg tracking-wide hover:from-indigo-400 hover:to-cyan-400 active:scale-[0.98] transition-all duration-150 cursor-pointer"
+                            className="flex-1 flex flex-col items-center justify-center px-6 py-3 md:px-8 md:py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-white hover:from-indigo-400 hover:to-cyan-400 active:scale-[0.98] transition-all duration-150 cursor-pointer"
                         >
-                            <Store className="w-5 h-5" />
-                            Set Up a Business
+                            <span className="text-base md:text-lg tracking-wide">Let&apos;s Setup</span>
+                            <span className="text-sm text-white mt-0.5">Practitioner / Merchant</span>
                         </button>
                     </div>
                 </div>
