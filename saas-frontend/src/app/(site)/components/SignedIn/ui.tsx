@@ -175,7 +175,10 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                         <DropdownMenuItem
                                             data-testid="user-menu-become-merchant"
                                             className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
-                                            onClick={() => router.push('/setup')}
+                                            onClick={() => {
+                                                setMenuOpen(false);
+                                                setShowGetStarted('merchant');
+                                            }}
                                         >
                                             <Plus className="w-4 h-4 mr-3 text-amber-400" />
                                             Open a Shop
@@ -185,7 +188,10 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
                                         <DropdownMenuItem
                                             data-testid="user-menu-become-practitioner"
                                             className="px-4 py-2 text-white/90 hover:bg-amber-500/10 focus:bg-amber-500/10 focus:text-white/90 cursor-pointer"
-                                            onClick={() => router.push('/setup')}
+                                            onClick={() => {
+                                                setMenuOpen(false);
+                                                setShowGetStarted('practitioner');
+                                            }}
                                         >
                                             <Plus className="w-4 h-4 mr-3 text-amber-400" />
                                             Start Practising
