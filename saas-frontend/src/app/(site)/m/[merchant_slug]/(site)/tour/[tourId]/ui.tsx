@@ -269,15 +269,21 @@ const UI: React.FC<Props> = (props) => {
 
             {/* Hero Section */}
             <div className="relative w-full h-[400px] rounded-xl overflow-hidden mt-2">
-                <img
-                    src={bl.tour.thumbnail.image.media.url}
-                    alt={bl.tour.name}
-                    className="w-full h-full object-cover"
-                    style={{
-                        objectFit: bl.tour.thumbnail.image.objectFit || 'cover',
-                        transform: `scale(${bl.tour.thumbnail.image.zoom || 1})`
-                    }}
-                />
+                {bl.tour.thumbnail?.image?.media?.url ? (
+                    <img
+                        src={bl.tour.thumbnail.image.media.url}
+                        alt={bl.tour.name}
+                        className="w-full h-full object-cover"
+                        style={{
+                            objectFit: bl.tour.thumbnail.image.objectFit || 'cover',
+                            transform: `scale(${bl.tour.thumbnail.image.zoom || 1})`
+                        }}
+                    />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                        <span className="text-slate-400 text-lg">{bl.tour.name}</span>
+                    </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                     <h1 className="text-4xl font-bold text-white mb-2">{bl.tour.name}</h1>

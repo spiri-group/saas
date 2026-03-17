@@ -57,11 +57,6 @@ const queryFn = async (merchantId: string, tourId: string) => {
                         time
                     }
                 }
-                vendor {
-                    id
-                    name
-                    slug
-                }
                 ref {
                     id
                     partition

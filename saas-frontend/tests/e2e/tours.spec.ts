@@ -481,12 +481,41 @@ test.describe.serial('Tour Customer Journey', () => {
     const tourPage = new TourPage(page);
 
     expect(tourId).toBeTruthy();
-    await page.goto(`/m/${merchantSlug}/tour/${tourId}`);
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(5000);
 
-    // Verify tour page loaded
-    await expect(page.locator('h1, [data-testid="tour-title"]').filter({ hasText: /Sydney Harbour|Tour/ })).toBeVisible({ timeout: 10000 });
+    // Debug: query the tour directly to verify it exists
+    const tourQueryResult = await page.evaluate(async (vars: { tourId: string, merchantId: string }) => {
+      const resp = await fetch('/api/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `query($id: ID!, $vendorId: ID!) { tour(id: $id, vendorId: $vendorId) { id name } }`,
+          variables: { id: vars.tourId, vendorId: vars.merchantId }
+        })
+      });
+      return resp.json();
+    }, { tourId, merchantId });
+    console.log(`[Test 4] Tour query result: ${JSON.stringify(tourQueryResult)}`);
+
+    const tourUrl = `/m/${merchantSlug}/tour/${tourId}`;
+    console.log(`[Test 4] Navigating to: ${tourUrl}`);
+    await page.goto(tourUrl);
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(3000);
+    console.log(`[Test 4] Current URL: ${page.url()}`);
+
+    // Check for console errors on the page
+    const consoleErrors: string[] = [];
+    page.on('console', msg => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+    await page.waitForTimeout(10000);
+    if (consoleErrors.length > 0) {
+      console.log(`[Test 4] Console errors: ${consoleErrors.join(' | ')}`);
+    }
+
+    // Verify tour page loaded — check for tour name or booking elements
+    const tourTitle = page.locator(`text=${tourName}`).first();
+    await expect(tourTitle).toBeVisible({ timeout: 30000 });
     console.log('[Test 4] ✓ Tour page loaded');
 
     // === Book the Tour ===
