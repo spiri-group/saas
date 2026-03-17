@@ -433,29 +433,29 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
                                                 ? isPurple
                                                     ? 'border-purple-500 bg-purple-500/10 hover:bg-purple-500/10'
                                                     : 'border-amber-500 bg-amber-500/10 hover:bg-amber-500/10'
-                                                : 'border-white/10 hover:border-white/20 hover:bg-transparent'
+                                                : 'border-white/20 bg-white/[0.03] hover:border-white/30 hover:bg-white/[0.05]'
                                         }`}
                                     >
                                         <div className="space-y-3 w-full">
-                                            <div className="flex items-baseline justify-between gap-2 flex-nowrap">
-                                                <p className={`text-base font-semibold whitespace-nowrap ${
+                                            <div>
+                                                <p className={`text-lg font-semibold ${
                                                     isSelected
                                                         ? isPurple ? 'text-purple-300' : 'text-amber-300'
-                                                        : 'text-white/90'
+                                                        : 'text-white'
                                                 }`}>
                                                     {tier.name}
                                                 </p>
-                                                <div className="whitespace-nowrap">
-                                                    <span className="text-xl font-bold">{formatPrice(tierPrice)}</span>
-                                                    <span className="text-muted-foreground text-sm">
+                                                <div className="mt-1">
+                                                    <span className={`text-2xl font-bold ${isSelected ? 'text-white' : 'text-white/90'}`}>{formatPrice(tierPrice)}</span>
+                                                    <span className="text-white/50 text-sm ml-0.5">
                                                         /{billingInterval === 'monthly' ? 'mo' : 'yr'}
                                                     </span>
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
                                                 {(TIER_OUTCOMES[tier.tier] || []).map((outcome, i) => (
-                                                    <p key={i} className="text-sm leading-relaxed text-muted-foreground">
-                                                        <span className={`inline-block mr-1.5 ${isPurple ? 'text-purple-400/70' : 'text-amber-400/70'}`}>&#x2022;</span>
+                                                    <p key={i} className="text-sm leading-relaxed text-white/70">
+                                                        <span className={`inline-block mr-1.5 ${isPurple ? 'text-purple-400' : 'text-amber-400'}`}>&#x2022;</span>
                                                         {outcome}
                                                     </p>
                                                 ))}
