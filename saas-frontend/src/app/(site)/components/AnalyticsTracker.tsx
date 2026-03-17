@@ -3,11 +3,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
-const ANALYTICS_ENDPOINT =
-    process.env.NEXT_PUBLIC_ANALYTICS_URL ||
-    (process.env.NEXT_PUBLIC_graphql_proxy
-        ? process.env.NEXT_PUBLIC_graphql_proxy.replace("/api/graphql", "/api/analytics-track")
-        : "/api/analytics-track");
+const ANALYTICS_ENDPOINT = "/api/analytics-track";
 
 function getSessionId(): string {
     if (typeof window === "undefined") return "";

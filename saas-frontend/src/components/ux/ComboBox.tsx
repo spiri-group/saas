@@ -198,6 +198,16 @@ const ComboBox = <T,>({ objectName, placeholder, actionVerb, items, fieldMapping
                             )
                     })}
                     </CommandGroup>
+                    <div className="px-2 pt-2 border-t border-input">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => setOpen(false)}
+                        >
+                            Close
+                        </Button>
+                    </div>
                 </Command>
             </PopoverContent>
         </Popover>
