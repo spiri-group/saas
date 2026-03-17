@@ -29,30 +29,6 @@ export const useUnblockPayouts = () => {
     });
 };
 
-export const useForcePublish = () => {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: async (vendorId: string) => {
-            const response = await gql<{
-                forcePublishVendor: MutationResponse;
-            }>(`
-                mutation ForcePublishVendor($vendorId: String!) {
-                    forcePublishVendor(vendorId: $vendorId) {
-                        code
-                        success
-                        message
-                    }
-                }
-            `, { vendorId });
-            return response.forcePublishVendor;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['console-vendor-accounts'] });
-            queryClient.invalidateQueries({ queryKey: ['console-account-stats'] });
-        },
-    });
-};
 
 export const useResetBillingRetry = () => {
     const queryClient = useQueryClient();

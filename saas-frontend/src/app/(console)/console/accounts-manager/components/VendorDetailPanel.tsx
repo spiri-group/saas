@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { ConsoleVendorAccount } from '../types';
 import { LifecycleStageBadge, DocTypeBadge, BillingOverrideBadge } from './AccountBadges';
 import useUpdateSubscriptionOverride from '../hooks/UseUpdateSubscriptionOverride';
-import { useUnblockPayouts, useForcePublish, useResetBillingRetry } from '../hooks/UseVendorQuickActions';
+import { useUnblockPayouts, useResetBillingRetry } from '../hooks/UseVendorQuickActions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,7 +22,6 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
     const sub = vendor.subscription;
     const updateOverride = useUpdateSubscriptionOverride();
     const unblockPayouts = useUnblockPayouts();
-    const forcePublish = useForcePublish();
     const resetBillingRetry = useResetBillingRetry();
 
     const [isImpersonating, setIsImpersonating] = useState(false);
@@ -80,7 +79,6 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
     const stripeAccountId = vendor.stripe?.accountId;
     const stripeCustomerId = vendor.stripe?.customerId;
     const showUnblockPayouts = sub?.payouts_blocked === true;
-    const showForcePublish = !vendor.publishedAt;
     const showResetBilling = sub?.payment_status === 'failed';
 
     return (
@@ -284,7 +282,7 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
                 )}
 
                 {/* Quick Actions */}
-                {(showUnblockPayouts || showForcePublish || showResetBilling) && (
+                {(showUnblockPayouts || showResetBilling) && (
                     <div className="space-y-3">
                         <h3 className="text-sm font-medium text-white flex items-center">
                             <Zap className="h-4 w-4 mr-2 text-amber-400" />
@@ -307,25 +305,6 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
                                         </>
                                     ) : (
                                         'Unblock Payouts'
-                                    )}
-                                </Button>
-                            )}
-                            {showForcePublish && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full border-green-500/30 text-green-400 hover:bg-green-500/10"
-                                    onClick={() => forcePublish.mutate(vendor.id)}
-                                    disabled={forcePublish.isPending}
-                                    data-testid="force-publish-btn"
-                                >
-                                    {forcePublish.isPending ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Publishing...
-                                        </>
-                                    ) : (
-                                        'Force Publish'
                                     )}
                                 </Button>
                             )}

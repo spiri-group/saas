@@ -5,7 +5,6 @@ type Mutation {
     ): UpdateSubscriptionOverrideResponse!
 
     unblockVendorPayouts(vendorId: String!): UpdateSubscriptionOverrideResponse!
-    forcePublishVendor(vendorId: String!): UpdateSubscriptionOverrideResponse!
     resetVendorBillingRetry(vendorId: String!): UpdateSubscriptionOverrideResponse!
 }
 

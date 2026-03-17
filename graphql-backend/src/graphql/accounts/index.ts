@@ -469,33 +469,6 @@ const resolvers = {
             }
         },
 
-        forcePublishVendor: async (_: any, args: { vendorId: string }, context: serverContext) => {
-            try {
-                const patchOps: PatchOperation[] = [
-                    { op: "set", path: "/publishedAt", value: DateTime.now().toISO() },
-                ]
-
-                await context.dataSources.cosmos.patch_record(
-                    VENDOR_CONTAINER,
-                    args.vendorId,
-                    args.vendorId,
-                    patchOps,
-                    context.userId || "CONSOLE_ADMIN"
-                )
-
-                return {
-                    code: "200",
-                    success: true,
-                    message: "Vendor published successfully"
-                }
-            } catch (err: any) {
-                return {
-                    code: "500",
-                    success: false,
-                    message: err.message || "Failed to publish vendor"
-                }
-            }
-        },
 
         resetVendorBillingRetry: async (_: any, args: { vendorId: string }, context: serverContext) => {
             try {
