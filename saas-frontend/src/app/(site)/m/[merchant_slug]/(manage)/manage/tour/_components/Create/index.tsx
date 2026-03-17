@@ -5,10 +5,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormDescription } fr
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CancelDialogButton from "@/components/ux/CancelDialogButton";
-import { DialogContent, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { DialogFooter } from "@/components/ui/dialog";
 import WithPaymentsEnabled from "@/app/(site)/m/_components/Banking/_components/WithPaymentsEnabled";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import VisuallyHidden from "@/components/ux/VisuallyHidden";
+
 import { useState } from "react";
 import ThumbnailInput from "@/components/ux/ThumbnailInput";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +23,7 @@ import CreateActivityList from "./components/CreateActivityList";
 import { StepIndicator } from "@/components/ui/step-indicator";
 import useVendorRefundPolicies from "@/app/(site)/m/_components/Profile/Edit/RefundPolicies/_hooks/UseVendorRefundPolicies";
 import ComboBox from "@/components/ux/ComboBox";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { escape_key, isNullOrUndefined } from "@/lib/functions";
 import UseVendorCurrency from "@/app/(site)/m/_hooks/UseVendorCurrency";
 
@@ -33,6 +33,8 @@ type BLProps = {
 
 const useBL = (props: BLProps) => {
     const router = useRouter();
+    const params = useParams();
+    const merchantSlug = params?.merchant_slug as string;
     const { form, mutation: createTour, values } = UseCreateTour(props.merchantId);
 
     const [currentStep, setCurrentStep] = useState(1);
@@ -144,7 +146,7 @@ const useBL = (props: BLProps) => {
 
                     // Close dialog and navigate
                     escape_key();
-                    router.push(`/m/${props.merchantId}/events-and-tours?listingId=${result.id}`);
+                    router.push(`/m/${merchantSlug}/manage/events-and-tours?listingId=${result.id}`);
                 } catch (error) {
                     toast.error("Failed to create tour");
                     console.error(error);
@@ -181,12 +183,7 @@ const CreateTour : React.FC<Props> = (props) => {
     const bl = useBL(props);
 
     return (
-        <DialogContent className="w-[1000px] h-[900px] flex flex-col">
-            <VisuallyHidden>
-                <DialogTitle>Create tour</DialogTitle>
-                <DialogDescription>Fill in the form to create a new tour for your catalogue.</DialogDescription>
-            </VisuallyHidden>
-
+        <div className="flex flex-col h-full">
             {/* Progress indicator */}
             <div className="flex items-center justify-between mb-4 px-4 pt-2">
                 <StepIndicator
@@ -459,7 +456,7 @@ const CreateTour : React.FC<Props> = (props) => {
                     </form>
                 </Form>
             </TooltipProvider>
-        </DialogContent>
+        </div>
     )
 }
 

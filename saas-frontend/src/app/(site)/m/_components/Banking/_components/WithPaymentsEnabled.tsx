@@ -105,18 +105,7 @@ withPaymentsEnabled = <P extends object>(
       || (!skipLocationCheck && (locationsConfigured.isLoading || locationsConfigured.data == null));
 
     if (isLoading) {
-      if (isDialogAlreadyOpen) {
-        return (
-          <DialogContent>
-            <VisuallyHidden>
-              <DialogTitle>Checking banking information available</DialogTitle>
-              <DialogDescription>Doing a pre-check as to whether you have set up your banking information yet. This is required to recieve payouts.</DialogDescription>
-            </VisuallyHidden>
-          </DialogContent>
-        )
-      } else {
-        return <></>;
-      }
+      return <></>;
     }
 
     // Only check locations if required (skip for services)

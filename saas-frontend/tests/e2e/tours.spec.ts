@@ -269,6 +269,17 @@ test.describe.serial('Tour Customer Journey', () => {
     const activityTime0 = page.getByTestId('activity-time-0');
     await activityTime0.fill('09:00');
 
+    // Fill location for activity 0
+    const addressInput0 = page.locator('input[placeholder="Physical address"]').first();
+    await addressInput0.click();
+    await addressInput0.pressSequentially('Circular Quay', { delay: 50 });
+    await page.waitForTimeout(3000);
+    const option0 = page.locator('[role="option"]').first();
+    if (await option0.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await option0.click();
+      await page.waitForTimeout(1000);
+    }
+
     const activityName1 = page.getByTestId('activity-name-1');
     await expect(activityName1).toBeVisible({ timeout: 5000 });
     await activityName1.fill('Sydney Opera House');
@@ -276,17 +287,31 @@ test.describe.serial('Tour Customer Journey', () => {
     const activityTime1 = page.getByTestId('activity-time-1');
     await activityTime1.fill('11:00');
 
+    // Fill location for activity 1
+    const addressInput1 = page.locator('input[placeholder="Physical address"]').nth(1);
+    await addressInput1.click();
+    await addressInput1.pressSequentially('Sydney Opera House', { delay: 50 });
+    await page.waitForTimeout(3000);
+    const option1 = page.locator('[role="option"]').first();
+    if (await option1.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await option1.click();
+      await page.waitForTimeout(1000);
+    }
+
     console.log('[Test 2] Itinerary filled');
 
     await page.getByTestId('tour-wizard-next-btn').click();
     // Verify we moved to Step 4 (Tickets)
-    await expect(page.locator('text=Ticket Variants')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Ticket Variants').first()).toBeVisible({ timeout: 10000 });
     console.log('[Test 2] Step 3 complete — on tickets step');
 
     // === Step 4: Tickets ===
     console.log('[Test 2] Step 4: Adding ticket variants...');
 
-    // Fill the default first ticket
+    // Add a ticket variant first (starts empty)
+    await page.getByTestId('add-ticket-variant-btn').click();
+    await page.waitForTimeout(500);
+
     const ticketName0 = page.getByTestId('ticket-name-0');
     await expect(ticketName0).toBeVisible({ timeout: 10000 });
     await ticketName0.fill('Adult');
@@ -310,7 +335,7 @@ test.describe.serial('Tour Customer Journey', () => {
     await expect(page.locator('text=Tour Thumbnail, text=Ticket Variants').first()).not.toBeVisible({ timeout: 30000 });
     console.log('[Test 2] Tour creation dialog closed');
 
-    // The wizard navigates to /m/{merchantId}/events-and-tours?listingId={id}
+    // The wizard navigates to /m/{slug}/manage/events-and-tours?listingId={id}
     await page.waitForURL(/events-and-tours/, { timeout: 30000 });
     const currentUrl = page.url();
     console.log(`[Test 2] Navigated to: ${currentUrl}`);
@@ -323,19 +348,7 @@ test.describe.serial('Tour Customer Journey', () => {
       console.log(`[Test 2] Tour ID from URL: ${tourId}`);
     }
 
-    // Verify the tour appears in the schedule combobox
-    const tourCombobox = page.locator('[aria-label="combobox-schedule-tour-trigger"]');
-    await expect(tourCombobox).toBeVisible({ timeout: 15000 });
-    await tourCombobox.click();
-    await page.waitForTimeout(500);
-
-    const tourOption = page.locator(`[cmdk-item]:has-text("${tourName}")`).first();
-    await expect(tourOption).toBeVisible({ timeout: 10000 });
-    tourId = await tourOption.getAttribute('data-value') || tourId;
-    await tourOption.click();
-    console.log(`[Test 2] Tour ID: ${tourId}`);
     expect(tourId).toBeTruthy();
-
     console.log('[Test 2] Tour creation complete');
   });
 

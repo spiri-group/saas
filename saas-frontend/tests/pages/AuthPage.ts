@@ -8,8 +8,8 @@ import { BasePage } from './BasePage';
 export class AuthPage extends BasePage {
   // Selectors
   private readonly selectors = {
-    emailInput: 'input[name="email"]',
-    loginSignupButton: 'button:has-text("Login / Signup")',
+    emailInput: '[data-testid="signin-email-input"]',
+    loginSignupButton: '[data-testid="signin-send-code-btn"]',
     otpInputGroup: '[aria-label="input-login-otp"]',
     otpSlot: (index: number) => `[aria-label="input-login-otp"] input:nth-child(${index + 1})`,
     resendButton: 'button[aria-label="Resend Code"]',
@@ -41,6 +41,22 @@ export class AuthPage extends BasePage {
    * Start auth flow with email
    */
   async startAuthFlow(email: string) {
+    // Click Sign Up / Log In to reveal the email input
+    const signUpBtn = this.page.locator('button:has-text("Sign Up")');
+    const loginSignupBtn = this.page.locator('button:has-text("Login / Signup")');
+    const logInBtn = this.page.locator('button:has-text("Log In")');
+
+    if (await signUpBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await signUpBtn.click();
+    } else if (await loginSignupBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await loginSignupBtn.click();
+    } else if (await logInBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await logInBtn.click();
+    }
+
+    // Wait for email input to animate in
+    await this.page.waitForSelector(this.selectors.emailInput, { state: 'visible', timeout: 10000 });
+
     await this.enterEmail(email);
     await this.clickLoginSignup();
 
