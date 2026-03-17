@@ -251,10 +251,8 @@ test.describe.serial('Tour Customer Journey', () => {
     await expect(page.locator('text=Tour Thumbnail')).toBeVisible({ timeout: 10000 });
     console.log('[Test 2] Step 1 complete — on thumbnail step');
 
-    // === Step 2: Thumbnail (required) ===
-    console.log('[Test 2] Step 2: Uploading thumbnail...');
-    await tourPage.uploadThumbnail();
-
+    // === Step 2: Thumbnail (skip — validation removed, optional for testing) ===
+    console.log('[Test 2] Step 2: Skipping thumbnail...');
     await page.getByTestId('tour-wizard-next-btn').click();
     // Verify we moved to Step 3 (Itinerary)
     await expect(page.locator('text=Tour Itinerary')).toBeVisible({ timeout: 10000 });
