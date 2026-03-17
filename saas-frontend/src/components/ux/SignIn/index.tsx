@@ -3,19 +3,20 @@
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
 import { sendOTP } from "./function";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { signIn, useSession } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { RefreshCw, X } from "lucide-react";
+import { RefreshCw, LogIn, UserPlus, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 export const SignIn = () => {
   const queryClient = useQueryClient();
   const { update } = useSession();
 
+  const [showEmailInput, setShowEmailInput] = useState(false);
   const [otpCaptureActive, setOtpCaptureActive] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
@@ -31,9 +32,12 @@ export const SignIn = () => {
   const [resendStatus, setResendStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [firstSend, setFirstSend] = useState(true);
 
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
   const handleCancel = () => {
     setOtpSent(false);
     setOtpCaptureActive(false);
+    setShowEmailInput(false);
     setEmail(null);
     setOtp("");
     setResendCount(0);
@@ -45,10 +49,18 @@ export const SignIn = () => {
     if (otpSent) {
       const timer = setTimeout(() => {
         setOtpCaptureActive(true);
-      }, 5000);
+      }, 2000);
       return () => clearTimeout(timer);
     }
   }, [otpSent]);
+
+  // Focus the email input when it appears
+  useEffect(() => {
+    if (showEmailInput && emailInputRef.current) {
+      // Small delay to let the animation start
+      setTimeout(() => emailInputRef.current?.focus(), 100);
+    }
+  }, [showEmailInput]);
 
   const isValidEmail = (email: string | null): boolean =>
     !!email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -179,7 +191,10 @@ export const SignIn = () => {
   if (otpSent) {
     if (otpCaptureActive) {
       return (
-        <div className="flex flex-col md:flex-row items-center gap-2 w-full max-w-md">
+        <div className="flex flex-col items-center gap-3 w-full max-w-md">
+          <p className="text-white/80 text-sm text-center">
+            We sent a code to <span className="text-white font-medium">{email}</span>
+          </p>
           <InputOTP key={otpKey} aria-label="input-login-otp" maxLength={6} autoFocus onChange={handleOTPChange}>
             <InputOTPGroup>
               {[...Array(6)].map((_, idx) => (
@@ -188,30 +203,24 @@ export const SignIn = () => {
             </InputOTPGroup>
           </InputOTP>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={handleResendOTP}
               disabled={otpSending}
               aria-label="Resend Code"
-              title={
-                resendCount >= 3
-                  ? "Resend limit reached"
-                  : resendCooldown
-                  ? "Try again shortly"
-                  : "Resend Code"
-              }
+              data-testid="signin-resend-btn"
               className={cn(
-                "transition-colors duration-300",
-                resendStatus === "success" && "text-green-500",
-                resendStatus === "error" && "text-red-500",
+                "border-white/20 transition-colors duration-300",
+                resendStatus === "success" && "text-green-400 border-green-400/30",
+                resendStatus === "error" && "text-red-400 border-red-400/30",
                 resendStatus === "sending" && "animate-spin opacity-50 pointer-events-none",
-                resendStatus === "idle" && "text-white/70 hover:text-white"
+                resendStatus === "idle" && "text-white/80 hover:text-white hover:bg-white/10"
               )}
             >
               <RefreshCw className="w-4 h-4 mr-1" />
-              Resend
+              Resend Code
             </Button>
 
             <Button
@@ -219,10 +228,9 @@ export const SignIn = () => {
               size="sm"
               onClick={handleCancel}
               aria-label="Cancel"
-              title="Cancel"
-              className="text-white/70 hover:text-white"
+              data-testid="signin-cancel-btn"
+              className="text-white/60 hover:text-white"
             >
-              <X className="w-4 h-4 mr-1" />
               Cancel
             </Button>
           </div>
@@ -239,25 +247,76 @@ export const SignIn = () => {
 
   return (
     <div className={cn("flex flex-col items-center", divClassName)}>
-      <form
-        className="flex flex-row space-x-2 w-full"
-        onSubmit={handleSendOTP}
+      {/* Step 1: Log In / Sign Up buttons */}
+      <div
+        className={cn(
+          "flex flex-row gap-3 w-full transition-all duration-300 ease-out overflow-hidden",
+          showEmailInput ? "max-h-0 opacity-0 mb-0" : "max-h-20 opacity-100 mb-0"
+        )}
       >
-        <Input
-          name="email"
-          placeholder="Email"
-          autoComplete="email"
-          glass={false}
-          onChange={(ev) => setEmail(ev.target.value)}
-        />
         <Button
-          type="submit"
-          className="flex-none w-40"
-          disabled={!isValidEmail(email)}
+          type="button"
+          variant="outline"
+          className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+          onClick={() => setShowEmailInput(true)}
+          data-testid="signin-login-btn"
         >
-          Login / Signup
+          <LogIn className="w-4 h-4 mr-2" />
+          Log In
         </Button>
-      </form>
+        <Button
+          type="button"
+          className="flex-1"
+          onClick={() => setShowEmailInput(true)}
+          data-testid="signin-signup-btn"
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          Sign Up
+        </Button>
+      </div>
+
+      {/* Step 2: Email input (animates in) */}
+      <div
+        className={cn(
+          "w-full transition-all duration-300 ease-out overflow-hidden",
+          showEmailInput ? "max-h-20 opacity-100" : "max-h-0 opacity-0"
+        )}
+      >
+        <form
+          className="flex flex-row space-x-2 w-full items-center"
+          onSubmit={handleSendOTP}
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => { setShowEmailInput(false); setEmail(null); }}
+            className="flex-none text-white/70 hover:text-white"
+            data-testid="signin-back-btn"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back
+          </Button>
+          <Input
+            ref={emailInputRef}
+            name="email"
+            placeholder="Enter your email"
+            autoComplete="email"
+            glass={false}
+            onChange={(ev) => setEmail(ev.target.value)}
+            data-testid="signin-email-input"
+          />
+          <Button
+            type="submit"
+            className="flex-none"
+            disabled={!isValidEmail(email)}
+            data-testid="signin-send-code-btn"
+          >
+            Continue
+          </Button>
+        </form>
+      </div>
+
       <p className="text-xs text-white/50 mt-2 text-center" data-testid="signin-legal-text">
         By continuing, you agree to our{' '}
         <Link href="/legal/terms-of-service" className="underline hover:text-white/70">

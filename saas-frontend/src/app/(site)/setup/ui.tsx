@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Form } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { Mail } from 'lucide-react';
+
 import SpiriLogo from '@/icons/spiri-logo';
 import { SignIn } from '@/components/ux/SignIn';
 
@@ -421,14 +421,10 @@ export default function SetupUI() {
                             </h1>
                         </div>
                         <div className="space-y-6 text-center">
-                            <div className="flex items-center justify-center gap-2 text-indigo-300">
-                                <Mail className="w-5 h-5" />
-                                <p className="text-lg font-medium">First, we need your email</p>
-                            </div>
                             <p className="text-slate-300 text-sm leading-relaxed">
-                                Enter your email to get started. We&apos;ll send you a verification code.
+                                Log in to your account or create a new one to get started.
                             </p>
-                            <div className="pt-4">
+                            <div className="pt-2">
                                 <SignIn />
                             </div>
                         </div>
