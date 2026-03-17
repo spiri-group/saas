@@ -355,73 +355,55 @@ test.describe.serial('Tour Customer Journey', () => {
   test('3. Schedule tour sessions', async ({ page }) => {
     test.setTimeout(120000);
 
-    // Restore merchant session
-    if (merchantStorageState) {
-      await page.context().addCookies(merchantStorageState.cookies);
-      console.log('[Test 3] Restored merchant session');
-    } else {
-      throw new Error('Merchant storage state not available');
-    }
+    expect(merchantStorageState).toBeTruthy();
+    await page.context().addCookies(merchantStorageState!.cookies);
+    console.log('[Test 3] Restored merchant session');
 
-    const tourPage = new TourPage(page);
-
-    // Navigate to Events & Tours page
-    await tourPage.navigateToEventsAndTours(merchantSlug);
+    // Navigate to Events & Tours page with listingId to auto-select the tour
+    expect(tourId).toBeTruthy();
+    await page.goto(`/m/${merchantSlug}/manage/events-and-tours?listingId=${tourId}`);
+    await page.waitForLoadState('networkidle');
     await page.waitForTimeout(3000);
+    console.log('[Test 3] On events-and-tours page with tour pre-selected');
 
-    // Take screenshot to see page state
-    await page.screenshot({ path: 'test-results/test3-events-and-tours.png' });
-    console.log(`[Test 3] Current URL: ${page.url()}`);
+    // Capacity input should now be visible
+    const capacityInput = page.locator('input[name="schedule.capacity"]');
+    await expect(capacityInput).toBeVisible({ timeout: 10000 });
+    await capacityInput.clear();
+    await capacityInput.fill('20');
+    console.log('[Test 3] Capacity set to 20');
 
-    // Check if page loaded correctly (might be blocked by payments requirement)
-    const scheduleDatesPanel = page.locator('[data-testid="schedule-dates-panel"]');
-    if (!await scheduleDatesPanel.isVisible({ timeout: 10000 }).catch(() => false)) {
-      console.log('[Test 3] Schedule panel not visible - checking for payment requirements...');
+    // Select dates on the calendar — click on available date cells
+    // The calendar should show the current month. Click a few future dates.
+    const calendarDays = page.locator('[role="gridcell"]:not([aria-disabled="true"])');
+    const dayCount = await calendarDays.count();
+    console.log(`[Test 3] Found ${dayCount} available calendar days`);
 
-      // Check for any payment/stripe warning
-      const paymentWarning = page.locator('text=payment, text=Stripe, text=connect');
-      if (await paymentWarning.first().isVisible({ timeout: 3000 }).catch(() => false)) {
-        console.log('[Test 3] Page requires payments to be fully configured');
+    // Click up to 3 available future dates
+    let datesSelected = 0;
+    for (let i = 0; i < dayCount && datesSelected < 3; i++) {
+      const day = calendarDays.nth(i);
+      const text = await day.textContent();
+      // Skip days that are in the past (we only want future dates)
+      if (text && parseInt(text) > new Date().getDate()) {
+        await day.click();
+        await page.waitForTimeout(300);
+        datesSelected++;
       }
-
-      // Take another screenshot for debugging
-      await page.screenshot({ path: 'test-results/test3-page-blocked.png' });
     }
+    console.log(`[Test 3] Selected ${datesSelected} dates`);
+    expect(datesSelected).toBeGreaterThan(0);
 
-    console.log('[Test 3] Scheduling tour sessions...');
+    // Click Schedule / Save button
+    const scheduleBtn = page.locator('button[type="submit"]:has-text("Schedule"), button[type="submit"]').first();
+    await expect(scheduleBtn).toBeVisible({ timeout: 5000 });
+    await scheduleBtn.click();
+    await page.waitForTimeout(3000);
+    console.log('[Test 3] Clicked schedule');
 
-    // Select the tour we created
-    await tourPage.selectTourForScheduling(tourName);
-    console.log('[Test 3] ✓ Tour selected');
-
-    // Set capacity
-    await tourPage.setSessionCapacity(20);
-    console.log('[Test 3] ✓ Capacity set to 20');
-
-    // Select dates - next 3 days
-    const today = new Date();
-    const dates = [
-      new Date(today.getTime() + 24 * 60 * 60 * 1000), // Tomorrow
-      new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000), // Day after
-      new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-    ];
-
-    await tourPage.selectDatesForScheduling(dates);
-    console.log('[Test 3] ✓ Dates selected');
-
-    // Save the schedule
-    await tourPage.saveSchedule();
-
-    // Verify sessions were created
-    await page.waitForTimeout(2000);
-    const sessionsPanel = page.locator('[data-testid="sessions-panel"], text=Scheduled Sessions');
-    const hasSessions = await sessionsPanel.isVisible({ timeout: 5000 }).catch(() => false);
-
-    if (hasSessions) {
-      console.log('[Test 3] ✓ Sessions scheduled and visible');
-    }
-
-    console.log('[Test 3] ✓ Session scheduling complete');
+    // Verify sessions were created — check for session entries in the Sessions panel
+    await expect(page.locator('text=Sessions')).toBeVisible({ timeout: 10000 });
+    console.log('[Test 3] Session scheduling complete');
   });
 
   test('4. Customer signs up and books tour', async ({ page }, testInfo) => {
