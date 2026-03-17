@@ -121,7 +121,7 @@ export default function MarketingPanel({ theme }: Props) {
     // Merchant & practitioner steps — themed gradient panel
     const gradientBg = theme === 'purple'
         ? 'bg-gradient-to-br from-purple-950/80 via-violet-900/50 to-indigo-950/80 border-purple-500/20'
-        : 'bg-gradient-to-br from-amber-700 via-orange-600 to-amber-700 border-amber-500/30';
+        : 'bg-gradient-to-b from-amber-800/95 to-orange-900/95 border-amber-500/20';
 
     return (
         <div className={`h-full flex flex-col justify-center px-8 py-8 rounded-2xl border ${gradientBg} animate-fade-in`}>
