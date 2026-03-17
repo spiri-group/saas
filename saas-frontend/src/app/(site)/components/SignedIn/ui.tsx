@@ -338,8 +338,9 @@ const GetStartedDialog: React.FC<GetStartedDialogProps> = ({
     const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
     const { data: tiers, isLoading: tiersLoading } = useSubscriptionTiers(config.profileType);
 
-    const availableTiers = (tiers?.filter(t => (config.tiers as readonly string[]).includes(t.tier)) || [])
-        .sort((a, b) => config.tiers.indexOf(a.tier as typeof config.tiers[number]) - config.tiers.indexOf(b.tier as typeof config.tiers[number]));
+    const tierOrder = config.tiers as readonly string[];
+    const availableTiers = (tiers?.filter(t => tierOrder.includes(t.tier)) || [])
+        .sort((a, b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier));
 
     const selectedTierDef = availableTiers.find(t => t.tier === selectedTier);
     const price = selectedTierDef
