@@ -201,7 +201,6 @@ const CreateScheduleComponent: React.FC<Props> = (props) => {
                                     <ChooseActivityAndTicketList
                                             form={bl.form}
                                             activityListOptions={bl.listings.selected == null ? [] : bl.listings.selected.activityLists}
-                                            ticketListOptions={[]}
                                             className="w-[870px] h-[600px] flex flex-col"
                                         />
                                 </Dialog>

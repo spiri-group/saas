@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { selectedActivityListSchema, selectedTicketListSchema } from "../components/ChooseActivityAndTicketList";
+import { selectedActivityListSchema } from "../components/ChooseActivityAndTicketList";
 
 export type formSchemaType = z.infer<typeof formSchema>
 
@@ -15,8 +15,7 @@ const scheduleSchema = z.object({
     dates: z.array(z.string()).optional(),
     name: z.string().optional(),
     capacity: z.coerce.number().min(1),
-    activityList: selectedActivityListSchema,
-    ticketList: selectedTicketListSchema
+    activityList: selectedActivityListSchema
 }).refine((data) => {
     if (data.recurrenceRule != null && data.dates != null) {
         return false
@@ -49,8 +48,7 @@ const UseScheduleSession = (vendorId: string) => {
                 dates: undefined,
                 name: undefined,
                 capacity: 10,
-                activityList: undefined,
-                ticketList: undefined
+                activityList: undefined
             }
         }
     })
@@ -83,8 +81,7 @@ const UseScheduleSession = (vendorId: string) => {
                             dates: values.schedule.dates,
                             capacity: values.schedule.capacity,
                             recurrenceRule: values.schedule.recurrenceRule,
-                            activityListId: values.schedule.activityList.id,
-                            ticketListId: values.schedule.ticketList.id
+                            activityListId: values.schedule.activityList.id
                         }
                     }
                 )
