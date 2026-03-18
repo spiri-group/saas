@@ -56,8 +56,14 @@ const SessionsComponent : React.FC<SessionsProps> = ({ merchantId, canOperate = 
             <Panel className="flex flex-col flex-grow h-0 md:h-auto">
                 <PanelHeader>Sessions</PanelHeader>
                 <PanelContent className="overflow-y-auto flex-grow">
-                    {bl.sessions.isLoading ? (<span> Loading your sessions, give us a moment... </span>) : <></>}
-                    {!bl.sessions.isLoading && bl.sessions.get.length == 0 ? (<span>You have no sessions, create one now using the scheduler on the left.</span>) :
+                    {bl.sessions.isLoading ? (<span className="text-sm text-slate-400"> Loading sessions... </span>) : <></>}
+                    {!bl.sessions.isLoading && bl.sessions.get.length == 0 ? (
+                        <div className="text-center py-8 text-slate-400">
+                            <PersonWalking fillVariant="accent" height={40} className="mx-auto mb-3 opacity-30" />
+                            <p className="text-sm">No upcoming sessions</p>
+                            <p className="text-xs mt-1">Select a tour and pick dates on the left to schedule sessions</p>
+                        </div>
+                    ) :
                         (
                             <ul className="flex flex-col divide-y divide-slate-300">
                                 {

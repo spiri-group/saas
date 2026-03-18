@@ -150,6 +150,11 @@ const CreateScheduleComponent: React.FC<Props> = (props) => {
                                         }}
                                     />
                                 </FormControl>
+                                {bl.listings.get != null && bl.listings.get.length === 0 && (
+                                    <p className="text-xs text-slate-400 mt-2">
+                                        No tours yet. Create a tour from the Catalogue menu first, then come back here to schedule sessions.
+                                    </p>
+                                )}
                             </FormItem>
                         )
                     }} />
