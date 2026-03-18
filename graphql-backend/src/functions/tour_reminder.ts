@@ -1,9 +1,11 @@
 import { DateTime } from "luxon";
 import { sender_details } from "../client/email_templates";
 import { booking_type, session_type, tour_type } from "../graphql/eventandtour/types";
+import { vendor_type } from "../graphql/vendor/types";
 import { CosmosDataSource } from "../utils/database";
 import { AzureEmailDataSource } from "../services/azureEmail";
 import { LogManager } from "../utils/functions";
+import { renderEmailTemplate } from "../graphql/email/utils";
 
 /**
  * Extracted core logic for tour reminders.
@@ -158,30 +160,34 @@ async function processSessionReminders(
 
     for (const booking of bookings) {
       try {
-        // Get activity list for location info
-        const activityList = tour.activityLists.find(al => al.id === session.activityListId);
-        const firstActivity = activityList?.activities?.[0];
-        const location = firstActivity?.location?.formattedAddress || 'See tour details for location';
+        // Get vendor slug for booking URL
+        let vendorSlug = '';
+        try {
+          const vendor = await cosmos.get_record<vendor_type>("Main-Vendor", session.forObject.partition[0] || '', session.forObject.partition[0] || '');
+          vendorSlug = vendor?.slug || '';
+        } catch { /* vendor slug is optional for the URL */ }
 
-        // Build email payload
-        const emailPayload = {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spiriverse.com';
+
+        // Render email from Cosmos template
+        const mockDataSources = { cosmos } as any;
+        const emailContent = await renderEmailTemplate(mockDataSources, templateId, {
           tourName: tour.name,
           sessionDate: formatDate(session.date),
           sessionTime: formatTime(session.time.start),
-          location: location,
           bookingCode: booking.code,
-          customerName: booking.user?.name || 'Valued Customer',
-          totalTickets: getTotalTickets(booking),
-          reminderType: reminderType === '24H' ? 'tomorrow' : 'in 2 hours'
-        };
+          customerName: booking.user?.name || booking.customerEmail.split('@')[0],
+          bookingUrl: vendorSlug ? `${baseUrl}/booking/${vendorSlug}/${booking.code}` : ''
+        });
 
-        // Send reminder email via Cosmos template
-        await email.sendEmail(
-          sender_details.from,
-          booking.customerEmail,
-          templateId,
-          emailPayload
-        );
+        if (emailContent) {
+          await email.sendRawHtmlEmail(
+            sender_details.from,
+            booking.customerEmail,
+            emailContent.subject,
+            emailContent.html
+          );
+        }
 
         // Update booking to mark reminder as sent
         const now = DateTime.now().toISO();
