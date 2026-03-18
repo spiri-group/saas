@@ -23,7 +23,7 @@ export default function HomeSearch() {
         <div className="absolute -inset-2 bg-gradient-to-r from-[#f6b041]/30 via-[#e8b84d]/20 to-[#d4b5f7]/30 rounded-full blur-xl opacity-60 group-hover:opacity-80 transition-all duration-500"></div>
         
         {/* Main search bar */}
-        <div className="relative flex items-center w-full h-16 px-7 rounded-full bg-white/90 backdrop-blur-sm shadow-xl border border-white/50">
+        <div className="relative flex items-center w-full h-12 md:h-16 px-5 md:px-7 rounded-full bg-white/90 backdrop-blur-sm shadow-xl border border-white/50">
           <svg 
             className="w-5 h-5 text-slate-400" 
             fill="none" 
@@ -42,7 +42,7 @@ export default function HomeSearch() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search for what you seek..."
-            className="flex-1 ml-4 text-lg outline-none text-slate-700 placeholder-slate-400 bg-transparent font-light"
+            className="flex-1 ml-3 md:ml-4 text-base md:text-lg outline-none text-slate-700 placeholder-slate-400 bg-transparent font-light"
           />
         </div>
       </div>
