@@ -10,7 +10,16 @@ export function reportFrontendError(error: Error & { digest?: string }, source: 
       alertType: 'FRONTEND_ERROR',
       severity: 'HIGH',
       title: `Client error: ${error.message?.slice(0, 120) || 'Unknown error'}`,
-      message: `A user encountered an unhandled error on ${typeof window !== 'undefined' ? window.location.href : 'unknown page'}`,
+      message: [
+        `URL: ${typeof window !== 'undefined' ? window.location.href : 'unknown'}`,
+        `Error: ${error.message}`,
+        `User-Agent: ${typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'}`,
+        `Time: ${new Date().toISOString()}`,
+        error.digest ? `Digest: ${error.digest}` : null,
+        '',
+        'Stack trace:',
+        error.stack?.slice(0, 1500) || 'No stack trace available',
+      ].filter(Boolean).join('\n'),
       context: {
         errorMessage: error.message,
         url: typeof window !== 'undefined' ? window.location.href : undefined,
@@ -19,6 +28,8 @@ export function reportFrontendError(error: Error & { digest?: string }, source: 
         additionalData: {
           digest: error.digest,
           timestamp: new Date().toISOString(),
+          referrer: typeof document !== 'undefined' ? document.referrer : undefined,
+          screenSize: typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : undefined,
         },
       },
       source: {

@@ -35,10 +35,10 @@ export default function GlobalError({
             ✦
           </div>
           <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '12px' }}>
-            Something went wrong
+            This page didn&apos;t load correctly
           </h1>
           <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.6)', marginBottom: '32px', maxWidth: '400px' }}>
-            We hit an unexpected issue. Please try again, or head back to the homepage.
+            No worries — this is a temporary hiccup on our end and we&apos;ve been notified. You can try refreshing, or head back to the homepage.
           </p>
           <div style={{ display: 'flex', gap: '12px' }}>
             <button
