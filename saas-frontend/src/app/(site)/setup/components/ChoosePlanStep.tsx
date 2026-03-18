@@ -242,7 +242,7 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
                             key={tier.tier}
                             className={cn(
                                 'transition-all',
-                                isGrayscale && 'grayscale opacity-40 pointer-events-none',
+                                isGrayscale && 'grayscale opacity-50 hover:grayscale-0 hover:opacity-100 cursor-pointer',
                             )}
                         >
                             <TierCard
