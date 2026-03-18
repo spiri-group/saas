@@ -217,12 +217,15 @@ const CreateTour : React.FC<Props> = (props) => {
                                             <FormField
                                                 name="name"
                                                 control={bl.form.control}
-                                                render={({ field }) => (
-                                                    <FormItem className="flex-1 flex flex-row items-center space-x-3 space-y-0">
-                                                        <FormLabel className="text-sm font-medium">Tour Name *</FormLabel>
-                                                        <FormControl>
-                                                            <Input {...field} placeholder="Enter tour name" autoFocus />
-                                                        </FormControl>
+                                                render={({ field, fieldState }) => (
+                                                    <FormItem className="flex-1 flex flex-col space-y-1">
+                                                        <div className="flex flex-row items-center space-x-3">
+                                                            <FormLabel className="text-sm font-medium">Tour Name *</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} placeholder="Enter tour name" autoFocus className={fieldState.error ? 'border-red-500' : ''} />
+                                                            </FormControl>
+                                                        </div>
+                                                        {fieldState.error && <span className="text-xs text-red-500">{fieldState.error.message}</span>}
                                                     </FormItem>
                                                 )} />
                                         </CardTitle>

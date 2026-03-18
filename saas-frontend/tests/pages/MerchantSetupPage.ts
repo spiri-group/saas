@@ -113,6 +113,7 @@ export class MerchantSetupPage extends BasePage {
 
     // ── Step 3: Navigate to setup page ──
     await this.page.goto('/setup');
+    await handleConsentGuardIfPresent(this.page);
     await userSetupPage.waitForForm();
 
     // Get user ID from session for cleanup registration
