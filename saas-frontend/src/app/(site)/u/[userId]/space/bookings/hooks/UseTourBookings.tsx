@@ -14,6 +14,11 @@ const queryFn = async (userId?: string, vendorId?: string) => {
             tourBookings(userId: $userId, vendorId: $vendorId) {
                 code,
                 datetime,
+                vendorId,
+                vendor {
+                    slug
+                    name
+                },
                 ref {
                     id
                     partition,

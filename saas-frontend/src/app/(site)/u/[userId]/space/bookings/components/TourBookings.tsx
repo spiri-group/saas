@@ -9,7 +9,7 @@ import { CommunicationModeType, order_type } from "@/utils/spiriverse";
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ChatControl from "@/components/ux/ChatControl";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronsUpDown, QrCode } from "lucide-react";
+import { ChevronsUpDown, QrCode, ExternalLink } from "lucide-react";
 import { Drawer, DrawerTrigger, DrawerContent } from "@/components/ui/drawer";
 import BookingQRCode from "@/components/ux/BookingQRCode";
 
@@ -154,25 +154,17 @@ const TourBookings: React.FC<Props> = (props) => {
                                             </DialogContent>
                                         </Dialog>
                                         <DrawerDialogMerchantChat />
-                                        {/* <Button variant="link" onClick={() => bl.selectedOrderChat.set(tourBooking.order)}>Merchant Chat</Button> */}
-                                        {/* <div className="flex flex-col space-y-2">
-                                            {tourBooking.order.refundRequest != null &&
-                                                <RefundStatusBadge status={tourBooking.order.refundRequest.status} />
-                                            }
-                                            {   
-                                                tourBooking.order.refundRequest == null || tourBooking.order.refundRequest.status != "FULL REFUND" &&
-                                                <Button variant="link" onClick={() => bl.selectedOrderForRefund.set(tourBooking.order)}>
-                                                    {has_pending_refund_request ? "Update refund request" : "Request refund" }
-                                                </Button>
-                                            }
-                                        </div> */}
-                                        {/* {
-                                            tourBooking.order.refundRequest == null || tourBooking.order.refundRequest.status != "FULL REFUND" &&
-                                            <>
-                                                <Button variant="link">Change day</Button>
-                                                <Button variant="link">Add tickets</Button>
-                                            </>
-                                        } */}
+                                        {(tourBooking as any).vendor?.slug && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => window.open(`/booking/${(tourBooking as any).vendor.slug}/${tourBooking.code}`, '_blank')}
+                                                data-testid={`manage-booking-btn-${tourBooking.code}`}
+                                            >
+                                                <ExternalLink className="h-4 w-4 mr-1" />
+                                                Manage
+                                            </Button>
+                                        )}
                                     </div>
                                 </Panel>
                             </li>

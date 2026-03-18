@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Calendar, Clock, Ticket, AlertCircle, CheckCircle2, XCircle, Mail, Loader2, Pencil, Plus, Minus } from "lucide-react";
 import UseCustomerModifyBooking from "./hooks/UseCustomerModifyBooking";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -66,10 +67,15 @@ function getStatusBadge(status: string) {
 }
 
 function ModifyBookingSection({ booking, bookingCode, merchantSlug }: { booking: any; bookingCode: string; merchantSlug: string }) {
+    const { data: session } = useSession();
     const [isEditing, setIsEditing] = useState(false);
     const [quantities, setQuantities] = useState<Record<string, number>>({});
     const [verifyEmail, setVerifyEmail] = useState('');
     const modifyMutation = UseCustomerModifyBooking();
+
+    // Auto-fill email from session if logged in
+    const isLoggedIn = !!session?.user?.email;
+    const effectiveEmail = isLoggedIn ? session.user.email! : verifyEmail;
 
     // Initialize quantities from current booking
     const startEditing = () => {
@@ -107,7 +113,7 @@ function ModifyBookingSection({ booking, bookingCode, merchantSlug }: { booking:
 
         await modifyMutation.mutateAsync({
             bookingCode,
-            customerEmail: verifyEmail,
+            customerEmail: effectiveEmail,
             merchantSlug,
             ticketChanges
         });
@@ -205,17 +211,19 @@ function ModifyBookingSection({ booking, bookingCode, merchantSlug }: { booking:
                             )}
                         </div>
 
-                        <div>
-                            <Label htmlFor="modify-email" className="text-sm">Confirm your email</Label>
-                            <Input
-                                id="modify-email"
-                                type="email"
-                                placeholder="your@email.com"
-                                value={verifyEmail}
-                                onChange={(e) => setVerifyEmail(e.target.value)}
-                                data-testid="modify-verify-email"
-                            />
-                        </div>
+                        {!isLoggedIn && (
+                            <div>
+                                <Label htmlFor="modify-email" className="text-sm">Confirm your email</Label>
+                                <Input
+                                    id="modify-email"
+                                    type="email"
+                                    placeholder="your@email.com"
+                                    value={verifyEmail}
+                                    onChange={(e) => setVerifyEmail(e.target.value)}
+                                    data-testid="modify-verify-email"
+                                />
+                            </div>
+                        )}
 
                         {modifyMutation.isError && (
                             <p className="text-sm text-red-500">{(modifyMutation.error as Error)?.message || 'Failed to update booking'}</p>
@@ -226,7 +234,7 @@ function ModifyBookingSection({ booking, bookingCode, merchantSlug }: { booking:
                             <Button
                                 className="flex-1"
                                 onClick={handleSubmit}
-                                disabled={!verifyEmail || modifyMutation.isPending}
+                                disabled={!effectiveEmail || modifyMutation.isPending}
                                 data-testid="confirm-modify-btn"
                             >
                                 {modifyMutation.isPending ? (
