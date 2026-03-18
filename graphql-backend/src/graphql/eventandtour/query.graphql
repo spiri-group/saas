@@ -20,7 +20,7 @@ type Query {
   waitlistStatus(sessionRef: RecordRefInput!, customerEmail: String): WaitlistStatusResponse
   myWaitlistEntries(customerEmail: String!, vendorId: ID!): [WaitlistEntry]
   # Tour analytics
-  tourAnalytics(vendorId: ID!, dateRange: DateRangeInput): TourAnalytics
+  tourAnalytics(vendorId: ID!, dateRange: DateRangeInput, tourId: ID): TourAnalytics
   # Public booking lookup (no auth required - for customer self-cancellation portal)
   publicBookingByCode(code: String!, merchantSlug: String!): PublicBookingDetails
 }

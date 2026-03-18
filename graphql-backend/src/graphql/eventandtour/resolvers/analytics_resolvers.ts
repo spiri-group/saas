@@ -42,10 +42,10 @@ export const analytics_resolvers = {
     Query: {
         tourAnalytics: async (
             _: any,
-            args: { vendorId: string; dateRange?: DateRangeInput },
+            args: { vendorId: string; dateRange?: DateRangeInput; tourId?: string },
             context: serverContext
         ): Promise<TourAnalytics> => {
-            const { vendorId, dateRange } = args;
+            const { vendorId, dateRange, tourId } = args;
 
             // Calculate date range
             let fromDate: string | undefined;
@@ -61,6 +61,12 @@ export const analytics_resolvers = {
             const parameters: { name: string; value: any }[] = [
                 { name: "@vendorId", value: vendorId }
             ];
+
+            // Filter by specific tour if provided
+            if (tourId) {
+                whereConditions.push("EXISTS(SELECT VALUE s FROM s IN c.sessions WHERE s.ref.partition[1] = @tourId)");
+                parameters.push({ name: "@tourId", value: tourId });
+            }
 
             if (fromDate) {
                 whereConditions.push("c.datetime >= @fromDate");
