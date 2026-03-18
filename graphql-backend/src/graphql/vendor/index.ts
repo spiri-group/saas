@@ -3018,22 +3018,37 @@ const resolvers = {
                 args.vendorId
             );
 
-            // Remove vendor from user's vendors array
-            const userPatchOps: PatchOperation[] = [
-                {
-                    op: 'set',
-                    path: '/vendors',
-                    value: user.vendors?.filter((v: any) => v.id !== args.vendorId) || []
-                }
-            ];
+            // Remove vendor from the OWNER's vendors array (not the admin running the purge)
+            const ownerQuery = {
+                query: "SELECT c.id FROM c WHERE ARRAY_CONTAINS(c.vendors, {id: @vendorId}, true)",
+                parameters: [{ name: "@vendorId", value: args.vendorId }]
+            };
+            const owners = await context.dataSources.cosmos.run_query<{ id: string }>("Main-User", ownerQuery, true);
 
-            await context.dataSources.cosmos.patch_record(
-                "Main-User",
-                context.userId,
-                context.userId,
-                userPatchOps,
-                context.userId
-            );
+            for (const owner of owners) {
+                try {
+                    const ownerRecord = await context.dataSources.cosmos.get_record<user_type>("Main-User", owner.id, owner.id);
+                    if (ownerRecord?.vendors) {
+                        const userPatchOps: PatchOperation[] = [
+                            {
+                                op: 'set',
+                                path: '/vendors',
+                                value: ownerRecord.vendors.filter((v: any) => v.id !== args.vendorId)
+                            }
+                        ];
+                        await context.dataSources.cosmos.patch_record(
+                            "Main-User",
+                            owner.id,
+                            owner.id,
+                            userPatchOps,
+                            context.userId
+                        );
+                        context.logger.logMessage(`[PURGE] Removed vendor ${args.vendorId} from user ${owner.id}'s vendors array`);
+                    }
+                } catch (err) {
+                    context.logger.error(`[PURGE] Failed to clean vendor reference from user ${owner.id}: ${err}`);
+                }
+            }
 
             return {
                 code: '200',

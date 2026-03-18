@@ -42,8 +42,13 @@ const UI: React.FC<{ user: { email: string; id: string } }> = ({ user: { email, 
         }
     };
 
-    const merchants = session?.user?.vendors?.filter(v => v.docType === VendorDocType.MERCHANT || !v.docType) ?? [];
-    const practitioners = session?.user?.vendors?.filter(v => v.docType === VendorDocType.PRACTITIONER) ?? [];
+    // Filter out null vendors (can happen if a vendor was deleted but user session still references it)
+    const validVendors = session?.user?.vendors?.filter(v => v != null) ?? [];
+    if (session?.user?.vendors && validVendors.length < session.user.vendors.length) {
+        console.error(`[SignedIn] User ${session.user.email} has ${session.user.vendors.length - validVendors.length} null vendor reference(s) in session. Vendor may have been deleted without cleaning up user record.`);
+    }
+    const merchants = validVendors.filter(v => v.docType === VendorDocType.MERCHANT || !v.docType);
+    const practitioners = validVendors.filter(v => v.docType === VendorDocType.PRACTITIONER);
 
     return (
         <>
