@@ -313,6 +313,7 @@ type PublicBookingDetails {
 }
 
 type PublicTicketInfo {
+  variantId: ID
   variantName: String!
   quantity: Int!
   price: CurrencyAmount!

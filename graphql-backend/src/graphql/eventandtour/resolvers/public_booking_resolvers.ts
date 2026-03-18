@@ -631,6 +631,168 @@ export const public_booking_resolvers = {
                 }
                 throw new GraphQLError(`Failed to cancel booking: ${error.message}`);
             }
+        },
+
+        customer_modify_booking: async (
+            _: any,
+            args: {
+                bookingCode: string;
+                customerEmail: string;
+                merchantSlug: string;
+                ticketChanges: { variantId: string; newQuantity: number }[];
+            },
+            context: serverContext
+        ) => {
+            const { bookingCode, customerEmail, merchantSlug, ticketChanges } = args;
+
+            // Rate limit
+            const rateLimitKey = `modify-booking:${customerEmail}`;
+            if (!checkRateLimit(rateLimitKey)) {
+                throw new GraphQLError("Too many modification attempts. Please try again later.", {
+                    extensions: { code: 'RATE_LIMITED' }
+                });
+            }
+
+            try {
+                // 1. Resolve merchant
+                const vendorQuery = await context.dataSources.cosmos.run_query<vendor_type>(
+                    "Main-Vendor",
+                    { query: "SELECT * FROM c WHERE c.slug = @slug", parameters: [{ name: "@slug", value: merchantSlug }] },
+                    true
+                );
+                if (vendorQuery.length === 0) throw new GraphQLError("Merchant not found");
+                const vendor = vendorQuery[0];
+
+                // 2. Find booking
+                const bookings = await context.dataSources.cosmos.run_query<booking_type>(
+                    "Main-Bookings",
+                    { query: "SELECT * FROM c WHERE c.code = @code AND c.vendorId = @vendorId", parameters: [{ name: "@code", value: bookingCode }, { name: "@vendorId", value: vendor.id }] }
+                );
+                if (bookings.length === 0) throw new GraphQLError("Booking not found");
+                const booking = bookings[0];
+
+                // 3. Verify email
+                if (booking.customerEmail?.toLowerCase() !== customerEmail.toLowerCase()) {
+                    throw new GraphQLError("Email does not match the booking", { extensions: { code: 'EMAIL_MISMATCH' } });
+                }
+
+                // 4. Check booking is modifiable
+                if (booking.ticketStatus === StatusType.CANCELLED) throw new GraphQLError("Cannot modify a cancelled booking");
+                if (booking.checkedIn) throw new GraphQLError("Cannot modify a checked-in booking");
+
+                // 5. Load session and tour
+                if (!booking.sessions || booking.sessions.length === 0) throw new GraphQLError("Invalid booking");
+                const sessionRef = booking.sessions[0].ref;
+                const session = await context.dataSources.cosmos.get_record<session_type>(sessionRef.container, sessionRef.id, sessionRef.partition);
+                const tour = await context.dataSources.cosmos.get_record<tour_type>(session.forObject.container || "Main-Listing", session.forObject.id, session.forObject.partition);
+
+                // 6. Calculate changes
+                const currentTickets = booking.sessions[0].tickets;
+                let totalPriceDiff = 0;
+                let slotsFreed = 0;
+                const updatedTickets: any[] = [];
+                const currency = currentTickets[0]?.price?.currency || 'AUD';
+
+                for (const change of ticketChanges) {
+                    const variant = tour.ticketVariants.find(v => v.id === change.variantId);
+                    if (!variant) throw new GraphQLError(`Ticket variant ${change.variantId} not found`);
+
+                    const existingTicket = currentTickets.find(t => t.variantId === change.variantId);
+                    const currentQty = existingTicket?.quantity || 0;
+                    const qtyDiff = change.newQuantity - currentQty;
+
+                    if (change.newQuantity < 0) throw new GraphQLError("Quantity cannot be negative");
+
+                    // Check capacity for increases
+                    if (qtyDiff > 0) {
+                        const remaining = session.capacity.remaining || 0;
+                        const peopleIncrease = qtyDiff * (variant.peopleCount || 1);
+                        if (peopleIncrease > remaining) {
+                            throw new GraphQLError(`Not enough capacity. Only ${remaining} spots available.`);
+                        }
+                    }
+
+                    if (qtyDiff < 0) {
+                        slotsFreed += Math.abs(qtyDiff) * (variant.peopleCount || 1);
+                    }
+
+                    totalPriceDiff += qtyDiff * variant.price.amount;
+
+                    if (change.newQuantity > 0) {
+                        updatedTickets.push({
+                            ...(existingTicket || { id: require('uuid').v4(), variantId: change.variantId }),
+                            quantity: change.newQuantity,
+                            price: variant.price
+                        });
+                    }
+                }
+
+                // Must have at least one ticket
+                if (updatedTickets.length === 0) {
+                    throw new GraphQLError("Cannot remove all tickets. Cancel the booking instead.");
+                }
+
+                // 7. Update booking
+                const updatedSessions = [{
+                    ...booking.sessions[0],
+                    tickets: updatedTickets
+                }];
+
+                await context.dataSources.cosmos.patch_record(
+                    "Main-Bookings",
+                    booking.id,
+                    booking.ref.partition,
+                    [
+                        { op: "set", path: "/sessions", value: updatedSessions },
+                        { op: "set", path: "/modifiedAt", value: DateTime.now().toISO() },
+                        { op: "set", path: "/modifiedBy", value: "customer" }
+                    ],
+                    "customer-modify"
+                );
+
+                // 8. Recalculate session capacity (session needs fresh data)
+                // The session capacity is recalculated on read, so no explicit update needed here
+
+                // 9. If slots freed, notify waitlist
+                if (slotsFreed > 0) {
+                    try {
+                        await process_waitlist_on_slot_open(context, sessionRef, slotsFreed);
+                    } catch (e) {
+                        console.error("Failed to process waitlist:", e);
+                    }
+                }
+
+                // 10. Handle refund for price decrease
+                let refundAmount = null;
+                if (totalPriceDiff < 0) {
+                    refundAmount = { amount: Math.abs(totalPriceDiff), currency };
+                    // TODO: Issue Stripe refund for the difference
+                    // For now, merchant handles refund manually
+                }
+
+                // 11. Build response
+                return {
+                    code: '200',
+                    success: true,
+                    message: totalPriceDiff < 0
+                        ? `Booking updated. A refund of ${Math.abs(totalPriceDiff)} will be processed.`
+                        : totalPriceDiff > 0
+                            ? `Booking updated. Additional charge of ${totalPriceDiff} may apply.`
+                            : 'Booking updated successfully.',
+                    refundAmount,
+                    additionalCharge: totalPriceDiff > 0 ? { amount: totalPriceDiff, currency } : null,
+                    updatedTickets: updatedTickets.map(t => ({
+                        variantName: tour.ticketVariants.find(v => v.id === t.variantId)?.name || 'Ticket',
+                        quantity: t.quantity,
+                        price: t.price
+                    }))
+                };
+
+            } catch (error) {
+                console.error("Error modifying booking:", error);
+                if (error instanceof GraphQLError) throw error;
+                throw new GraphQLError(`Failed to modify booking: ${error.message}`);
+            }
         }
     }
 };

@@ -24,6 +24,22 @@ type Mutation {
   cancel_tour_booking(bookingRef: RecordRefInput!, sessionRef: RecordRefInput!, vendorId: ID!, reason: String): CancelBookingResponse
   # Customer self-cancellation (no auth required - verifies email matches booking)
   customer_cancel_booking(bookingCode: String!, customerEmail: String!, merchantSlug: String!): CustomerCancelBookingResponse
+  # Customer self-modification (no auth required - verifies email matches booking)
+  customer_modify_booking(bookingCode: String!, customerEmail: String!, merchantSlug: String!, ticketChanges: [CustomerTicketChangeInput!]!): CustomerModifyBookingResponse
+}
+
+input CustomerTicketChangeInput {
+  variantId: ID!
+  newQuantity: Int!
+}
+
+type CustomerModifyBookingResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  refundAmount: CurrencyAmount
+  additionalCharge: CurrencyAmount
+  updatedTickets: [PublicTicketInfo]
 }
 
 type CreateTourResponse implements MutationResponseInterface {
