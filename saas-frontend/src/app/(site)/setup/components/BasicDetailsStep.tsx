@@ -211,8 +211,8 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
                             onClick={handleSetupBusiness}
                             className="flex-1 flex flex-col items-center justify-center px-6 py-3 md:px-8 md:py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-white hover:from-indigo-400 hover:to-cyan-400 active:scale-[0.98] transition-all duration-150 cursor-pointer"
                         >
-                            <span className="text-base md:text-lg tracking-wide">Let&apos;s Setup</span>
-                            <span className="text-sm text-white mt-0.5">Practitioner / Merchant</span>
+                            <span className="text-base md:text-lg tracking-wide">Free Trial</span>
+                            <span className="text-sm text-white/70 mt-0.5">Practitioner / Merchant</span>
                         </button>
                     </div>
                 </div>
