@@ -110,9 +110,93 @@ const tourBookingConfirmationTemplate = {
     isActive: true,
 };
 
+const tourReminderTemplate = {
+    docType: "email-template",
+    id: "tour-reminder-24h",
+    name: "Tour Reminder - 24 Hours Before",
+    subject: "Reminder: {{tourName}} is tomorrow!",
+    html: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tour Reminder</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f5;">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <tr>
+                        <td style="padding: 32px 40px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 8px 8px 0 0; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 8px;">&#128197;</div>
+                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">Your Tour is Tomorrow!</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 32px 40px;">
+                            <p style="margin: 0 0 24px; color: #374151; font-size: 16px; line-height: 1.6;">
+                                Hi {{customerName}},
+                            </p>
+                            <p style="margin: 0 0 24px; color: #374151; font-size: 16px; line-height: 1.6;">
+                                Just a friendly reminder that your <strong>{{tourName}}</strong> is coming up tomorrow. Here are your details:
+                            </p>
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; margin-bottom: 24px;">
+                                <tr>
+                                    <td style="padding: 24px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Date:</td>
+                                                <td style="padding: 8px 0; color: #111827; font-size: 14px; font-weight: 500; text-align: right;">{{sessionDate}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Time:</td>
+                                                <td style="padding: 8px 0; color: #111827; font-size: 14px; font-weight: 500; text-align: right;">{{sessionTime}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Booking Code:</td>
+                                                <td style="padding: 8px 0; color: #111827; font-size: 16px; font-weight: 700; font-family: 'Courier New', monospace; text-align: right;">{{bookingCode}}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="margin: 0 0 24px; color: #6b7280; font-size: 14px; line-height: 1.6;">
+                                Please have your booking code ready for check-in. We look forward to seeing you!
+                            </p>
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 24px;">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <a href="{{bookingUrl}}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                                            View Booking Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 8px 8px; text-align: center;">
+                            <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                                Booked via <a href="https://spiriverse.com" style="color: #f59e0b; text-decoration: none;">SpiriVerse</a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`,
+    variables: ["customerName", "tourName", "bookingCode", "sessionDate", "sessionTime", "bookingUrl"],
+    category: "tour-booking",
+    description: "Sent to customers 24 hours before their tour",
+    isActive: true,
+};
+
 export const migration: Migration = {
     id: "063_tour_booking_email_templates",
-    description: "Seeds tour booking confirmation email template",
+    description: "Seeds tour booking confirmation and reminder email templates",
 
     async up(context) {
         const now = new Date().toISOString();
@@ -122,6 +206,12 @@ export const migration: Migration = {
             records: [
                 {
                     ...tourBookingConfirmationTemplate,
+                    createdAt: now,
+                    updatedAt: now,
+                    updatedBy: "migration",
+                },
+                {
+                    ...tourReminderTemplate,
                     createdAt: now,
                     updatedAt: now,
                     updatedBy: "migration",

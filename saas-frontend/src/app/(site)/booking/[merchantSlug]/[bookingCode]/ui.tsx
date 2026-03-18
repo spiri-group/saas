@@ -41,12 +41,12 @@ function formatDate(dateString: string): string {
     });
 }
 
-function formatTime(time: { from?: string; to?: string } | undefined): string {
+function formatTime(time: { start?: string; end?: string } | undefined): string {
     if (!time) return '';
-    if (time.from && time.to) {
-        return `${time.from} - ${time.to}`;
+    if (time.start && time.end) {
+        return `${time.start} - ${time.end}`;
     }
-    return time.from || '';
+    return time.start || '';
 }
 
 function getStatusBadge(status: string) {
@@ -142,12 +142,23 @@ export default function BookingCancellationUI({ bookingCode, merchantSlug }: Boo
         <div className="min-h-screen bg-slate-50 py-8 px-4" data-testid="booking-cancellation-page">
             <div className="max-w-2xl mx-auto">
                 {/* Header */}
-                <div className="text-center mb-8">
+                <div className="text-center mb-6">
                     <h1 className="text-2xl font-bold text-slate-900" data-testid="page-title">
-                        {booking.merchantName || 'Booking'} - Manage Your Booking
+                        Your Booking
                     </h1>
-                    <p className="text-slate-600 mt-1">Booking Code: <strong data-testid="booking-code-display">{booking.code}</strong></p>
+                    {booking.merchantName && (
+                        <p className="text-slate-500 mt-1">with {booking.merchantName}</p>
+                    )}
                 </div>
+
+                {/* Prominent booking code */}
+                {!isCancelled && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center mb-6" data-testid="booking-code-card">
+                        <p className="text-xs text-slate-500 mb-1">Your booking code</p>
+                        <p className="text-3xl font-mono font-bold text-green-700 tracking-wider" data-testid="booking-code-display">{booking.code}</p>
+                        <p className="text-xs text-slate-400 mt-1">Show this at check-in</p>
+                    </div>
+                )}
 
                 {/* Booking Details Card */}
                 <Card className="mb-6" data-testid="booking-details-card">
@@ -209,12 +220,12 @@ export default function BookingCancellationUI({ bookingCode, merchantSlug }: Boo
                 {!isCancelled && booking.sessionDate && (
                     <Button
                         variant="outline"
-                        className="w-full"
+                        className="w-full mb-6"
                         data-testid="add-to-calendar-btn"
                         onClick={() => {
                             const date = booking.sessionDate;
-                            const startTime = booking.sessionTime?.from || '09:00';
-                            const endTime = booking.sessionTime?.to || '17:00';
+                            const startTime = booking.sessionTime?.start || '09:00';
+                            const endTime = booking.sessionTime?.end || '17:00';
                             const startISO = `${date}T${startTime}:00`.replace(/[:-]/g, '');
                             const endISO = `${date}T${endTime}:00`.replace(/[:-]/g, '');
                             const title = encodeURIComponent(booking.tourName);

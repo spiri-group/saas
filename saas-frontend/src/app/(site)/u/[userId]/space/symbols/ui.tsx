@@ -47,7 +47,7 @@ const UI: React.FC<Props> = ({ userId }) => {
         <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-violet-500/3 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative z-10 p-6 max-w-5xl mx-auto">
+      <div className="relative z-10 p-6 w-full">
         {/* Header */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-purple-500/20 to-indigo-500/20 rounded-2xl mb-4 backdrop-blur-sm border border-purple-500/20">

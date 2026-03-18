@@ -55,6 +55,9 @@ const queryFn = async (merchantId: string, tourId: string) => {
                         id
                         name
                         time
+                        location {
+                            formattedAddress
+                        }
                     }
                 }
                 ref {

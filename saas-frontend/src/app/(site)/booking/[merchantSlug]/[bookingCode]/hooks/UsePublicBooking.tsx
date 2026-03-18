@@ -6,8 +6,8 @@ export interface PublicBookingDetails {
     tourName: string;
     sessionDate: string;
     sessionTime?: {
-        from?: string;
-        to?: string;
+        start?: string;
+        end?: string;
     };
     tickets: {
         variantName: string;
@@ -48,8 +48,8 @@ const UsePublicBooking = (bookingCode: string, merchantSlug: string) => {
                         tourName
                         sessionDate
                         sessionTime {
-                            from
-                            to
+                            start
+                            end
                         }
                         tickets {
                             variantName

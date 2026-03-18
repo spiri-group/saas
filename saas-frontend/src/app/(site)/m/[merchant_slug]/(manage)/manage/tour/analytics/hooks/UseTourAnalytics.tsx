@@ -44,13 +44,13 @@ export type TourAnalytics = {
     };
 };
 
-const queryFn = async (vendorId: string, dateRange?: DateRangeInput) => {
+const queryFn = async (vendorId: string, dateRange?: DateRangeInput, tourId?: string) => {
     const resp = await gql<{
         tourAnalytics: TourAnalytics;
     }>(
         `
-            query GetTourAnalytics($vendorId: ID!, $dateRange: DateRangeInput) {
-                tourAnalytics(vendorId: $vendorId, dateRange: $dateRange) {
+            query GetTourAnalytics($vendorId: ID!, $dateRange: DateRangeInput, $tourId: ID) {
+                tourAnalytics(vendorId: $vendorId, dateRange: $dateRange, tourId: $tourId) {
                     totalBookings
                     totalRevenue {
                         amount
@@ -83,16 +83,16 @@ const queryFn = async (vendorId: string, dateRange?: DateRangeInput) => {
                 }
             }
         `,
-        { vendorId, dateRange }
+        { vendorId, dateRange, tourId: tourId || null }
     );
 
     return resp.tourAnalytics;
 };
 
-const UseTourAnalytics = (vendorId: string, dateRange?: DateRangeInput, enabled: boolean = true) => {
+const UseTourAnalytics = (vendorId: string, dateRange?: DateRangeInput, enabled: boolean = true, tourId?: string) => {
     return useQuery({
-        queryKey: ["tour-analytics", vendorId, dateRange?.from, dateRange?.to],
-        queryFn: () => queryFn(vendorId, dateRange),
+        queryKey: ["tour-analytics", vendorId, dateRange?.from, dateRange?.to, tourId],
+        queryFn: () => queryFn(vendorId, dateRange, tourId),
         enabled: enabled && !!vendorId,
         staleTime: 60000, // 1 minute
     });

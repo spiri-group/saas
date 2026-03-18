@@ -62,7 +62,7 @@ import FeatureUpgradeDialog from "@/components/subscription/FeatureUpgradeDialog
 // Helper to get user's merchants from session
 const getUserMerchants = (session: Session) => {
     return session.user.vendors?.filter(v =>
-        v.docType === VendorDocType.MERCHANT || !v.docType // Legacy vendors without docType are merchants
+        v != null && (v.docType === VendorDocType.MERCHANT || !v.docType)
     ) || [];
 };
 

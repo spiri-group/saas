@@ -103,13 +103,14 @@ const exportToCsv = (analytics: TourAnalytics, dateRangeLabel: string) => {
 
 const useBL = (props: BLProps) => {
     const [selectedRange, setSelectedRange] = useState<string>("30d");
+    const [selectedTourId, setSelectedTourId] = useState<string | undefined>(undefined);
 
     const dateRange = useMemo(() => {
         const option = DATE_RANGE_OPTIONS.find(opt => opt.value === selectedRange);
         return option?.getRange() || {};
     }, [selectedRange]);
 
-    const analyticsQuery = UseTourAnalytics(props.merchantId, dateRange);
+    const analyticsQuery = UseTourAnalytics(props.merchantId, dateRange, true, selectedTourId);
 
     const selectedRangeLabel = DATE_RANGE_OPTIONS.find(opt => opt.value === selectedRange)?.label || selectedRange;
 
@@ -117,6 +118,8 @@ const useBL = (props: BLProps) => {
         selectedRange,
         selectedRangeLabel,
         setSelectedRange,
+        selectedTourId,
+        setSelectedTourId,
         analytics: analyticsQuery.data,
         isLoading: analyticsQuery.isLoading,
         isError: analyticsQuery.isError,
@@ -309,7 +312,7 @@ const UI: React.FC<Props> = (props) => {
                             Track performance metrics for your tours and bookings
                         </PanelDescription>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         {bl.analytics && (
                             <Button
                                 variant="outline"
@@ -320,6 +323,25 @@ const UI: React.FC<Props> = (props) => {
                                 <Download className="w-4 h-4 mr-2" />
                                 Export CSV
                             </Button>
+                        )}
+                        {/* Tour filter */}
+                        {bl.analytics && bl.analytics.topTours.length > 1 && (
+                            <Select
+                                value={bl.selectedTourId || "all"}
+                                onValueChange={(v) => bl.setSelectedTourId(v === "all" ? undefined : v)}
+                            >
+                                <SelectTrigger className="w-[180px]" data-testid="tour-filter-selector">
+                                    <SelectValue placeholder="All tours" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All tours</SelectItem>
+                                    {bl.analytics.topTours.map(tour => (
+                                        <SelectItem key={tour.tourId} value={tour.tourId}>
+                                            {tour.tourName}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         )}
                         <Calendar className="w-4 h-4 text-muted-foreground" />
                         <Select

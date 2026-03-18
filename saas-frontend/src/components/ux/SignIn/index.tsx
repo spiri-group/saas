@@ -349,6 +349,12 @@ export const SignIn = () => {
           Privacy Policy
         </Link>
       </p>
+
+      <p className="text-xs text-white/30 mt-4 text-center">
+        <Link href="/booking/find" className="underline hover:text-white/50">
+          Already have a booking? Find it here
+        </Link>
+      </p>
     </div>
   );
 };

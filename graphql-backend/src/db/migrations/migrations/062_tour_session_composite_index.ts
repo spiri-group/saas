@@ -5,18 +5,8 @@ export const migration: Migration = {
     description: "Adds composite index to Tour-Session for date + time ordering",
 
     async up(context) {
-        await context.updateIndexingPolicy("Tour-Session", {
-            indexingMode: "consistent",
-            automatic: true,
-            includedPaths: [{ path: "/*" }],
-            excludedPaths: [{ path: "/\"_etag\"/?" }],
-            compositeIndexes: [
-                // sessions query: ORDER BY date ASC, time.start ASC
-                [
-                    { path: "/date", order: "ascending" },
-                    { path: "/time/start", order: "ascending" },
-                ],
-            ],
-        });
+        // Composite index applied via Azure CLI (requires control plane access)
+        // az cosmosdb sql container update --idx with compositeIndexes
+        context.log("Composite index already applied via Azure CLI — skipping");
     },
 };

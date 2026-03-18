@@ -6,8 +6,11 @@ import React, { useState } from "react"
 import { useRouter } from "next/navigation";
 import { Panel, PanelContent, PanelHeader } from "@/components/ux/Panel";
 import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import UseSessions from "./hooks/UseSessions";
 import UseActivateSession from "./hooks/UseActivateSession";
+import UseDeleteSession from "./hooks/UseDeleteSession";
 import SessionsSummaryComponent from "../SessionsSummary";
 
 const useBL = (merchantId?: string) => {
@@ -49,8 +52,10 @@ const SessionsComponent : React.FC<SessionsProps> = ({ merchantId, canOperate = 
     };
 
     const activateSession = UseActivateSession();
+    const deleteSession = UseDeleteSession();
+    const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string; hasBookings: boolean } | null>(null);
 
-    return (   
+    return (
         <div className="flex-grow flex flex-col h-0 md:h-auto">
             { !bl.sessions.isLoading && <SessionsSummaryComponent thresholds={thresholds} /> }
             <Panel className="flex flex-col flex-grow h-0 md:h-auto">
@@ -109,18 +114,34 @@ const SessionsComponent : React.FC<SessionsProps> = ({ merchantId, canOperate = 
                                                                 {remaining > 0 && remaining <= 5 && <span className="text-amber-400 ml-1">({remaining} left)</span>}
                                                             </span>
                                                         </div>
-                                                        {canOperate && bl.merchantId != null && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                onClick={async () => {
-                                                                    await activateSession.mutation.mutateAsync(session.ref);
-                                                                    bl.router.push(`/m/${bl.merchantId}/tour/${session.forObject.id}/operate/${session.ref.id}`)
-                                                                }}
-                                                            >
-                                                                Operate Session
-                                                            </Button>
-                                                        )}
+                                                        <div className="flex gap-2">
+                                                            {canOperate && bl.merchantId != null && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={async () => {
+                                                                        await activateSession.mutation.mutateAsync(session.ref);
+                                                                        bl.router.push(`/m/${bl.merchantId}/tour/${session.forObject.id}/operate/${session.ref.id}`)
+                                                                    }}
+                                                                >
+                                                                    Operate Session
+                                                                </Button>
+                                                            )}
+                                                            {current === 0 && bl.merchantId != null && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    className="text-red-400 hover:text-red-300 hover:border-red-400"
+                                                                    onClick={() => setConfirmDelete({
+                                                                        id: session.ref.id,
+                                                                        title: session.sessionTitle,
+                                                                        hasBookings: current > 0
+                                                                    })}
+                                                                >
+                                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </li>
@@ -132,6 +153,36 @@ const SessionsComponent : React.FC<SessionsProps> = ({ merchantId, canOperate = 
                     }
                 </PanelContent>
             </Panel>
+
+            {/* Delete session confirmation */}
+            <Dialog open={confirmDelete != null} onOpenChange={() => setConfirmDelete(null)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Delete session?</DialogTitle>
+                        <DialogDescription>
+                            This will permanently remove the session <strong>{confirmDelete?.title}</strong>. This cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" onClick={() => setConfirmDelete(null)}>Keep Session</Button>
+                        <Button
+                            variant="destructive"
+                            disabled={deleteSession.isPending}
+                            onClick={async () => {
+                                if (confirmDelete && bl.merchantId) {
+                                    await deleteSession.mutateAsync({
+                                        sessionId: confirmDelete.id,
+                                        vendorId: bl.merchantId
+                                    });
+                                    setConfirmDelete(null);
+                                }
+                            }}
+                        >
+                            {deleteSession.isPending ? 'Deleting...' : 'Delete Session'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

@@ -1,9 +1,11 @@
 import { DateTime } from "luxon";
 import { sender_details } from "../client/email_templates";
 import { booking_type, session_type, tour_type } from "../graphql/eventandtour/types";
+import { vendor_type } from "../graphql/vendor/types";
 import { CosmosDataSource } from "../utils/database";
 import { AzureEmailDataSource } from "../services/azureEmail";
 import { LogManager } from "../utils/functions";
+import { renderEmailTemplate } from "../graphql/email/utils";
 
 /**
  * Extracted core logic for tour reminders.
@@ -20,6 +22,7 @@ export async function runTourReminder(
 
   await send24HourReminders(cosmos, email, now, logger);
   await send2HourReminders(cosmos, email, now, logger);
+  await sendPostTourReviewRequests(cosmos, email, now, logger);
 
   logger.logMessage('Tour reminder completed successfully');
 }
@@ -158,30 +161,34 @@ async function processSessionReminders(
 
     for (const booking of bookings) {
       try {
-        // Get activity list for location info
-        const activityList = tour.activityLists.find(al => al.id === session.activityListId);
-        const firstActivity = activityList?.activities?.[0];
-        const location = firstActivity?.location?.formattedAddress || 'See tour details for location';
+        // Get vendor slug for booking URL
+        let vendorSlug = '';
+        try {
+          const vendor = await cosmos.get_record<vendor_type>("Main-Vendor", session.forObject.partition[0] || '', session.forObject.partition[0] || '');
+          vendorSlug = vendor?.slug || '';
+        } catch { /* vendor slug is optional for the URL */ }
 
-        // Build email payload
-        const emailPayload = {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spiriverse.com';
+
+        // Render email from Cosmos template
+        const mockDataSources = { cosmos } as any;
+        const emailContent = await renderEmailTemplate(mockDataSources, templateId, {
           tourName: tour.name,
           sessionDate: formatDate(session.date),
           sessionTime: formatTime(session.time.start),
-          location: location,
           bookingCode: booking.code,
-          customerName: booking.user?.name || 'Valued Customer',
-          totalTickets: getTotalTickets(booking),
-          reminderType: reminderType === '24H' ? 'tomorrow' : 'in 2 hours'
-        };
+          customerName: booking.user?.name || booking.customerEmail.split('@')[0],
+          bookingUrl: vendorSlug ? `${baseUrl}/booking/${vendorSlug}/${booking.code}` : ''
+        });
 
-        // Send reminder email via Cosmos template
-        await email.sendEmail(
-          sender_details.from,
-          booking.customerEmail,
-          templateId,
-          emailPayload
-        );
+        if (emailContent) {
+          await email.sendRawHtmlEmail(
+            sender_details.from,
+            booking.customerEmail,
+            emailContent.subject,
+            emailContent.html
+          );
+        }
 
         // Update booking to mark reminder as sent
         const now = DateTime.now().toISO();
@@ -320,5 +327,118 @@ function formatTime(time: string): string {
   const [hours, minutes] = time.split(':').map(Number);
   const dt = DateTime.fromObject({ hour: hours, minute: minutes });
   return dt.toFormat('h:mm a'); // e.g., "2:30 PM"
+}
+
+/**
+ * Send review request emails for sessions that ended 2-48 hours ago
+ */
+async function sendPostTourReviewRequests(
+  cosmos: CosmosDataSource,
+  email: AzureEmailDataSource,
+  now: DateTime,
+  logger: LogManager
+): Promise<void> {
+  logger.logMessage('Checking for post-tour review requests...');
+
+  // Find sessions that ended 2-48 hours ago (give people time to get home, but not too long)
+  const windowStart = now.minus({ hours: 48 });
+  const windowEnd = now.minus({ hours: 2 });
+
+  const startDate = windowStart.toISODate();
+  const endDate = windowEnd.toISODate();
+
+  const completedSessions = await cosmos.run_query<session_type>("Tour-Session", {
+    query: `
+      SELECT * FROM c
+      WHERE c.date >= @startDate
+      AND c.date <= @endDate
+      AND c.status = "ACTIVE"
+    `,
+    parameters: [
+      { name: "@startDate", value: startDate },
+      { name: "@endDate", value: endDate }
+    ]
+  }, true);
+
+  // Filter to sessions that have actually ended
+  const endedSessions = completedSessions.filter(session => {
+    const sessionEnd = DateTime.fromISO(`${session.date}T${session.time.end}`);
+    return sessionEnd >= windowStart && sessionEnd <= windowEnd;
+  });
+
+  logger.logMessage(`Found ${endedSessions.length} completed sessions for review requests`);
+
+  for (const session of endedSessions) {
+    try {
+      const tour = await cosmos.get_record<tour_type>(
+        session.forObject.container || "Main-Listing",
+        session.forObject.id,
+        session.forObject.partition
+      );
+
+      // Get vendor slug for review URL
+      let vendorSlug = '';
+      try {
+        const vendor = await cosmos.get_record<vendor_type>("Main-Vendor", session.forObject.partition[0] || '', session.forObject.partition[0] || '');
+        vendorSlug = vendor?.slug || '';
+      } catch { /* optional */ }
+
+      // Find bookings that checked in and haven't received a review request
+      const bookings = await cosmos.run_query<booking_type>("Main-Bookings", {
+        query: `
+          SELECT * FROM c
+          WHERE EXISTS(
+            SELECT VALUE s FROM s IN c.sessions WHERE s.ref.id = @sessionId
+          )
+          AND c.status = "ACTIVE"
+          AND IS_DEFINED(c.checkedIn)
+          AND (NOT IS_DEFINED(c.reviewRequestSent) OR c.reviewRequestSent = false)
+        `,
+        parameters: [
+          { name: "@sessionId", value: session.id }
+        ]
+      }, true);
+
+      logger.logMessage(`Found ${bookings.length} checked-in bookings to request reviews for session ${session.id}`);
+
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spiriverse.com';
+      const mockDataSources = { cosmos } as any;
+
+      for (const booking of bookings) {
+        try {
+          const emailContent = await renderEmailTemplate(mockDataSources, 'tour-review-request', {
+            customerName: booking.user?.name || booking.customerEmail.split('@')[0],
+            tourName: tour.name,
+            sessionDate: formatDate(session.date),
+            reviewUrl: vendorSlug ? `${baseUrl}/m/${vendorSlug}/tour/${tour.id}` : `${baseUrl}`
+          });
+
+          if (emailContent) {
+            await email.sendRawHtmlEmail(
+              sender_details.from,
+              booking.customerEmail,
+              emailContent.subject,
+              emailContent.html
+            );
+
+            // Mark review request as sent
+            await cosmos.patch_record(
+              "Main-Bookings",
+              booking.id,
+              booking.ref.partition,
+              [{ op: "set", path: "/reviewRequestSent", value: true }],
+              "tour-reminder-cron"
+            );
+
+            logger.logMessage(`Sent review request to ${booking.customerEmail} for session ${session.id}`);
+          }
+        } catch (err) {
+          logger.error(`Failed to send review request for booking ${booking.id}: ${err}`);
+        }
+      }
+    } catch (err) {
+      logger.error(`Failed to process review requests for session ${session.id}: ${err}`);
+    }
+  }
 }
 

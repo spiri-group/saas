@@ -41,13 +41,13 @@ export default function HomeContent({ session: initialSession }: HomeContentProp
   // Logged-in users see search-first layout
   if (isLoggedIn) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen px-4 relative">
-        <div className="flex flex-col items-center max-w-3xl w-full space-y-4 md:space-y-6">
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 py-6 relative">
+        <div className="flex flex-col items-center max-w-3xl w-full space-y-3 md:space-y-6">
 
           {/* Logo */}
-          <div className="flex justify-center mb-1 md:mb-2">
+          <div className="flex justify-center mb-0 md:mb-2">
             <Link href="/">
-              <SpiriLogo height={80} className="h-20 md:h-[100px]" />
+              <SpiriLogo height={80} className="h-14 md:h-[100px]" />
             </Link>
           </div>
 
@@ -169,22 +169,22 @@ export default function HomeContent({ session: initialSession }: HomeContentProp
 
   // Logged-out: original welcome/search UI
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-4 relative">
+    <div className="flex flex-col items-center justify-center min-h-screen px-4 py-6 relative">
 
       {/* Main sacred content */}
-      <div className="flex flex-col items-center max-w-3xl w-full space-y-4 md:space-y-6">
+      <div className="flex flex-col items-center max-w-3xl w-full space-y-3 md:space-y-6">
 
         {/* Logo */}
-        <div className="flex justify-center mb-1 md:mb-2">
-          <SpiriLogo height={80} className="h-20 md:h-[100px]" />
+        <div className="flex justify-center mb-0 md:mb-2">
+          <SpiriLogo height={80} className="h-14 md:h-[100px]" />
         </div>
 
         {/* Tagline */}
-        <div className="text-center space-y-2 md:space-y-4">
-          <h1 className="text-2xl md:text-4xl text-white font-light tracking-wide drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+        <div className="text-center space-y-1 md:space-y-4">
+          <h1 className="text-xl md:text-4xl text-white font-light tracking-wide drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
             Your Bridge to Personal Growth
           </h1>
-          <p className="text-base md:text-xl text-slate-200 font-light italic drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+          <p className="text-sm md:text-xl text-slate-200 font-light italic drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
             A sacred digital space connecting faith, wellness and spiritual community.
           </p>
         </div>
@@ -248,19 +248,19 @@ export default function HomeContent({ session: initialSession }: HomeContentProp
         </div>
 
         {/* Sacred search portal */}
-        <div className="w-full max-w-2xl pt-1 md:pt-2">
+        <div className="w-full max-w-2xl pt-0 md:pt-2">
           <HomeSearch />
         </div>
 
-        {/* Divider */}
-        <div className="flex items-center gap-3 md:gap-4 w-full max-w-md py-3 md:py-4">
+        {/* Divider - hidden on smaller screens */}
+        <div className="hidden md:flex items-center gap-4 w-full max-w-md py-2 md:py-4">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
           <span className="text-white/60 text-sm font-light">or</span>
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
         </div>
 
         {/* Sacred sign in / sign up */}
-        <div className="flex flex-col items-center gap-3 md:gap-4 w-full max-w-md">
+        <div className="flex flex-col items-center gap-2 md:gap-4 w-full max-w-md">
           <p className="text-white/80 text-sm font-light">Begin your journey</p>
           <div className="w-full">
             <SignIn />
