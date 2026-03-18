@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Clock, Ticket, AlertCircle, CheckCircle2, XCircle, Mail, Loader2 } from "lucide-react";
+import { Calendar, Clock, Ticket, AlertCircle, CheckCircle2, XCircle, Mail, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -239,6 +239,37 @@ export default function BookingCancellationUI({ bookingCode, merchantSlug }: Boo
                         <Calendar className="h-4 w-4 mr-2" />
                         Add to Google Calendar
                     </Button>
+                )}
+
+                {/* Modify Booking Section */}
+                {!isCancelled && !isPendingPayment && booking.merchantSlug && (
+                    <Card className="mb-6" data-testid="modify-booking-card">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <Pencil className="h-4 w-4" />
+                                Need to make changes?
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <p className="text-sm text-slate-600">
+                                To change ticket quantities, add guests, or move to a different date, contact the organiser and they can update your booking directly.
+                            </p>
+                            <Button
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => window.open(`/m/${booking.merchantSlug}`, '_blank')}
+                                data-testid="contact-merchant-btn"
+                            >
+                                <Mail className="h-4 w-4 mr-2" />
+                                Contact Organiser
+                            </Button>
+                            {booking.canCancel && booking.cancellationPolicy?.refundPercentage === 100 && (
+                                <p className="text-xs text-slate-400 text-center">
+                                    Or cancel below for a full refund and rebook with your changes
+                                </p>
+                            )}
+                        </CardContent>
+                    </Card>
                 )}
 
                 {/* Cancellation Section */}
