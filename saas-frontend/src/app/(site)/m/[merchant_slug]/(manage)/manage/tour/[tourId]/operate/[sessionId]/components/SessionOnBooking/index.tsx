@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { CommunicationModeType, booking_type, recordref_type } from "@/utils/spiriverse"
 import { useParams } from "next/navigation"
-import { ArrowUpDown, ChevronDownCircleIcon, Mail, MessageCircle, Pencil, Phone, Search, Plus, Users, CheckCircle2, AlertCircle } from "lucide-react"
+import { ArrowUpDown, ChevronDownCircleIcon, Download, Mail, MessageCircle, Pencil, Phone, Search, Plus, Users, CheckCircle2, AlertCircle } from "lucide-react"
 import CopyButton from "@/components/ux/CopyButton"
 import UseCreatePaymentLink from "./hooks/UseCreatePaymentLink"
 
@@ -162,9 +162,34 @@ const useBL = () => {
         return { total, checkedIn, paid, unpaid, unchecked, noShows };
     }, [allBookings, sessionStarted]);
 
+    const exportBookingsCsv = () => {
+        const rows = [
+            ['Name', 'Email', 'Phone', 'Code', 'Tickets', 'Paid', 'Checked In', 'Check-in Time'],
+            ...allBookings.map(b => [
+                `${b.user?.firstname || ''} ${b.user?.lastname || ''}`.trim(),
+                b.customerEmail || '',
+                b.user?.phone || '',
+                b.code || '',
+                (b.tickets || []).map((t: any) => `${t.quantity}x ${t.name || t.variantId}`).join('; '),
+                isBookingPaid(b) ? 'Yes' : 'No',
+                b.checkedIn ? 'Yes' : 'No',
+                b.checkedIn?.datetime ? format(new Date(b.checkedIn.datetime), 'h:mm a') : '',
+            ])
+        ];
+        const csv = rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `bookings-${params.sessionId}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
     return {
         createManualBookingOpen,
         setCreateManualBookingOpen,
+        exportBookingsCsv,
         sessionRef,
         bookings: filteredBookings,
         allBookings,
@@ -255,6 +280,17 @@ const SessionOnBooking : React.FC = () => {
                             >
                                 <CheckCircle2 className="w-4 h-4 mr-1" />
                                 Check in all ({bl.summary.unchecked})
+                            </Button>
+                        )}
+                        {bl.allBookings.length > 0 && (
+                            <Button
+                                variant="outline"
+                                className="h-11"
+                                onClick={bl.exportBookingsCsv}
+                                data-testid="export-bookings-btn"
+                            >
+                                <Download className="w-4 h-4 mr-1" />
+                                Export
                             </Button>
                         )}
                         <Dialog open={bl.createManualBookingOpen} onOpenChange={bl.setCreateManualBookingOpen}>

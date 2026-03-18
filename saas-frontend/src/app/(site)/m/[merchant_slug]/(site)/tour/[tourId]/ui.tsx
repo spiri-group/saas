@@ -792,6 +792,26 @@ const UI: React.FC<Props> = (props) => {
                                         A confirmation email has been sent to <span className="font-medium">{bl.customerEmail}</span>
                                     </p>
 
+                                    {selectedSession && (
+                                        <Button
+                                            variant="outline"
+                                            className="w-full"
+                                            onClick={() => {
+                                                const startISO = `${selectedSession.date}T${selectedSession.time.start}:00`.replace(/[:-]/g, '');
+                                                const endISO = `${selectedSession.date}T${selectedSession.time.end}:00`.replace(/[:-]/g, '');
+                                                const title = encodeURIComponent(bl.tour!.name);
+                                                const details = encodeURIComponent(`Booking code: ${bl.bookingData!.code}\n${totalPeople} people`);
+                                                window.open(
+                                                    `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startISO}/${endISO}&details=${details}`,
+                                                    '_blank'
+                                                );
+                                            }}
+                                        >
+                                            <Calendar className="h-4 w-4 mr-2" />
+                                            Add to Calendar
+                                        </Button>
+                                    )}
+
                                     <Button
                                         variant="outline"
                                         onClick={() => window.location.reload()}
