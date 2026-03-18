@@ -268,7 +268,7 @@ const UI: React.FC<Props> = (props) => {
             <MerchantFontLoader fonts={fontConfig} />
 
             {/* Hero Section */}
-            <div className="relative w-full h-[400px] rounded-xl overflow-hidden mt-2">
+            <div className="relative w-full h-[200px] sm:h-[300px] lg:h-[400px] rounded-xl overflow-hidden mt-2">
                 {bl.tour.thumbnail?.image?.media?.url ? (
                     <img
                         src={bl.tour.thumbnail.image.media.url}
@@ -299,8 +299,8 @@ const UI: React.FC<Props> = (props) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Left Column - Tour Details */}
-                <div className="lg:col-span-2 space-y-4">
+                {/* Left Column - Tour Details (on mobile, booking card comes first via order) */}
+                <div className="lg:col-span-2 space-y-4 order-2 lg:order-1">
                     <Panel style={{
                         backgroundColor: `rgba(var(--merchant-panel), var(--merchant-panel-transparency, 1))`,
                         color: `rgb(var(--merchant-panel-primary-foreground))`,
@@ -412,8 +412,8 @@ const UI: React.FC<Props> = (props) => {
                     </Panel>
                 </div>
 
-                {/* Right Column - Booking */}
-                <div className="lg:col-span-1">
+                {/* Right Column - Booking (shows first on mobile) */}
+                <div className="lg:col-span-1 order-1 lg:order-2">
                     <Card className="sticky top-4" style={{
                         backgroundColor: `rgba(var(--merchant-panel), var(--merchant-panel-transparency, 1))`,
                         borderColor: `rgb(var(--merchant-primary), 0.3)`,
