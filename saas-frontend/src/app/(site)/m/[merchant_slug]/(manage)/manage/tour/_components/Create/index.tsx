@@ -5,10 +5,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormDescription } fr
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CancelDialogButton from "@/components/ux/CancelDialogButton";
-import { DialogContent, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { DialogFooter } from "@/components/ui/dialog";
 import WithPaymentsEnabled from "@/app/(site)/m/_components/Banking/_components/WithPaymentsEnabled";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import VisuallyHidden from "@/components/ux/VisuallyHidden";
+
 import { useState } from "react";
 import ThumbnailInput from "@/components/ux/ThumbnailInput";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +23,7 @@ import CreateActivityList from "./components/CreateActivityList";
 import { StepIndicator } from "@/components/ui/step-indicator";
 import useVendorRefundPolicies from "@/app/(site)/m/_components/Profile/Edit/RefundPolicies/_hooks/UseVendorRefundPolicies";
 import ComboBox from "@/components/ux/ComboBox";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { escape_key, isNullOrUndefined } from "@/lib/functions";
 import UseVendorCurrency from "@/app/(site)/m/_hooks/UseVendorCurrency";
 
@@ -33,6 +33,8 @@ type BLProps = {
 
 const useBL = (props: BLProps) => {
     const router = useRouter();
+    const params = useParams();
+    const merchantSlug = params?.merchant_slug as string;
     const { form, mutation: createTour, values } = UseCreateTour(props.merchantId);
 
     const [currentStep, setCurrentStep] = useState(1);
@@ -144,7 +146,7 @@ const useBL = (props: BLProps) => {
 
                     // Close dialog and navigate
                     escape_key();
-                    router.push(`/m/${props.merchantId}/events-and-tours?listingId=${result.id}`);
+                    router.push(`/m/${merchantSlug}/manage/events-and-tours?listingId=${result.id}`);
                 } catch (error) {
                     toast.error("Failed to create tour");
                     console.error(error);
@@ -181,12 +183,7 @@ const CreateTour : React.FC<Props> = (props) => {
     const bl = useBL(props);
 
     return (
-        <DialogContent className="w-[1000px] h-[900px] flex flex-col">
-            <VisuallyHidden>
-                <DialogTitle>Create tour</DialogTitle>
-                <DialogDescription>Fill in the form to create a new tour for your catalogue.</DialogDescription>
-            </VisuallyHidden>
-
+        <div className="flex flex-col h-full">
             {/* Progress indicator */}
             <div className="flex items-center justify-between mb-4 px-4 pt-2">
                 <StepIndicator
@@ -200,12 +197,6 @@ const CreateTour : React.FC<Props> = (props) => {
                     currentStep={bl.currentStep}
                     onStepClick={bl.setCurrentStep}
                 />
-                <Button variant="outline" onClick={() => {
-                    const event = new CustomEvent('close-dialog');
-                    window.dispatchEvent(event);
-                }}>
-                    ✕ Close
-                </Button>
             </div>
 
             <TooltipProvider>
@@ -226,12 +217,15 @@ const CreateTour : React.FC<Props> = (props) => {
                                             <FormField
                                                 name="name"
                                                 control={bl.form.control}
-                                                render={({ field }) => (
-                                                    <FormItem className="flex-1 flex flex-row items-center space-x-3 space-y-0">
-                                                        <FormLabel className="text-sm font-medium">Tour Name *</FormLabel>
-                                                        <FormControl>
-                                                            <Input {...field} placeholder="Enter tour name" autoFocus />
-                                                        </FormControl>
+                                                render={({ field, fieldState }) => (
+                                                    <FormItem className="flex-1 flex flex-col space-y-1">
+                                                        <div className="flex flex-row items-center space-x-3">
+                                                            <FormLabel className="text-sm font-medium">Tour Name *</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} placeholder="Enter tour name" autoFocus className={fieldState.error ? 'border-red-500' : ''} />
+                                                            </FormControl>
+                                                        </div>
+                                                        {fieldState.error && <span className="text-xs text-red-500">{fieldState.error.message}</span>}
                                                     </FormItem>
                                                 )} />
                                         </CardTitle>
@@ -245,17 +239,17 @@ const CreateTour : React.FC<Props> = (props) => {
                                                     { control: "timezone", fieldName: "timezone" }
                                                 ]}  />
 
-                                            {/* Product Return Policy */}
+                                            {/* Refund Policy */}
                                             <FormField
                                                 name="productReturnPolicyId"
                                                 control={bl.form.control}
                                                 render={({field}) => (
                                                     <FormItem className="flex flex-col space-y-2">
-                                                        <FormLabel className="text-sm font-medium">Product Return Policy (Optional)</FormLabel>
+                                                        <FormLabel className="text-sm font-medium">Refund Policy (Optional)</FormLabel>
                                                         <FormControl>
                                                             <ComboBox
                                                                 withSearch={true}
-                                                                objectName="Product Return Policy"
+                                                                objectName="Refund Policy"
                                                                 onChange={(value) => {
                                                                     if (isNullOrUndefined(value)) return;
                                                                     field.onChange(value.id);
@@ -268,7 +262,7 @@ const CreateTour : React.FC<Props> = (props) => {
                                                                 }} />
                                                         </FormControl>
                                                         <FormDescription className="text-xs">
-                                                            Select a product return policy or leave blank for no refunds
+                                                            Select a refund policy or leave blank for no refunds
                                                         </FormDescription>
                                                     </FormItem>
                                                 )} />
@@ -459,7 +453,7 @@ const CreateTour : React.FC<Props> = (props) => {
                     </form>
                 </Form>
             </TooltipProvider>
-        </DialogContent>
+        </div>
     )
 }
 

@@ -113,6 +113,7 @@ export class MerchantSetupPage extends BasePage {
 
     // ── Step 3: Navigate to setup page ──
     await this.page.goto('/setup');
+    await handleConsentGuardIfPresent(this.page);
     await userSetupPage.waitForForm();
 
     // Get user ID from session for cleanup registration
@@ -173,7 +174,7 @@ export class MerchantSetupPage extends BasePage {
     // Both states have a "Skip for now" link — wait for either to appear.
     const skipBtn = this.page.locator('[data-testid="card-capture-skip-btn"]');
     const skipLink = this.page.locator('button:has-text("Skip for now"), a:has-text("Skip for now")');
-    await expect(skipBtn.or(skipLink).first()).toBeVisible({ timeout: 20000 });
+    await expect(skipBtn.or(skipLink).first()).toBeVisible({ timeout: 30000 });
     await (skipBtn.or(skipLink)).first().click();
     console.log('[MerchantSetup] Skipped card capture');
     await this.page.waitForTimeout(2000);

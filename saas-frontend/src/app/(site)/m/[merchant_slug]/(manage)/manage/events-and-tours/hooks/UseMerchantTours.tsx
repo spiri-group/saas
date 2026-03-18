@@ -8,15 +8,17 @@ const queryFn = async (merchantId?: string) => {
     if (merchantId == null) return null;
 
     const resp = await gql<{
-        catalogue: tour_type[]
+        catalogue: { listings: tour_type[] }
     }>( `query($merchantId: ID!) {
-            catalogue(vendorId: $merchantId, types:["TOUR"]) {
-                id
-                name,
-                ref {
+            catalogue(vendorId: $merchantId, types:["TOUR"], includeDrafts: true) {
+                listings {
                     id
-                    partition
-                    container
+                    name,
+                    ref {
+                        id
+                        partition
+                        container
+                    }
                 }
             }
         }
@@ -25,7 +27,7 @@ const queryFn = async (merchantId?: string) => {
             merchantId: merchantId
         }
     )
-    return resp.catalogue;
+    return resp.catalogue.listings;
 }
 
 const UseMerchantTours = (merchantId?: string) => {

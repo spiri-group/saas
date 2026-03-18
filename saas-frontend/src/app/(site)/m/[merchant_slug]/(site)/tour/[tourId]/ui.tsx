@@ -21,6 +21,7 @@ import CurrencySpan from "@/components/ux/CurrencySpan";
 import CurrencyNote from "@/components/ux/CurrencyNote";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useParams } from "next/navigation";
 import UseCreateTourBooking from "./hooks/UseCreateTourBooking";
 import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
@@ -58,6 +59,7 @@ type BookingData = {
 };
 
 const useBL = (props: BLProps) => {
+    const params = useParams<{ merchant_slug: string }>();
     const tour = UseTourDetails(props.merchantId, props.tourId);
     const vendorBranding = useMerchantTheme(props.merchantId);
 
@@ -185,6 +187,7 @@ const useBL = (props: BLProps) => {
     };
 
     return {
+        merchantSlug: params?.merchant_slug || '',
         ref: {
             id: props.tourId,
             partition: props.merchantId
@@ -268,31 +271,39 @@ const UI: React.FC<Props> = (props) => {
             <MerchantFontLoader fonts={fontConfig} />
 
             {/* Hero Section */}
-            <div className="relative w-full h-[400px] rounded-xl overflow-hidden mt-2">
-                <img
-                    src={bl.tour.thumbnail.image.media.url}
-                    alt={bl.tour.name}
-                    className="w-full h-full object-cover"
-                    style={{
-                        objectFit: bl.tour.thumbnail.image.objectFit || 'cover',
-                        transform: `scale(${bl.tour.thumbnail.image.zoom || 1})`
-                    }}
-                />
+            <div className="relative w-full h-[200px] sm:h-[300px] lg:h-[400px] rounded-xl overflow-hidden mt-2">
+                {bl.tour.thumbnail?.image?.media?.url ? (
+                    <img
+                        src={bl.tour.thumbnail.image.media.url}
+                        alt={bl.tour.name}
+                        className="w-full h-full object-cover"
+                        style={{
+                            objectFit: bl.tour.thumbnail.image.objectFit || 'cover',
+                            transform: `scale(${bl.tour.thumbnail.image.zoom || 1})`
+                        }}
+                    />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                        <span className="text-slate-400 text-lg">{bl.tour.name}</span>
+                    </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                     <h1 className="text-4xl font-bold text-white mb-2">{bl.tour.name}</h1>
-                    <div className="flex items-center gap-4 text-white/90">
-                        <span className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            {bl.tour.vendor?.name}
-                        </span>
-                    </div>
+                    {bl.vendorBranding?.vendor?.name && (
+                        <div className="flex items-center gap-4 text-white/90">
+                            <span className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4" />
+                                {bl.vendorBranding.vendor.name}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Left Column - Tour Details */}
-                <div className="lg:col-span-2 space-y-4">
+                {/* Left Column - Tour Details (on mobile, booking card comes first via order) */}
+                <div className="lg:col-span-2 space-y-4 order-2 lg:order-1">
                     <Panel style={{
                         backgroundColor: `rgba(var(--merchant-panel), var(--merchant-panel-transparency, 1))`,
                         color: `rgb(var(--merchant-panel-primary-foreground))`,
@@ -404,8 +415,8 @@ const UI: React.FC<Props> = (props) => {
                     </Panel>
                 </div>
 
-                {/* Right Column - Booking */}
-                <div className="lg:col-span-1">
+                {/* Right Column - Booking (shows first on mobile) */}
+                <div className="lg:col-span-1 order-1 lg:order-2">
                     <Card className="sticky top-4" style={{
                         backgroundColor: `rgba(var(--merchant-panel), var(--merchant-panel-transparency, 1))`,
                         borderColor: `rgb(var(--merchant-primary), 0.3)`,
@@ -418,6 +429,38 @@ const UI: React.FC<Props> = (props) => {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            {/* Tour quick info */}
+                            {bl.tour.activityLists.length > 0 && bl.tour.activityLists[0].activities.length >= 2 && (
+                                <div className="flex items-center gap-3 text-sm text-merchant-default-foreground/70 pb-2 border-b border-merchant-primary/10">
+                                    {(() => {
+                                        const activities = bl.tour.activityLists[0].activities;
+                                        const start = DateTime.fromISO(activities[0].time);
+                                        const end = DateTime.fromISO(activities[activities.length - 1].time);
+                                        const duration = end.diff(start, ['hours', 'minutes']);
+                                        const hrs = Math.floor(duration.hours);
+                                        const mins = Math.round(duration.minutes);
+                                        return (
+                                            <>
+                                                <span className="flex items-center gap-1">
+                                                    <Clock className="h-3.5 w-3.5" />
+                                                    {hrs > 0 && `${hrs}h`}{mins > 0 && ` ${mins}m`}
+                                                </span>
+                                                <span>·</span>
+                                                <span>{activities.length} stops</span>
+                                            </>
+                                        );
+                                    })()}
+                                    {bl.tour.ticketVariants.length > 0 && (
+                                        <>
+                                            <span>·</span>
+                                            <span>From <CurrencySpan value={bl.tour.ticketVariants.reduce((min, v) =>
+                                                v.price.amount < min.price.amount ? v : min
+                                            ).price} /></span>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Date Selection */}
                             <div>
                                 <label className="text-sm font-medium text-merchant-default-foreground mb-2 block">
@@ -427,7 +470,11 @@ const UI: React.FC<Props> = (props) => {
                                     {bl.sessions.isLoading ? (
                                         <div className="text-sm text-merchant-default-foreground/70">Loading dates...</div>
                                     ) : sortedDates.length === 0 ? (
-                                        <div className="text-sm text-merchant-default-foreground/70">No dates available</div>
+                                        <div className="text-sm text-merchant-default-foreground/70 text-center py-4">
+                                            <Calendar className="h-8 w-8 mx-auto mb-2 text-merchant-default-foreground/30" />
+                                            <p>No upcoming dates available</p>
+                                            <p className="text-xs mt-1">Check back soon or enquire with the organiser</p>
+                                        </div>
                                     ) : (
                                         sortedDates.map(date => {
                                             const dateSessions = sessionsByDate[date];
@@ -453,7 +500,14 @@ const UI: React.FC<Props> = (props) => {
                                                         {DateTime.fromISO(date).toLocaleString(DateTime.DATE_MED_WITH_WEEKDAY)}
                                                     </div>
                                                     <div className="text-xs text-merchant-default-foreground/70">
-                                                        {dateSessions.length} session{dateSessions.length !== 1 ? 's' : ''} available
+                                                        {dateSessions.length} session{dateSessions.length !== 1 ? 's' : ''}
+                                                        {' · '}
+                                                        {(() => {
+                                                            const totalSpots = dateSessions.reduce((sum, s) => sum + (s.capacity.remaining || 0), 0);
+                                                            if (totalSpots === 0) return <span className="text-red-500 font-medium">Fully booked</span>;
+                                                            if (totalSpots <= 5) return <span className="text-orange-500 font-medium">Only {totalSpots} spots left</span>;
+                                                            return <span>{totalSpots} spots available</span>;
+                                                        })()}
                                                     </div>
                                                 </button>
                                             );
@@ -565,7 +619,7 @@ const UI: React.FC<Props> = (props) => {
                                                             </div>
                                                         </div>
                                                         {isLowStock && (
-                                                            <Badge variant="outline" className="text-orange-500 border-orange-500">
+                                                            <Badge variant="warning">
                                                                 Only {available} left
                                                             </Badge>
                                                         )}
@@ -694,26 +748,82 @@ const UI: React.FC<Props> = (props) => {
 
                             {/* Confirmation Step */}
                             {bl.checkoutStep === 'confirmation' && bl.bookingData && (
-                                <div className="pt-4 space-y-4 text-center">
-                                    <div className="flex justify-center">
-                                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                                <div className="pt-4 space-y-5">
+                                    <div className="flex flex-col items-center text-center">
+                                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-3">
                                             <CheckCircle className="h-8 w-8 text-green-600" />
                                         </div>
-                                    </div>
-                                    <div>
                                         <h3 className="text-xl font-bold text-merchant-headings-foreground">
                                             Booking Confirmed!
                                         </h3>
-                                        <p className="text-merchant-default-foreground/70 mt-1">
-                                            Your booking code is:
-                                        </p>
-                                        <p className="text-2xl font-mono font-bold text-merchant-primary mt-2">
+                                    </div>
+
+                                    {/* Booking code */}
+                                    <div className="bg-merchant-primary/10 border border-merchant-primary/20 rounded-lg p-4 text-center" data-testid="booking-code">
+                                        <p className="text-xs text-merchant-default-foreground/70 mb-1">Your booking code</p>
+                                        <p className="text-2xl font-mono font-bold text-merchant-primary tracking-wider">
                                             {bl.bookingData.code}
                                         </p>
+                                        <p className="text-xs text-merchant-default-foreground/50 mt-1">Show this code at check-in</p>
                                     </div>
-                                    <p className="text-sm text-merchant-default-foreground/70">
-                                        A confirmation email has been sent to your email address.
+
+                                    {/* Booking details summary */}
+                                    {selectedSession && (
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex items-center gap-2 text-merchant-default-foreground">
+                                                <Calendar className="h-4 w-4 flex-shrink-0" />
+                                                <span>{DateTime.fromISO(selectedSession.date).toLocaleString(DateTime.DATE_FULL)}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-merchant-default-foreground">
+                                                <Clock className="h-4 w-4 flex-shrink-0" />
+                                                <span>
+                                                    {DateTime.fromISO(`${selectedSession.date}T${selectedSession.time.start}`).toLocaleString(DateTime.TIME_SIMPLE)}
+                                                    {' – '}
+                                                    {DateTime.fromISO(`${selectedSession.date}T${selectedSession.time.end}`).toLocaleString(DateTime.TIME_SIMPLE)}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-merchant-default-foreground">
+                                                <CreditCard className="h-4 w-4 flex-shrink-0" />
+                                                <span>
+                                                    {totalPeople} {totalPeople === 1 ? 'person' : 'people'} · <CurrencySpan value={{ amount: totalPrice, currency: bl.tour.ticketVariants[0].price.currency }} />
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <p className="text-sm text-merchant-default-foreground/70 text-center">
+                                        We&apos;ve emailed your booking details to <span className="font-medium">{bl.customerEmail}</span>
                                     </p>
+
+                                    <a
+                                        href={`/booking/${bl.merchantSlug}/${bl.bookingData.code}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block text-center text-sm text-merchant-links hover:underline"
+                                    >
+                                        View booking details &amp; manage your booking
+                                    </a>
+
+                                    {selectedSession && (
+                                        <Button
+                                            variant="outline"
+                                            className="w-full"
+                                            onClick={() => {
+                                                const startISO = `${selectedSession.date}T${selectedSession.time.start}:00`.replace(/[:-]/g, '');
+                                                const endISO = `${selectedSession.date}T${selectedSession.time.end}:00`.replace(/[:-]/g, '');
+                                                const title = encodeURIComponent(bl.tour!.name);
+                                                const details = encodeURIComponent(`Booking code: ${bl.bookingData!.code}\n${totalPeople} people`);
+                                                window.open(
+                                                    `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startISO}/${endISO}&details=${details}`,
+                                                    '_blank'
+                                                );
+                                            }}
+                                        >
+                                            <Calendar className="h-4 w-4 mr-2" />
+                                            Add to Calendar
+                                        </Button>
+                                    )}
+
                                     <Button
                                         variant="outline"
                                         onClick={() => window.location.reload()}

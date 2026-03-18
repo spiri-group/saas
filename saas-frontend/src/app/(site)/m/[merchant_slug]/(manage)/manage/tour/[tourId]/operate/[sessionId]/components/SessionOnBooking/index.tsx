@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { CommunicationModeType, booking_type, recordref_type } from "@/utils/spiriverse"
 import { useParams } from "next/navigation"
-import { ArrowUpDown, ChevronDownCircleIcon, Mail, MessageCircle, Pencil, Phone, Search, Plus, Users, CheckCircle2, AlertCircle } from "lucide-react"
+import { ArrowUpDown, ChevronDownCircleIcon, Download, Mail, MessageCircle, Pencil, Phone, Search, Plus, Users, CheckCircle2, AlertCircle, XCircle } from "lucide-react"
 import CopyButton from "@/components/ux/CopyButton"
 import UseCreatePaymentLink from "./hooks/UseCreatePaymentLink"
 
@@ -23,6 +23,7 @@ import CurrencySpan from "@/components/ux/CurrencySpan"
 import ChatControl from "@/components/ux/ChatControl"
 import NewSessionOnBooking from "./components/NewSessionOnBooking"
 import UpdateSessionOnBooking from "./components/UpdateSessionOnBooking"
+import UseCancelBooking from "./hooks/UseCancelBooking"
 import { format } from "date-fns"
 import { DateTime } from "luxon"
 import { gql } from "@/lib/services/gql"
@@ -85,9 +86,12 @@ const useBL = () => {
     const sessionStarted = sessionTimeQuery.data ? now >= sessionTimeQuery.data.start : false;
     const sessionEnded = sessionTimeQuery.data ? now >= sessionTimeQuery.data.end : false;
 
+    const [confirmCancel, setConfirmCancel] = useState<booking_type | null>(null);
+
     const markBookingAsPaid = UseMarkBookingPaid(sessionRef)
     const createPaymentLink = UseCreatePaymentLink(sessionRef)
     const checkInBooking = UseCheckInBooking(sessionRef)
+    const cancelBooking = UseCancelBooking(sessionRef)
 
     const handleCheckIn = async (booking: booking_type) => {
         if (!booking.code) return;
@@ -162,9 +166,38 @@ const useBL = () => {
         return { total, checkedIn, paid, unpaid, unchecked, noShows };
     }, [allBookings, sessionStarted]);
 
+    const exportBookingsCsv = () => {
+        const rows = [
+            ['Name', 'Email', 'Phone', 'Code', 'Tickets', 'Paid', 'Checked In', 'Check-in Time'],
+            ...allBookings.map(b => [
+                `${b.user?.firstname || ''} ${b.user?.lastname || ''}`.trim(),
+                b.customerEmail || '',
+                (b.user as any)?.phone || '',
+                b.code || '',
+                (b.sessions?.[0]?.tickets || []).map((t: any) => `${t.quantity}x ${t.variantId}`).join('; '),
+                isBookingPaid(b) ? 'Yes' : 'No',
+                b.checkedIn ? 'Yes' : 'No',
+                b.checkedIn?.datetime ? format(new Date(b.checkedIn.datetime), 'h:mm a') : '',
+            ])
+        ];
+        const csv = rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `bookings-${params.sessionId}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
     return {
         createManualBookingOpen,
         setCreateManualBookingOpen,
+        exportBookingsCsv,
+        confirmCancel,
+        setConfirmCancel,
+        cancelBooking,
+        merchantId,
         sessionRef,
         bookings: filteredBookings,
         allBookings,
@@ -187,7 +220,6 @@ const useBL = () => {
         createPaymentLink,
         showChat,
         setShowChat,
-        merchantId,
         handleCheckIn,
         handleCheckInAll,
         isCheckingIn: checkInBooking.isPending,
@@ -255,6 +287,17 @@ const SessionOnBooking : React.FC = () => {
                             >
                                 <CheckCircle2 className="w-4 h-4 mr-1" />
                                 Check in all ({bl.summary.unchecked})
+                            </Button>
+                        )}
+                        {bl.allBookings.length > 0 && (
+                            <Button
+                                variant="outline"
+                                className="h-11"
+                                onClick={bl.exportBookingsCsv}
+                                data-testid="export-bookings-btn"
+                            >
+                                <Download className="w-4 h-4 mr-1" />
+                                Export
                             </Button>
                         )}
                         <Dialog open={bl.createManualBookingOpen} onOpenChange={bl.setCreateManualBookingOpen}>
@@ -396,6 +439,7 @@ const SessionOnBooking : React.FC = () => {
                                                             <div className="flex gap-2">
                                                                 <Button type="button" variant="link" className="h-11" onClick={() => bl.setConfirmMarkPaid(booking)} data-testid={`mark-paid-${booking.id}`}>Mark paid</Button>
                                                                 <Button variant="link" className="h-11" onClick={() => bl.updateBooking.set(booking)} data-testid={`update-booking-${booking.id}`}>Update</Button>
+                                                                <Button variant="link" className="h-11 text-red-500 hover:text-red-600" onClick={() => bl.setConfirmCancel(booking)} data-testid={`cancel-booking-${booking.id}`}>Cancel</Button>
                                                             </div>
                                                         </>
                                                     ) : (
@@ -489,6 +533,9 @@ const SessionOnBooking : React.FC = () => {
                                                     )}
                                                     <DropdownMenuItem onClick={() => bl.updateBooking.set(booking)}>
                                                         Edit booking
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-red-500" onClick={() => bl.setConfirmCancel(booking)}>
+                                                        Cancel booking
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -612,6 +659,42 @@ const SessionOnBooking : React.FC = () => {
                             }}
                         >
                             Yes, mark as paid
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {/* Confirm cancel booking dialog */}
+            <Dialog open={bl.confirmCancel != null} onOpenChange={() => bl.setConfirmCancel(null)}>
+                <DialogContent className="max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>Cancel booking?</DialogTitle>
+                        <DialogDescription>
+                            This will cancel the booking for{' '}
+                            <span className="font-medium text-foreground">
+                                {bl.confirmCancel?.user?.firstname} {bl.confirmCancel?.user?.lastname}
+                            </span>
+                            . If they paid online, a refund will be initiated via Stripe.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" className="h-11" onClick={() => bl.setConfirmCancel(null)}>Keep Booking</Button>
+                        <Button
+                            variant="destructive"
+                            className="h-11"
+                            data-testid="confirm-cancel-booking-btn"
+                            disabled={bl.cancelBooking.isPending}
+                            onClick={async () => {
+                                if (bl.confirmCancel) {
+                                    await bl.cancelBooking.mutateAsync({
+                                        bookingRef: bl.confirmCancel.ref,
+                                        vendorId: bl.merchantId,
+                                        reason: 'Cancelled by merchant'
+                                    });
+                                    bl.setConfirmCancel(null);
+                                }
+                            }}
+                        >
+                            {bl.cancelBooking.isPending ? 'Cancelling...' : 'Cancel Booking'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

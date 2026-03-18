@@ -419,17 +419,39 @@ export const booking_resolvers = {
 
                     // 8. Send email confirmation
                     try {
-                        await context.dataSources.email.sendEmail(
-                            "noreply@spiriverse.com",
-                            customerEmail,
-                            "TOUR_BOOKING_CREATED_CUSTOMER",
-                            {
-                                tourName: tour.name,
-                                sessionDate: session.date,
-                                bookingCode: booking.code,
-                                tickets: bookingTickets
-                            }
-                        );
+                        const vendor = await context.dataSources.cosmos.get_record<any>("Main-Vendor", merchantId, merchantId);
+                        const vendorSlug = vendor?.slug || merchantId;
+                        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spiriverse.com';
+
+                        const ticketSummary = bookingTickets.map(t => {
+                            const variant = tour.ticketVariants.find(v => v.id === t.variantId);
+                            return `${t.quantity}x ${variant?.name || 'Ticket'}`;
+                        }).join(', ');
+
+                        const totalAmount = bookingTickets.reduce((sum, t) => sum + (t.price.amount * t.quantity), 0);
+                        const currency = bookingTickets[0]?.price?.currency || 'AUD';
+                        const formattedTotal = new Intl.NumberFormat('en-AU', { style: 'currency', currency }).format(totalAmount);
+
+                        const { renderEmailTemplate } = await import('../../email/utils');
+                        const emailContent = await renderEmailTemplate(context.dataSources, 'tour-booking-confirmed-customer', {
+                            customerName: customerEmail.split('@')[0],
+                            tourName: tour.name,
+                            bookingCode: booking.code,
+                            sessionDate: new Date(session.date).toLocaleDateString('en-AU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+                            sessionTime: `${session.time.start} - ${session.time.end}`,
+                            ticketSummary,
+                            totalAmount: formattedTotal,
+                            bookingUrl: `${baseUrl}/booking/${vendorSlug}/${booking.code}`
+                        });
+
+                        if (emailContent) {
+                            await context.dataSources.email.sendRawHtmlEmail(
+                                "noreply@spiriverse.com",
+                                customerEmail,
+                                emailContent.subject,
+                                emailContent.html
+                            );
+                        }
                     } catch (emailError) {
                         console.error("Failed to send booking confirmation email:", emailError);
                     }

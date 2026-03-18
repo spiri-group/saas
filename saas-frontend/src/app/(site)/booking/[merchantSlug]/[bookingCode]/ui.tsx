@@ -205,6 +205,31 @@ export default function BookingCancellationUI({ bookingCode, merchantSlug }: Boo
                     </CardContent>
                 </Card>
 
+                {/* Add to Calendar */}
+                {!isCancelled && booking.sessionDate && (
+                    <Button
+                        variant="outline"
+                        className="w-full"
+                        data-testid="add-to-calendar-btn"
+                        onClick={() => {
+                            const date = booking.sessionDate;
+                            const startTime = booking.sessionTime?.from || '09:00';
+                            const endTime = booking.sessionTime?.to || '17:00';
+                            const startISO = `${date}T${startTime}:00`.replace(/[:-]/g, '');
+                            const endISO = `${date}T${endTime}:00`.replace(/[:-]/g, '');
+                            const title = encodeURIComponent(booking.tourName);
+                            const details = encodeURIComponent(`Booking code: ${bookingCode}\nTickets: ${booking.tickets.map((t: any) => `${t.quantity}x ${t.variantName}`).join(', ')}`);
+                            window.open(
+                                `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startISO}/${endISO}&details=${details}`,
+                                '_blank'
+                            );
+                        }}
+                    >
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Add to Google Calendar
+                    </Button>
+                )}
+
                 {/* Cancellation Section */}
                 {isCancelled ? (
                     <Alert className="bg-red-50 border-red-200" data-testid="already-cancelled-alert">

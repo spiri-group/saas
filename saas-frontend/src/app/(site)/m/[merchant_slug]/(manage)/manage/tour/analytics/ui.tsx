@@ -13,9 +13,11 @@ import {
     CheckCircle2,
     Calendar,
     BarChart3,
-    AlertCircle
+    AlertCircle,
+    Download
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import UseTourAnalytics, { TourAnalytics, DateRangeInput } from "./hooks/UseTourAnalytics";
 import { subDays, startOfDay, endOfDay } from "date-fns";
 
@@ -70,6 +72,35 @@ const formatCurrency = (amount: number, currency: string): string => {
     }).format(amount);
 };
 
+const exportToCsv = (analytics: TourAnalytics, dateRangeLabel: string) => {
+    const rows: string[][] = [
+        ['Tour Analytics Report', `Period: ${dateRangeLabel}`],
+        [],
+        ['Summary'],
+        ['Total Bookings', String(analytics.totalBookings)],
+        ['Total Revenue', `${analytics.totalRevenue.amount} ${analytics.totalRevenue.currency}`],
+        ['Check-in Rate', `${analytics.checkInRate}%`],
+        ['Avg. Booking Value', `${analytics.averageBookingValue.amount} ${analytics.averageBookingValue.currency}`],
+        [],
+        ['Bookings by Status'],
+        ['Confirmed', String(analytics.bookingsByStatus.confirmed)],
+        ['Pending', String(analytics.bookingsByStatus.pending)],
+        ['Cancelled', String(analytics.bookingsByStatus.cancelled)],
+        [],
+        ['Top Tours', 'Bookings', 'Revenue'],
+        ...analytics.topTours.map(t => [t.tourName, String(t.bookingCount), `${t.revenue.amount} ${t.revenue.currency}`])
+    ];
+
+    const csv = rows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tour-analytics-${dateRangeLabel.toLowerCase().replace(/\s+/g, '-')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+};
+
 const useBL = (props: BLProps) => {
     const [selectedRange, setSelectedRange] = useState<string>("30d");
 
@@ -80,8 +111,11 @@ const useBL = (props: BLProps) => {
 
     const analyticsQuery = UseTourAnalytics(props.merchantId, dateRange);
 
+    const selectedRangeLabel = DATE_RANGE_OPTIONS.find(opt => opt.value === selectedRange)?.label || selectedRange;
+
     return {
         selectedRange,
+        selectedRangeLabel,
         setSelectedRange,
         analytics: analyticsQuery.data,
         isLoading: analyticsQuery.isLoading,
@@ -276,6 +310,17 @@ const UI: React.FC<Props> = (props) => {
                         </PanelDescription>
                     </div>
                     <div className="flex items-center gap-2">
+                        {bl.analytics && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => exportToCsv(bl.analytics!, bl.selectedRangeLabel)}
+                                data-testid="export-csv-btn"
+                            >
+                                <Download className="w-4 h-4 mr-2" />
+                                Export CSV
+                            </Button>
+                        )}
                         <Calendar className="w-4 h-4 text-muted-foreground" />
                         <Select
                             value={bl.selectedRange}

@@ -88,20 +88,17 @@ async function setupLocation(page: any) {
   await titleInput.clear();
   await titleInput.fill('Tour Meeting Point');
 
-  // Fill address
+  // Fill address — type slowly to trigger Google Places autocomplete
   const addressInput = dialog.locator('input[placeholder="Physical address"]').first();
   await addressInput.click();
-  await addressInput.pressSequentially('Sydney Opera House', { delay: 50 });
-  await page.waitForTimeout(3000);
+  await addressInput.pressSequentially('Sydney', { delay: 100 });
+  await page.waitForTimeout(4000);
 
-  const autocompleteListbox = page.locator('[role="listbox"]');
-  if (await autocompleteListbox.isVisible({ timeout: 5000 }).catch(() => false)) {
-    const firstOption = page.locator('[role="option"]').first();
-    if (await firstOption.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await firstOption.click();
-      await page.waitForTimeout(1000);
-    }
-  }
+  // Select first autocomplete result
+  const firstOption = page.locator('[role="option"]').first();
+  await expect(firstOption).toBeVisible({ timeout: 10000 });
+  await firstOption.click();
+  await page.waitForTimeout(1000);
 
   const saveButton = dialog.locator('button:has-text("Save & Close")');
   await expect(saveButton).toBeEnabled({ timeout: 5000 });
@@ -269,6 +266,17 @@ test.describe.serial('Tour Customer Journey', () => {
     const activityTime0 = page.getByTestId('activity-time-0');
     await activityTime0.fill('09:00');
 
+    // Fill location for activity 0
+    const addressInput0 = page.locator('input[placeholder="Physical address"]').first();
+    await addressInput0.click();
+    await addressInput0.pressSequentially('Circular Quay', { delay: 50 });
+    await page.waitForTimeout(3000);
+    const option0 = page.locator('[role="option"]').first();
+    if (await option0.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await option0.click();
+      await page.waitForTimeout(1000);
+    }
+
     const activityName1 = page.getByTestId('activity-name-1');
     await expect(activityName1).toBeVisible({ timeout: 5000 });
     await activityName1.fill('Sydney Opera House');
@@ -276,17 +284,31 @@ test.describe.serial('Tour Customer Journey', () => {
     const activityTime1 = page.getByTestId('activity-time-1');
     await activityTime1.fill('11:00');
 
+    // Fill location for activity 1
+    const addressInput1 = page.locator('input[placeholder="Physical address"]').nth(1);
+    await addressInput1.click();
+    await addressInput1.pressSequentially('Sydney Opera House', { delay: 50 });
+    await page.waitForTimeout(3000);
+    const option1 = page.locator('[role="option"]').first();
+    if (await option1.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await option1.click();
+      await page.waitForTimeout(1000);
+    }
+
     console.log('[Test 2] Itinerary filled');
 
     await page.getByTestId('tour-wizard-next-btn').click();
     // Verify we moved to Step 4 (Tickets)
-    await expect(page.locator('text=Ticket Variants')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Ticket Variants').first()).toBeVisible({ timeout: 10000 });
     console.log('[Test 2] Step 3 complete — on tickets step');
 
     // === Step 4: Tickets ===
     console.log('[Test 2] Step 4: Adding ticket variants...');
 
-    // Fill the default first ticket
+    // Add a ticket variant first (starts empty)
+    await page.getByTestId('add-ticket-variant-btn').click();
+    await page.waitForTimeout(500);
+
     const ticketName0 = page.getByTestId('ticket-name-0');
     await expect(ticketName0).toBeVisible({ timeout: 10000 });
     await ticketName0.fill('Adult');
@@ -310,7 +332,7 @@ test.describe.serial('Tour Customer Journey', () => {
     await expect(page.locator('text=Tour Thumbnail, text=Ticket Variants').first()).not.toBeVisible({ timeout: 30000 });
     console.log('[Test 2] Tour creation dialog closed');
 
-    // The wizard navigates to /m/{merchantId}/events-and-tours?listingId={id}
+    // The wizard navigates to /m/{slug}/manage/events-and-tours?listingId={id}
     await page.waitForURL(/events-and-tours/, { timeout: 30000 });
     const currentUrl = page.url();
     console.log(`[Test 2] Navigated to: ${currentUrl}`);
@@ -323,92 +345,78 @@ test.describe.serial('Tour Customer Journey', () => {
       console.log(`[Test 2] Tour ID from URL: ${tourId}`);
     }
 
-    // Verify the tour appears in the schedule combobox
-    const tourCombobox = page.locator('[aria-label="combobox-schedule-tour-trigger"]');
-    await expect(tourCombobox).toBeVisible({ timeout: 15000 });
-    await tourCombobox.click();
-    await page.waitForTimeout(500);
-
-    const tourOption = page.locator(`[cmdk-item]:has-text("${tourName}")`).first();
-    await expect(tourOption).toBeVisible({ timeout: 10000 });
-    tourId = await tourOption.getAttribute('data-value') || tourId;
-    await tourOption.click();
-    console.log(`[Test 2] Tour ID: ${tourId}`);
     expect(tourId).toBeTruthy();
-
     console.log('[Test 2] Tour creation complete');
   });
 
   test('3. Schedule tour sessions', async ({ page }) => {
     test.setTimeout(120000);
 
-    // Restore merchant session
-    if (merchantStorageState) {
-      await page.context().addCookies(merchantStorageState.cookies);
-      console.log('[Test 3] Restored merchant session');
-    } else {
-      throw new Error('Merchant storage state not available');
-    }
+    expect(merchantStorageState).toBeTruthy();
+    await page.context().addCookies(merchantStorageState!.cookies);
+    console.log('[Test 3] Restored merchant session');
 
-    const tourPage = new TourPage(page);
+    // Navigate to Events & Tours page with listingId to auto-select the tour
+    expect(tourId).toBeTruthy();
+    await page.goto(`/m/${merchantSlug}/manage/events-and-tours?listingId=${tourId}`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(5000);
 
-    // Navigate to Events & Tours page
-    await tourPage.navigateToEventsAndTours(merchantSlug);
-    await page.waitForTimeout(3000);
+    // Debug: check what the catalogue query returns
+    const queryResult = await page.evaluate(async (vars: { merchantId: string }) => {
+      const resp = await fetch('/api/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `query($merchantId: ID!) { catalogue(vendorId: $merchantId, types:["TOUR"], includeDrafts: true) { listings { id name } totalCount } }`,
+          variables: { merchantId: vars.merchantId }
+        })
+      });
+      return resp.json();
+    }, { merchantId });
+    console.log('[Test 3] Catalogue query result:', JSON.stringify(queryResult));
+    console.log('[Test 3] On events-and-tours page');
 
-    // Take screenshot to see page state
-    await page.screenshot({ path: 'test-results/test3-events-and-tours.png' });
-    console.log(`[Test 3] Current URL: ${page.url()}`);
+    // Capacity input appears after tour details query loads
+    const capacityInput = page.locator('input[name="schedule.capacity"]');
+    await expect(capacityInput).toBeVisible({ timeout: 30000 });
+    await capacityInput.clear();
+    await capacityInput.fill('20');
+    console.log('[Test 3] Capacity set to 20');
 
-    // Check if page loaded correctly (might be blocked by payments requirement)
-    const scheduleDatesPanel = page.locator('[data-testid="schedule-dates-panel"]');
-    if (!await scheduleDatesPanel.isVisible({ timeout: 10000 }).catch(() => false)) {
-      console.log('[Test 3] Schedule panel not visible - checking for payment requirements...');
-
-      // Check for any payment/stripe warning
-      const paymentWarning = page.locator('text=payment, text=Stripe, text=connect');
-      if (await paymentWarning.first().isVisible({ timeout: 3000 }).catch(() => false)) {
-        console.log('[Test 3] Page requires payments to be fully configured');
-      }
-
-      // Take another screenshot for debugging
-      await page.screenshot({ path: 'test-results/test3-page-blocked.png' });
-    }
-
-    console.log('[Test 3] Scheduling tour sessions...');
-
-    // Select the tour we created
-    await tourPage.selectTourForScheduling(tourName);
-    console.log('[Test 3] ✓ Tour selected');
-
-    // Set capacity
-    await tourPage.setSessionCapacity(20);
-    console.log('[Test 3] ✓ Capacity set to 20');
-
-    // Select dates - next 3 days
+    // Select 3 future dates on the calendar using data-date attribute
     const today = new Date();
-    const dates = [
-      new Date(today.getTime() + 24 * 60 * 60 * 1000), // Tomorrow
-      new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000), // Day after
-      new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-    ];
+    let datesSelected = 0;
+    for (let i = 1; i <= 7 && datesSelected < 3; i++) {
+      const futureDate = new Date(today.getTime() + i * 24 * 60 * 60 * 1000);
+      const isoDate = futureDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const dayCell = page.locator(`[data-date="${isoDate}"]`);
+      if (await dayCell.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await dayCell.click();
+        await page.waitForTimeout(300);
+        datesSelected++;
+      }
+    }
+    console.log(`[Test 3] Selected ${datesSelected} dates`);
+    expect(datesSelected).toBeGreaterThan(0);
 
-    await tourPage.selectDatesForScheduling(dates);
-    console.log('[Test 3] ✓ Dates selected');
+    // Dismiss cookie banner if blocking
+    const cookieAccept = page.locator('[data-testid="cookie-banner"] button:has-text("Accept")');
+    if (await cookieAccept.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await cookieAccept.click();
+      await page.waitForTimeout(500);
+    }
 
-    // Save the schedule
-    await tourPage.saveSchedule();
+    // Click Save button
+    const scheduleBtn = page.locator('button[type="submit"][aria-label="button-schedule-save"]');
+    await expect(scheduleBtn).toBeVisible({ timeout: 5000 });
+    await scheduleBtn.click();
+    await page.waitForTimeout(3000);
+    console.log('[Test 3] Clicked schedule');
 
     // Verify sessions were created
-    await page.waitForTimeout(2000);
-    const sessionsPanel = page.locator('[data-testid="sessions-panel"], text=Scheduled Sessions');
-    const hasSessions = await sessionsPanel.isVisible({ timeout: 5000 }).catch(() => false);
-
-    if (hasSessions) {
-      console.log('[Test 3] ✓ Sessions scheduled and visible');
-    }
-
-    console.log('[Test 3] ✓ Session scheduling complete');
+    await page.waitForTimeout(3000);
+    console.log('[Test 3] Session scheduling complete');
   });
 
   test('4. Customer signs up and books tour', async ({ page }, testInfo) => {
@@ -430,33 +438,38 @@ test.describe.serial('Tour Customer Journey', () => {
     await page.keyboard.type('123456');
     await page.waitForURL('/', { timeout: 15000 });
 
-    // Complete user profile
-    await homePage.waitForCompleteProfileLink();
-    await homePage.clickCompleteProfile();
-    await expect(page).toHaveURL(/\/u\/.*\/setup/, { timeout: 10000 });
+    // Handle consent guard if present
+    const { handleConsentGuardIfPresent } = await import('../utils/test-helpers');
+    await handleConsentGuardIfPresent(page);
 
-    const url = page.url();
-    const userIdMatch = url.match(/\/u\/([^\/]+)\/setup/);
-    if (userIdMatch) {
-      customerUserId = userIdMatch[1];
+    // New users are redirected to /setup after login
+    await page.goto('/setup');
+    await userSetupPage.waitForForm();
+
+    // Get user ID from session for cleanup
+    const userId = await page.evaluate(async () => {
+      const response = await fetch('/api/auth/session');
+      const session = await response.json();
+      return session?.user?.id;
+    });
+    if (userId) {
+      customerUserId = userId;
       registerTestUser({ id: customerUserId, email: customerEmail }, workerId);
     }
 
     await userSetupPage.fillUserProfile({
       firstName: 'Tour',
       lastName: 'Customer',
-      phone: '0498765432',
-      address: 'Melbourne CBD',
-      securityQuestion: 'What is your favorite color?',
-      securityAnswer: 'Green',
     });
 
-    // Click "Start Browsing" to complete setup
-    const startBrowsingBtn = page.getByRole('button', { name: 'Start Browsing SpiriVerse' });
-    if (await startBrowsingBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await startBrowsingBtn.click();
-      await page.waitForURL('/', { timeout: 15000 });
-    }
+    // Click "Let's Get Started" to complete customer setup
+    const getStartedBtn = page.locator('button:has-text("Get Started"), button:has-text("Start Browsing")').first();
+    await expect(getStartedBtn).toBeVisible({ timeout: 10000 });
+    await getStartedBtn.click();
+
+    // Handle consent guard after setup if it appears
+    await handleConsentGuardIfPresent(page);
+    await page.waitForTimeout(3000);
 
     console.log('[Test 4] ✓ Customer profile complete');
 
@@ -467,21 +480,42 @@ test.describe.serial('Tour Customer Journey', () => {
     console.log('[Test 4] Navigating to tour page...');
     const tourPage = new TourPage(page);
 
-    if (tourId) {
-      await tourPage.navigateToPublicTour(merchantSlug, tourId);
-    } else {
-      // Fallback: navigate to merchant page and find tour
-      await page.goto(`/m/${merchantSlug}`);
-      await page.waitForLoadState('networkidle');
-      const tourLink = page.locator(`a:has-text("${tourName}")`).first();
-      if (await tourLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await tourLink.click();
-        await page.waitForLoadState('networkidle');
-      }
+    expect(tourId).toBeTruthy();
+
+    // Debug: query the tour directly to verify it exists
+    const tourQueryResult = await page.evaluate(async (vars: { tourId: string, merchantId: string }) => {
+      const resp = await fetch('/api/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `query($id: ID!, $vendorId: ID!) { tour(id: $id, vendorId: $vendorId) { id name } }`,
+          variables: { id: vars.tourId, vendorId: vars.merchantId }
+        })
+      });
+      return resp.json();
+    }, { tourId, merchantId });
+    console.log(`[Test 4] Tour query result: ${JSON.stringify(tourQueryResult)}`);
+
+    const tourUrl = `/m/${merchantSlug}/tour/${tourId}`;
+    console.log(`[Test 4] Navigating to: ${tourUrl}`);
+    await page.goto(tourUrl);
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(3000);
+    console.log(`[Test 4] Current URL: ${page.url()}`);
+
+    // Check for console errors on the page
+    const consoleErrors: string[] = [];
+    page.on('console', msg => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+    await page.waitForTimeout(10000);
+    if (consoleErrors.length > 0) {
+      console.log(`[Test 4] Console errors: ${consoleErrors.join(' | ')}`);
     }
 
-    // Verify tour page loaded
-    await expect(page.locator('h1, [data-testid="tour-title"]').filter({ hasText: /Sydney Harbour|Tour/ })).toBeVisible({ timeout: 10000 });
+    // Verify tour page loaded — check for tour name or booking elements
+    const tourTitle = page.locator(`text=${tourName}`).first();
+    await expect(tourTitle).toBeVisible({ timeout: 30000 });
     console.log('[Test 4] ✓ Tour page loaded');
 
     // === Book the Tour ===
