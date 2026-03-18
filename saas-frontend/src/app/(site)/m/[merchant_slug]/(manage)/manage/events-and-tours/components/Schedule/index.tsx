@@ -74,7 +74,7 @@ const useBL = (props: BLProps) => {
         selectedActivityList:
             form_values.schedule.activityList != null && tourQuery.data != null
                 ? tourQuery.data.activityLists.find(x => x.id == form_values.schedule.activityList.id) : null,
-        selectedTicketList: null, // TODO: Update to work with ticketVariants instead of ticketLists
+        selectedTicketList: null,
         form,
         values: form.getValues(),
         save: async (values: formSchemaType) => {
@@ -101,7 +101,7 @@ const Summary: React.FC<{ selectedTour: tour_type | null, form: UseFormReturn<fo
 
     const values = props.form.getValues()
 
-    if (props.selectedTour == null || values.schedule.ticketList == null) return <SummaryContainer />;
+    if (props.selectedTour == null || values.schedule.activityList == null) return <SummaryContainer />;
     
     const selectedActivityList = props.selectedTour.activityLists.find((activityList) => activityList.id === values.schedule.activityList.id)
     if (selectedActivityList == null) throw new Error("Activity list not found")

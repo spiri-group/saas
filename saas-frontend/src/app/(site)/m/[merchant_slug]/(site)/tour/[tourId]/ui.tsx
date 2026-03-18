@@ -350,6 +350,12 @@ const UI: React.FC<Props> = (props) => {
                                                             </span>
                                                         </div>
                                                         <h4 className="font-semibold text-merchant-headings-foreground">{activity.name}</h4>
+                                                        {activity.location?.formattedAddress && (
+                                                            <p className="text-xs text-merchant-default-foreground/50 flex items-center gap-1 mt-0.5">
+                                                                <MapPin className="h-3 w-3 flex-shrink-0" />
+                                                                {activity.location.formattedAddress}
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 </div>
                                             ))}
