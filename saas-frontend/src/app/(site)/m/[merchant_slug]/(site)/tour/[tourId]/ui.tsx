@@ -792,7 +792,7 @@ const UI: React.FC<Props> = (props) => {
                                     )}
 
                                     <p className="text-sm text-merchant-default-foreground/70 text-center">
-                                        Save your booking code above — you&apos;ll need it for check-in
+                                        We&apos;ve emailed your booking details to <span className="font-medium">{bl.customerEmail}</span>
                                     </p>
 
                                     <a
