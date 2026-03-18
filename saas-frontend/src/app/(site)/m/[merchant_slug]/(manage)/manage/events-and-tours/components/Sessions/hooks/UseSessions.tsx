@@ -36,14 +36,6 @@ const queryFn = async (from: DateTime, to: DateTime, merchantId?: string, tourId
                         id
                         name
                     }
-                    order {
-                        balanceDue {
-                            total {
-                                amount
-                                currency
-                            }
-                        }
-                    }
                 }
                 date,
                 time {
