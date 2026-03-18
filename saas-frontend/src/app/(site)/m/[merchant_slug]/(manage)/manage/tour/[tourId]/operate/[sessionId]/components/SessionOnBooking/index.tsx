@@ -220,7 +220,6 @@ const useBL = () => {
         createPaymentLink,
         showChat,
         setShowChat,
-        merchantId,
         handleCheckIn,
         handleCheckInAll,
         isCheckingIn: checkInBooking.isPending,
