@@ -53,6 +53,8 @@ const TourUpgradeBanner: React.FC<{ merchantId: string }> = ({ merchantId }) => 
 };
 
 const UI : React.FC<Props> = (props) => {
+    const { features } = useTierFeatures(props.merchantId);
+
     return (
        <>
             <div className="flex w-full h-full flex-col flex-col-reverse space-y-2 md:flex flex-row space-x-2">
@@ -60,7 +62,7 @@ const UI : React.FC<Props> = (props) => {
                     <TourUpgradeBanner merchantId={props.merchantId} />
                     <CreateScheduleComponent vendorId={props.merchantId} />
                 </div>
-                <SessionsComponent merchantId={props.merchantId} />
+                <SessionsComponent merchantId={props.merchantId} canOperate={features.canOperateTours} />
             </div>
        </>
     )

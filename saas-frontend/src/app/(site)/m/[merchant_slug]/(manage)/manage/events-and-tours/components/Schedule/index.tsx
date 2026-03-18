@@ -163,7 +163,7 @@ const CreateScheduleComponent: React.FC<Props> = (props) => {
                                 render={({field}) => {
                                     return (
                                         <FormItem>
-                                            <FormLabel> People capacity for each date </FormLabel>
+                                            <FormLabel> Max guests per session </FormLabel>
                                             <FormControl>
                                                 <Input type="number" {...field} />
                                             </FormControl>
@@ -185,24 +185,36 @@ const CreateScheduleComponent: React.FC<Props> = (props) => {
                                         </FormItem>
                                     )
                                 }} />
-                            <Dialog>
-                                <DialogTrigger asChild>
-                                    <Button className="mt-2 w-full" variant="default">
-                                        { bl.selectedActivityList != null ?
-                                            `${bl.selectedActivityList.name}` :  `Select activity list`}
-                                    </Button>
-                                </DialogTrigger>
-                                <ChooseActivityAndTicketList
-                                        form={bl.form}
-                                        activityListOptions={bl.listings.selected == null ? [] : bl.listings.selected.activityLists}
-                                        ticketListOptions={[]}
-                                        className="w-[870px] h-[600px] flex flex-col"
-                                    />
-                            </Dialog>
+                            {bl.listings.selected.activityLists.length > 1 && (
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button className="mt-2 w-full" variant="outline">
+                                            { bl.selectedActivityList != null ?
+                                                `Itinerary: ${bl.selectedActivityList.name}` : `Choose itinerary`}
+                                        </Button>
+                                    </DialogTrigger>
+                                    <ChooseActivityAndTicketList
+                                            form={bl.form}
+                                            activityListOptions={bl.listings.selected == null ? [] : bl.listings.selected.activityLists}
+                                            ticketListOptions={[]}
+                                            className="w-[870px] h-[600px] flex flex-col"
+                                        />
+                                </Dialog>
+                            )}
                         </div>
-                        <div className="grid grid-cols-2 mt-2 space-x-2">
-                            <Button variant="default" aria-label="button-schedule-reset">Reset</Button>
-                            <Button type="submit" variant="default" aria-label="button-schedule-save">Save</Button>
+                        <div className="flex mt-3 space-x-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="flex-1"
+                                aria-label="button-schedule-reset"
+                                onClick={() => bl.form.reset()}
+                            >
+                                Clear
+                            </Button>
+                            <Button type="submit" className="flex-1" aria-label="button-schedule-save">
+                                Schedule Sessions
+                            </Button>
                         </div>
                     </>
                 )}
