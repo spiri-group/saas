@@ -174,7 +174,7 @@ const useBL = () => {
                 b.customerEmail || '',
                 (b.user as any)?.phone || '',
                 b.code || '',
-                (b.tickets || []).map((t: any) => `${t.quantity}x ${t.name || t.variantId}`).join('; '),
+                (b.sessions?.[0]?.tickets || []).map((t: any) => `${t.quantity}x ${t.variantId}`).join('; '),
                 isBookingPaid(b) ? 'Yes' : 'No',
                 b.checkedIn ? 'Yes' : 'No',
                 b.checkedIn?.datetime ? format(new Date(b.checkedIn.datetime), 'h:mm a') : '',
