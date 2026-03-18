@@ -21,6 +21,7 @@ import CurrencySpan from "@/components/ux/CurrencySpan";
 import CurrencyNote from "@/components/ux/CurrencyNote";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useParams } from "next/navigation";
 import UseCreateTourBooking from "./hooks/UseCreateTourBooking";
 import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
@@ -58,6 +59,7 @@ type BookingData = {
 };
 
 const useBL = (props: BLProps) => {
+    const params = useParams<{ merchant_slug: string }>();
     const tour = UseTourDetails(props.merchantId, props.tourId);
     const vendorBranding = useMerchantTheme(props.merchantId);
 
@@ -185,6 +187,7 @@ const useBL = (props: BLProps) => {
     };
 
     return {
+        merchantSlug: params?.merchant_slug || '',
         ref: {
             id: props.tourId,
             partition: props.merchantId
@@ -789,8 +792,17 @@ const UI: React.FC<Props> = (props) => {
                                     )}
 
                                     <p className="text-sm text-merchant-default-foreground/70 text-center">
-                                        A confirmation email has been sent to <span className="font-medium">{bl.customerEmail}</span>
+                                        Save your booking code above — you&apos;ll need it for check-in
                                     </p>
+
+                                    <a
+                                        href={`/booking/${bl.merchantSlug}/${bl.bookingData.code}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block text-center text-sm text-merchant-links hover:underline"
+                                    >
+                                        View booking details &amp; manage your booking
+                                    </a>
 
                                     {selectedSession && (
                                         <Button
