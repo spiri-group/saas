@@ -41,12 +41,12 @@ function formatDate(dateString: string): string {
     });
 }
 
-function formatTime(time: { from?: string; to?: string } | undefined): string {
+function formatTime(time: { start?: string; end?: string } | undefined): string {
     if (!time) return '';
-    if (time.from && time.to) {
-        return `${time.from} - ${time.to}`;
+    if (time.start && time.end) {
+        return `${time.start} - ${time.end}`;
     }
-    return time.from || '';
+    return time.start || '';
 }
 
 function getStatusBadge(status: string) {
@@ -224,8 +224,8 @@ export default function BookingCancellationUI({ bookingCode, merchantSlug }: Boo
                         data-testid="add-to-calendar-btn"
                         onClick={() => {
                             const date = booking.sessionDate;
-                            const startTime = booking.sessionTime?.from || '09:00';
-                            const endTime = booking.sessionTime?.to || '17:00';
+                            const startTime = booking.sessionTime?.start || '09:00';
+                            const endTime = booking.sessionTime?.end || '17:00';
                             const startISO = `${date}T${startTime}:00`.replace(/[:-]/g, '');
                             const endISO = `${date}T${endTime}:00`.replace(/[:-]/g, '');
                             const title = encodeURIComponent(booking.tourName);
