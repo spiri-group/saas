@@ -21,10 +21,21 @@ input EmailHeaderFooterInput {
   isActive: Boolean
 }
 
+input SendAdHocEmailInput {
+  recipients: [String!]!
+  cc: [String]
+  bcc: [String]
+  subject: String!
+  bodyHtml: String!
+  scheduledFor: String
+}
+
 type Mutation {
   upsertEmailTemplate(input: EmailTemplateInput!): EmailTemplate!
   deleteEmailTemplate(id: ID!): Boolean!
   upsertEmailHeaderFooter(input: EmailHeaderFooterInput!): EmailHeaderFooter!
   deleteEmailHeaderFooter(id: ID!): Boolean!
   deleteEmailAsset(name: String!): Boolean!
+  sendAdHocEmail(input: SendAdHocEmailInput!): SentEmail!
+  cancelScheduledEmail(id: ID!): Boolean!
 }

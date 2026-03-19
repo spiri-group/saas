@@ -15,6 +15,7 @@ import {
   Scale,
   Tag,
   Bot,
+  Send,
 } from "lucide-react";
 import Link from "next/link";
 import ChoiceManager from "./choice-manager/ChoiceManager";
@@ -27,8 +28,9 @@ import Analytics from "./analytics/Analytics";
 import LegalDocumentsManager from "./legal-documents/LegalDocumentsManager";
 import PricingReference from "./pricing-reference/PricingReference";
 import AiAssistant from "./ai-assistant/AiAssistant";
+import OutboxManager from "./outbox/OutboxManager";
 
-type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager' | 'accounts-manager' | 'account-journeys' | 'analytics' | 'legal-documents' | 'pricing-reference' | 'ai-assistant';
+type ConsoleView = 'choice-manager' | 'fees-manager' | 'email-templates' | 'alerts-manager' | 'accounts-manager' | 'account-journeys' | 'analytics' | 'legal-documents' | 'pricing-reference' | 'ai-assistant' | 'outbox';
 
 export default function ConsolePage() {
   const { data: session, status } = useSession();
@@ -83,6 +85,7 @@ export default function ConsolePage() {
                      currentView === 'analytics' ? 'Site Analytics' :
                      currentView === 'pricing-reference' ? 'Pricing Reference' :
                      currentView === 'ai-assistant' ? 'AI Assistant' :
+                     currentView === 'outbox' ? 'Outbox' :
                      'Accounts Manager'}
                   </p>
                 </div>
@@ -131,6 +134,7 @@ export default function ConsolePage() {
             { group: 'Content', items: [
               { key: 'choice-manager' as ConsoleView, icon: List, label: 'Choice Manager' },
               { key: 'email-templates' as ConsoleView, icon: Mail, label: 'Email Templates' },
+              { key: 'outbox' as ConsoleView, icon: Send, label: 'Outbox' },
               { key: 'legal-documents' as ConsoleView, icon: Scale, label: 'Legal Documents' },
             ]},
             { group: 'Finance', items: [
@@ -179,6 +183,7 @@ export default function ConsolePage() {
           {currentView === 'analytics' && <Analytics />}
           {currentView === 'pricing-reference' && <PricingReference />}
           {currentView === 'ai-assistant' && <AiAssistant />}
+          {currentView === 'outbox' && <OutboxManager />}
         </main>
       </div>
     </div>
