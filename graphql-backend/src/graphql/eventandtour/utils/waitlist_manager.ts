@@ -4,6 +4,7 @@ import { serverContext } from "../../../services/azFunction";
 import { waitlist_entry_type, waitlist_ticket_preference_type, session_type, tour_type } from "../types";
 import { recordref_type } from "../../0_shared/types";
 import { RecordStatus } from "../../../utils/database";
+import { renderEmailTemplate } from "../../email/utils";
 
 const WAITLIST_CONTAINER = "Tour-Waitlist";
 const NOTIFICATION_EXPIRY_HOURS = 24;
@@ -303,20 +304,33 @@ export const process_waitlist_on_slot_open = async (
         // Mark as notified
         await mark_as_notified(context, nextEntry);
 
-        // Send notification email
+        // Send notification email via template system
         try {
-            await context.dataSources.email.sendEmail(
-                "noreply@spiriverse.com",
-                nextEntry.customerEmail,
-                "TOUR_WAITLIST_SPOT_AVAILABLE",
-                {
-                    tourName: nextEntry.tourName,
-                    sessionDate: nextEntry.sessionDate,
-                    sessionTime: nextEntry.sessionTime,
-                    expiryHours: NOTIFICATION_EXPIRY_HOURS,
-                    ticketPreferences: nextEntry.ticketPreferences
-                }
-            );
+            // Get vendor slug for booking URL
+            let bookingUrl = '';
+            try {
+                const vendor = await context.dataSources.cosmos.get_record<any>("Main-Vendor", nextEntry.vendorId, nextEntry.vendorId);
+                const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spiriverse.com';
+                bookingUrl = vendor?.slug
+                    ? `${baseUrl}/m/${vendor.slug}/tour/${nextEntry.tourRef?.id || ''}`
+                    : baseUrl;
+            } catch { /* optional */ }
+
+            const emailContent = await renderEmailTemplate(context.dataSources as any, 'tour-waitlist-spot-available', {
+                tourName: nextEntry.tourName,
+                sessionDate: nextEntry.sessionDate,
+                expiryHours: String(NOTIFICATION_EXPIRY_HOURS),
+                bookingUrl
+            });
+
+            if (emailContent) {
+                await context.dataSources.email.sendRawHtmlEmail(
+                    "noreply@spiriverse.com",
+                    nextEntry.customerEmail,
+                    emailContent.subject,
+                    emailContent.html
+                );
+            }
         } catch (emailError) {
             console.error("Failed to send waitlist notification email:", emailError);
         }

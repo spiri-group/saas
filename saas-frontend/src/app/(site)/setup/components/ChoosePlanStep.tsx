@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UseFormReturn, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { useSubscriptionTiers } from '@/hooks/UseSubscriptionTiers';
@@ -8,6 +8,15 @@ import TierCard from '@/components/subscription/TierCard';
 import { ArrowLeft, BookOpen, Check, Sparkles, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { OnboardingFormValues } from '../hooks/useOnboardingForm';
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    useCarousel,
+} from '@/components/ux/Carousel';
+import type { UseEmblaCarouselType } from 'embla-carousel-react';
+
+type CarouselApi = UseEmblaCarouselType[1];
 
 type Path = 'directory' | 'practitioner' | 'merchant' | null;
 
@@ -188,7 +197,7 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
 
     return (
         <div className="flex-1 flex flex-col space-y-3 md:space-y-4 px-4 py-4 md:px-8 md:py-5 min-h-0 overflow-y-auto" data-testid="choose-plan-step">
-            {/* Header row — title + interval toggle inline */}
+            {/* Header row — title + interval toggle */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
                     <h1 className="font-light text-2xl md:text-3xl text-white">Choose Your Plan</h1>
@@ -206,7 +215,7 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
                         type="button"
                         data-testid="plan-interval-monthly"
                         onClick={() => handleIntervalChange('monthly')}
-                        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                        className={`rounded-lg px-4 py-2.5 sm:px-3 sm:py-1.5 text-sm font-medium transition-colors ${
                             selectedInterval === 'monthly'
                                 ? 'bg-purple-600 text-white'
                                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -218,7 +227,7 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
                         type="button"
                         data-testid="plan-interval-annual"
                         onClick={() => handleIntervalChange('annual')}
-                        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                        className={`rounded-lg px-4 py-2.5 sm:px-3 sm:py-1.5 text-sm font-medium transition-colors ${
                             selectedInterval === 'annual'
                                 ? 'bg-purple-600 text-white'
                                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -230,10 +239,18 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
                 </div>
             </div>
 
-            {/* Tier cards */}
+            {/* Tier cards — carousel on mobile, grid on desktop */}
+            <MobileTierCarousel
+                visibleTiers={visibleTiers}
+                grayscaleTiers={grayscaleTiers}
+                selectedTier={selectedTier}
+                selectedInterval={selectedInterval}
+                onSelect={handleTierChange}
+            />
+
             <div
                 data-testid="plan-cards-grid"
-                className="grid gap-3 md:gap-4 mx-auto w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-6xl"
+                className="hidden md:grid gap-4 mx-auto w-full md:grid-cols-2 lg:grid-cols-4 max-w-6xl"
             >
                 {visibleTiers.map((tier) => {
                     const isGrayscale = grayscaleTiers.includes(tier.tier);
@@ -257,31 +274,123 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
                 })}
             </div>
 
-            {/* Footer — trial note + navigation inline */}
-            <div className="flex items-center gap-3 max-w-6xl mx-auto w-full">
-                <Button
-                    type="button"
-                    variant="outline"
-                    data-testid="plan-back-btn"
-                    className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                    onClick={handleBackToPath}
-                >
-                    <ArrowLeft className="w-4 h-4 mr-1" />
-                    Change path
-                </Button>
-                <p className="flex-1 text-center text-xs text-slate-400">
+            {/* Footer — stacked on mobile, inline on desktop */}
+            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 max-w-6xl mx-auto w-full">
+                <div className="flex items-center gap-2 order-2 md:order-1">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        data-testid="plan-back-btn"
+                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                        onClick={handleBackToPath}
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-1" />
+                        Change path
+                    </Button>
+                    <p className="hidden md:block flex-1 text-center text-xs text-slate-400">
+                        Free trial starts today — no charge until it ends.
+                    </p>
+                </div>
+                <p className="md:hidden text-center text-xs text-slate-400 order-3">
                     Free trial starts today — no charge until it ends.
                 </p>
                 <Button
                     type="button"
                     data-testid="plan-continue-btn"
-                    className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
+                    className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 h-12 md:h-9 text-base md:text-sm order-1 md:order-3 md:ml-auto"
                     disabled={!selectedTier}
                     onClick={handleContinue}
                 >
                     Continue
                 </Button>
             </div>
+        </div>
+    );
+}
+
+// ── Mobile Tier Carousel ────────────────────────────────────────────
+
+function MobileTierCarousel({
+    visibleTiers,
+    grayscaleTiers,
+    selectedTier,
+    selectedInterval,
+    onSelect,
+}: {
+    visibleTiers: any[];
+    grayscaleTiers: string[];
+    selectedTier: string;
+    selectedInterval: 'monthly' | 'annual';
+    onSelect: (tier: string) => void;
+}) {
+    const [api, setApi] = useState<CarouselApi>();
+    const [activeIndex, setActiveIndex] = useState(0);
+
+    useEffect(() => {
+        if (!api) return;
+        const onSelectSnap = () => setActiveIndex(api.selectedScrollSnap());
+        api.on('select', onSelectSnap);
+        onSelectSnap();
+        return () => { api.off('select', onSelectSnap); };
+    }, [api]);
+
+    // When a tier is selected via tap, scroll to it
+    const handleSelect = (tier: string) => {
+        onSelect(tier);
+    };
+
+    return (
+        <div className="md:hidden flex flex-col gap-3">
+            {/* Dot indicators */}
+            <div className="flex items-center justify-center gap-1.5">
+                {visibleTiers.map((tier, i) => (
+                    <button
+                        key={tier.tier}
+                        type="button"
+                        onClick={() => api?.scrollTo(i)}
+                        className={`rounded-full transition-all duration-300 ${
+                            i === activeIndex
+                                ? 'w-6 h-2 bg-purple-400'
+                                : selectedTier === tier.tier
+                                    ? 'w-2 h-2 bg-purple-400/60'
+                                    : 'w-2 h-2 bg-white/20'
+                        }`}
+                        aria-label={`View ${tier.name} plan`}
+                    />
+                ))}
+            </div>
+
+            <Carousel
+                opts={{ watchDrag: true, align: 'center', containScroll: false }}
+                setApi={setApi}
+            >
+                <CarouselContent>
+                    {visibleTiers.map((tier) => {
+                        const isGrayscale = grayscaleTiers.includes(tier.tier);
+                        return (
+                            <CarouselItem
+                                key={tier.tier}
+                                className="basis-[85%] pl-3"
+                            >
+                                <div
+                                    className={cn(
+                                        'transition-all h-full',
+                                        isGrayscale && 'grayscale opacity-50',
+                                    )}
+                                >
+                                    <TierCard
+                                        tier={tier}
+                                        billingInterval={selectedInterval}
+                                        selected={selectedTier === tier.tier}
+                                        onSelect={handleSelect}
+                                        disabled={isGrayscale}
+                                    />
+                                </div>
+                            </CarouselItem>
+                        );
+                    })}
+                </CarouselContent>
+            </Carousel>
         </div>
     );
 }

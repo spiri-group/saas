@@ -6,6 +6,7 @@ import PractitionerSideNav from "../../../../_components/PractitionerSideNav";
 import { usePractitionerTestimonials, useCreateTestimonialRequest, useDeleteTestimonial, usePinTestimonials } from "./_hooks/UseTestimonials";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmailInput } from "@/components/ui/email-input";
 import { Label } from "@/components/ui/label";
 import { Quote, Plus, Copy, Check, Trash2, Star, Pin, LinkIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -160,9 +161,8 @@ export default function PractitionerTestimonialsUI({ session, practitionerId, sl
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="clientEmail">Client Email (optional)</Label>
-                                            <Input
+                                            <EmailInput
                                                 id="clientEmail"
-                                                type="email"
                                                 placeholder="e.g. jane@example.com"
                                                 value={clientEmail}
                                                 onChange={(e) => setClientEmail(e.target.value)}

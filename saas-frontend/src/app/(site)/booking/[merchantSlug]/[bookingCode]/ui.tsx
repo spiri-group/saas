@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Clock, Ticket, AlertCircle, CheckCircle2, XCircle, Mail, Loader2 } from "lucide-react";
+import { Calendar, Clock, Ticket, AlertCircle, CheckCircle2, XCircle, Mail, Loader2, Pencil, Plus, Minus } from "lucide-react";
+import UseCustomerModifyBooking from "./hooks/UseCustomerModifyBooking";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { EmailInput } from "@/components/ui/email-input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -62,6 +64,196 @@ function getStatusBadge(status: string) {
         default:
             return <Badge data-testid="status-badge-other" variant="outline">{status}</Badge>;
     }
+}
+
+function ModifyBookingSection({ booking, bookingCode, merchantSlug }: { booking: any; bookingCode: string; merchantSlug: string }) {
+    const { data: session } = useSession();
+    const [isEditing, setIsEditing] = useState(false);
+    const [quantities, setQuantities] = useState<Record<string, number>>({});
+    const [verifyEmail, setVerifyEmail] = useState('');
+    const modifyMutation = UseCustomerModifyBooking();
+
+    // Auto-fill email from session if logged in
+    const isLoggedIn = !!session?.user?.email;
+    const effectiveEmail = isLoggedIn ? session.user.email! : verifyEmail;
+
+    // Initialize quantities from current booking
+    const startEditing = () => {
+        const initial: Record<string, number> = {};
+        booking.tickets.forEach((t: any) => {
+            initial[t.variantId || t.variantName] = t.quantity;
+        });
+        setQuantities(initial);
+        setIsEditing(true);
+    };
+
+    const hasChanges = () => {
+        return booking.tickets.some((t: any) => {
+            const key = t.variantId || t.variantName;
+            return quantities[key] !== undefined && quantities[key] !== t.quantity;
+        });
+    };
+
+    const calculatePriceDiff = () => {
+        let diff = 0;
+        booking.tickets.forEach((t: any) => {
+            const key = t.variantId || t.variantName;
+            const newQty = quantities[key] ?? t.quantity;
+            const qtyDiff = newQty - t.quantity;
+            diff += qtyDiff * t.price.amount;
+        });
+        return diff;
+    };
+
+    const handleSubmit = async () => {
+        const ticketChanges = booking.tickets.map((t: any) => ({
+            variantId: t.variantId || t.variantName,
+            newQuantity: quantities[t.variantId || t.variantName] ?? t.quantity
+        }));
+
+        await modifyMutation.mutateAsync({
+            bookingCode,
+            customerEmail: effectiveEmail,
+            merchantSlug,
+            ticketChanges
+        });
+        setIsEditing(false);
+    };
+
+    if (modifyMutation.isSuccess) {
+        return (
+            <Alert className="bg-green-50 border-green-200 mb-6" data-testid="modify-success-alert">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertTitle className="text-green-800">Booking Updated</AlertTitle>
+                <AlertDescription className="text-green-700">
+                    {modifyMutation.data.message}
+                </AlertDescription>
+            </Alert>
+        );
+    }
+
+    if (!isEditing) {
+        return (
+            <Button
+                variant="outline"
+                className="w-full mb-6"
+                onClick={startEditing}
+                data-testid="edit-booking-btn"
+            >
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit Tickets
+            </Button>
+        );
+    }
+
+    const priceDiff = calculatePriceDiff();
+    const currency = booking.tickets[0]?.price?.currency || 'AUD';
+
+    return (
+        <Card className="mb-6" data-testid="modify-booking-card">
+            <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit Your Tickets
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {booking.tickets.map((ticket: any, idx: number) => {
+                    const key = ticket.variantId || ticket.variantName;
+                    const qty = quantities[key] ?? ticket.quantity;
+                    return (
+                        <div key={idx} className="flex items-center justify-between" data-testid={`modify-ticket-${idx}`}>
+                            <div>
+                                <span className="font-medium text-sm">{ticket.variantName}</span>
+                                <span className="text-xs text-slate-500 ml-2">
+                                    {formatCurrency(ticket.price.amount, ticket.price.currency)} each
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setQuantities({ ...quantities, [key]: Math.max(0, qty - 1) })}
+                                    disabled={qty === 0}
+                                >
+                                    <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="w-8 text-center font-medium">{qty}</span>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setQuantities({ ...quantities, [key]: qty + 1 })}
+                                >
+                                    <Plus className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {hasChanges() && (
+                    <>
+                        <div className="border-t pt-3">
+                            {priceDiff < 0 && (
+                                <p className="text-sm text-green-700 bg-green-50 p-2 rounded">
+                                    You&apos;ll receive a refund of {formatCurrency(Math.abs(priceDiff), currency)}
+                                </p>
+                            )}
+                            {priceDiff > 0 && (
+                                <p className="text-sm text-amber-700 bg-amber-50 p-2 rounded">
+                                    Additional charge: {formatCurrency(priceDiff, currency)}
+                                </p>
+                            )}
+                            {priceDiff === 0 && (
+                                <p className="text-sm text-slate-500">No price change</p>
+                            )}
+                        </div>
+
+                        {!isLoggedIn && (
+                            <div>
+                                <Label htmlFor="modify-email" className="text-sm">Confirm your email</Label>
+                                <EmailInput
+                                    id="modify-email"
+                                    placeholder="your@email.com"
+                                    value={verifyEmail}
+                                    onChange={(e) => setVerifyEmail(e.target.value)}
+                                    data-testid="modify-verify-email"
+                                />
+                            </div>
+                        )}
+
+                        {modifyMutation.isError && (
+                            <p className="text-sm text-red-500">{(modifyMutation.error as Error)?.message || 'Failed to update booking'}</p>
+                        )}
+
+                        <div className="flex gap-2">
+                            <Button variant="outline" className="flex-1" onClick={() => setIsEditing(false)}>Cancel</Button>
+                            <Button
+                                className="flex-1"
+                                onClick={handleSubmit}
+                                disabled={!effectiveEmail || modifyMutation.isPending}
+                                data-testid="confirm-modify-btn"
+                            >
+                                {modifyMutation.isPending ? (
+                                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Updating...</>
+                                ) : (
+                                    'Confirm Changes'
+                                )}
+                            </Button>
+                        </div>
+                    </>
+                )}
+
+                {!hasChanges() && (
+                    <Button variant="outline" className="w-full" onClick={() => setIsEditing(false)}>
+                        Cancel
+                    </Button>
+                )}
+            </CardContent>
+        </Card>
+    );
 }
 
 export default function BookingCancellationUI({ bookingCode, merchantSlug }: BookingCancellationUIProps) {
@@ -241,6 +433,9 @@ export default function BookingCancellationUI({ bookingCode, merchantSlug }: Boo
                     </Button>
                 )}
 
+                {/* Modify Booking Section */}
+                {!isCancelled && !isPendingPayment && <ModifyBookingSection booking={booking} bookingCode={bookingCode} merchantSlug={merchantSlug} />}
+
                 {/* Cancellation Section */}
                 {isCancelled ? (
                     <Alert className="bg-red-50 border-red-200" data-testid="already-cancelled-alert">
@@ -296,9 +491,8 @@ export default function BookingCancellationUI({ bookingCode, merchantSlug }: Boo
                                     <Mail className="h-4 w-4 inline mr-1" />
                                     Confirm Your Email
                                 </Label>
-                                <Input
+                                <EmailInput
                                     id="confirm-email"
-                                    type="email"
                                     placeholder="Enter the email used for this booking"
                                     value={confirmEmail}
                                     onChange={(e) => {

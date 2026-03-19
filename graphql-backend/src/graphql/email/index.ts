@@ -1,5 +1,13 @@
 import { serverContext } from "../../services/azFunction";
 import { EmailTemplate, EmailTemplateInput, EmailHeaderFooter, EmailHeaderFooterInput } from "./types";
+import {
+  SentEmailEntity,
+  SendAdHocEmailInput,
+  AiMessageInput,
+  SENT_EMAILS_TABLE,
+  entityToSentEmail,
+} from "./adhocTypes";
+import { buildAdHocEmailHtml, generateEmailWithAi } from "./adhocEmail";
 import { v4 as uuidv4 } from "uuid";
 import { BlobServiceClient } from '@azure/storage-blob';
 import { DefaultAzureCredential } from '@azure/identity';
@@ -97,6 +105,64 @@ const resolvers = {
       } catch (error) {
         console.error(`Failed to get email header/footer ${args.id}:`, error);
         return null;
+      }
+    },
+
+    sentEmails: async (_: any, args: { limit?: number; offset?: number; search?: string }, context: serverContext) => {
+      try {
+        const userId = context.userId || 'system';
+        const filter = `PartitionKey eq '${userId}'`;
+        const entities = await context.dataSources.tableStorage.queryEntities<SentEmailEntity>(
+          SENT_EMAILS_TABLE,
+          filter
+        );
+
+        let results = entities.map(entityToSentEmail);
+
+        // Sort by createdAt DESC
+        results.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        // Search filter
+        if (args.search) {
+          const search = args.search.toLowerCase();
+          results = results.filter(
+            (e) =>
+              e.subject.toLowerCase().includes(search) ||
+              e.recipients.some((r) => r.toLowerCase().includes(search))
+          );
+        }
+
+        // Pagination
+        const offset = args.offset || 0;
+        const limit = args.limit || 50;
+        results = results.slice(offset, offset + limit);
+
+        return results;
+      } catch (error) {
+        console.error('Failed to get sent emails:', error);
+        throw new Error('Failed to retrieve sent emails');
+      }
+    },
+
+    previewAdHocEmail: async (_: any, args: { bodyHtml: string }) => {
+      return buildAdHocEmailHtml(args.bodyHtml);
+    },
+
+    generateAdHocEmail: async (_: any, args: { messages: AiMessageInput[] }, context: serverContext) => {
+      try {
+        const apiKey = await context.dataSources.vault.get('anthropic-api-key');
+        if (!apiKey) {
+          throw new Error('AI service not configured. Set anthropic-api-key in Key Vault.');
+        }
+
+        const result = await generateEmailWithAi(
+          args.messages.map((m) => ({ role: m.role, content: m.content })),
+          apiKey
+        );
+        return result;
+      } catch (error) {
+        console.error('Failed to generate email:', error);
+        throw error;
       }
     },
 
@@ -375,7 +441,95 @@ const resolvers = {
         console.error(`Failed to delete email asset ${args.name}:`, error);
         throw new Error(error instanceof Error ? error.message : 'Failed to delete email asset');
       }
-    }
+    },
+
+    sendAdHocEmail: async (_: any, args: { input: SendAdHocEmailInput }, context: serverContext) => {
+      try {
+        const { input } = args;
+        const userId = context.userId || 'system';
+        const userEmail = context.userEmail || 'system@spiriverse.com';
+        const now = new Date().toISOString();
+        const id = uuidv4();
+
+        // Build the branded HTML
+        const htmlSnapshot = buildAdHocEmailHtml(input.bodyHtml);
+
+        const isScheduled = !!input.scheduledFor && new Date(input.scheduledFor) > new Date();
+
+        // If not scheduled, send immediately
+        if (!isScheduled) {
+          const allCc = (input.cc || []).filter(Boolean) as string[];
+          const allBcc = (input.bcc || []).filter(Boolean) as string[];
+
+          for (let i = 0; i < input.recipients.length; i++) {
+            // Only include CC/BCC on the first email to avoid duplicates
+            await context.dataSources.email.sendRawHtmlEmail(
+              'noreply@spiriverse.com',
+              input.recipients[i],
+              input.subject,
+              htmlSnapshot,
+              i === 0 ? allCc : [],
+              i === 0 ? allBcc : []
+            );
+          }
+        }
+
+        // Store in Table Storage
+        const entity: SentEmailEntity = {
+          partitionKey: userId,
+          rowKey: id,
+          sentByEmail: userEmail,
+          recipients: JSON.stringify(input.recipients),
+          cc: JSON.stringify(input.cc || []),
+          bcc: JSON.stringify(input.bcc || []),
+          subject: input.subject,
+          bodyHtml: input.bodyHtml,
+          htmlSnapshot,
+          emailStatus: isScheduled ? 'SCHEDULED' : 'SENT',
+          scheduledFor: input.scheduledFor || undefined,
+          sentAt: isScheduled ? undefined : now,
+          createdAt: now,
+        };
+
+        await context.dataSources.tableStorage.createEntity(SENT_EMAILS_TABLE, entity);
+
+        return entityToSentEmail(entity);
+      } catch (error) {
+        console.error('Failed to send ad-hoc email:', error);
+        throw new Error('Failed to send email');
+      }
+    },
+
+    cancelScheduledEmail: async (_: any, args: { id: string }, context: serverContext) => {
+      try {
+        const userId = context.userId || 'system';
+
+        const entity = await context.dataSources.tableStorage.getEntity<SentEmailEntity>(
+          SENT_EMAILS_TABLE,
+          userId,
+          args.id
+        );
+
+        if (!entity) {
+          throw new Error('Email not found');
+        }
+
+        if (entity.emailStatus !== 'SCHEDULED') {
+          throw new Error('Only scheduled emails can be cancelled');
+        }
+
+        await context.dataSources.tableStorage.updateEntity(SENT_EMAILS_TABLE, {
+          partitionKey: userId,
+          rowKey: args.id,
+          emailStatus: 'CANCELLED',
+        });
+
+        return true;
+      } catch (error) {
+        console.error(`Failed to cancel scheduled email ${args.id}:`, error);
+        throw error;
+      }
+    },
   }
 };
 

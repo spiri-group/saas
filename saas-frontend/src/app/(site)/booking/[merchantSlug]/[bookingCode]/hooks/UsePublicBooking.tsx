@@ -10,6 +10,7 @@ export interface PublicBookingDetails {
         end?: string;
     };
     tickets: {
+        variantId?: string;
         variantName: string;
         quantity: number;
         price: {
@@ -52,6 +53,7 @@ const UsePublicBooking = (bookingCode: string, merchantSlug: string) => {
                             end
                         }
                         tickets {
+                            variantId
                             variantName
                             quantity
                             price {

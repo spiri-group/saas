@@ -41,6 +41,7 @@ export interface ConsoleVendorAccount {
     accountBlocked?: boolean;
     accountBlockedAt?: string;
     accountBlockedReason?: string;
+    adminNotes?: { id: string; content: string; pinned: boolean; createdBy: string; createdAt: string }[];
 }
 
 export interface BillingRecord {
@@ -64,6 +65,7 @@ export interface ConsoleCustomerAccount {
     vendorCount: number;
     orderCount: number;
     createdDate?: string;
+    adminNotes?: { id: string; content: string; pinned: boolean; createdBy: string; createdAt: string }[];
 }
 
 export interface ConsoleVendorAccountsResponse {

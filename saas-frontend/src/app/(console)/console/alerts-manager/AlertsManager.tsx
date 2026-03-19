@@ -38,15 +38,15 @@ export default function AlertsManager() {
     return (
         <div className="h-full flex flex-col">
             {/* Header with Stats */}
-            <div className="p-6 border-b border-slate-800">
-                <div className="flex items-center justify-between mb-6">
+            <div className="p-4 md:p-6 border-b border-slate-800">
+                <div className="flex items-center justify-between mb-4 md:mb-6">
                     <div className="flex items-center space-x-3">
-                        <div className="h-10 w-10 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                        <div className="h-10 w-10 bg-orange-500/10 rounded-lg flex items-center justify-center hidden md:flex">
                             <AlertTriangle className="h-5 w-5 text-orange-400" />
                         </div>
                         <div>
-                            <h1 className="text-lg font-semibold text-white">Platform Alerts</h1>
-                            <p className="text-sm text-slate-400">Monitor and respond to system alerts</p>
+                            <h1 className="text-base md:text-lg font-semibold text-white">Platform Alerts</h1>
+                            <p className="text-xs md:text-sm text-slate-400 hidden sm:block">Monitor and respond to system alerts</p>
                         </div>
                     </div>
                     <Button
@@ -64,12 +64,12 @@ export default function AlertsManager() {
                         ) : (
                             <RefreshCw className="h-4 w-4" />
                         )}
-                        <span className="ml-2">Refresh</span>
+                        <span className="ml-2 hidden sm:inline">Refresh</span>
                     </Button>
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-5 gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 md:gap-4">
                     <StatCard
                         label="Critical"
                         value={stats?.bySeverity.critical || 0}
@@ -104,7 +104,7 @@ export default function AlertsManager() {
             </div>
 
             {/* Filters */}
-            <div className="p-4 border-b border-slate-800 flex items-center space-x-4">
+            <div className="p-3 md:p-4 border-b border-slate-800 space-y-2 md:space-y-0 md:flex md:items-center md:space-x-4">
                 <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
@@ -114,31 +114,33 @@ export default function AlertsManager() {
                         className="pl-10 bg-slate-800 border-slate-700"
                     />
                 </div>
-                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as AlertStatus | 'all')}>
-                    <SelectTrigger className="w-[180px] bg-slate-800 border-slate-700">
-                        <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="NEW">New</SelectItem>
-                        <SelectItem value="INVESTIGATING">Investigating</SelectItem>
-                        <SelectItem value="AWAITING_RESPONSE">Awaiting Response</SelectItem>
-                        <SelectItem value="RESOLVED">Resolved</SelectItem>
-                        <SelectItem value="DISMISSED">Dismissed</SelectItem>
-                    </SelectContent>
-                </Select>
-                <Select value={severityFilter} onValueChange={(v) => setSeverityFilter(v as AlertSeverity | 'all')}>
-                    <SelectTrigger className="w-[150px] bg-slate-800 border-slate-700">
-                        <SelectValue placeholder="Filter by severity" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Severities</SelectItem>
-                        <SelectItem value="CRITICAL">Critical</SelectItem>
-                        <SelectItem value="HIGH">High</SelectItem>
-                        <SelectItem value="MEDIUM">Medium</SelectItem>
-                        <SelectItem value="LOW">Low</SelectItem>
-                    </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                    <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as AlertStatus | 'all')}>
+                        <SelectTrigger className="flex-1 md:w-[180px] bg-slate-800 border-slate-700">
+                            <SelectValue placeholder="Filter by status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Statuses</SelectItem>
+                            <SelectItem value="NEW">New</SelectItem>
+                            <SelectItem value="INVESTIGATING">Investigating</SelectItem>
+                            <SelectItem value="AWAITING_RESPONSE">Awaiting Response</SelectItem>
+                            <SelectItem value="RESOLVED">Resolved</SelectItem>
+                            <SelectItem value="DISMISSED">Dismissed</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={severityFilter} onValueChange={(v) => setSeverityFilter(v as AlertSeverity | 'all')}>
+                        <SelectTrigger className="flex-1 md:w-[150px] bg-slate-800 border-slate-700">
+                            <SelectValue placeholder="Filter by severity" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Severities</SelectItem>
+                            <SelectItem value="CRITICAL">Critical</SelectItem>
+                            <SelectItem value="HIGH">High</SelectItem>
+                            <SelectItem value="MEDIUM">Medium</SelectItem>
+                            <SelectItem value="LOW">Low</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             {/* Main Content */}
@@ -169,9 +171,9 @@ export default function AlertsManager() {
                     )}
                 </div>
 
-                {/* Detail Panel */}
+                {/* Detail Panel — full-screen overlay on mobile */}
                 {selectedAlert && (
-                    <div className="w-[480px] flex-shrink-0">
+                    <div className="fixed inset-0 z-40 bg-slate-900 md:static md:inset-auto md:z-auto md:w-[480px] md:flex-shrink-0">
                         <AlertDetailPanel
                             alert={selectedAlert}
                             onClose={() => setSelectedAlert(null)}
@@ -192,12 +194,12 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon, className }: StatCardProps) {
     return (
-        <div className={`p-4 rounded-lg border ${className}`}>
+        <div className={`p-2.5 md:p-4 rounded-lg border ${className}`}>
             <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold">{value}</span>
+                <span className="text-lg md:text-2xl font-bold">{value}</span>
                 {icon}
             </div>
-            <span className="text-sm opacity-70">{label}</span>
+            <span className="text-xs md:text-sm opacity-70">{label}</span>
         </div>
     );
 }

@@ -6,6 +6,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { EmailInput } from '@/components/ui/email-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
@@ -486,10 +487,9 @@ export default function LiveSessionUI({ code }: Props) {
 
                                 <div className="space-y-2">
                                     <Label htmlFor="email" className="text-slate-300">Email *</Label>
-                                    <Input
+                                    <EmailInput
                                         id="email"
                                         data-testid="join-email"
-                                        type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="your@email.com"

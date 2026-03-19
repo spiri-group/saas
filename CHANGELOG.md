@@ -4,20 +4,26 @@
 
 ### Tours & Bookings
 - Full tour booking flow working end-to-end: create tour, schedule sessions, customer books, merchant manages
-- Booking confirmation email sent to customers after payment with booking code, date, time, and tickets
-- 24-hour tour reminder emails sent automatically via Container Apps Job
+- Self-service booking modification — customers can change ticket quantities with live price preview
+- Booking confirmation email sent after payment with booking code, date, time, and tickets
+- 24-hour and 2-hour tour reminder emails sent automatically via Container Apps Job
+- Post-tour review request emails sent to checked-in customers 2-48 hours after session
+- Waitlist auto-promotion — next person notified when a spot opens from cancellation or modification
 - Add to Google Calendar button on booking confirmation and booking lookup pages
 - Customer booking management page with prominent booking code, cancellation, and refund policy display
 - Merchant-side booking cancellation with automatic Stripe refund
 - CSV export for bookings from session operate page
-- CSV export for analytics data
+- CSV export for analytics data with tour filter
 - Session delete for empty sessions
 - Open Graph metadata on tour pages for social media link previews
+- Find My Booking page for customers to look up bookings by code
+- Feature parity for logged-in and guest customers (authed users skip email verification)
+- My Bookings page now has "Manage" button linking to booking portal
 
 ### Tour Booking Page (Customer-Facing)
 - Spots available and urgency indicators on date picker
 - Tour duration, stops count, and starting price shown at top of booking card
-- Rich booking confirmation with date, time, people count, and email
+- Rich booking confirmation with date, time, people count, and booking management link
 - Activity locations shown on tour itinerary
 - Mobile-first layout (booking card shows first on small screens)
 - Responsive hero image
@@ -26,12 +32,29 @@
 ### Tour Management (Merchant-Facing)
 - Sessions list redesigned with capacity progress bars
 - Operate Session button gated to Manifest tier only
+- Analytics tour filter — filter all metrics by specific tour
 - Schedule page labels improved (Max guests per session, Schedule Sessions)
 - Itinerary selector hidden when tour has only one itinerary
-- Schedule summary now renders correctly (was broken by stale ticketList reference)
+- Schedule summary now renders correctly
 - Refund Policy label replaces confusing "Product Return Policy" throughout
 - Inline validation on tour name in creation wizard
 - Better empty states with guidance for new merchants
+
+### SpiriAssist
+- Fixed case invoicing — practitioner invoice creation was missing required order fields
+- Fixed order creation failing for case invoice lines
+- Fixed fee summary not loading when customer has no billing address
+- Added E2E tests for multiple practitioner applications and case invoicing
+- Test history reporter for tracking test run results across sessions
+
+### Platform & Onboarding
+- Changed setup button from "Let's Setup" to "Free Trial"
+- Greyed-out pricing tiers now clickable on hover (for power users)
+- Toned down merchant onboarding panel from blinding orange to warm amber
+- Improved merchant setup form layout (Business Name + Email on same row, Logo + URL on same row)
+- Always show Mediumship flyout in Space sidenav (was linking directly when only one sub-item)
+- Removed max-width constraints from Symbols, Dictionary, and My Card Symbols pages
+- Added "Find My Booking" link to home page sign-in area
 
 ### Bug Fixes
 - Fixed tours not appearing in schedule dropdown (missing vendorId on tour creation)
@@ -47,9 +70,9 @@
 - Fixed UseTourDetails querying non-existent vendor field on Tour type
 - Fixed Tour-Session composite index missing (date + time ordering)
 - Fixed purge_vendor not cleaning up owner's vendor reference (was patching admin user instead)
-- Fixed merchant onboarding panel colour (toned down from blinding orange)
-- Improved merchant setup form layout (Business Name + Email on same row, Logo + URL on same row)
+- Fixed case lookup throwing errors for purged/deleted cases
 - Fixed auth flow for new Sign Up / Log In split button layout
+- Fixed null vendor references crashing home page for users with purged vendors
 
 ## February 2026
 

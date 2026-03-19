@@ -20,6 +20,7 @@ import {
 import { X, Building2, CreditCard, Calendar, Loader2, DollarSign, ExternalLink, Zap, Eye, ShieldBan, ShieldCheck, Trash2, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import AccountNotes from './AccountNotes';
 
 interface VendorDetailPanelProps {
     vendor: ConsoleVendorAccount;
@@ -241,6 +242,13 @@ export default function VendorDetailPanel({ vendor, onClose }: VendorDetailPanel
                         )}
                     </div>
                 </div>
+
+                {/* Quick Notes */}
+                <AccountNotes
+                    accountId={vendor.id}
+                    accountType="vendor"
+                    notes={vendor.adminNotes || []}
+                />
 
                 {/* View As */}
                 {vendor.ownerEmail && (

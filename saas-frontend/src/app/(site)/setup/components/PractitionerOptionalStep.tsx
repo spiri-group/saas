@@ -126,7 +126,7 @@ export default function PractitionerOptionalStep({ form, onSubmit, onBack, isSub
                         type="button"
                         data-testid="setup-practitioner-submit-btn"
                         disabled={isSubmitting}
-                        className="flex-1 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 h-12 sm:h-9 text-base sm:text-sm"
                         onClick={onSubmit}
                     >
                         {isSubmitting ? (

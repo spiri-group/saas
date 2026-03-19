@@ -142,15 +142,15 @@ export default function AccountsManager({ initialLifecycleFilter, onFilterConsum
     return (
         <div className="h-full flex flex-col" data-testid="accounts-manager">
             {/* Header */}
-            <div className="p-6 border-b border-slate-800">
+            <div className="p-4 md:p-6 border-b border-slate-800">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                        <div className="h-10 w-10 bg-indigo-500/10 rounded-lg flex items-center justify-center">
+                        <div className="h-10 w-10 bg-indigo-500/10 rounded-lg flex items-center justify-center hidden md:flex">
                             <Users className="h-5 w-5 text-indigo-400" />
                         </div>
                         <div>
-                            <h1 className="text-lg font-semibold text-white">Accounts Manager</h1>
-                            <p className="text-sm text-slate-400">View and manage vendor and customer accounts</p>
+                            <h1 className="text-base md:text-lg font-semibold text-white">Accounts Manager</h1>
+                            <p className="text-xs md:text-sm text-slate-400 hidden sm:block">View and manage vendor and customer accounts</p>
                         </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -162,7 +162,7 @@ export default function AccountsManager({ initialLifecycleFilter, onFilterConsum
                             data-testid="export-csv-btn"
                         >
                             <Download className="h-4 w-4" />
-                            <span className="ml-2">Export CSV</span>
+                            <span className="ml-2 hidden sm:inline">Export CSV</span>
                         </Button>
                         <Button
                             variant="outline"
@@ -177,20 +177,20 @@ export default function AccountsManager({ initialLifecycleFilter, onFilterConsum
                             ) : (
                                 <RefreshCw className="h-4 w-4" />
                             )}
-                            <span className="ml-2">Refresh</span>
+                            <span className="ml-2 hidden sm:inline">Refresh</span>
                         </Button>
                     </div>
                 </div>
             </div>
 
             {/* Tab Toggle + Filters */}
-            <div className="p-4 border-b border-slate-800 flex items-center space-x-4">
+            <div className="p-3 md:p-4 border-b border-slate-800 space-y-3 md:space-y-0 md:flex md:items-center md:space-x-4">
                 {/* Tab Toggle */}
-                <div className="flex bg-slate-800 rounded-lg p-1">
+                <div className="flex bg-slate-800 rounded-lg p-1 flex-shrink-0">
                     <button
                         onClick={() => handleTabChange('vendors')}
                         data-testid="vendors-tab"
-                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        className={`flex-1 md:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                             activeTab === 'vendors'
                                 ? 'bg-slate-700 text-white'
                                 : 'text-slate-400 hover:text-white'
@@ -201,19 +201,19 @@ export default function AccountsManager({ initialLifecycleFilter, onFilterConsum
                     <button
                         onClick={() => handleTabChange('customers')}
                         data-testid="customers-tab"
-                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        className={`flex-1 md:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                             activeTab === 'customers'
                                 ? 'bg-slate-700 text-white'
                                 : 'text-slate-400 hover:text-white'
                         }`}
                     >
-                        Customers
+                        Users
                     </button>
                 </div>
 
                 {/* Filters */}
                 {activeTab === 'vendors' ? (
-                    <>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 flex-1">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                             <Input
@@ -224,33 +224,35 @@ export default function AccountsManager({ initialLifecycleFilter, onFilterConsum
                                 className="pl-10 bg-slate-800 border-slate-700"
                             />
                         </div>
-                        <Select value={docTypeFilter} onValueChange={(v) => handleDocTypeChange(v as VendorDocType | 'all')}>
-                            <SelectTrigger className="w-[160px] bg-slate-800 border-slate-700" data-testid="doctype-filter">
-                                <SelectValue placeholder="Type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Types</SelectItem>
-                                <SelectItem value="MERCHANT">Merchants</SelectItem>
-                                <SelectItem value="PRACTITIONER">Practitioners</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select value={lifecycleFilter} onValueChange={(v) => handleLifecycleChange(v as VendorLifecycleStage | 'all')}>
-                            <SelectTrigger className="w-[180px] bg-slate-800 border-slate-700" data-testid="lifecycle-filter">
-                                <SelectValue placeholder="Lifecycle" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Stages</SelectItem>
-                                <SelectItem value="CREATED">Created</SelectItem>
-                                <SelectItem value="STRIPE_ONBOARDING">Stripe Onboarding</SelectItem>
-                                <SelectItem value="FIRST_PAYOUT">First Payout</SelectItem>
-                                <SelectItem value="CARD_ADDED">Card Added</SelectItem>
-                                <SelectItem value="PUBLISHED">Published</SelectItem>
-                                <SelectItem value="BILLING_ACTIVE">Billing Active</SelectItem>
-                                <SelectItem value="BILLING_FAILED">Billing Failed</SelectItem>
-                                <SelectItem value="BILLING_BLOCKED">Billing Blocked</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </>
+                        <div className="flex gap-2">
+                            <Select value={docTypeFilter} onValueChange={(v) => handleDocTypeChange(v as VendorDocType | 'all')}>
+                                <SelectTrigger className="flex-1 sm:w-[160px] bg-slate-800 border-slate-700" data-testid="doctype-filter">
+                                    <SelectValue placeholder="Type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Types</SelectItem>
+                                    <SelectItem value="MERCHANT">Merchants</SelectItem>
+                                    <SelectItem value="PRACTITIONER">Practitioners</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={lifecycleFilter} onValueChange={(v) => handleLifecycleChange(v as VendorLifecycleStage | 'all')}>
+                                <SelectTrigger className="flex-1 sm:w-[180px] bg-slate-800 border-slate-700" data-testid="lifecycle-filter">
+                                    <SelectValue placeholder="Lifecycle" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Stages</SelectItem>
+                                    <SelectItem value="CREATED">Created</SelectItem>
+                                    <SelectItem value="STRIPE_ONBOARDING">Stripe Onboarding</SelectItem>
+                                    <SelectItem value="FIRST_PAYOUT">First Payout</SelectItem>
+                                    <SelectItem value="CARD_ADDED">Card Added</SelectItem>
+                                    <SelectItem value="PUBLISHED">Published</SelectItem>
+                                    <SelectItem value="BILLING_ACTIVE">Billing Active</SelectItem>
+                                    <SelectItem value="BILLING_FAILED">Billing Failed</SelectItem>
+                                    <SelectItem value="BILLING_BLOCKED">Billing Blocked</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                 ) : (
                     <div className="flex-1 relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -344,9 +346,9 @@ export default function AccountsManager({ initialLifecycleFilter, onFilterConsum
                         )}
                     </div>
 
-                    {/* Detail Panel */}
+                    {/* Detail Panel — full-screen overlay on mobile, side panel on desktop */}
                     {selectedVendor && (
-                        <div className="w-[480px] flex-shrink-0">
+                        <div className="fixed inset-0 z-40 bg-slate-900 md:static md:inset-auto md:z-auto md:w-[480px] md:flex-shrink-0">
                             <VendorDetailPanel
                                 vendor={selectedVendor}
                                 onClose={() => setSelectedVendor(null)}
@@ -354,7 +356,7 @@ export default function AccountsManager({ initialLifecycleFilter, onFilterConsum
                         </div>
                     )}
                     {selectedCustomer && (
-                        <div className="w-[480px] flex-shrink-0">
+                        <div className="fixed inset-0 z-40 bg-slate-900 md:static md:inset-auto md:z-auto md:w-[480px] md:flex-shrink-0">
                             <CustomerDetailPanel
                                 customer={selectedCustomer}
                                 onClose={() => setSelectedCustomer(null)}

@@ -9,6 +9,44 @@ type Mutation {
     purgeVendorAccount(vendorId: String!, confirmName: String!): UpdateSubscriptionOverrideResponse!
     blockVendorAccount(vendorId: String!, reason: String): UpdateSubscriptionOverrideResponse!
     unblockVendorAccount(vendorId: String!): UpdateSubscriptionOverrideResponse!
+
+    addAccountNote(
+        accountId: String!
+        accountType: String!
+        note: AccountNoteInput!
+    ): AccountNotesResponse!
+
+    deleteAccountNote(
+        accountId: String!
+        accountType: String!
+        noteId: String!
+    ): AccountNotesResponse!
+
+    togglePinAccountNote(
+        accountId: String!
+        accountType: String!
+        noteId: String!
+    ): AccountNotesResponse!
+}
+
+input AccountNoteInput {
+    content: String!
+    pinned: Boolean
+}
+
+type AccountNote {
+    id: String!
+    content: String!
+    pinned: Boolean!
+    createdBy: String!
+    createdAt: String!
+}
+
+type AccountNotesResponse implements MutationResponseInterface {
+    code: String!
+    success: Boolean!
+    message: String!
+    notes: [AccountNote!]
 }
 
 input SubscriptionOverrideInput {

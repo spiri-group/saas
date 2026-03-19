@@ -72,6 +72,7 @@ import { migration as migration061 } from "./061_fix_subscription_welcome_email"
 import { migration as migration062 } from "./062_tour_session_composite_index";
 import { migration as migration063 } from "./063_tour_booking_email_templates";
 import { migration as migration064 } from "./064_tour_review_request_email";
+import { migration as migration065 } from "./065_waitlist_notification_email";
 
 // Export all migrations in an array
 export const migrations: Migration[] = [
@@ -139,4 +140,5 @@ export const migrations: Migration[] = [
     migration062,
     migration063,
     migration064,
+    migration065,
 ];

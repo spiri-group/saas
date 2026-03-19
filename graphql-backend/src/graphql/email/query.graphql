@@ -35,10 +35,39 @@ type EmailAsset {
   contentType: String
 }
 
+type SentEmail {
+  id: ID!
+  sentBy: String!
+  sentByEmail: String!
+  recipients: [String!]!
+  cc: [String!]!
+  bcc: [String!]!
+  subject: String!
+  bodyHtml: String!
+  htmlSnapshot: String!
+  emailStatus: String!
+  scheduledFor: String
+  sentAt: String
+  createdAt: String!
+}
+
+type GeneratedEmail {
+  subject: String!
+  bodyHtml: String!
+}
+
+input AiMessageInput {
+  role: String!
+  content: String!
+}
+
 type Query {
   emailTemplates(category: String): [EmailTemplate!]!
   emailTemplate(id: ID!): EmailTemplate
   emailHeadersFooters(type: String): [EmailHeaderFooter!]!
   emailHeaderFooter(id: ID!): EmailHeaderFooter
   emailAssets(prefix: String, maxResults: Int): [EmailAsset!]!
+  sentEmails(limit: Int, offset: Int, search: String): [SentEmail!]!
+  previewAdHocEmail(bodyHtml: String!): String!
+  generateAdHocEmail(messages: [AiMessageInput!]!): GeneratedEmail!
 }

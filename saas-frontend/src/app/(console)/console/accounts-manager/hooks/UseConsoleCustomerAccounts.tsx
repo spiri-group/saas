@@ -37,6 +37,7 @@ const useConsoleCustomerAccounts = (options: UseConsoleCustomerAccountsOptions =
                             vendorCount
                             orderCount
                             createdDate
+                            adminNotes { id content pinned createdBy createdAt }
                         }
                         totalCount
                         hasMore

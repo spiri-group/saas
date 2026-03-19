@@ -3,6 +3,7 @@
 import { UseFormReturn } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { EmailInput } from '@/components/ui/email-input';
 import ComboBox from '@/components/ux/ComboBox';
 import HierarchicalReligionPicker from '@/components/ux/HierarchicalReligionPicker';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -73,7 +74,6 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
                                                 {...field}
                                                 placeholder="First name"
                                                 data-testid="setup-first-name"
-                                                autoFocus
                                                 glass={false}
                                                 className="bg-white/[0.08] border-white/15 text-white placeholder:text-white/30 focus-visible:ring-indigo-500/50 focus-visible:border-white/30"
                                             />
@@ -111,9 +111,8 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
                                 <FormItem>
                                     <FormLabel className="text-slate-300 text-sm">Email</FormLabel>
                                     <FormControl>
-                                        <Input
+                                        <EmailInput
                                             {...field}
-                                            type="email"
                                             placeholder="you@example.com"
                                             data-testid="setup-email"
                                             glass={false}

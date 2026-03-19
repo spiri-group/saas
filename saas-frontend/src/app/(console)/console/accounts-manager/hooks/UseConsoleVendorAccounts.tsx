@@ -68,6 +68,7 @@ const useConsoleVendorAccounts = (options: UseConsoleVendorAccountsOptions = {})
                             accountBlocked
                             accountBlockedAt
                             accountBlockedReason
+                            adminNotes { id content pinned createdBy createdAt }
                         }
                         totalCount
                         hasMore
