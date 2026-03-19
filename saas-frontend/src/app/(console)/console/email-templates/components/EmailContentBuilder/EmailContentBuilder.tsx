@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import ContentBlockEditor from "./ContentBlockEditor";
 import LayoutSelector from "./LayoutSelector";
+import InlineColorPicker from "./InlineColorPicker";
 import useKeyboardShortcuts from "../../hooks/UseKeyboardShortcuts";
 import {
   EmailStructure,
@@ -756,31 +757,17 @@ export default function EmailContentBuilder({
           <div className="space-y-4">
             <div>
               <Label className="text-slate-300">Background Color</Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  type="color"
-                  value={emailStructure.layout?.backgroundColor || "#ffffff"}
-                  onChange={(e) => updateStructure({
-                    layout: emailStructure.layout ? {
-                      ...emailStructure.layout,
-                      backgroundColor: e.target.value
-                    } : undefined
-                  })}
-                  className="bg-slate-800 border-slate-700 w-16 h-10 p-1"
-                />
-                <Input
-                  type="text"
-                  value={emailStructure.layout?.backgroundColor || ""}
-                  onChange={(e) => updateStructure({
-                    layout: emailStructure.layout ? {
-                      ...emailStructure.layout,
-                      backgroundColor: e.target.value
-                    } : undefined
-                  })}
-                  className="bg-slate-800 border-slate-700 text-white flex-1"
-                  placeholder="#ffffff"
-                />
-              </div>
+              <InlineColorPicker
+                dark
+                value={emailStructure.layout?.backgroundColor || "#ffffff"}
+                onChange={(color) => updateStructure({
+                  layout: emailStructure.layout ? {
+                    ...emailStructure.layout,
+                    backgroundColor: color
+                  } : undefined
+                })}
+                className="mt-2"
+              />
             </div>
 
             <div>
@@ -1199,21 +1186,12 @@ export default function EmailContentBuilder({
 
             <div>
               <Label className="text-slate-300">Color</Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  type="color"
-                  value={dividerColor}
-                  onChange={(e) => setDividerColor(e.target.value)}
-                  className="bg-slate-800 border-slate-700 w-16 h-10 p-1"
-                />
-                <Input
-                  type="text"
-                  value={dividerColor}
-                  onChange={(e) => setDividerColor(e.target.value)}
-                  className="bg-slate-800 border-slate-700 text-white flex-1"
-                  placeholder="#000000"
-                />
-              </div>
+              <InlineColorPicker
+                dark
+                value={dividerColor}
+                onChange={setDividerColor}
+                className="mt-2"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -1290,18 +1268,11 @@ export default function EmailContentBuilder({
           <div className="space-y-3 max-h-[400px] overflow-y-auto">
             {(emailStructure.colorPalette || []).map((swatch) => (
               <div key={swatch.id} className="flex items-center gap-2">
-                <Input
-                  type="color"
+                <InlineColorPicker
+                  dark
                   value={swatch.color}
-                  onChange={(e) => updatePaletteColor(swatch.id, { color: e.target.value })}
-                  className="bg-slate-800 border-slate-700 w-10 h-8 p-1 flex-shrink-0"
-                />
-                <Input
-                  type="text"
-                  value={swatch.color}
-                  onChange={(e) => updatePaletteColor(swatch.id, { color: e.target.value })}
-                  className="bg-slate-800 border-slate-700 text-white text-xs w-24 flex-shrink-0"
-                  placeholder="#000000"
+                  onChange={(color) => updatePaletteColor(swatch.id, { color })}
+                  className="w-40 flex-shrink-0"
                 />
                 <Input
                   type="text"

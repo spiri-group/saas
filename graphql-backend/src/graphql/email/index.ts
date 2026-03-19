@@ -168,18 +168,19 @@ const resolvers = {
 
     emailAssets: async (_: any, args: { prefix?: string; maxResults?: number }, context: serverContext) => {
       try {
-        const credential = new DefaultAzureCredential();
         const storageName = context.dataSources.storage.storageName;
         const blobEndpoint = `https://${storageName}.blob.core.windows.net`;
-        const blobServiceClient = new BlobServiceClient(blobEndpoint, credential);
-        const containerClient = blobServiceClient.getContainerClient(emailAssetsContainer);
 
-        // Check if the container exists
-        const containerExists = await containerClient.exists();
-        if (!containerExists) {
-          console.error(`Container "${emailAssetsContainer}" does not exist.`);
-          throw new Error(`Container "${emailAssetsContainer}" does not exist.`);
+        let blobServiceClient: BlobServiceClient;
+        try {
+          const credential = new DefaultAzureCredential();
+          blobServiceClient = new BlobServiceClient(blobEndpoint, credential);
+        } catch (credError) {
+          console.error('Failed to create Azure credentials for blob listing:', credError);
+          throw new Error('Storage authentication failed');
         }
+
+        const containerClient = blobServiceClient.getContainerClient(emailAssetsContainer);
 
         const blobs: Array<{
           name: string;
@@ -219,11 +220,9 @@ const resolvers = {
         // Sort by lastModified descending (newest first)
         blobs.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
 
-        console.log(`Listed ${blobs.length} email assets from container "${emailAssetsContainer}" with prefix "${blobPrefix}"`);
-
         return blobs;
       } catch (error) {
-        console.error('Failed to list email assets:', error);
+        console.error(`Failed to list email assets (storage: ${context.dataSources.storage?.storageName}):`, error);
         throw new Error('Failed to retrieve email assets');
       }
     }
