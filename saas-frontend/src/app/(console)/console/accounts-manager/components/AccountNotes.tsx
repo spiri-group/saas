@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Pin, PinOff, Trash2, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -28,6 +28,12 @@ interface AccountNotesProps {
 export default function AccountNotes({ accountId, accountType, notes }: AccountNotesProps) {
     const [value, setValue] = useState('');
     const [activeQuickNote, setActiveQuickNote] = useState<string | null>(null);
+    const [localNotes, setLocalNotes] = useState<AccountNote[]>(notes);
+
+    // Sync from props when parent data refreshes or account changes
+    useEffect(() => {
+        setLocalNotes(notes);
+    }, [notes]);
 
     const addNote = useAddAccountNote();
     const deleteNote = useDeleteAccountNote();
@@ -37,7 +43,6 @@ export default function AccountNotes({ accountId, accountType, notes }: AccountN
         const trimmed = value.trim();
         if (!trimmed) return;
 
-        // Build final content: if a quick note prefix is active, prepend it
         const content = activeQuickNote ? `${activeQuickNote} ${trimmed}` : trimmed;
 
         try {
@@ -47,6 +52,7 @@ export default function AccountNotes({ accountId, accountType, notes }: AccountN
                 note: { content },
             });
             if (result.success) {
+                if (result.notes) setLocalNotes(result.notes);
                 setValue('');
                 setActiveQuickNote(null);
                 toast.success('Note added');
@@ -80,7 +86,8 @@ export default function AccountNotes({ accountId, accountType, notes }: AccountN
 
     const handleDelete = async (noteId: string) => {
         try {
-            await deleteNote.mutateAsync({ accountId, accountType, noteId });
+            const result = await deleteNote.mutateAsync({ accountId, accountType, noteId });
+            if (result.notes) setLocalNotes(result.notes);
         } catch {
             toast.error('Failed to delete note');
         }
@@ -88,7 +95,8 @@ export default function AccountNotes({ accountId, accountType, notes }: AccountN
 
     const handleTogglePin = async (noteId: string) => {
         try {
-            await togglePin.mutateAsync({ accountId, accountType, noteId });
+            const result = await togglePin.mutateAsync({ accountId, accountType, noteId });
+            if (result.notes) setLocalNotes(result.notes);
         } catch {
             toast.error('Failed to pin note');
         }
@@ -149,9 +157,9 @@ export default function AccountNotes({ accountId, accountType, notes }: AccountN
             </div>
 
             {/* Notes list */}
-            {notes.length > 0 && (
+            {localNotes.length > 0 && (
                 <div className="space-y-1.5">
-                    {notes.map((note) => (
+                    {localNotes.map((note) => (
                         <div
                             key={note.id}
                             data-testid={`note-${note.id}`}
