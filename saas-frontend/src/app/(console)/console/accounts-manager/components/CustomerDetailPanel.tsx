@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { X, User, Mail, ShoppingBag, Store, Sparkles, Eye, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import AccountNotes from './AccountNotes';
 
 interface CustomerDetailPanelProps {
     customer: ConsoleCustomerAccount;
@@ -75,6 +76,13 @@ export default function CustomerDetailPanel({ customer, onClose }: CustomerDetai
                         )}
                     </div>
                 </div>
+
+                {/* Quick Notes */}
+                <AccountNotes
+                    accountId={customer.id}
+                    accountType="customer"
+                    notes={customer.adminNotes || []}
+                />
 
                 {/* View As */}
                 {customer.email && (

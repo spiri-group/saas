@@ -6,10 +6,39 @@ import { VendorLifecycleStage, computeLifecycleStage } from "./types"
 import { DateTime } from "luxon"
 import { journeysResolvers } from "./journeys"
 import { mergeDeep } from "../../utils/functions"
+import { v4 as uuidv4 } from "uuid"
 
 const VENDOR_CONTAINER = "Main-Vendor"
 const USER_CONTAINER = "Main-User"
 const ORDER_CONTAINER = "Main-Orders"
+
+interface AdminNote {
+    id: string
+    content: string
+    pinned: boolean
+    createdBy: string
+    createdAt: string
+}
+
+type AdminNotesHash = Record<string, Omit<AdminNote, 'id'>>
+
+/** Converts the { noteId: { ... } } hashmap stored in Cosmos to a sorted array for GraphQL */
+function notesHashToArray(hash?: AdminNotesHash): AdminNote[] {
+    if (!hash || typeof hash !== 'object') return []
+    return Object.entries(hash)
+        .map(([id, note]) => ({ id, ...note }))
+        .sort((a, b) => {
+            // Pinned first, then by date descending
+            if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        })
+}
+
+function getContainerForAccountType(accountType: string): string {
+    if (accountType === 'vendor') return VENDOR_CONTAINER
+    if (accountType === 'customer') return USER_CONTAINER
+    throw new Error(`Invalid account type: ${accountType}`)
+}
 
 const resolvers = {
     Query: {
@@ -44,7 +73,7 @@ const resolvers = {
 
             // Get all matching vendors (we filter lifecycle in JS since it's computed)
             const querySpec = {
-                query: `SELECT c.id, c.name, c.slug, c.docType, c.publishedAt, c.subscription, c.stripe, c.createdDate, c.customers, c.accountBlocked, c.accountBlockedAt, c.accountBlockedReason FROM c ${whereClause} ORDER BY c.createdDate DESC`,
+                query: `SELECT c.id, c.name, c.slug, c.docType, c.publishedAt, c.subscription, c.stripe, c.createdDate, c.customers, c.accountBlocked, c.accountBlockedAt, c.accountBlockedReason, c.adminNotes FROM c ${whereClause} ORDER BY c.createdDate DESC`,
                 parameters
             }
 
@@ -85,7 +114,8 @@ const resolvers = {
             const vendorsWithOwner = paginated.map(v => ({
                 ...v,
                 ownerEmail: ownerMap[(v as any).customers?.[0]?.id] || null,
-                customers: undefined
+                customers: undefined,
+                adminNotes: notesHashToArray((v as any).adminNotes),
             }))
 
             return {
@@ -117,7 +147,7 @@ const resolvers = {
 
             // Get paginated results
             const querySpec = {
-                query: `SELECT c.id, c.firstname, c.lastname, c.email, c.spiritualInterests, c.createdDate FROM c ${whereClause} ORDER BY c.createdDate DESC OFFSET @offset LIMIT @limit`,
+                query: `SELECT c.id, c.firstname, c.lastname, c.email, c.spiritualInterests, c.createdDate, c.adminNotes FROM c ${whereClause} ORDER BY c.createdDate DESC OFFSET @offset LIMIT @limit`,
                 parameters: [
                     ...parameters,
                     { name: "@offset", value: offset },
@@ -153,7 +183,8 @@ const resolvers = {
                     return {
                         ...customer,
                         vendorCount: vendorCountResult[0] || 0,
-                        orderCount: orderCountResult[0] || 0
+                        orderCount: orderCountResult[0] || 0,
+                        adminNotes: notesHashToArray((customer as any).adminNotes),
                     }
                 })
             )
@@ -774,7 +805,106 @@ const resolvers = {
                     message: err.message || "Failed to unblock vendor account"
                 }
             }
-        }
+        },
+
+        addAccountNote: async (_: any, args: {
+            accountId: string
+            accountType: string
+            note: { content: string; pinned?: boolean }
+        }, context: serverContext) => {
+            try {
+                const container = getContainerForAccountType(args.accountType)
+                const noteId = uuidv4()
+                const noteData = {
+                    content: args.note.content,
+                    pinned: args.note.pinned || false,
+                    createdBy: context.userEmail || context.userId || "system",
+                    createdAt: new Date().toISOString(),
+                }
+
+                // First ensure adminNotes exists on the document
+                const record = await context.dataSources.cosmos.get_record(container, args.accountId, args.accountId)
+                if (!(record as any).adminNotes) {
+                    await context.dataSources.cosmos.patch_record(
+                        container, args.accountId, args.accountId,
+                        [{ op: "set", path: "/adminNotes", value: {} }],
+                        context.userId || "CONSOLE_ADMIN"
+                    )
+                }
+
+                await context.dataSources.cosmos.patch_record(
+                    container, args.accountId, args.accountId,
+                    [{ op: "set", path: `/adminNotes/${noteId}`, value: noteData }],
+                    context.userId || "CONSOLE_ADMIN"
+                )
+
+                // Re-read to return updated notes
+                const updated = await context.dataSources.cosmos.get_record(container, args.accountId, args.accountId)
+                return {
+                    code: "200",
+                    success: true,
+                    message: "Note added",
+                    notes: notesHashToArray((updated as any).adminNotes),
+                }
+            } catch (err: any) {
+                return { code: "500", success: false, message: err.message || "Failed to add note", notes: null }
+            }
+        },
+
+        deleteAccountNote: async (_: any, args: {
+            accountId: string
+            accountType: string
+            noteId: string
+        }, context: serverContext) => {
+            try {
+                const container = getContainerForAccountType(args.accountType)
+                await context.dataSources.cosmos.patch_record(
+                    container, args.accountId, args.accountId,
+                    [{ op: "remove", path: `/adminNotes/${args.noteId}` }],
+                    context.userId || "CONSOLE_ADMIN"
+                )
+
+                const updated = await context.dataSources.cosmos.get_record(container, args.accountId, args.accountId)
+                return {
+                    code: "200",
+                    success: true,
+                    message: "Note deleted",
+                    notes: notesHashToArray((updated as any).adminNotes),
+                }
+            } catch (err: any) {
+                return { code: "500", success: false, message: err.message || "Failed to delete note", notes: null }
+            }
+        },
+
+        togglePinAccountNote: async (_: any, args: {
+            accountId: string
+            accountType: string
+            noteId: string
+        }, context: serverContext) => {
+            try {
+                const container = getContainerForAccountType(args.accountType)
+                const record = await context.dataSources.cosmos.get_record(container, args.accountId, args.accountId)
+                const notes = (record as any).adminNotes || {}
+                const note = notes[args.noteId]
+                if (!note) throw new Error("Note not found")
+
+                await context.dataSources.cosmos.patch_record(
+                    container, args.accountId, args.accountId,
+                    [{ op: "set", path: `/adminNotes/${args.noteId}/pinned`, value: !note.pinned }],
+                    context.userId || "CONSOLE_ADMIN"
+                )
+
+                const updated = await context.dataSources.cosmos.get_record(container, args.accountId, args.accountId)
+                return {
+                    code: "200",
+                    success: true,
+                    message: note.pinned ? "Note unpinned" : "Note pinned",
+                    notes: notesHashToArray((updated as any).adminNotes),
+                }
+            } catch (err: any) {
+                return { code: "500", success: false, message: err.message || "Failed to toggle pin", notes: null }
+            }
+        },
     }
 }
 

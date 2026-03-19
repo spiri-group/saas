@@ -12,6 +12,7 @@ import {
     Bot,
     User,
     Loader2,
+    PanelLeftOpen,
 } from "lucide-react";
 import {
     useAiConversations,
@@ -74,6 +75,7 @@ export default function AiAssistant() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editTitle, setEditTitle] = useState("");
     const [optimisticMessages, setOptimisticMessages] = useState<AiMessage[]>([]);
+    const [chatSidebarOpen, setChatSidebarOpen] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -174,17 +176,39 @@ export default function AiAssistant() {
     };
 
     return (
-        <div className="h-full flex">
-            {/* Conversation Sidebar */}
-            <div className="w-64 flex-shrink-0 console-surface border-r border-console flex flex-col">
-                <div className="p-3 border-b border-console">
+        <div className="h-full flex relative">
+            {/* Mobile sidebar overlay */}
+            {chatSidebarOpen && (
+                <div
+                    className="md:hidden fixed inset-0 bg-black/60 z-40"
+                    onClick={() => setChatSidebarOpen(false)}
+                />
+            )}
+
+            {/* Conversation Sidebar — drawer on mobile */}
+            <div className={`
+                fixed md:static inset-y-0 left-0 z-50
+                w-64 flex-shrink-0 console-surface border-r border-console flex flex-col
+                transform transition-transform duration-200 ease-in-out
+                ${chatSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+            `}>
+                <div className="p-3 border-b border-console flex items-center gap-2">
                     <button
                         data-testid="new-chat-btn"
-                        onClick={handleNewChat}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-console-primary bg-console-primary/10 hover:bg-console-primary/20 rounded-lg transition-colors"
+                        onClick={() => {
+                            handleNewChat();
+                            setChatSidebarOpen(false);
+                        }}
+                        className="flex-1 flex items-center gap-2 px-3 py-2 text-sm font-medium text-console-primary bg-console-primary/10 hover:bg-console-primary/20 rounded-lg transition-colors"
                     >
                         <Plus className="h-4 w-4" />
                         New Chat
+                    </button>
+                    <button
+                        className="md:hidden p-2 text-console-muted hover:text-console rounded-lg"
+                        onClick={() => setChatSidebarOpen(false)}
+                    >
+                        <X className="h-4 w-4" />
                     </button>
                 </div>
 
@@ -201,6 +225,7 @@ export default function AiAssistant() {
                             onClick={() => {
                                 setActiveConversationId(conv.id);
                                 setOptimisticMessages([]);
+                                setChatSidebarOpen(false);
                             }}
                         >
                             <MessageSquare className="h-4 w-4 flex-shrink-0" />
@@ -283,8 +308,24 @@ export default function AiAssistant() {
 
             {/* Chat Area */}
             <div className="flex-1 flex flex-col min-w-0">
+                {/* Mobile: open conversation list */}
+                <div className="md:hidden flex items-center gap-2 px-4 py-2 border-b border-console">
+                    <button
+                        data-testid="open-chat-sidebar-btn"
+                        onClick={() => setChatSidebarOpen(true)}
+                        className="p-2 text-console-muted hover:text-console rounded-lg"
+                    >
+                        <PanelLeftOpen className="h-4 w-4" />
+                    </button>
+                    <span className="text-xs text-console-muted truncate">
+                        {activeConversationId
+                            ? conversations.data?.find((c) => c.id === activeConversationId)?.title || "Chat"
+                            : "New Chat"}
+                    </span>
+                </div>
+
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-4">
                     {allMessages.length === 0 && !sendMessage.isPending && (
                         <div className="flex-1 flex items-center justify-center h-full">
                             <div className="text-center">
