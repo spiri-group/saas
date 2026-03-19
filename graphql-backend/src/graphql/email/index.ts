@@ -7,7 +7,7 @@ import {
   SENT_EMAILS_TABLE,
   entityToSentEmail,
 } from "./adhocTypes";
-import { buildAdHocEmailHtml, generateEmailWithAi } from "./adhocEmail";
+import { buildAdHocEmailHtml, buildAdHocEmailHtmlWithDefaults, generateEmailWithAi } from "./adhocEmail";
 import { v4 as uuidv4 } from "uuid";
 import { BlobServiceClient } from '@azure/storage-blob';
 import { DefaultAzureCredential } from '@azure/identity';
@@ -144,8 +144,8 @@ const resolvers = {
       }
     },
 
-    previewAdHocEmail: async (_: any, args: { bodyHtml: string }) => {
-      return buildAdHocEmailHtml(args.bodyHtml);
+    previewAdHocEmail: async (_: any, args: { bodyHtml: string }, context: serverContext) => {
+      return buildAdHocEmailHtmlWithDefaults(args.bodyHtml, context.dataSources);
     },
 
     generateAdHocEmail: async (_: any, args: { messages: AiMessageInput[] }, context: serverContext) => {
@@ -451,8 +451,8 @@ const resolvers = {
         const now = new Date().toISOString();
         const id = uuidv4();
 
-        // Build the branded HTML
-        const htmlSnapshot = buildAdHocEmailHtml(input.bodyHtml);
+        // Build the branded HTML using default header/footer from Cosmos
+        const htmlSnapshot = await buildAdHocEmailHtmlWithDefaults(input.bodyHtml, context.dataSources);
 
         const isScheduled = !!input.scheduledFor && new Date(input.scheduledFor) > new Date();
 
