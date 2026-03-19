@@ -2,40 +2,40 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { gql } from "@/lib/services/gql";
 import { SentEmail } from "./UseSentEmails";
 
-interface SendAdHocEmailInput {
-  recipients: string[];
+interface SaveEmailDraftInput {
+  id?: string;
+  recipients?: string[];
   cc?: string[];
   bcc?: string[];
-  subject: string;
-  bodyHtml: string;
-  scheduledFor?: string;
-  draftId?: string;
+  subject?: string;
+  bodyHtml?: string;
 }
 
-const UseSendAdHocEmail = () => {
+const UseSaveEmailDraft = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: SendAdHocEmailInput) => {
-      const response = await gql<{ sendAdHocEmail: SentEmail }>(
+    mutationFn: async (input: SaveEmailDraftInput) => {
+      const response = await gql<{ saveEmailDraft: SentEmail }>(
         `
-        mutation SendAdHocEmail($input: SendAdHocEmailInput!) {
-          sendAdHocEmail(input: $input) {
+        mutation SaveEmailDraft($input: SaveEmailDraftInput!) {
+          saveEmailDraft(input: $input) {
             id
             sentBy
             sentByEmail
             recipients
+            cc
+            bcc
             subject
+            bodyHtml
             emailStatus
-            scheduledFor
-            sentAt
             createdAt
           }
         }
       `,
         { input }
       );
-      return response.sendAdHocEmail;
+      return response.saveEmailDraft;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["console-sent-emails"] });
@@ -43,4 +43,4 @@ const UseSendAdHocEmail = () => {
   });
 };
 
-export default UseSendAdHocEmail;
+export default UseSaveEmailDraft;

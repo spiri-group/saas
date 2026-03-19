@@ -15,6 +15,9 @@ import {
   ChevronUp,
   RotateCcw,
   Code,
+  Save,
+  FileEdit,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -31,6 +34,8 @@ import UseSendAdHocEmail from "./hooks/UseSendAdHocEmail";
 import UseGenerateAdHocEmail from "./hooks/UseGenerateAdHocEmail";
 import UsePreviewAdHocEmail from "./hooks/UsePreviewAdHocEmail";
 import UseCancelScheduledEmail from "./hooks/UseCancelScheduledEmail";
+import UseSaveEmailDraft from "./hooks/UseSaveEmailDraft";
+import UseDeleteEmailDraft from "./hooks/UseDeleteEmailDraft";
 
 interface ChatMessage {
   id: string;
@@ -73,6 +78,8 @@ function validateEmails(emails: string[]): { valid: string[]; invalid: string[] 
 
 function getStatusBadge(emailStatus: string) {
   switch (emailStatus) {
+    case "DRAFT":
+      return <Badge variant="warning" dark>Draft</Badge>;
     case "SENT":
       return <Badge variant="success" dark>Sent</Badge>;
     case "SCHEDULED":
@@ -100,6 +107,7 @@ export default function OutboxManager() {
   const [bodyHtml, setBodyHtml] = useState("");
   const [editingHtml, setEditingHtml] = useState(false);
   const [htmlEditValue, setHtmlEditValue] = useState("");
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
 
   // Schedule state
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
@@ -136,6 +144,8 @@ export default function OutboxManager() {
   const generateEmail = UseGenerateAdHocEmail();
   const previewEmail = UsePreviewAdHocEmail();
   const cancelEmail = UseCancelScheduledEmail();
+  const saveDraft = UseSaveEmailDraft();
+  const deleteDraft = UseDeleteEmailDraft();
 
   // Debounce search query
   useEffect(() => {
@@ -177,6 +187,7 @@ export default function OutboxManager() {
     setPreviewHtml("");
     setEditingHtml(false);
     setHtmlEditValue("");
+    setEditingDraftId(null);
   }, []);
 
   const handleChatSend = async () => {
@@ -343,6 +354,7 @@ export default function OutboxManager() {
         subject,
         bodyHtml,
         scheduledFor: pendingScheduledFor,
+        draftId: editingDraftId || undefined,
       });
 
       toast.success(
@@ -361,9 +373,53 @@ export default function OutboxManager() {
     setRecipients(email.recipients.join(", "));
     setChatMessages([]);
     setEditingHtml(false);
+    setEditingDraftId(null);
     toast.success("Email cloned to compose area");
-    // Scroll to top of compose area
     composeRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleSaveDraft = async () => {
+    if (!subject.trim() && !bodyHtml.trim() && !recipients.trim()) {
+      toast.error("Nothing to save");
+      return;
+    }
+    try {
+      const result = await saveDraft.mutateAsync({
+        id: editingDraftId || undefined,
+        recipients: parseRecipients(recipients),
+        cc: cc ? parseRecipients(cc) : [],
+        bcc: bcc ? parseRecipients(bcc) : [],
+        subject,
+        bodyHtml,
+      });
+      setEditingDraftId(result.id);
+      toast.success(editingDraftId ? "Draft updated" : "Draft saved");
+    } catch {
+      toast.error("Failed to save draft");
+    }
+  };
+
+  const handleLoadDraft = (email: SentEmail) => {
+    setSubject(email.subject);
+    setBodyHtml(email.bodyHtml);
+    setRecipients(email.recipients.join(", "));
+    setCc(email.cc.join(", "));
+    setBcc(email.bcc.join(", "));
+    setShowCcBcc(email.cc.length > 0 || email.bcc.length > 0);
+    setChatMessages([]);
+    setEditingHtml(false);
+    setEditingDraftId(email.id);
+    composeRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleDeleteDraft = async (id: string) => {
+    try {
+      await deleteDraft.mutateAsync(id);
+      if (editingDraftId === id) handleReset();
+      toast.success("Draft deleted");
+    } catch {
+      toast.error("Failed to delete draft");
+    }
   };
 
   const handleCancelConfirm = async () => {
@@ -422,18 +478,41 @@ export default function OutboxManager() {
           {/* Recipients + Subject + Reset */}
           <div className="p-4 border-b border-slate-700 space-y-3">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-medium text-slate-400">To</label>
-              {hasComposeContent && (
-                <button
-                  data-testid="reset-compose-btn"
-                  onClick={handleReset}
-                  className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
-                  title="Start new email"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  New Email
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                <label className="block text-xs font-medium text-slate-400">To</label>
+                {editingDraftId && (
+                  <Badge variant="warning" dark>Draft</Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {hasComposeContent && (
+                  <button
+                    data-testid="save-draft-btn"
+                    onClick={handleSaveDraft}
+                    disabled={saveDraft.isPending}
+                    className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                    title="Save as draft"
+                  >
+                    {saveDraft.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Save className="h-3 w-3" />
+                    )}
+                    Save Draft
+                  </button>
+                )}
+                {hasComposeContent && (
+                  <button
+                    data-testid="reset-compose-btn"
+                    onClick={handleReset}
+                    className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                    title="Start new email"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    New
+                  </button>
+                )}
+              </div>
             </div>
             <textarea
               data-testid="recipients-input"
@@ -726,32 +805,56 @@ export default function OutboxManager() {
                       <td className="px-3 py-2">{getStatusBadge(email.emailStatus)}</td>
                       <td className="px-3 py-2">
                         <div className="flex items-center justify-end gap-1">
-                          <button
-                            data-testid={`view-email-${email.id}`}
-                            onClick={() => setViewEmail(email)}
-                            className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
-                            title="View email"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            data-testid={`clone-email-${email.id}`}
-                            onClick={() => handleClone(email)}
-                            className="p-1 text-slate-400 hover:text-purple-400 transition-colors"
-                            title="Clone email"
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </button>
-                          {email.emailStatus === "SCHEDULED" && (
-                            <button
-                              data-testid={`cancel-email-${email.id}`}
-                              onClick={() => setCancelConfirmId(email.id)}
-                              disabled={cancelEmail.isPending}
-                              className="p-1 text-slate-400 hover:text-red-400 transition-colors disabled:opacity-40"
-                              title="Cancel scheduled email"
-                            >
-                              <XCircle className="h-3.5 w-3.5" />
-                            </button>
+                          {email.emailStatus === "DRAFT" ? (
+                            <>
+                              <button
+                                data-testid={`edit-draft-${email.id}`}
+                                onClick={() => handleLoadDraft(email)}
+                                className="p-1 text-slate-400 hover:text-purple-400 transition-colors"
+                                title="Edit draft"
+                              >
+                                <FileEdit className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                data-testid={`delete-draft-${email.id}`}
+                                onClick={() => handleDeleteDraft(email.id)}
+                                disabled={deleteDraft.isPending}
+                                className="p-1 text-slate-400 hover:text-red-400 transition-colors disabled:opacity-40"
+                                title="Delete draft"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                data-testid={`view-email-${email.id}`}
+                                onClick={() => setViewEmail(email)}
+                                className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
+                                title="View email"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                data-testid={`clone-email-${email.id}`}
+                                onClick={() => handleClone(email)}
+                                className="p-1 text-slate-400 hover:text-purple-400 transition-colors"
+                                title="Clone email"
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </button>
+                              {email.emailStatus === "SCHEDULED" && (
+                                <button
+                                  data-testid={`cancel-email-${email.id}`}
+                                  onClick={() => setCancelConfirmId(email.id)}
+                                  disabled={cancelEmail.isPending}
+                                  className="p-1 text-slate-400 hover:text-red-400 transition-colors disabled:opacity-40"
+                                  title="Cancel scheduled email"
+                                >
+                                  <XCircle className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>

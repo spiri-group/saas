@@ -7,7 +7,7 @@ import {
   SENT_EMAILS_TABLE,
   entityToSentEmail,
 } from "./adhocTypes";
-import { buildAdHocEmailHtml, generateEmailWithAi } from "./adhocEmail";
+import { buildAdHocEmailHtml, buildAdHocEmailHtmlWithDefaults, generateEmailWithAi } from "./adhocEmail";
 import { v4 as uuidv4 } from "uuid";
 import { BlobServiceClient } from '@azure/storage-blob';
 import { DefaultAzureCredential } from '@azure/identity';
@@ -144,8 +144,8 @@ const resolvers = {
       }
     },
 
-    previewAdHocEmail: async (_: any, args: { bodyHtml: string }) => {
-      return buildAdHocEmailHtml(args.bodyHtml);
+    previewAdHocEmail: async (_: any, args: { bodyHtml: string }, context: serverContext) => {
+      return buildAdHocEmailHtmlWithDefaults(args.bodyHtml, context.dataSources);
     },
 
     generateAdHocEmail: async (_: any, args: { messages: AiMessageInput[] }, context: serverContext) => {
@@ -451,8 +451,8 @@ const resolvers = {
         const now = new Date().toISOString();
         const id = uuidv4();
 
-        // Build the branded HTML
-        const htmlSnapshot = buildAdHocEmailHtml(input.bodyHtml);
+        // Build the branded HTML using default header/footer from Cosmos
+        const htmlSnapshot = await buildAdHocEmailHtmlWithDefaults(input.bodyHtml, context.dataSources);
 
         const isScheduled = !!input.scheduledFor && new Date(input.scheduledFor) > new Date();
 
@@ -471,6 +471,15 @@ const resolvers = {
               i === 0 ? allCc : [],
               i === 0 ? allBcc : []
             );
+          }
+        }
+
+        // If sending from a draft, delete the draft first
+        if (input.draftId) {
+          try {
+            await context.dataSources.tableStorage.deleteEntity(SENT_EMAILS_TABLE, userId, input.draftId);
+          } catch {
+            // Draft may already be gone, that's fine
           }
         }
 
@@ -527,6 +536,48 @@ const resolvers = {
         return true;
       } catch (error) {
         console.error(`Failed to cancel scheduled email ${args.id}:`, error);
+        throw error;
+      }
+    },
+
+    saveEmailDraft: async (_: any, args: { input: { id?: string; recipients?: string[]; cc?: string[]; bcc?: string[]; subject?: string; bodyHtml?: string } }, context: serverContext) => {
+      try {
+        const { input } = args;
+        const userId = context.userId || 'system';
+        const userEmail = context.userEmail || 'system@spiriverse.com';
+        const now = new Date().toISOString();
+        const id = input.id || uuidv4();
+
+        const entity: SentEmailEntity = {
+          partitionKey: userId,
+          rowKey: id,
+          sentByEmail: userEmail,
+          recipients: JSON.stringify(input.recipients || []),
+          cc: JSON.stringify(input.cc || []),
+          bcc: JSON.stringify(input.bcc || []),
+          subject: input.subject || '',
+          bodyHtml: input.bodyHtml || '',
+          htmlSnapshot: '',
+          emailStatus: 'DRAFT',
+          createdAt: now,
+        };
+
+        await context.dataSources.tableStorage.upsertEntity(SENT_EMAILS_TABLE, entity);
+
+        return entityToSentEmail(entity);
+      } catch (error) {
+        console.error('Failed to save email draft:', error);
+        throw new Error('Failed to save draft');
+      }
+    },
+
+    deleteEmailDraft: async (_: any, args: { id: string }, context: serverContext) => {
+      try {
+        const userId = context.userId || 'system';
+        await context.dataSources.tableStorage.deleteEntity(SENT_EMAILS_TABLE, userId, args.id);
+        return true;
+      } catch (error) {
+        console.error(`Failed to delete email draft ${args.id}:`, error);
         throw error;
       }
     },

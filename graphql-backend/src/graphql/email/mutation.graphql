@@ -28,6 +28,16 @@ input SendAdHocEmailInput {
   subject: String!
   bodyHtml: String!
   scheduledFor: String
+  draftId: String
+}
+
+input SaveEmailDraftInput {
+  id: String
+  recipients: [String]
+  cc: [String]
+  bcc: [String]
+  subject: String
+  bodyHtml: String
 }
 
 type Mutation {
@@ -38,4 +48,6 @@ type Mutation {
   deleteEmailAsset(name: String!): Boolean!
   sendAdHocEmail(input: SendAdHocEmailInput!): SentEmail!
   cancelScheduledEmail(id: ID!): Boolean!
+  saveEmailDraft(input: SaveEmailDraftInput!): SentEmail!
+  deleteEmailDraft(id: ID!): Boolean!
 }

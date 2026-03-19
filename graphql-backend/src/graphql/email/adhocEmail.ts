@@ -2,11 +2,80 @@
  * Ad-hoc email utilities: branded HTML wrapper and AI email generation.
  */
 
+import { renderStructureToHtml } from "./structureRenderer";
+
 const BRAND_PURPLE = "#7c3aed";
 const BRAND_INDIGO = "#6366f1";
 
+const EMAIL_CONTAINER = "System-Settings";
+
+/**
+ * Fetches the default header/footer from Cosmos and wraps the body HTML.
+ * Falls back to hardcoded branding if Cosmos lookup fails.
+ */
+export async function buildAdHocEmailHtmlWithDefaults(
+    bodyHtml: string,
+    dataSources: { cosmos: any }
+): Promise<string> {
+    try {
+        const [headers, footers] = await Promise.all([
+            dataSources.cosmos.run_query(
+                EMAIL_CONTAINER,
+                {
+                    query: `SELECT * FROM c WHERE c.docType = 'email-header-footer' AND c.type = 'header' AND c.isDefault = true`,
+                    parameters: [],
+                },
+                true
+            ),
+            dataSources.cosmos.run_query(
+                EMAIL_CONTAINER,
+                {
+                    query: `SELECT * FROM c WHERE c.docType = 'email-header-footer' AND c.type = 'footer' AND c.isDefault = true`,
+                    parameters: [],
+                },
+                true
+            ),
+        ]);
+
+        const headerHtml = headers.length > 0 && headers[0].content
+            ? renderStructureToHtml(headers[0].content)
+            : "";
+        const footerHtml = footers.length > 0 && footers[0].content
+            ? renderStructureToHtml(footers[0].content)
+            : "";
+
+        if (headerHtml || footerHtml) {
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SpiriVerse</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;">
+<tr><td style="padding:40px 20px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+${headerHtml ? `<tr><td>${headerHtml}</td></tr>` : ""}
+<tr><td style="padding:32px 40px;font-size:15px;line-height:1.6;color:#374151;">${bodyHtml}</td></tr>
+${footerHtml ? `<tr><td style="border-top:1px solid #e2e8f0;padding:24px 40px;text-align:center;color:#94a3b8;font-size:13px;">${footerHtml}</td></tr>` : ""}
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+        }
+    } catch (error) {
+        console.error("Failed to fetch default header/footer, using fallback:", error);
+    }
+
+    // Fallback to hardcoded branding
+    return buildAdHocEmailHtml(bodyHtml);
+}
+
 /**
  * Wraps body HTML in a SpiriVerse-branded email layout (table-based, inline CSS).
+ * Hardcoded fallback — used when Cosmos is unavailable.
  */
 export function buildAdHocEmailHtml(bodyHtml: string): string {
     return `<!DOCTYPE html>
