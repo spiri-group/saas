@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmailInput } from "@/components/ui/email-input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import {
@@ -174,8 +175,7 @@ export default function ExpressionOfInterestForm() {
                   Email
                 </FormLabel>
                 <FormControl>
-                  <Input
-                    type="email"
+                  <EmailInput
                     placeholder="your.email@example.com"
                     glass={true}
                     autoComplete="off"

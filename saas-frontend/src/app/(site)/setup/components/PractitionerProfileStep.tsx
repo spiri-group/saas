@@ -116,7 +116,7 @@ export default function PractitionerProfileStep({ form, onNext, onBack }: Props)
                                     key={m.value}
                                     variant={(field.value || []).includes(m.value) ? 'default' : 'outline'}
                                     className={cn(
-                                        'cursor-pointer transition-all px-3 py-1.5 text-sm',
+                                        'cursor-pointer transition-all px-3.5 py-2 sm:px-3 sm:py-1.5 text-sm',
                                         (field.value || []).includes(m.value)
                                             ? 'bg-purple-600 hover:bg-purple-700'
                                             : 'hover:bg-purple-100',
@@ -146,7 +146,7 @@ export default function PractitionerProfileStep({ form, onNext, onBack }: Props)
                                     key={s.value}
                                     variant={(field.value || []).includes(s.value) ? 'default' : 'outline'}
                                     className={cn(
-                                        'cursor-pointer transition-all px-3 py-1.5 text-sm',
+                                        'cursor-pointer transition-all px-3.5 py-2 sm:px-3 sm:py-1.5 text-sm',
                                         (field.value || []).includes(s.value)
                                             ? 'bg-violet-600 hover:bg-violet-700'
                                             : 'hover:bg-violet-100',
@@ -177,7 +177,7 @@ export default function PractitionerProfileStep({ form, onNext, onBack }: Props)
                     <Button
                         type="button"
                         data-testid="setup-practitioner-continue-btn"
-                        className="flex-1 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 h-12 sm:h-9 text-base sm:text-sm"
                         onClick={handleContinue}
                     >
                         Continue

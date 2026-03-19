@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { EmailInput } from '@/components/ui/email-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Send } from 'lucide-react';
@@ -141,10 +142,9 @@ export default function CreatePaymentLinkDialog({ open, onOpenChange, vendors }:
                     <div className="space-y-3">
                         <div>
                             <Label htmlFor="customer-email">Customer Email *</Label>
-                            <Input
+                            <EmailInput
                                 id="customer-email"
                                 data-testid="payment-link-customer-email"
-                                type="email"
                                 placeholder="customer@example.com"
                                 value={customerEmail}
                                 onChange={(e) => setCustomerEmail(e.target.value)}

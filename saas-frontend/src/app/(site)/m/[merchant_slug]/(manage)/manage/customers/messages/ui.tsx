@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { EmailInput } from '@/components/ui/email-input';
 import { MessageCircle, Users, Clock, MessageSquarePlus, Loader2 } from 'lucide-react';
 import ChatControl from '@/components/ux/ChatControl';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -108,10 +109,9 @@ const MessageCenter: React.FC<Props> = ({ merchantId }) => {
                         <div className="space-y-4">
                             <div>
                                 <Label htmlFor="customer-email">Customer Email</Label>
-                                <Input
+                                <EmailInput
                                     id="customer-email"
                                     data-testid="new-conversation-email"
-                                    type="email"
                                     value={newConversationData.customerEmail}
                                     onChange={(e) => setNewConversationData(prev => ({
                                         ...prev,

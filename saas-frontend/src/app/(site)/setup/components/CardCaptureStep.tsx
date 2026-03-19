@@ -91,12 +91,12 @@ function CardCaptureForm({
                 <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</div>
             )}
 
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
                 <button
                     type="button"
                     onClick={onSkip}
                     disabled={isProcessing}
-                    className="text-sm text-slate-500 hover:text-slate-700 underline underline-offset-2"
+                    className="text-sm text-slate-500 hover:text-slate-700 underline underline-offset-2 py-2"
                     data-testid="card-capture-skip-btn"
                 >
                     Skip for now
@@ -106,6 +106,7 @@ function CardCaptureForm({
                     onClick={handleSubmit}
                     disabled={!stripe || isProcessing}
                     data-testid="card-capture-submit-btn"
+                    className="h-12 sm:h-9 text-base sm:text-sm"
                 >
                     {isProcessing ? (
                         <>
@@ -173,14 +174,14 @@ export default function CardCaptureStep({ vendorId, onComplete, onSkip }: CardCa
                 {initError && (
                     <div className="space-y-4">
                         <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{initError}</div>
-                        <div className="flex justify-between">
+                        <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
                             <button
                                 onClick={onSkip}
-                                className="text-sm text-slate-500 hover:text-slate-700 underline underline-offset-2"
+                                className="text-sm text-slate-500 hover:text-slate-700 underline underline-offset-2 py-2"
                             >
                                 Skip for now
                             </button>
-                            <Button variant="outline" onClick={onComplete}>
+                            <Button variant="outline" onClick={onComplete} className="h-12 sm:h-9 text-base sm:text-sm">
                                 <ArrowRight className="h-4 w-4 mr-2" />
                                 Continue
                             </Button>

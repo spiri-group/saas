@@ -20,7 +20,7 @@ export default function OnboardingShell({ isFullScreen, isCentered, marketingCon
             {/* Content grid with animated transition */}
             <div
                 className={cn(
-                    "relative z-10 w-full grid gap-4 p-4 md:gap-6 md:p-6 min-h-0",
+                    "relative z-10 w-full grid gap-2 p-2 sm:gap-4 sm:p-4 md:gap-6 md:p-6 min-h-0",
                     !isCentered && "flex-1",
                     isCentered && "max-w-6xl mx-auto my-auto",
                 )}
@@ -49,7 +49,7 @@ export default function OnboardingShell({ isFullScreen, isCentered, marketingCon
 
             {/* Escape hatch — visible after the basic step */}
             {onCancel && (
-                <div className="flex-shrink-0 flex justify-center py-2 md:py-4">
+                <div className="flex-shrink-0 flex justify-center py-2 md:py-4 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
                     <button
                         onClick={onCancel}
                         className="text-sm text-white/40 hover:text-white/70 hover:underline transition-colors cursor-pointer py-2 px-4"

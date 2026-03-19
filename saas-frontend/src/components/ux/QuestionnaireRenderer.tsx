@@ -2,6 +2,7 @@
 
 import React, { useRef } from "react";
 import { Input } from "@/components/ui/input";
+import { EmailInput } from "@/components/ui/email-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -192,9 +193,8 @@ function QuestionField({
 
             {/* Email */}
             {q.type === "EMAIL" && (
-                <Input
+                <EmailInput
                     id={q.id}
-                    type="email"
                     value={stringValue}
                     onChange={(e) => onChange(e.target.value)}
                     required={q.required}

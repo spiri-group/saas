@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { EmailInput } from '@/components/ui/email-input';
 import { Label } from '@/components/ui/label';
 import {
     Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger
@@ -371,9 +372,8 @@ export default function ExpoCustomerUI({ code }: Props) {
                         </div>
                         <div className="space-y-1">
                             <Label htmlFor="customer-email" className="text-sm text-slate-400">Email (optional, for receipt)</Label>
-                            <Input
+                            <EmailInput
                                 id="customer-email"
-                                type="email"
                                 value={customerEmail}
                                 onChange={(e) => setCustomerEmail(e.target.value)}
                                 placeholder="your@email.com"

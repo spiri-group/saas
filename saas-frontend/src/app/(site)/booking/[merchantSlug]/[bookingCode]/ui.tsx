@@ -6,7 +6,7 @@ import UseCustomerModifyBooking from "./hooks/UseCustomerModifyBooking";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { EmailInput } from "@/components/ui/email-input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -214,9 +214,8 @@ function ModifyBookingSection({ booking, bookingCode, merchantSlug }: { booking:
                         {!isLoggedIn && (
                             <div>
                                 <Label htmlFor="modify-email" className="text-sm">Confirm your email</Label>
-                                <Input
+                                <EmailInput
                                     id="modify-email"
-                                    type="email"
                                     placeholder="your@email.com"
                                     value={verifyEmail}
                                     onChange={(e) => setVerifyEmail(e.target.value)}
@@ -492,9 +491,8 @@ export default function BookingCancellationUI({ bookingCode, merchantSlug }: Boo
                                     <Mail className="h-4 w-4 inline mr-1" />
                                     Confirm Your Email
                                 </Label>
-                                <Input
+                                <EmailInput
                                     id="confirm-email"
-                                    type="email"
                                     placeholder="Enter the email used for this booking"
                                     value={confirmEmail}
                                     onChange={(e) => {

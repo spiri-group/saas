@@ -5,6 +5,7 @@ import { useCallback, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { EmailInput } from '@/components/ui/email-input';
 import { Button } from '@/components/ui/button';
 import { LoaderIcon, ImageIcon, XIcon } from 'lucide-react';
 import ComboBox from '@/components/ux/ComboBox';
@@ -99,10 +100,9 @@ export default function MerchantProfileStep({ form, onSubmit, onBack, isSubmitti
                             <FormItem>
                                 <FormLabel>Business Email</FormLabel>
                                 <FormControl>
-                                    <Input
+                                    <EmailInput
                                         {...field}
                                         data-testid="setup-merchant-email"
-                                        type="email"
                                         placeholder="business@example.com"
                                     />
                                 </FormControl>
@@ -112,7 +112,7 @@ export default function MerchantProfileStep({ form, onSubmit, onBack, isSubmitti
                     />
                 </div>
 
-                <div className="flex items-start gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                     <FormField
                         control={form.control}
                         name="merchant.logo"
@@ -131,7 +131,7 @@ export default function MerchantProfileStep({ form, onSubmit, onBack, isSubmitti
                                             <button
                                                 type="button"
                                                 onClick={() => field.onChange(null)}
-                                                className="absolute -top-2 -right-2 bg-white border border-slate-200 rounded-full p-0.5 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="absolute -top-2 -right-2 bg-white border border-slate-200 rounded-full p-1 sm:p-0.5 shadow-sm sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                                             >
                                                 <XIcon className="w-3 h-3 text-slate-500" />
                                             </button>
@@ -301,7 +301,7 @@ export default function MerchantProfileStep({ form, onSubmit, onBack, isSubmitti
                         type="button"
                         data-testid="setup-merchant-submit-btn"
                         disabled={isSubmitting}
-                        className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                        className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 h-12 sm:h-9 text-base sm:text-sm"
                         onClick={handleContinue}
                     >
                         {isSubmitting ? (

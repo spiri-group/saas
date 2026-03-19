@@ -21,21 +21,22 @@ import ChoosePlanStep from './components/ChoosePlanStep';
 import MerchantProfileStep from './components/MerchantProfileStep';
 import PractitionerProfileStep from './components/PractitionerProfileStep';
 import PractitionerOptionalStep from './components/PractitionerOptionalStep';
-import AlsoPractitionerStep from './components/AlsoPractitionerStep';
 import CardCaptureStep from './components/CardCaptureStep';
 import { useOnboardingForm } from './hooks/useOnboardingForm';
 
 // ── Step identifiers ────────────────────────────────────────────────
+// Flow order:
+//   Practitioner: basic → plan → practitioner-profile → practitioner-optional → card-capture → consent → redirect
+//   Merchant:     basic → plan → merchant-profile → card-capture → consent → redirect
 
 type Step =
     | 'basic'
     | 'plan'
-    | 'consent'
     | 'merchant-profile'
     | 'card-capture'
-    | 'also-practitioner'
     | 'practitioner-profile'
-    | 'practitioner-optional';
+    | 'practitioner-optional'
+    | 'consent';
 
 // ── Branch (determined after plan selection) ────────────────────────
 
@@ -47,7 +48,6 @@ function themeForStep(step: Step, branch: Branch, hasReligion?: boolean): Onboar
     if (step === 'basic') return hasReligion ? 'faith' : 'neutral';
     if (step === 'plan') return 'neutral';
     if (step === 'consent') {
-        // Consent theme matches the selected plan branch
         if (branch === 'merchant') return 'amber';
         if (branch === 'practitioner') return 'purple';
         return 'neutral';
@@ -56,7 +56,7 @@ function themeForStep(step: Step, branch: Branch, hasReligion?: boolean): Onboar
         if (branch === 'merchant') return 'amber';
         return 'purple';
     }
-    if (step === 'merchant-profile' || step === 'also-practitioner') return 'amber';
+    if (step === 'merchant-profile') return 'amber';
     if (step === 'practitioner-profile' || step === 'practitioner-optional') return 'purple';
     return 'neutral';
 }
@@ -70,27 +70,18 @@ function isFullScreenStep(step: Step): boolean {
 function stepLabels(step: Step, branch: Branch): string[] {
     // Card capture is a standalone step — no indicator
     if (step === 'card-capture') return [];
-    // After merchant clicks "yes" to also create practitioner, show practitioner labels
-    if (branch === 'merchant' && (step === 'practitioner-profile' || step === 'practitioner-optional')) {
-        return ['Profile', 'Extras'];
-    }
     if (branch === 'practitioner') return ['Profile', 'Extras'];
-    if (branch === 'merchant') return ['Business', 'Done'];
+    if (branch === 'merchant') return ['Business'];
     return [];
 }
 
 function stepNumber(step: Step, branch: Branch): number {
-    // After merchant clicks "yes" to also create practitioner
-    if (branch === 'merchant' && step === 'practitioner-profile') return 1;
-    if (branch === 'merchant' && step === 'practitioner-optional') return 2;
-
     if (branch === 'practitioner') {
         if (step === 'practitioner-profile') return 1;
         if (step === 'practitioner-optional') return 2;
     }
     if (branch === 'merchant') {
         if (step === 'merchant-profile') return 1;
-        if (step === 'also-practitioner') return 2;
     }
     return 1;
 }
@@ -153,7 +144,7 @@ export default function SetupUI() {
         }
 
         if (tierParam) {
-            // Tier was chosen in the GetStartedDialog — skip basic + plan, go to consent
+            // Tier was chosen in the GetStartedDialog — skip basic + plan, go to profile
             form.setValue('subscription.tier', tierParam);
             if (intervalParam) form.setValue('subscription.billingInterval', intervalParam);
 
@@ -161,10 +152,11 @@ export default function SetupUI() {
             setBranch(newBranch);
             if (newBranch === 'merchant') {
                 initMerchant();
+                setStep('merchant-profile');
             } else {
                 initPractitioner();
+                setStep('practitioner-profile');
             }
-            setStep('consent');
         } else {
             // No tier param — skip basic, land on plan selection
             setStep('plan');
@@ -221,31 +213,12 @@ export default function SetupUI() {
 
         if (newBranch === 'merchant') {
             initMerchant();
+            setStep('merchant-profile');
         } else {
             initPractitioner();
-        }
-
-        // After selecting plan, go to consent
-        setStep('consent');
-    }, [initMerchant, initPractitioner]);
-
-    const handleConsentBack = useCallback(() => {
-        if (tierParam && session?.user?.id) {
-            // Tier was pre-selected via URL — cancel back to My Journey
-            router.push(`/u/${session.user.id}/space`);
-        } else {
-            setStep('plan');
-        }
-    }, [tierParam, session?.user?.id, router]);
-
-    const handleConsentAccepted = useCallback(() => {
-        // After consent, go to profile step based on branch
-        if (branch === 'merchant') {
-            setStep('merchant-profile');
-        } else if (branch === 'practitioner') {
             setStep('practitioner-profile');
         }
-    }, [branch]);
+    }, [initMerchant, initPractitioner]);
 
     const handlePlanBack = useCallback(() => {
         if (didSkipRef.current && session?.user?.id) {
@@ -289,7 +262,17 @@ export default function SetupUI() {
         window.location.href = '/';
     }, [session, form]);
 
-    // Merchant submission
+    // ── Merchant flow ───────────────────────────────────────────────
+
+    const handleMerchantBack = useCallback(() => {
+        if (tierParam && session?.user?.id) {
+            // Tier was pre-selected via URL — cancel back to My Journey
+            router.push(`/u/${session.user.id}/space`);
+        } else {
+            setStep('plan');
+        }
+    }, [tierParam, session?.user?.id, router]);
+
     const handleMerchantSubmit = useCallback(async () => {
         // Ensure country is set (fallback for skip path where detection resolved late)
         if (!form.getValues('country') && detectedCountry) {
@@ -314,43 +297,28 @@ export default function SetupUI() {
         }
     }, [createVendor, form, detectedCountry]);
 
-    const handleMerchantBack = useCallback(() => {
+    // Card capture completion (merchant flow) → consent
+    const handleCardCaptureComplete = useCallback(() => {
         setStep('consent');
     }, []);
 
-    // Card capture completion (merchant flow)
-    const handleCardCaptureComplete = useCallback(() => {
-        setStep('also-practitioner');
-    }, []);
-
     const handleCardCaptureSkip = useCallback(() => {
-        setStep('also-practitioner');
+        setStep('consent');
     }, []);
 
-    // Also-practitioner decision
-    const handleAlsoPractitionerYes = useCallback(() => {
-        initPractitioner();
-        setStep('practitioner-profile');
-    }, [initPractitioner]);
+    // ── Practitioner flow ───────────────────────────────────────────
 
-    const handleAlsoPractitionerNo = useCallback(() => {
-        if (createdMerchantSlug) {
-            window.location.href = `/m/${createdMerchantSlug}`;
+    const handlePractitionerProfileBack = useCallback(() => {
+        if (tierParam && session?.user?.id) {
+            router.push(`/u/${session.user.id}/space`);
+        } else {
+            setStep('plan');
         }
-    }, [createdMerchantSlug]);
+    }, [tierParam, session?.user?.id, router]);
 
-    // Practitioner steps
     const handlePractitionerProfileNext = useCallback(() => {
         setStep('practitioner-optional');
     }, []);
-
-    const handlePractitionerProfileBack = useCallback(() => {
-        if (branch === 'merchant') {
-            setStep('also-practitioner');
-        } else {
-            setStep('consent');
-        }
-    }, [branch]);
 
     const handlePractitionerOptionalBack = useCallback(() => {
         setStep('practitioner-profile');
@@ -364,39 +332,35 @@ export default function SetupUI() {
 
         setIsSubmitting(true);
         try {
-            // If merchant branch, practitioner gets awaken tier
-            const overrideTier = branch === 'merchant' ? 'awaken' : undefined;
-            const practitioner = await createPractitioner(overrideTier);
-
-            if (branch === 'merchant') {
-                // Merchant already did card capture — go straight to redirect
-                if (createdMerchantSlug) {
-                    window.location.href = `/m/${createdMerchantSlug}`;
-                }
-            } else {
-                // Practitioner-only flow — go to card capture
-                setCreatedVendorId(practitioner.id);
-                setStep('card-capture');
-            }
+            const practitioner = await createPractitioner();
+            setCreatedVendorId(practitioner.id);
+            setStep('card-capture');
         } catch (error) {
             console.error('Error creating practitioner:', error);
             toast.error('Failed to create your profile. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
-    }, [branch, createdMerchantSlug, createPractitioner, form, detectedCountry]);
+    }, [createPractitioner, form, detectedCountry]);
 
-    // Card capture completion (practitioner-only flow)
+    // Card capture completion (practitioner-only flow) → consent
     const handlePractitionerCardComplete = useCallback(() => {
-        if (branch === 'merchant' && createdMerchantSlug) {
-            window.location.href = `/m/${createdMerchantSlug}`;
-        } else {
-            const pracSlug = form.getValues('practitioner.slug');
-            window.location.href = `/p/${pracSlug}`;
-        }
-    }, [branch, createdMerchantSlug, form]);
+        setStep('consent');
+    }, []);
 
     const handlePractitionerCardSkip = useCallback(() => {
+        setStep('consent');
+    }, []);
+
+    // ── Consent (final step) ────────────────────────────────────────
+
+    const handleConsentBack = useCallback(() => {
+        // Both flows arrive at consent from card-capture
+        setStep('card-capture');
+    }, []);
+
+    const handleConsentAccepted = useCallback(() => {
+        // All done — redirect to dashboard
         if (branch === 'merchant' && createdMerchantSlug) {
             window.location.href = `/m/${createdMerchantSlug}`;
         } else {
@@ -471,14 +435,6 @@ export default function SetupUI() {
                     />
                 )}
 
-                {step === 'consent' && (
-                    <OnboardingConsent 
-                        onAccepted={handleConsentAccepted} 
-                        onBack={handleConsentBack}
-                        branch={branch} 
-                    />
-                )}
-
                 {step === 'merchant-profile' && (
                     <MerchantProfileStep
                         form={form}
@@ -496,13 +452,6 @@ export default function SetupUI() {
                     />
                 )}
 
-                {step === 'also-practitioner' && (
-                    <AlsoPractitionerStep
-                        onYes={handleAlsoPractitionerYes}
-                        onNo={handleAlsoPractitionerNo}
-                    />
-                )}
-
                 {step === 'practitioner-profile' && (
                     <PractitionerProfileStep
                         form={form}
@@ -517,6 +466,14 @@ export default function SetupUI() {
                         onSubmit={handlePractitionerSubmit}
                         onBack={handlePractitionerOptionalBack}
                         isSubmitting={isSubmitting}
+                    />
+                )}
+
+                {step === 'consent' && (
+                    <OnboardingConsent
+                        onAccepted={handleConsentAccepted}
+                        onBack={handleConsentBack}
+                        branch={branch}
                     />
                 )}
             </form>

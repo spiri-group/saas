@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import CurrencySpan from "@/components/ux/CurrencySpan";
 import CurrencyNote from "@/components/ux/CurrencyNote";
 import { Input } from "@/components/ui/input";
+import { EmailInput } from "@/components/ui/email-input";
 import { cn } from "@/lib/utils";
 import { useParams } from "next/navigation";
 import UseCreateTourBooking from "./hooks/UseCreateTourBooking";
@@ -703,8 +704,7 @@ const UI: React.FC<Props> = (props) => {
                                         <label className="text-sm font-medium text-merchant-default-foreground mb-2 block">
                                             Email Address
                                         </label>
-                                        <Input
-                                            type="email"
+                                        <EmailInput
                                             placeholder="your@email.com"
                                             value={bl.customerEmail}
                                             onChange={(e) => bl.setCustomerEmail(e.target.value)}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ShoppingBag, Loader2, Trash2, PenLine, Tag, PauseCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { EmailInput } from "@/components/ui/email-input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCurrency } from "@/components/ux/CurrencySpan";
 import PosCartItem from "./PosCartItem";
@@ -194,9 +194,8 @@ const PosCart = ({
         </button>
         {showMore && (
           <div className="space-y-2 pb-1">
-            <Input
+            <EmailInput
               data-testid="pos-customer-email"
-              type="email"
               placeholder="Customer email (sends receipt)"
               value={customerEmail}
               onChange={(e) => onSetCustomerEmail(e.target.value)}

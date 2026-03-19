@@ -10,7 +10,7 @@ import {
     DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { EmailInput } from "@/components/ui/email-input";
 import { Bell, Loader2, CheckCircle, Clock } from "lucide-react";
 import CurrencySpan from "@/components/ux/CurrencySpan";
 import UseJoinWaitlist from "../hooks/UseJoinWaitlist";
@@ -136,8 +136,7 @@ const WaitlistDialog: React.FC<WaitlistDialogProps> = ({
                             <label className="text-sm font-medium text-gray-700 block mb-2">
                                 Email Address
                             </label>
-                            <Input
-                                type="email"
+                            <EmailInput
                                 placeholder="your@email.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
