@@ -70,6 +70,8 @@ interface EmailLayout {
     slots: Record<string, string>;
     slotWidths?: Record<string, number>;
     padding?: { top?: number; bottom?: number; left?: number; right?: number };
+    backgroundColor?: string;
+    backgroundImage?: string;
 }
 
 interface EmailStructure {
@@ -297,5 +299,9 @@ export function renderStructureToHtml(structureJson: string): string {
         })
         .filter(Boolean);
 
-    return `<div style="padding:${pt}px ${pr}px ${pb}px ${pl}px;">${renderedBlocks.map((h) => `<div style="margin-bottom:16px;">${h}</div>`).join("")}</div>`;
+    let bgStyles = "";
+    if (layout.backgroundColor) bgStyles += `background-color:${layout.backgroundColor};`;
+    if (layout.backgroundImage) bgStyles += `background-image:url(${layout.backgroundImage});background-size:cover;background-position:center;`;
+
+    return `<div style="padding:${pt}px ${pr}px ${pb}px ${pl}px;${bgStyles}">${renderedBlocks.map((h) => `<div style="margin-bottom:16px;">${h}</div>`).join("")}</div>`;
 }

@@ -719,7 +719,18 @@ export default function EmailPreview({ structure, subject, headerId, footerId }:
           )}
 
           {/* Email Body */}
-          <div className="p-6">
+          <div
+            style={{
+              backgroundColor: structure.layout?.backgroundColor || undefined,
+              backgroundImage: structure.layout?.backgroundImage ? `url(${structure.layout.backgroundImage})` : undefined,
+              backgroundSize: structure.layout?.backgroundImage ? "cover" : undefined,
+              backgroundPosition: structure.layout?.backgroundImage ? "center" : undefined,
+              paddingTop: `${structure.layout?.padding?.top ?? 20}px`,
+              paddingBottom: `${structure.layout?.padding?.bottom ?? 20}px`,
+              paddingLeft: `${structure.layout?.padding?.left ?? 20}px`,
+              paddingRight: `${structure.layout?.padding?.right ?? 20}px`,
+            }}
+          >
             {layoutDef && (
               <div className="space-y-4">
                 {slotRows.map((rowSlots, rowIndex) => {
