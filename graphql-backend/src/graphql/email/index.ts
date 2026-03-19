@@ -474,6 +474,15 @@ const resolvers = {
           }
         }
 
+        // If sending from a draft, delete the draft first
+        if (input.draftId) {
+          try {
+            await context.dataSources.tableStorage.deleteEntity(SENT_EMAILS_TABLE, userId, input.draftId);
+          } catch {
+            // Draft may already be gone, that's fine
+          }
+        }
+
         // Store in Table Storage
         const entity: SentEmailEntity = {
           partitionKey: userId,
@@ -527,6 +536,48 @@ const resolvers = {
         return true;
       } catch (error) {
         console.error(`Failed to cancel scheduled email ${args.id}:`, error);
+        throw error;
+      }
+    },
+
+    saveEmailDraft: async (_: any, args: { input: { id?: string; recipients?: string[]; cc?: string[]; bcc?: string[]; subject?: string; bodyHtml?: string } }, context: serverContext) => {
+      try {
+        const { input } = args;
+        const userId = context.userId || 'system';
+        const userEmail = context.userEmail || 'system@spiriverse.com';
+        const now = new Date().toISOString();
+        const id = input.id || uuidv4();
+
+        const entity: SentEmailEntity = {
+          partitionKey: userId,
+          rowKey: id,
+          sentByEmail: userEmail,
+          recipients: JSON.stringify(input.recipients || []),
+          cc: JSON.stringify(input.cc || []),
+          bcc: JSON.stringify(input.bcc || []),
+          subject: input.subject || '',
+          bodyHtml: input.bodyHtml || '',
+          htmlSnapshot: '',
+          emailStatus: 'DRAFT',
+          createdAt: now,
+        };
+
+        await context.dataSources.tableStorage.upsertEntity(SENT_EMAILS_TABLE, entity);
+
+        return entityToSentEmail(entity);
+      } catch (error) {
+        console.error('Failed to save email draft:', error);
+        throw new Error('Failed to save draft');
+      }
+    },
+
+    deleteEmailDraft: async (_: any, args: { id: string }, context: serverContext) => {
+      try {
+        const userId = context.userId || 'system';
+        await context.dataSources.tableStorage.deleteEntity(SENT_EMAILS_TABLE, userId, args.id);
+        return true;
+      } catch (error) {
+        console.error(`Failed to delete email draft ${args.id}:`, error);
         throw error;
       }
     },
