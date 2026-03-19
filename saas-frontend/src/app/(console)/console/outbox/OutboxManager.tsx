@@ -18,6 +18,7 @@ import {
   Save,
   FileEdit,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -124,6 +125,8 @@ export default function OutboxManager() {
 
   // Preview state
   const [previewHtml, setPreviewHtml] = useState("");
+  const [visualEditing, setVisualEditing] = useState(false);
+  const visualEditorRef = useRef<HTMLDivElement>(null);
 
   // History state
   const [searchQuery, setSearchQuery] = useState("");
@@ -187,6 +190,7 @@ export default function OutboxManager() {
     setPreviewHtml("");
     setEditingHtml(false);
     setHtmlEditValue("");
+    setVisualEditing(false);
     setEditingDraftId(null);
   }, []);
 
@@ -223,6 +227,7 @@ export default function OutboxManager() {
       setSubject(result.subject);
       setBodyHtml(result.bodyHtml);
       setEditingHtml(false);
+      setVisualEditing(false);
     } catch {
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
@@ -247,12 +252,31 @@ export default function OutboxManager() {
       setEditingHtml(false);
     } else {
       // Start editing
+      setVisualEditing(false);
       setHtmlEditValue(bodyHtml);
       setEditingHtml(true);
     }
   };
 
+  const handleToggleVisualEdit = () => {
+    if (visualEditing) {
+      // Save visual edits
+      if (visualEditorRef.current) {
+        setBodyHtml(visualEditorRef.current.innerHTML);
+      }
+      setVisualEditing(false);
+    } else {
+      setEditingHtml(false);
+      setVisualEditing(true);
+    }
+  };
+
   const handleSendNow = () => {
+    // Save any pending visual edits before sending
+    if (visualEditing && visualEditorRef.current) {
+      setBodyHtml(visualEditorRef.current.innerHTML);
+      setVisualEditing(false);
+    }
     const recipientList = parseRecipients(recipients);
     if (recipientList.length === 0) {
       toast.error("Please add at least one recipient");
@@ -276,6 +300,11 @@ export default function OutboxManager() {
   };
 
   const handleSchedule = () => {
+    // Save any pending visual edits before scheduling
+    if (visualEditing && visualEditorRef.current) {
+      setBodyHtml(visualEditorRef.current.innerHTML);
+      setVisualEditing(false);
+    }
     const recipientList = parseRecipients(recipients);
     if (recipientList.length === 0) {
       toast.error("Please add at least one recipient");
@@ -677,19 +706,34 @@ export default function OutboxManager() {
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-medium text-slate-300">Email Preview</h3>
               {bodyHtml && (
-                <button
-                  data-testid="toggle-html-edit"
-                  onClick={handleToggleHtmlEdit}
-                  className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
-                    editingHtml
-                      ? "text-purple-300 bg-purple-600/20"
-                      : "text-slate-400 hover:text-slate-300 hover:bg-slate-800"
-                  }`}
-                  title={editingHtml ? "Save HTML edits" : "Edit HTML manually"}
-                >
-                  <Code className="h-3 w-3" />
-                  {editingHtml ? "Save" : "Edit HTML"}
-                </button>
+                <>
+                  <button
+                    data-testid="toggle-visual-edit"
+                    onClick={handleToggleVisualEdit}
+                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
+                      visualEditing
+                        ? "text-purple-300 bg-purple-600/20"
+                        : "text-slate-400 hover:text-slate-300 hover:bg-slate-800"
+                    }`}
+                    title={visualEditing ? "Save edits" : "Edit content visually"}
+                  >
+                    <Pencil className="h-3 w-3" />
+                    {visualEditing ? "Save" : "Edit"}
+                  </button>
+                  <button
+                    data-testid="toggle-html-edit"
+                    onClick={handleToggleHtmlEdit}
+                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
+                      editingHtml
+                        ? "text-purple-300 bg-purple-600/20"
+                        : "text-slate-400 hover:text-slate-300 hover:bg-slate-800"
+                    }`}
+                    title={editingHtml ? "Save HTML edits" : "Edit HTML source"}
+                  >
+                    <Code className="h-3 w-3" />
+                    {editingHtml ? "Save" : "HTML"}
+                  </button>
+                </>
               )}
             </div>
             <div className="flex items-center gap-2">
@@ -727,6 +771,22 @@ export default function OutboxManager() {
                 className="w-full h-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-300 font-mono resize-none focus:outline-none focus:border-purple-500"
                 spellCheck={false}
               />
+            ) : visualEditing ? (
+              <div className="h-full flex flex-col">
+                <div className="text-xs text-slate-500 mb-2 flex items-center gap-1.5">
+                  <Pencil className="h-3 w-3" />
+                  Click on any text to edit. Delete or retype as needed.
+                </div>
+                <div
+                  ref={visualEditorRef}
+                  data-testid="visual-editor"
+                  contentEditable
+                  suppressContentEditableWarning
+                  dangerouslySetInnerHTML={{ __html: bodyHtml }}
+                  className="flex-1 bg-white rounded-lg p-6 text-black overflow-auto focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  style={{ minHeight: "500px" }}
+                />
+              </div>
             ) : previewHtml ? (
               <iframe
                 data-testid="email-preview-iframe"

@@ -102,7 +102,7 @@ export default function MediaPickerDialog({
         maxResults: 50
       });
 
-      setEmailAssets(response.emailAssets || []);
+      setEmailAssets(response?.emailAssets || []);
     } catch (error) {
       console.error("Error fetching email assets:", error);
       setAssetsError(error instanceof Error ? error.message : "Failed to load files");

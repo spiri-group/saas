@@ -18,6 +18,7 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { ContentBlock, BlockType, ColorSwatch } from "./types";
+import InlineColorPicker from "./InlineColorPicker";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useForm } from "react-hook-form";
 import { Switch } from "@/components/ui/switch";
@@ -548,21 +549,11 @@ export default function ContentBlockEditor({
                               <FormLabel className="text-xs">Background Color</FormLabel>
                               <PaletteSwatches palette={colorPalette} onSelect={(c) => field.onChange(c)} />
                               <FormControl>
-                                <div className="flex gap-2">
-                                  <Input
-                                    type="color"
-                                    value={field.value || "#ffffff"}
-                                    onChange={field.onChange}
-                                    className="bg-slate-800 border-slate-700 w-10 h-8 p-1"
-                                  />
-                                  <Input
-                                    type="text"
-                                    placeholder="None"
-                                    value={field.value || ""}
-                                    onChange={field.onChange}
-                                    className="bg-slate-800 border-slate-700 text-white text-xs flex-1"
-                                  />
-                                </div>
+                                <InlineColorPicker
+                                  dark
+                                  value={field.value || "#ffffff"}
+                                  onChange={field.onChange}
+                                />
                               </FormControl>
                             </FormItem>
                           )}
@@ -575,21 +566,11 @@ export default function ContentBlockEditor({
                               <FormLabel className="text-xs">Border Color</FormLabel>
                               <PaletteSwatches palette={colorPalette} onSelect={(c) => field.onChange(c)} />
                               <FormControl>
-                                <div className="flex gap-2">
-                                  <Input
-                                    type="color"
-                                    value={field.value || "#e2e8f0"}
-                                    onChange={field.onChange}
-                                    className="bg-slate-800 border-slate-700 w-10 h-8 p-1"
-                                  />
-                                  <Input
-                                    type="text"
-                                    placeholder="None"
-                                    value={field.value || ""}
-                                    onChange={field.onChange}
-                                    className="bg-slate-800 border-slate-700 text-white text-xs flex-1"
-                                  />
-                                </div>
+                                <InlineColorPicker
+                                  dark
+                                  value={field.value || "#e2e8f0"}
+                                  onChange={field.onChange}
+                                />
                               </FormControl>
                             </FormItem>
                           )}
@@ -1152,21 +1133,11 @@ export default function ContentBlockEditor({
                         <FormLabel className="text-xs">Background Color</FormLabel>
                         <PaletteSwatches palette={colorPalette} onSelect={(c) => field.onChange(c)} />
                         <FormControl>
-                          <div className="flex gap-2">
-                            <Input
-                              type="color"
-                              value={field.value || "#f8fafc"}
-                              onChange={field.onChange}
-                              className="bg-slate-800 border-slate-700 w-10 h-8 p-1"
-                            />
-                            <Input
-                              type="text"
-                              placeholder="#f8fafc"
-                              value={field.value || ""}
-                              onChange={field.onChange}
-                              className="bg-slate-800 border-slate-700 text-white text-xs flex-1"
-                            />
-                          </div>
+                          <InlineColorPicker
+                            dark
+                            value={field.value || "#f8fafc"}
+                            onChange={field.onChange}
+                          />
                         </FormControl>
                       </FormItem>
                     )}
@@ -1179,21 +1150,11 @@ export default function ContentBlockEditor({
                         <FormLabel className="text-xs">Border Color</FormLabel>
                         <PaletteSwatches palette={colorPalette} onSelect={(c) => field.onChange(c)} />
                         <FormControl>
-                          <div className="flex gap-2">
-                            <Input
-                              type="color"
-                              value={field.value || "#e2e8f0"}
-                              onChange={field.onChange}
-                              className="bg-slate-800 border-slate-700 w-10 h-8 p-1"
-                            />
-                            <Input
-                              type="text"
-                              placeholder="#e2e8f0"
-                              value={field.value || ""}
-                              onChange={field.onChange}
-                              className="bg-slate-800 border-slate-700 text-white text-xs flex-1"
-                            />
-                          </div>
+                          <InlineColorPicker
+                            dark
+                            value={field.value || "#e2e8f0"}
+                            onChange={field.onChange}
+                          />
                         </FormControl>
                       </FormItem>
                     )}
@@ -1294,21 +1255,11 @@ export default function ContentBlockEditor({
                         <FormLabel className="text-xs">Background Color</FormLabel>
                         <PaletteSwatches palette={colorPalette} onSelect={(c) => field.onChange(c)} />
                         <FormControl>
-                          <div className="flex gap-2">
-                            <Input
-                              type="color"
-                              value={field.value || "#6b21a8"}
-                              onChange={field.onChange}
-                              className="bg-slate-800 border-slate-700 w-10 h-8 p-1"
-                            />
-                            <Input
-                              type="text"
-                              value={field.value || ""}
-                              onChange={field.onChange}
-                              className="bg-slate-800 border-slate-700 text-white text-xs flex-1"
-                              placeholder="#6b21a8"
-                            />
-                          </div>
+                          <InlineColorPicker
+                            dark
+                            value={field.value || "#6b21a8"}
+                            onChange={field.onChange}
+                          />
                         </FormControl>
                       </FormItem>
                     )}
@@ -1321,21 +1272,11 @@ export default function ContentBlockEditor({
                         <FormLabel className="text-xs">Text Color</FormLabel>
                         <PaletteSwatches palette={colorPalette} onSelect={(c) => field.onChange(c)} />
                         <FormControl>
-                          <div className="flex gap-2">
-                            <Input
-                              type="color"
-                              value={field.value || "#ffffff"}
-                              onChange={field.onChange}
-                              className="bg-slate-800 border-slate-700 w-10 h-8 p-1"
-                            />
-                            <Input
-                              type="text"
-                              value={field.value || ""}
-                              onChange={field.onChange}
-                              className="bg-slate-800 border-slate-700 text-white text-xs flex-1"
-                              placeholder="#ffffff"
-                            />
-                          </div>
+                          <InlineColorPicker
+                            dark
+                            value={field.value || "#ffffff"}
+                            onChange={field.onChange}
+                          />
                         </FormControl>
                       </FormItem>
                     )}
@@ -1604,21 +1545,11 @@ export default function ContentBlockEditor({
                       <FormLabel>Color</FormLabel>
                       <PaletteSwatches palette={colorPalette} onSelect={(c) => field.onChange(c)} />
                       <FormControl>
-                        <div className="flex gap-2">
-                          <Input
-                            type="color"
-                            value={field.value || "#e2e8f0"}
-                            onChange={field.onChange}
-                            className="bg-slate-800 border-slate-700 w-12 h-8 p-1"
-                          />
-                          <Input
-                            type="text"
-                            value={field.value || ""}
-                            onChange={field.onChange}
-                            className="bg-slate-800 border-slate-700 text-white flex-1"
-                            placeholder="#e2e8f0"
-                          />
-                        </div>
+                        <InlineColorPicker
+                          dark
+                          value={field.value || "#e2e8f0"}
+                          onChange={field.onChange}
+                        />
                       </FormControl>
                     </FormItem>
                   )}
