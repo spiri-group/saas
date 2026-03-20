@@ -122,9 +122,24 @@ export async function POST(req: Request) {
             // remove any %20 or space with a -
             filename = filename.replace(/%20/g, "-").replace(/ /g, "-");
             
-            // we need to also upload as is but in webp format
-            const originalBlobClient = containerClient.getBlockBlobClient(`${req.headers.get("relative_path")}/${filename}.webp`);
-            uploadPromises.push(uploadToBlobStorage(image.webp(), originalBlobClient));
+            // Upload original — respect output header if set, otherwise convert to webp
+            let originalImage;
+            let originalExtension = '.webp';
+            switch(output) {
+              case "image/png":
+                originalImage = image.clone().png();
+                originalExtension = '.png';
+                break;
+              case "image/jpeg":
+                originalImage = image.clone().jpeg();
+                originalExtension = '.jpeg';
+                break;
+              default:
+                originalImage = image.clone().webp();
+                originalExtension = '.webp';
+            }
+            const originalBlobClient = containerClient.getBlockBlobClient(`${req.headers.get("relative_path")}/${filename}${originalExtension}`);
+            uploadPromises.push(uploadToBlobStorage(originalImage, originalBlobClient));
 
             for (const variant of imageVariants) {
               const { width, height, suffix, fit } = variant;

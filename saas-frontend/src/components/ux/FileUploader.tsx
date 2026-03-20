@@ -41,7 +41,8 @@ export type FileUploaderParams = {
     onRemoveAsync?: (files: string[] | string) => void,
     buttonProps?: ButtonProps,
     minimal?: boolean,
-    children?: React.ReactNode
+    children?: React.ReactNode,
+    preserveFormat?: boolean
 }
 
 type imageVariant = {
@@ -224,14 +225,28 @@ const FileUploader : React.FC<FileUploaderParams> = ({includePreview= true, ...p
                     formData.append("files", element)
                 });
 
+                // Determine output format header when preserving original format
+                const uploadHeaders: Record<string, string> = {
+                    container: props.connection.container,
+                    relative_path: props.connection.relative_path,
+                    target: JSON.stringify(props.targetImage),
+                    variants: JSON.stringify(props.targetImageVariants)
+                };
+
+                if (props.preserveFormat && files.length > 0) {
+                    const firstFile = files[0];
+                    const ext = firstFile.name.split(".").pop()?.toLowerCase();
+                    if (ext === "png") {
+                        uploadHeaders.output = "image/png";
+                    } else if (ext === "jpg" || ext === "jpeg") {
+                        uploadHeaders.output = "image/jpeg";
+                    }
+                    // If not png/jpeg, falls through to default (webp)
+                }
+
                 // upload to azure
                 const uploadResponse = await axios.post("/api/azure_upload", formData, {
-                    headers: {
-                        container: props.connection.container,
-                        relative_path: props.connection.relative_path,
-                        target: JSON.stringify(props.targetImage),
-                        variants: JSON.stringify(props.targetImageVariants)
-                    }
+                    headers: uploadHeaders
                 });
                 console.log("Azure upload response:", uploadResponse.data);
 
@@ -246,11 +261,11 @@ const FileUploader : React.FC<FileUploaderParams> = ({includePreview= true, ...p
 
                             let finalFilename = originalFilename.split(".")[0];
 
-                            if (isImage) {
-                                // Convert images to webp
+                            if (isImage && !props.preserveFormat) {
+                                // Convert images to webp (default behavior)
                                 finalFilename = `${finalFilename}.webp`;
                             } else {
-                                // Keep original extension for videos, audio, documents, and other files
+                                // Keep original extension for videos, audio, documents, or when preserveFormat is set
                                 finalFilename = `${finalFilename}.${originalExtension}`;
                             }
 
