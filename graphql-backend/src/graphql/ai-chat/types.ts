@@ -4,6 +4,8 @@ export interface AiConversation {
     createdDate: string;
     updatedDate: string;
     messageCount: number;
+    createdByUserId?: string;
+    createdByEmail?: string;
 }
 
 export interface AiMessage {
@@ -12,4 +14,6 @@ export interface AiMessage {
     role: 'user' | 'assistant';
     content: string;
     createdDate: string;
+    senderUserId?: string;
+    senderEmail?: string;
 }

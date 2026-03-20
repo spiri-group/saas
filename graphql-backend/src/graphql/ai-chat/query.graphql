@@ -4,6 +4,8 @@ type AiConversation {
     createdDate: String!
     updatedDate: String!
     messageCount: Int!
+    createdByUserId: String
+    createdByEmail: String
 }
 
 type AiMessage {
@@ -12,6 +14,8 @@ type AiMessage {
     role: String!
     content: String!
     createdDate: String!
+    senderUserId: String
+    senderEmail: String
 }
 
 type Query {

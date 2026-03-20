@@ -17,6 +17,8 @@ interface ConversationEntity extends TableEntity {
     messageCount: number;
     createdDate: string;
     updatedDate: string;
+    createdByUserId?: string;
+    createdByEmail?: string;
 }
 
 interface MessageEntity extends TableEntity {
@@ -27,6 +29,8 @@ interface MessageEntity extends TableEntity {
     role: string;
     content: string;
     createdDate: string;
+    senderUserId?: string;
+    senderEmail?: string;
 }
 
 // --- Helpers ---
@@ -43,6 +47,8 @@ function entityToConversation(e: ConversationEntity): AiConversation {
         messageCount: e.messageCount ?? 0,
         createdDate: e.createdDate,
         updatedDate: e.updatedDate,
+        createdByUserId: e.createdByUserId || undefined,
+        createdByEmail: e.createdByEmail || undefined,
     };
 }
 
@@ -53,6 +59,8 @@ function entityToMessage(e: MessageEntity): AiMessage {
         role: e.role as 'user' | 'assistant',
         content: e.content,
         createdDate: e.createdDate,
+        senderUserId: e.senderUserId || undefined,
+        senderEmail: e.senderEmail || undefined,
     };
 }
 
@@ -60,7 +68,12 @@ function entityToMessage(e: MessageEntity): AiMessage {
 
 export const AiChatManager = {
 
-    async createConversation(tableStorage: TableStorageDataSource, title: string): Promise<AiConversation> {
+    async createConversation(
+        tableStorage: TableStorageDataSource,
+        title: string,
+        userId?: string | null,
+        userEmail?: string | null
+    ): Promise<AiConversation> {
         const now = DateTime.now();
         const id = uuidv4();
 
@@ -72,6 +85,8 @@ export const AiChatManager = {
             messageCount: 0,
             createdDate: now.toISO()!,
             updatedDate: now.toISO()!,
+            createdByUserId: userId || undefined,
+            createdByEmail: userEmail || undefined,
         };
 
         await tableStorage.createEntity(CONVERSATIONS_TABLE, entity);
@@ -140,7 +155,9 @@ export const AiChatManager = {
         conversationId: string,
         role: 'user' | 'assistant',
         content: string,
-        messageNumber: number
+        messageNumber: number,
+        userId?: string | null,
+        userEmail?: string | null
     ): Promise<AiMessage> {
         const now = DateTime.now();
         const id = uuidv4();
@@ -153,6 +170,8 @@ export const AiChatManager = {
             role,
             content,
             createdDate: now.toISO()!,
+            senderUserId: role === 'user' ? (userId || undefined) : undefined,
+            senderEmail: role === 'user' ? (userEmail || undefined) : undefined,
         };
 
         await tableStorage.createEntity(MESSAGES_TABLE, entity);

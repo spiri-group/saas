@@ -55,6 +55,29 @@ app.http('addUserToGroup', {
     }
 });
 
+// Broadcast an ephemeral event (typing indicators, presence) to a SignalR group
+app.http('aiChatBroadcast', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    extraOutputs: [outputSignalR],
+    handler: async (request, context) => {
+        const body = await request.json() as { target: string; group: string; data: any };
+        const { target, group, data } = body;
+
+        if (!target || !group) {
+            return { status: 400, body: "Missing target or group" };
+        }
+
+        context.extraOutputs.set('signalR', [{
+            target,
+            groupName: group,
+            arguments: [data],
+        }]);
+
+        return { status: 200 };
+    }
+});
+
 // The following function removes a user from a group
 app.http('removeUserFromGroup', {
     methods: ['POST'],
