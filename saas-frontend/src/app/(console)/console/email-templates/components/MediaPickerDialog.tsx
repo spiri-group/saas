@@ -261,6 +261,7 @@ export default function MediaPickerDialog({
                 }}
                 onUploadCompleteAsync={handleUploadComplete}
                 includePreview={true}
+                preserveFormat={true}
                 className="min-h-[200px]"
                 imageClassName="h-[200px]"
               />

@@ -2,6 +2,7 @@ import { serverContext } from "../../services/azFunction";
 import { AiChatManager } from "./manager";
 import { getTierFeatures } from "../subscription/featureGates";
 import { subscription_tier } from "../vendor/types";
+import { DataAction } from "../../services/signalR";
 
 /**
  * Call Anthropic Messages API (Claude Haiku 4.5)
@@ -151,6 +152,7 @@ export const resolvers = {
     Mutation: {
         aiSendMessage: async (_: any, args: { conversationId?: string; message: string }, context: serverContext) => {
             const { tableStorage, vault } = context.dataSources;
+            const { userId, userEmail } = context;
 
             // Get or create conversation
             let conversation;
@@ -168,7 +170,7 @@ export const resolvers = {
                 const title = args.message.length > 50
                     ? args.message.substring(0, 50) + '...'
                     : args.message;
-                conversation = await AiChatManager.createConversation(tableStorage, title);
+                conversation = await AiChatManager.createConversation(tableStorage, title, userId, userEmail);
             }
 
             // Save user message
@@ -178,7 +180,9 @@ export const resolvers = {
                 conversation.id,
                 'user',
                 args.message,
-                messageNumber
+                messageNumber,
+                userId,
+                userEmail
             );
 
             // Build message history for AI (Anthropic format — no system in messages array)
@@ -212,6 +216,23 @@ export const resolvers = {
             // Refresh conversation for updated counts
             const updatedConversation = await AiChatManager.getConversation(tableStorage, conversation.id);
 
+            // Broadcast new messages to other users viewing this conversation
+            const chatGroup = `ai-chat-${conversation.id}`;
+            context.signalR.addDataMessage('ai-chat-message', userMessage, {
+                group: chatGroup,
+                action: DataAction.UPSERT,
+            });
+            context.signalR.addDataMessage('ai-chat-message', replyMessage, {
+                group: chatGroup,
+                action: DataAction.UPSERT,
+            });
+
+            // Broadcast conversation update to the conversation list
+            context.signalR.addDataMessage('ai-chat-conversation', updatedConversation, {
+                group: 'ai-chat-list',
+                action: DataAction.UPSERT,
+            });
+
             return {
                 message: userMessage,
                 reply: replyMessage,
@@ -220,11 +241,25 @@ export const resolvers = {
         },
 
         aiRenameConversation: async (_: any, args: { id: string; title: string }, context: serverContext) => {
-            return AiChatManager.renameConversation(context.dataSources.tableStorage, args.id, args.title);
+            const result = await AiChatManager.renameConversation(context.dataSources.tableStorage, args.id, args.title);
+            if (result) {
+                context.signalR.addDataMessage('ai-chat-conversation', result, {
+                    group: 'ai-chat-list',
+                    action: DataAction.UPSERT,
+                });
+            }
+            return result;
         },
 
         aiDeleteConversation: async (_: any, args: { id: string }, context: serverContext) => {
-            return AiChatManager.deleteConversation(context.dataSources.tableStorage, args.id);
+            const success = await AiChatManager.deleteConversation(context.dataSources.tableStorage, args.id);
+            if (success) {
+                context.signalR.addDataMessage('ai-chat-conversation', { id: args.id }, {
+                    group: 'ai-chat-list',
+                    action: DataAction.DELETE,
+                });
+            }
+            return success;
         },
     },
 };
