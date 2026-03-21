@@ -35,6 +35,7 @@ import UseSendAdHocEmail from "./hooks/UseSendAdHocEmail";
 import UseGenerateAdHocEmail from "./hooks/UseGenerateAdHocEmail";
 import UsePreviewAdHocEmail from "./hooks/UsePreviewAdHocEmail";
 import UseCancelScheduledEmail from "./hooks/UseCancelScheduledEmail";
+import UseRescheduleEmail from "./hooks/UseRescheduleEmail";
 import UseSaveEmailDraft from "./hooks/UseSaveEmailDraft";
 import UseDeleteEmailDraft from "./hooks/UseDeleteEmailDraft";
 
@@ -123,6 +124,12 @@ export default function OutboxManager() {
   // Cancel confirmation
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
 
+  // Reschedule state
+  const [rescheduleEmailId, setRescheduleEmailId] = useState<string | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTime, setRescheduleTime] = useState("");
+  const [rescheduleTimezone, setRescheduleTimezone] = useState("Australia/Sydney");
+
   // Preview state
   const [previewHtml, setPreviewHtml] = useState("");
   const [visualEditing, setVisualEditing] = useState(false);
@@ -147,6 +154,7 @@ export default function OutboxManager() {
   const generateEmail = UseGenerateAdHocEmail();
   const previewEmail = UsePreviewAdHocEmail();
   const cancelEmail = UseCancelScheduledEmail();
+  const rescheduleEmail = UseRescheduleEmail();
   const saveDraft = UseSaveEmailDraft();
   const deleteDraft = UseDeleteEmailDraft();
 
@@ -460,6 +468,56 @@ export default function OutboxManager() {
       toast.error("Failed to cancel email");
     }
     setCancelConfirmId(null);
+  };
+
+  const handleOpenReschedule = (email: SentEmail) => {
+    // Pre-fill with the current scheduled time
+    if (email.scheduledFor) {
+      const d = new Date(email.scheduledFor);
+      const localDate = d.toLocaleDateString("en-CA", { timeZone: rescheduleTimezone }); // YYYY-MM-DD
+      const localTime = d.toLocaleTimeString("en-GB", { timeZone: rescheduleTimezone, hour: "2-digit", minute: "2-digit", hour12: false });
+      setRescheduleDate(localDate);
+      setRescheduleTime(localTime);
+    }
+    setRescheduleEmailId(email.id);
+  };
+
+  const handleRescheduleConfirm = async () => {
+    if (!rescheduleEmailId || !rescheduleDate || !rescheduleTime) {
+      toast.error("Please select a date and time");
+      return;
+    }
+    try {
+      // Same timezone conversion as handleScheduleConfirm
+      const localDateTimeStr = `${rescheduleDate}T${rescheduleTime}:00`;
+      const tempDate = new Date(localDateTimeStr);
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: rescheduleTimezone,
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+      });
+      const parts = formatter.formatToParts(tempDate);
+      const getPart = (type: string) => parts.find((p) => p.type === type)?.value || "00";
+      const nowInTz = new Date(
+        `${getPart("year")}-${getPart("month")}-${getPart("day")}T${getPart("hour")}:${getPart("minute")}:${getPart("second")}`
+      );
+      const offsetMs = tempDate.getTime() - nowInTz.getTime();
+      const scheduledUtc = new Date(new Date(localDateTimeStr).getTime() + offsetMs);
+
+      if (scheduledUtc <= new Date()) {
+        toast.error("Scheduled time must be in the future");
+        return;
+      }
+
+      await rescheduleEmail.mutateAsync({
+        id: rescheduleEmailId,
+        scheduledFor: scheduledUtc.toISOString(),
+      });
+      toast.success("Email rescheduled");
+      setRescheduleEmailId(null);
+    } catch {
+      toast.error("Failed to reschedule email");
+    }
   };
 
   const recipientList = parseRecipients(recipients);
@@ -904,15 +962,25 @@ export default function OutboxManager() {
                                 <Copy className="h-3.5 w-3.5" />
                               </button>
                               {email.emailStatus === "SCHEDULED" && (
-                                <button
-                                  data-testid={`cancel-email-${email.id}`}
-                                  onClick={() => setCancelConfirmId(email.id)}
-                                  disabled={cancelEmail.isPending}
-                                  className="p-1 text-slate-400 hover:text-red-400 transition-colors disabled:opacity-40"
-                                  title="Cancel scheduled email"
-                                >
-                                  <XCircle className="h-3.5 w-3.5" />
-                                </button>
+                                <>
+                                  <button
+                                    data-testid={`reschedule-email-${email.id}`}
+                                    onClick={() => handleOpenReschedule(email)}
+                                    className="p-1 text-slate-400 hover:text-purple-400 transition-colors"
+                                    title="Reschedule email"
+                                  >
+                                    <Clock className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    data-testid={`cancel-email-${email.id}`}
+                                    onClick={() => setCancelConfirmId(email.id)}
+                                    disabled={cancelEmail.isPending}
+                                    className="p-1 text-slate-400 hover:text-red-400 transition-colors disabled:opacity-40"
+                                    title="Cancel scheduled email"
+                                  >
+                                    <XCircle className="h-3.5 w-3.5" />
+                                  </button>
+                                </>
                               )}
                             </>
                           )}
@@ -1100,6 +1168,76 @@ export default function OutboxManager() {
             >
               {cancelEmail.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Cancel Email
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reschedule Dialog */}
+      <Dialog open={!!rescheduleEmailId} onOpenChange={(open) => !open && setRescheduleEmailId(null)}>
+        <DialogContent className="sm:max-w-sm bg-slate-900 border-slate-700 text-slate-200">
+          <DialogHeader>
+            <DialogTitle>Reschedule Email</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Choose a new date and time for this email.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">Date</label>
+              <input
+                data-testid="reschedule-date-input"
+                type="date"
+                value={rescheduleDate}
+                onChange={(e) => setRescheduleDate(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-purple-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">Time</label>
+              <input
+                data-testid="reschedule-time-input"
+                type="time"
+                value={rescheduleTime}
+                onChange={(e) => setRescheduleTime(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-purple-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">Timezone</label>
+              <select
+                data-testid="reschedule-timezone-select"
+                value={rescheduleTimezone}
+                onChange={(e) => setRescheduleTimezone(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-purple-500"
+              >
+                {COMMON_TIMEZONES.map((tz) => (
+                  <option key={tz.value} value={tz.value}>
+                    {tz.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2 sm:gap-2">
+            <button
+              data-testid="cancel-reschedule-btn"
+              onClick={() => setRescheduleEmailId(null)}
+              className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              data-testid="confirm-reschedule-btn"
+              onClick={handleRescheduleConfirm}
+              disabled={rescheduleEmail.isPending}
+              className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-500 disabled:opacity-40 transition-colors flex items-center gap-2"
+            >
+              {rescheduleEmail.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              <Clock className="h-3.5 w-3.5" />
+              Reschedule
             </button>
           </DialogFooter>
         </DialogContent>

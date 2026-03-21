@@ -539,6 +539,48 @@ const resolvers = {
       }
     },
 
+    rescheduleEmail: async (_: any, args: { id: string; scheduledFor: string }, context: serverContext) => {
+      try {
+        const userId = context.userId || 'system';
+
+        const entity = await context.dataSources.tableStorage.getEntity<SentEmailEntity>(
+          SENT_EMAILS_TABLE,
+          userId,
+          args.id
+        );
+
+        if (!entity) {
+          throw new Error('Email not found');
+        }
+
+        if (entity.emailStatus !== 'SCHEDULED') {
+          throw new Error('Only scheduled emails can be rescheduled');
+        }
+
+        const newTime = new Date(args.scheduledFor);
+        if (isNaN(newTime.getTime()) || newTime <= new Date()) {
+          throw new Error('Scheduled time must be in the future');
+        }
+
+        await context.dataSources.tableStorage.updateEntity(SENT_EMAILS_TABLE, {
+          partitionKey: userId,
+          rowKey: args.id,
+          scheduledFor: newTime.toISOString(),
+        });
+
+        const updated = await context.dataSources.tableStorage.getEntity<SentEmailEntity>(
+          SENT_EMAILS_TABLE,
+          userId,
+          args.id
+        );
+
+        return entityToSentEmail(updated!);
+      } catch (error) {
+        console.error(`Failed to reschedule email ${args.id}:`, error);
+        throw error;
+      }
+    },
+
     saveEmailDraft: async (_: any, args: { input: { id?: string; recipients?: string[]; cc?: string[]; bcc?: string[]; subject?: string; bodyHtml?: string } }, context: serverContext) => {
       try {
         const { input } = args;
