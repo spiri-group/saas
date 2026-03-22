@@ -5,7 +5,12 @@ import {
   SendAdHocEmailInput,
   AiMessageInput,
   SENT_EMAILS_TABLE,
+  EMAIL_TRACKING_TABLE,
+  EmailTrackingEntity,
+  EmailTrackingInfo,
   entityToSentEmail,
+  buildTrackingPixelUrl,
+  injectTrackingPixel,
 } from "./adhocTypes";
 import { buildAdHocEmailHtml, buildAdHocEmailHtmlWithDefaults, generateEmailWithAi } from "./adhocEmail";
 import { v4 as uuidv4 } from "uuid";
@@ -449,24 +454,43 @@ const resolvers = {
         const userEmail = context.userEmail || 'system@spiriverse.com';
         const now = new Date().toISOString();
         const id = uuidv4();
+        const host = context.host;
 
         // Build the branded HTML using default header/footer from Cosmos
         const htmlSnapshot = await buildAdHocEmailHtmlWithDefaults(input.bodyHtml, context.dataSources);
 
         const isScheduled = !!input.scheduledFor && new Date(input.scheduledFor) > new Date();
 
-        // If not scheduled, send immediately
+        // Create tracking records for each recipient
+        for (let i = 0; i < input.recipients.length; i++) {
+          const trackingId = `${id}_${i}`;
+          const trackingEntity: EmailTrackingEntity = {
+            partitionKey: id,
+            rowKey: trackingId,
+            recipient: input.recipients[i],
+            sentBy: userId,
+            openCount: 0,
+            createdAt: now,
+          };
+          await context.dataSources.tableStorage.createEntity(EMAIL_TRACKING_TABLE, trackingEntity);
+        }
+
+        // If not scheduled, send immediately with tracking pixels
         if (!isScheduled) {
           const allCc = (input.cc || []).filter(Boolean) as string[];
           const allBcc = (input.bcc || []).filter(Boolean) as string[];
 
           for (let i = 0; i < input.recipients.length; i++) {
+            const trackingId = `${id}_${i}`;
+            const pixelUrl = buildTrackingPixelUrl(host, trackingId);
+            const trackedHtml = injectTrackingPixel(htmlSnapshot, pixelUrl);
+
             // Only include CC/BCC on the first email to avoid duplicates
             await context.dataSources.email.sendRawHtmlEmail(
               'noreply@spiriverse.com',
               input.recipients[i],
               input.subject,
-              htmlSnapshot,
+              trackedHtml,
               i === 0 ? allCc : [],
               i === 0 ? allBcc : []
             );
@@ -482,7 +506,7 @@ const resolvers = {
           }
         }
 
-        // Store in Table Storage
+        // Store in Table Storage (htmlSnapshot without pixel - used for preview/clone)
         const entity: SentEmailEntity = {
           partitionKey: userId,
           rowKey: id,
@@ -497,6 +521,7 @@ const resolvers = {
           scheduledFor: input.scheduledFor || undefined,
           sentAt: isScheduled ? undefined : now,
           createdAt: now,
+          trackingHost: host,
         };
 
         await context.dataSources.tableStorage.createEntity(SENT_EMAILS_TABLE, entity);
@@ -622,7 +647,29 @@ const resolvers = {
         throw error;
       }
     },
-  }
+  },
+
+  SentEmail: {
+    tracking: async (parent: { id: string }, _args: any, context: serverContext): Promise<EmailTrackingInfo[]> => {
+      try {
+        const filter = `PartitionKey eq '${parent.id}'`;
+        const entities = await context.dataSources.tableStorage.queryEntities<EmailTrackingEntity>(
+          EMAIL_TRACKING_TABLE,
+          filter
+        );
+
+        return entities.map((e) => ({
+          recipient: e.recipient || "",
+          openCount: e.openCount || 0,
+          firstOpenedAt: e.firstOpenedAt || undefined,
+          lastOpenedAt: e.lastOpenedAt || undefined,
+        }));
+      } catch {
+        // Table may not exist yet for older emails
+        return [];
+      }
+    },
+  },
 };
 
 export { resolvers };

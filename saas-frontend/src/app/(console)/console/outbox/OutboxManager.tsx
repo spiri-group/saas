@@ -19,6 +19,8 @@ import {
   FileEdit,
   Trash2,
   Pencil,
+  MailOpen,
+  Mail,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -30,7 +32,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import UseSentEmails, { SentEmail } from "./hooks/UseSentEmails";
+import UseSentEmails, { SentEmail, EmailTrackingInfo } from "./hooks/UseSentEmails";
 import UseSendAdHocEmail from "./hooks/UseSendAdHocEmail";
 import UseGenerateAdHocEmail from "./hooks/UseGenerateAdHocEmail";
 import UsePreviewAdHocEmail from "./hooks/UsePreviewAdHocEmail";
@@ -76,6 +78,22 @@ function validateEmails(emails: string[]): { valid: string[]; invalid: string[] 
     }
   }
   return { valid, invalid };
+}
+
+function getTrackingSummary(tracking: EmailTrackingInfo[]): { totalOpens: number; uniqueOpens: number; lastOpenedAt?: string } {
+  let totalOpens = 0;
+  let uniqueOpens = 0;
+  let lastOpenedAt: string | undefined;
+
+  for (const t of tracking) {
+    totalOpens += t.openCount;
+    if (t.openCount > 0) uniqueOpens++;
+    if (t.lastOpenedAt && (!lastOpenedAt || t.lastOpenedAt > lastOpenedAt)) {
+      lastOpenedAt = t.lastOpenedAt;
+    }
+  }
+
+  return { totalOpens, uniqueOpens, lastOpenedAt };
 }
 
 function getStatusBadge(emailStatus: string) {
@@ -901,6 +919,7 @@ export default function OutboxManager() {
                     <th className="text-left px-3 py-2 font-medium w-[200px]">To</th>
                     <th className="text-left px-3 py-2 font-medium">Subject</th>
                     <th className="text-left px-3 py-2 font-medium w-[90px]">Status</th>
+                    <th className="text-center px-3 py-2 font-medium w-[70px]">Read</th>
                     <th className="text-right px-3 py-2 font-medium w-[90px]">Actions</th>
                   </tr>
                 </thead>
@@ -921,6 +940,31 @@ export default function OutboxManager() {
                         {email.subject}
                       </td>
                       <td className="px-3 py-2">{getStatusBadge(email.emailStatus)}</td>
+                      <td className="px-3 py-2 text-center">
+                        {email.emailStatus === "SENT" && email.tracking?.length > 0 ? (
+                          (() => {
+                            const summary = getTrackingSummary(email.tracking);
+                            if (summary.totalOpens > 0) {
+                              return (
+                                <span
+                                  className="inline-flex items-center gap-1 text-emerald-400"
+                                  title={`Opened ${summary.totalOpens} time${summary.totalOpens !== 1 ? "s" : ""} by ${summary.uniqueOpens}/${email.recipients.length} recipient${email.recipients.length !== 1 ? "s" : ""}${summary.lastOpenedAt ? `\nLast opened: ${formatDate(summary.lastOpenedAt)}` : ""}`}
+                                >
+                                  <MailOpen className="h-3.5 w-3.5" />
+                                  <span className="text-xs">{summary.totalOpens}</span>
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="inline-flex items-center text-slate-500" title="Not opened yet">
+                                <Mail className="h-3.5 w-3.5" />
+                              </span>
+                            );
+                          })()
+                        ) : (
+                          <span className="text-slate-600">—</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2">
                         <div className="flex items-center justify-end gap-1">
                           {email.emailStatus === "DRAFT" ? (
@@ -991,7 +1035,7 @@ export default function OutboxManager() {
 
                   {sentEmails.data?.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-3 py-6 text-center text-slate-500 text-xs">
+                      <td colSpan={6} className="px-3 py-6 text-center text-slate-500 text-xs">
                         No emails sent yet
                       </td>
                     </tr>
@@ -999,7 +1043,7 @@ export default function OutboxManager() {
 
                   {sentEmails.isLoading && (
                     <tr>
-                      <td colSpan={5} className="px-3 py-6 text-center">
+                      <td colSpan={6} className="px-3 py-6 text-center">
                         <Loader2 className="h-4 w-4 animate-spin text-slate-400 mx-auto" />
                       </td>
                     </tr>
@@ -1253,6 +1297,53 @@ export default function OutboxManager() {
               {viewEmail?.sentAt ? formatDate(viewEmail.sentAt) : formatDate(viewEmail?.createdAt || "")}
             </DialogDescription>
           </DialogHeader>
+
+          {/* Read Receipts */}
+          {viewEmail?.tracking && viewEmail.tracking.length > 0 && (
+            <div data-testid="view-email-tracking" className="border border-slate-700 rounded-lg p-3 space-y-2">
+              <h4 className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Eye className="h-3.5 w-3.5" />
+                Read Receipts
+              </h4>
+              <div className="space-y-1.5">
+                {viewEmail.tracking.map((t, idx) => {
+                  const hasOpened = t.openCount > 0;
+                  return (
+                    <div
+                      key={idx}
+                      data-testid={`tracking-row-${idx}`}
+                      className="flex items-center justify-between text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        {hasOpened ? (
+                          <MailOpen className="h-3.5 w-3.5 text-emerald-400" />
+                        ) : (
+                          <Mail className="h-3.5 w-3.5 text-slate-500" />
+                        )}
+                        <span className={hasOpened ? "text-slate-200" : "text-slate-500"}>
+                          {t.recipient}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        {hasOpened ? (
+                          <span className="text-emerald-400">
+                            Opened {t.openCount} time{t.openCount !== 1 ? "s" : ""}
+                            {t.lastOpenedAt && (
+                              <span className="text-slate-500 ml-1.5">
+                                · {formatDate(t.lastOpenedAt)}
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-slate-500">Not opened</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="flex-1 overflow-auto">
             {viewEmail?.htmlSnapshot && (

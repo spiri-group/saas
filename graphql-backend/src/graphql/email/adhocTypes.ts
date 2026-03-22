@@ -14,6 +14,25 @@ export interface SentEmailEntity extends TableEntity {
     scheduledFor?: string; // ISO timestamp
     sentAt?: string; // ISO timestamp
     createdAt: string;
+    trackingHost?: string; // Function app host for building tracking pixel URLs
+}
+
+export interface EmailTrackingEntity extends TableEntity {
+    partitionKey: string; // emailId (SentEmail rowKey)
+    rowKey: string; // trackingId: {emailId}_{recipientIndex}
+    recipient: string; // recipient email address
+    sentBy: string; // admin userId
+    openCount: number;
+    firstOpenedAt?: string;
+    lastOpenedAt?: string;
+    createdAt: string;
+}
+
+export interface EmailTrackingInfo {
+    recipient: string;
+    openCount: number;
+    firstOpenedAt?: string;
+    lastOpenedAt?: string;
 }
 
 export interface SentEmail {
@@ -53,6 +72,28 @@ export interface GeneratedEmail {
 }
 
 export const SENT_EMAILS_TABLE = "SentEmails";
+export const EMAIL_TRACKING_TABLE = "EmailTracking";
+
+/**
+ * Build the tracking pixel URL for a given host and tracking ID.
+ */
+export function buildTrackingPixelUrl(host: string, trackingId: string): string {
+    const protocol = host.includes("localhost") ? "http" : "https";
+    return `${protocol}://${host}/api/email-track/${trackingId}`;
+}
+
+/**
+ * Inject a tracking pixel into email HTML just before the closing </body> tag.
+ */
+export function injectTrackingPixel(html: string, pixelUrl: string): string {
+    const pixel = `<img src="${pixelUrl}" width="1" height="1" style="display:none;width:1px;height:1px;border:0;" alt="" />`;
+
+    // Insert before </body> if present, otherwise append
+    if (html.includes("</body>")) {
+        return html.replace("</body>", `${pixel}</body>`);
+    }
+    return html + pixel;
+}
 
 export function entityToSentEmail(entity: SentEmailEntity): SentEmail {
     return {

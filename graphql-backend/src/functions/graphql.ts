@@ -206,7 +206,7 @@ export async function graphql(request: HttpRequest, context: InvocationContext):
     const signalR = new signalRManager();
 
     const contextValue = {
-      userId, userEmail, dataSources, logger, signalR
+      userId, userEmail, host, dataSources, logger, signalR
     }
 
     // Reuse the module-level ApolloServer instance instead of creating a new one
