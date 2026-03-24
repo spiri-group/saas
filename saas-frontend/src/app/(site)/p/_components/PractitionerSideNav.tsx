@@ -29,7 +29,9 @@ import {
     ImageIcon,
     Receipt,
     Radio,
-    Headphones
+    Headphones,
+    PiggyBank,
+    CreditCard,
 } from "lucide-react";
 import { VendorDocType } from "@/utils/spiriverse";
 import CreateReading from "../[practitioner_slug]/(manage)/manage/services/_components/CreateReading";
@@ -50,6 +52,7 @@ import MerchantEventsComponent from "../../m/_components/Events";
 import MerchantGalleryComponent from "../../m/_components/Gallery";
 import MerchantBankingComponent from "../../m/_components/Banking";
 import MerchantCardsComponent from "../../m/_components/Cards";
+import MerchantTaxRegistrations from "../../m/_components/TaxRegistration";
 import SpiriAssistLogo from "@/icons/spiri-assist-logo";
 import { Session } from "next-auth";
 import { isNullOrUndefined } from "@/lib/functions";
@@ -202,12 +205,27 @@ const useBL = (props: BLProps) => {
                 }] : []),
                 {
                     type: "divider" as const,
-                    label: "Settings"
+                    label: "Setup"
                 },
                 {
                     icon: <Clock className="w-5 h-5" />,
                     label: "Availability",
                     href: `/p/${practitionerSlug}/manage/availability`
+                },
+                {
+                    icon: <PiggyBank className="w-5 h-5" />,
+                    label: "Bank",
+                    dialogId: "Bank Accounts"
+                },
+                {
+                    icon: <CreditCard className="w-5 h-5" />,
+                    label: "Cards",
+                    dialogId: "Payment Cards"
+                },
+                {
+                    icon: <FileText className="w-5 h-5" />,
+                    label: "Tax",
+                    dialogId: "Tax Registrations"
                 },
             ] as NavOption[],
         },
@@ -317,6 +335,7 @@ const useBL = (props: BLProps) => {
             // Payment dialogs (opened via CustomEvent from subscription page)
             "Bank Accounts": () => <MerchantBankingComponent merchantId={practitionerId} />,
             "Payment Cards": () => <MerchantCardsComponent merchantId={practitionerId} />,
+            "Tax Registrations": () => <MerchantTaxRegistrations merchantId={practitionerId} />,
             // Shop upgrade dialog for Awaken/Illuminate tiers
             "Shop Upgrade": (onClose) => <ShopUpgradeDialog vendorId={practitionerId} currentTier={tier || 'awaken'} onClose={onClose} />,
             // Feature upgrade dialogs for gated nav items
