@@ -16,6 +16,7 @@ import QuestionBuilder from "@/components/ux/QuestionBuilder";
 import VisuallyHidden from "@/components/ux/VisuallyHidden";
 import { usePractitionerSchedule } from "../../../availability/hooks/UsePractitionerSchedule";
 import ServiceScheduleSelector from "@/components/scheduling/ServiceScheduleSelector";
+import TermsDocumentPicker from "@/components/ux/TermsDocumentPicker";
 import { Monitor, MapPin, AlertTriangle } from "lucide-react";
 
 type BLProps = {
@@ -519,6 +520,13 @@ const CreateReading: React.FC<Props> = (props) => {
                                             )}
                                         />
                                     </div>
+
+                                    <TermsDocumentPicker
+                                        vendorId={props.merchantId}
+                                        value={bl.form.watch("termsDocumentId")}
+                                        onChange={(value) => bl.form.setValue("termsDocumentId", value)}
+                                        dark
+                                    />
                                 </>
                             )}
                         </div>

@@ -31,6 +31,7 @@ export type JourneyListItem = {
         };
         rentalDurationDays?: number;
     };
+    termsDocumentId?: string;
     thumbnail?: {
         image?: {
             media?: {
@@ -71,6 +72,7 @@ const useJourneys = (practitionerId: string) => {
                         intention
                         modalities
                         recommendedTools
+                        termsDocumentId
                         pricing {
                             collectionPrice {
                                 amount

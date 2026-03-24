@@ -37,6 +37,7 @@ interface CreateCoachingOfferSchema {
     bufferMinutes: number;
   };
   questionnaire?: ServiceQuestion[];
+  termsDocumentId?: string;
 }
 
 function mapQuestionnaireFromApi(questions?: ExistingServiceData['questionnaire']): ServiceQuestion[] {
@@ -84,6 +85,7 @@ export const useCreateCoachingOffer = (merchantId: string, editingService?: Exis
         bufferMinutes: 15,
       },
       questionnaire: mapQuestionnaireFromApi(editingService.questionnaire),
+      termsDocumentId: editingService.termsDocumentId,
     } : {
       id: uuidv4(),
       merchantId,
@@ -106,7 +108,8 @@ export const useCreateCoachingOffer = (merchantId: string, editingService?: Exis
         selectedSlotIds: [],
         bufferMinutes: 15,
       },
-      questionnaire: []
+      questionnaire: [],
+      termsDocumentId: undefined,
     }
   });
 
@@ -142,6 +145,7 @@ export const useCreateCoachingOffer = (merchantId: string, editingService?: Exis
           ...(q.description && { description: q.description }),
           ...(q.scaleMax != null && { scaleMax: q.scaleMax }),
         })),
+        termsDocumentId: data.termsDocumentId || null,
         coachingOptions: {
           coachingType: data.coachingType,
           includeJournal: data.includeJournal,

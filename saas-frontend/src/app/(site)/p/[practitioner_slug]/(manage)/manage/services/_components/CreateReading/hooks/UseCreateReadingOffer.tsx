@@ -99,6 +99,7 @@ interface CreateReadingOfferSchema {
     selectedSlotIds: string[];
     bufferMinutes: number;
   };
+  termsDocumentId?: string;
 }
 
 export type ExistingServiceData = {
@@ -145,6 +146,7 @@ export type ExistingServiceData = {
   };
   healingOptions?: any;
   coachingOptions?: any;
+  termsDocumentId?: string;
 };
 
 function mapQuestionnaireFromApi(questions?: ExistingServiceData['questionnaire']): ServiceQuestion[] {
@@ -246,6 +248,7 @@ export const useCreateReadingOffer = (merchantId: string, editingService?: Exist
         selectedSlotIds: [],
         bufferMinutes: 15,
       },
+      termsDocumentId: editingService.termsDocumentId,
     } : {
       id: uuidv4(),
       merchantId,
@@ -276,7 +279,8 @@ export const useCreateReadingOffer = (merchantId: string, editingService?: Exist
         selectedSlotIds: [],
         bufferMinutes: 15,
       },
-      questionnaire: []
+      questionnaire: [],
+      termsDocumentId: undefined,
     }
   });
 
@@ -323,6 +327,7 @@ export const useCreateReadingOffer = (merchantId: string, editingService?: Exist
           ...(q.description && { description: q.description }),
           ...(q.scaleMax != null && { scaleMax: q.scaleMax }),
         })),
+        termsDocumentId: data.termsDocumentId || null,
         readingOptions: {
           readingType: data.readingType,
           includePullCardSummary: data.includePullCardSummary,

@@ -19,6 +19,7 @@ import TargetTimezoneSelector from "@/components/scheduling/TargetTimezoneSelect
 import TimezoneImpactMap from "@/components/scheduling/TimezoneImpactMap";
 import SmartSchedulingRecommendations from "@/components/scheduling/SmartSchedulingRecommendations";
 import { type ExistingServiceData } from "../CreateReading/hooks/UseCreateReadingOffer";
+import TermsDocumentPicker from "@/components/ux/TermsDocumentPicker";
 
 type BLProps = {
     merchantId: string;
@@ -303,6 +304,13 @@ const CreateCoaching: React.FC<Props> = (props) => {
                             )}
                         />
                     </div>
+
+                    <TermsDocumentPicker
+                        vendorId={props.merchantId}
+                        value={bl.form.watch("termsDocumentId")}
+                        onChange={(value) => bl.form.setValue("termsDocumentId", value)}
+                        dark
+                    />
 
                     <div className="space-y-3">
                         <Label>Inclusion Options</Label>

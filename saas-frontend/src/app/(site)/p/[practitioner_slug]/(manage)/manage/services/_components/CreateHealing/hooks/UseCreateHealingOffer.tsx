@@ -37,6 +37,7 @@ interface CreateHealingOfferSchema {
     bufferMinutes: number;
   };
   questionnaire?: ServiceQuestion[];
+  termsDocumentId?: string;
 }
 
 function mapQuestionnaireFromApi(questions?: ExistingServiceData['questionnaire']): ServiceQuestion[] {
@@ -84,6 +85,7 @@ export const useCreateHealingOffer = (merchantId: string, editingService?: Exist
         bufferMinutes: 15,
       },
       questionnaire: mapQuestionnaireFromApi(editingService.questionnaire),
+      termsDocumentId: editingService.termsDocumentId,
     } : {
       id: uuidv4(),
       merchantId,
@@ -106,7 +108,8 @@ export const useCreateHealingOffer = (merchantId: string, editingService?: Exist
         selectedSlotIds: [],
         bufferMinutes: 15,
       },
-      questionnaire: []
+      questionnaire: [],
+      termsDocumentId: undefined,
     }
   });
 
@@ -133,6 +136,7 @@ export const useCreateHealingOffer = (merchantId: string, editingService?: Exist
           selectedSlotIds: data.scheduleConfig.useAllSlots ? [] : data.scheduleConfig.selectedSlotIds,
           bufferMinutes: data.scheduleConfig.bufferMinutes,
         } : undefined,
+        termsDocumentId: data.termsDocumentId || null,
         questionnaire: (data.questionnaire || []).map(q => ({
           id: q.id,
           question: q.question,
