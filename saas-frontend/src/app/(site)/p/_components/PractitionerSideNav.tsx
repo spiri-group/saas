@@ -203,10 +203,14 @@ const useBL = (props: BLProps) => {
                     dialogId: "Manage Events",
                     className: "w-[1000px] max-w-[95vw] h-[850px]"
                 }] : []),
-                {
-                    type: "divider" as const,
-                    label: "Setup"
-                },
+            ] as NavOption[],
+        },
+        {
+            label: "Setup",
+            icon: <Settings className="w-5 h-5" />,
+            testId: "nav-setup",
+            description: "Banking, Availability, Tax",
+            navOptions: [
                 {
                     icon: <Clock className="w-5 h-5" />,
                     label: "Availability",
