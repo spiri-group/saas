@@ -141,6 +141,15 @@ const resolvers = {
                 }
             }
 
+            // Fetch vendor name for checkout display
+            let vendorName: string | undefined;
+            try {
+                const vendor = await context.dataSources.cosmos.get_record<any>("Main-Vendor", service.vendorId, service.vendorId);
+                vendorName = vendor?.name;
+            } catch (e) {
+                // Vendor lookup is best-effort; don't block adding to cart
+            }
+
             const cartItem = {
                 id: uuidv4(),
                 itemType: "SERVICE",
@@ -164,7 +173,10 @@ const resolvers = {
                     currency: currency
                 },
                 // Track featuring source for revenue share (if applicable)
-                featuringSource: featuringSource
+                featuringSource: featuringSource,
+                // Terms & vendor info for checkout consent
+                termsDocumentId: service.termsDocumentId || null,
+                vendorName: vendorName || null
             };
 
             const operations: PatchOperation[] = [{
@@ -215,6 +227,15 @@ const resolvers = {
             const price = isRental ? journey.pricing.rentalPrice : journey.pricing.collectionPrice;
             const rentalDays = isRental ? (journey.pricing.rentalDurationDays || 30) : undefined;
 
+            // Fetch vendor name for checkout display
+            let vendorName: string | undefined;
+            try {
+                const vendor = await context.dataSources.cosmos.get_record<any>("Main-Vendor", journey.vendorId, journey.vendorId);
+                vendorName = vendor?.name;
+            } catch (e) {
+                // Vendor lookup is best-effort; don't block adding to cart
+            }
+
             const cartItem = {
                 id: uuidv4(),
                 itemType: "JOURNEY",
@@ -236,7 +257,10 @@ const resolvers = {
                 price: {
                     amount: price.amount,
                     currency: price.currency
-                }
+                },
+                // Terms & vendor info for checkout consent
+                termsDocumentId: journey.termsDocumentId || null,
+                vendorName: vendorName || null
             };
 
             const operations: PatchOperation[] = [{

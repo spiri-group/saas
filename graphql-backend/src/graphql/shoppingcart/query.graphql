@@ -33,4 +33,8 @@ type ShoppingCartItem {
     # Journey-specific fields
     purchaseType: String
     rentalDurationDays: Int
+
+    # Terms & vendor info for checkout consent
+    termsDocumentId: ID
+    vendorName: String
 }

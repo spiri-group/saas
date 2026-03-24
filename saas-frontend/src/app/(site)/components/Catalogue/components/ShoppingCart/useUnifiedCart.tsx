@@ -59,6 +59,10 @@ export type CartItem = {
     purchaseType?: string;
     rentalDurationDays?: number;
 
+    // Terms & vendor info for checkout consent
+    termsDocumentId?: string;
+    vendorName?: string;
+
     // Sync status (local only, not persisted to backend)
     _pendingSync?: boolean;
     _localOnly?: boolean;
@@ -238,6 +242,8 @@ async function fetchCart(): Promise<ShoppingCart> {
                     selectedAddOns
                     purchaseType
                     rentalDurationDays
+                    termsDocumentId
+                    vendorName
                 }
             }
         }
@@ -279,6 +285,8 @@ async function addProductToCartMutation(input: AddProductInput) {
                         variantId
                         isService
                         serviceId
+                        termsDocumentId
+                        vendorName
                     }
                 }
             }
@@ -354,6 +362,8 @@ async function addServiceToCartMutation(input: AddServiceInput) {
                             answer
                         }
                         selectedAddOns
+                        termsDocumentId
+                        vendorName
                     }
                 }
             }
@@ -396,6 +406,8 @@ async function addJourneyToCartMutation(input: { journeyId: string; purchaseType
                             partition
                             container
                         }
+                        termsDocumentId
+                        vendorName
                     }
                 }
             }
