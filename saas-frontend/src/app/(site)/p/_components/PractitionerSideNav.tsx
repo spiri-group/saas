@@ -212,12 +212,6 @@ const useBL = (props: BLProps) => {
             ] as NavOption[],
         },
         ...(features.canSellServices ? [{
-            label: "Services",
-            icon: <BookOpen className="w-5 h-5" />,
-            testId: "nav-services",
-            href: `/p/${practitionerSlug}/manage/services`,
-        }] as NavOption[] : [] as NavOption[]),
-        ...(features.canSellServices ? [{
             label: "Journeys",
             icon: <Headphones className="w-5 h-5" />,
             testId: "nav-journeys",
