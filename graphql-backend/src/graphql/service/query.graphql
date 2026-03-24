@@ -24,6 +24,7 @@ type Service  {
   duration: TimeSpan
   thumbnail: Thumbnail
   terms: String
+  termsDocumentId: ID
   faq: [FAQ]
   ratePerHour: CurrencyAmount
   availableUntil: AvailableUntil

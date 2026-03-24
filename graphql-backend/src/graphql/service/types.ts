@@ -100,6 +100,7 @@ export type service_type = {
     type: string,
     description: string,
     terms: string,
+    termsDocumentId?: string,
     faq: faq_type[]
     thumbnail: thumbnail_type
     ref: recordref_type

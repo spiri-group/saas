@@ -23,6 +23,7 @@ input CreateJourneyInput {
   recommendedTools: [String]
   pricing: JourneyPricingInput!
   previewTrackId: String
+  termsDocumentId: ID
 }
 
 input UpdateJourneyInput {
@@ -40,6 +41,7 @@ input UpdateJourneyInput {
   pricing: JourneyPricingInput
   previewTrackId: String
   isLive: Boolean
+  termsDocumentId: ID
 }
 
 input JourneyPricingInput {

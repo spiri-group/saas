@@ -140,6 +140,19 @@ const resolvers = {
 
             return policy;
         },
+        termsAndConditions: async(_: any, { merchantId }: any, context: serverContext) => {
+            protect_via_merchant_access(context.dataSources.cosmos, context.userId, merchantId);
+
+            return await context.dataSources.cosmos.run_query("Main-VendorSettings", {
+                query: `SELECT * FROM c WHERE c.vendorId = @merchantId AND c.type = 'TERMS_AND_CONDITIONS'`,
+                parameters: [{ name: "@merchantId", value: merchantId }]
+            })
+        },
+        publicTermsDocument: async(_: any, { vendorId, documentId }: any, context: serverContext) => {
+            const doc = await context.dataSources.cosmos.get_record<any>("Main-VendorSettings", documentId, vendorId);
+            if (!doc || doc.type !== 'TERMS_AND_CONDITIONS') return null;
+            return doc;
+        },
         serviceCancellationPolicies: async(_: any, { merchantId, serviceCategory }: any, context: serverContext) => {
             protect_via_merchant_access(context.dataSources.cosmos, context.userId, merchantId);
 
@@ -2159,6 +2172,81 @@ const resolvers = {
             return {
                 code: "200",
                 message: `Service cancellation policy ${args.policyId} successfully deleted`,
+                success: true
+            }
+        },
+        upsert_terms_and_conditions: async (_: any, args: any, context: serverContext) => {
+            if (context.userId == null) throw "User must be present for this call";
+
+            const merchantId = args.merchantId;
+            await protect_via_merchant_access(context.dataSources.cosmos, context.userId, merchantId);
+
+            const documents = args.documents.map((doc) => ({
+                ...doc,
+                type: "TERMS_AND_CONDITIONS",
+                vendorId: merchantId,
+                updatedDate: DateTime.now().toISO()
+            }));
+
+            // If any document is marked as default, unset isDefault on all others first
+            const hasNewDefault = documents.some((d) => d.isDefault);
+            if (hasNewDefault) {
+                const existingDocs = await context.dataSources.cosmos.run_query("Main-VendorSettings", {
+                    query: "SELECT * FROM c WHERE c.vendorId = @merchantId AND c.type = 'TERMS_AND_CONDITIONS' AND c.isDefault = true",
+                    parameters: [{ name: "@merchantId", value: merchantId }]
+                }, true);
+
+                for (const existing of existingDocs) {
+                    // Only unset if it's not in the incoming batch (which will be set correctly)
+                    if (!documents.some((d) => d.id === existing.id)) {
+                        await context.dataSources.cosmos.update_record("Main-VendorSettings", existing.id, merchantId, { ...existing, isDefault: false }, context.userId);
+                    }
+                }
+            }
+
+            // Check which documents exist already
+            const existingIds = await context.dataSources.cosmos.run_query("Main-VendorSettings", {
+                query: "SELECT VALUE c.id FROM c WHERE c.vendorId = @merchantId AND c.type = 'TERMS_AND_CONDITIONS'",
+                parameters: [{ name: "@merchantId", value: merchantId }]
+            }, true);
+
+            for (const doc of documents) {
+                if (!doc.createdDate) doc.createdDate = DateTime.now().toISO();
+                if (existingIds.includes(doc.id)) {
+                    await context.dataSources.cosmos.update_record("Main-VendorSettings", doc.id, merchantId, doc, context.userId);
+                } else {
+                    await context.dataSources.cosmos.add_record("Main-VendorSettings", doc, merchantId, context.userId);
+                }
+            }
+
+            return {
+                code: "200",
+                success: true,
+                message: `Terms and conditions for vendor ${merchantId} successfully updated`,
+                documents: await context.dataSources.cosmos.run_query("Main-VendorSettings", {
+                    query: "SELECT * FROM c WHERE c.vendorId = @merchantId AND c.type = 'TERMS_AND_CONDITIONS'",
+                    parameters: [{ name: "@merchantId", value: merchantId }]
+                }, false)
+            }
+        },
+        delete_terms_and_conditions: async (_: any, args: { documentId: string, merchantId: string }, context: serverContext) => {
+            protect_via_merchant_access(context.dataSources.cosmos, context.userId, args.merchantId);
+
+            // Check if T&C is attached to any services or journeys
+            const serviceRefs = await context.dataSources.cosmos.run_query("Main-Listing", {
+                query: "SELECT VALUE c.id FROM c WHERE c.termsDocumentId = @docId",
+                parameters: [{ name: "@docId", value: args.documentId }]
+            }, true);
+
+            if (serviceRefs.length > 0) {
+                await context.dataSources.cosmos.delete_record("Main-VendorSettings", args.documentId, args.merchantId, context.userId);
+            } else {
+                await context.dataSources.cosmos.purge_record("Main-VendorSettings", args.documentId, args.merchantId);
+            }
+
+            return {
+                code: "200",
+                message: `Terms and conditions document ${args.documentId} successfully deleted`,
                 success: true
             }
         },

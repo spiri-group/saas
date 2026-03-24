@@ -20,6 +20,7 @@ export type journey_type = {
     thumbnail: thumbnail_type
     ref: recordref_type
     isLive: boolean
+    termsDocumentId?: string
 
     // Journey-specific fields
     journeyStructure: JourneyStructure
