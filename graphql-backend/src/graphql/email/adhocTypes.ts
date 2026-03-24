@@ -10,7 +10,7 @@ export interface SentEmailEntity extends TableEntity {
     subject: string;
     bodyHtml: string; // Raw body HTML for cloning
     htmlSnapshot: string; // Full branded HTML as sent
-    emailStatus: "DRAFT" | "SCHEDULED" | "SENT" | "FAILED" | "CANCELLED";
+    emailStatus: "DRAFT" | "SCHEDULED" | "SENT" | "FAILED" | "CANCELLED" | "EXTERNAL";
     scheduledFor?: string; // ISO timestamp
     sentAt?: string; // ISO timestamp
     createdAt: string;
