@@ -259,7 +259,7 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
                             key={tier.tier}
                             className={cn(
                                 'transition-all',
-                                isGrayscale && 'grayscale opacity-50 hover:grayscale-0 hover:opacity-100 cursor-pointer',
+                                isGrayscale && selectedTier !== tier.tier && 'grayscale opacity-50 hover:grayscale-0 hover:opacity-100',
                             )}
                         >
                             <TierCard
@@ -267,7 +267,6 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
                                 billingInterval={selectedInterval}
                                 selected={selectedTier === tier.tier}
                                 onSelect={handleTierChange}
-                                disabled={isGrayscale}
                             />
                         </div>
                     );
@@ -375,7 +374,7 @@ function MobileTierCarousel({
                                 <div
                                     className={cn(
                                         'transition-all h-full',
-                                        isGrayscale && 'grayscale opacity-50',
+                                        isGrayscale && selectedTier !== tier.tier && 'grayscale opacity-50',
                                     )}
                                 >
                                     <TierCard
@@ -383,7 +382,6 @@ function MobileTierCarousel({
                                         billingInterval={selectedInterval}
                                         selected={selectedTier === tier.tier}
                                         onSelect={handleSelect}
-                                        disabled={isGrayscale}
                                     />
                                 </div>
                             </CarouselItem>
