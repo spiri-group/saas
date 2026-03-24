@@ -32,6 +32,7 @@ import {
     Headphones,
     PiggyBank,
     CreditCard,
+    FileCheck,
 } from "lucide-react";
 import { VendorDocType } from "@/utils/spiriverse";
 import CreateReading from "../[practitioner_slug]/(manage)/manage/services/_components/CreateReading";
@@ -53,6 +54,7 @@ import MerchantGalleryComponent from "../../m/_components/Gallery";
 import MerchantBankingComponent from "../../m/_components/Banking";
 import MerchantCardsComponent from "../../m/_components/Cards";
 import MerchantTaxRegistrations from "../../m/_components/TaxRegistration";
+import TermsAndConditionsManager from "./TermsAndConditions";
 import SpiriAssistLogo from "@/icons/spiri-assist-logo";
 import { Session } from "next-auth";
 import { isNullOrUndefined } from "@/lib/functions";
@@ -231,6 +233,12 @@ const useBL = (props: BLProps) => {
                     label: "Tax",
                     dialogId: "Tax Registrations"
                 },
+                {
+                    icon: <FileCheck className="w-5 h-5" />,
+                    label: "Terms & Conditions",
+                    dialogId: "Terms & Conditions",
+                    className: "w-[700px] max-w-[95vw]"
+                },
             ] as NavOption[],
         },
         ...(features.canSellServices ? [{
@@ -340,6 +348,7 @@ const useBL = (props: BLProps) => {
             "Bank Accounts": () => <MerchantBankingComponent merchantId={practitionerId} />,
             "Payment Cards": () => <MerchantCardsComponent merchantId={practitionerId} />,
             "Tax Registrations": () => <MerchantTaxRegistrations merchantId={practitionerId} />,
+            "Terms & Conditions": () => <TermsAndConditionsManager practitionerId={practitionerId} />,
             // Shop upgrade dialog for Awaken/Illuminate tiers
             "Shop Upgrade": (onClose) => <ShopUpgradeDialog vendorId={practitionerId} currentTier={tier || 'awaken'} onClose={onClose} />,
             // Feature upgrade dialogs for gated nav items
