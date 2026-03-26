@@ -173,7 +173,7 @@ const CustomerPurchases: React.FC<Props> = (props) => {
                                                     <span>
                                                         Ordered: {DateTime.fromISO(order.createdDate).toLocaleString({ weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                                                     </span>
-                                                    <div className="flex-grow bg-slate-50 rounded-xl p-3">
+                                                    <div className="flex-grow bg-slate-800/50 rounded-xl p-3">
                                                         <span className={cn("font-semibold text-slate-500 mb-3 text-sm py-2")}>Item Summary</span>
                                                         <p className="line-clamp-3 text-sm">
                                                         {Array

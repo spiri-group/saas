@@ -248,7 +248,7 @@ const ViewCaseOffer : React.FC<Props> = (props) => {
                                                         </HoverCard>
                                                     )}
                                                 </div>
-                                                <div className="leading-6 p-3 bg-slate-50 text-sm flex-grow rounded-md overflow-y-auto">
+                                                <div className="leading-6 p-3 bg-slate-800/50 text-sm flex-grow rounded-md overflow-y-auto">
                                                     <p className="prose" dangerouslySetInnerHTML={{ __html: props.caseOffer.description }} />
                                                 </div>
                                             </div>
@@ -320,7 +320,7 @@ const ViewCaseOffer : React.FC<Props> = (props) => {
                                 />
                         </div>
                         {props.caseOffer.type === "RELEASE" && 
-                        <p className="p-3 bg-slate-50 rounded-xl text-sm">After this offer has been paid its case will go back into the available help requests and be open for applications from new investigators.</p>}
+                        <p className="p-3 bg-slate-800/50 rounded-xl text-sm">After this offer has been paid its case will go back into the available help requests and be open for applications from new investigators.</p>}
                         {props.caseOffer.clientRequested && !props.caseOffer.merchantResponded && (
                             <Button variant="destructive"> Cancel request </Button>
                         )}

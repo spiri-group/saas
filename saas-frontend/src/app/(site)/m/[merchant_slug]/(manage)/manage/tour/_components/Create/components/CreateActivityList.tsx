@@ -156,7 +156,7 @@ const CreateActivityList: React.FC<Props> = (props) => {
                         { ai != currentList.activities.length - 1 && (
                             <div style={{ position: "relative" }}>
                                 <Separator orientation="vertical" className="h-12" />
-                                <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)" }} className="w-8 h-8 cursor-pointer rounded-full bg-white border border-slate-300 flex items-center justify-center">
+                                <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)" }} className="w-8 h-8 cursor-pointer rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center">
                                     <PlusIcon className="text-slate-800" height={25} />
                                 </div>
                             </div>

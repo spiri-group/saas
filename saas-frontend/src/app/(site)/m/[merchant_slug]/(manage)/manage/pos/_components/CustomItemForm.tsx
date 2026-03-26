@@ -56,7 +56,8 @@ const CustomItemForm = ({ currency, onAdd, onClose }: Props) => {
           placeholder="Item name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="flex-1 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 text-sm h-8 focus:border-purple-500 focus:ring-purple-500/20"
+          dark
+          className="flex-1 text-sm h-8 focus:border-purple-500 focus:ring-purple-500/20"
         />
         <Input
           data-testid="pos-custom-item-price"
@@ -66,7 +67,8 @@ const CustomItemForm = ({ currency, onAdd, onClose }: Props) => {
           placeholder="Price"
           value={priceStr}
           onChange={(e) => setPriceStr(e.target.value)}
-          className="w-24 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 text-sm h-8 focus:border-purple-500 focus:ring-purple-500/20"
+          dark
+          className="w-24 text-sm h-8 focus:border-purple-500 focus:ring-purple-500/20"
         />
         <Button
           type="submit"

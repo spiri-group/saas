@@ -85,16 +85,16 @@ function getCategoryIcon(category: string) {
     }
 }
 
-function getCategoryColor(category: string) {
+function getCategoryVariant(category: string): 'info' | 'success' | 'warning' | 'secondary' {
     switch (category) {
         case 'READING':
-            return 'bg-purple-900/30 text-purple-400';
+            return 'info';
         case 'HEALING':
-            return 'bg-green-900/30 text-green-400';
+            return 'success';
         case 'COACHING':
-            return 'bg-blue-900/30 text-blue-400';
+            return 'warning';
         default:
-            return 'bg-slate-700 text-slate-300';
+            return 'secondary';
     }
 }
 
@@ -120,7 +120,7 @@ function BookingCard({ booking, onConfirm, onReject, onCancel, showActions = fal
                 <div className="flex items-start justify-between">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <Badge className="bg-purple-900/30 text-purple-400 text-xs">
+                            <Badge variant="info" dark className="text-xs">
                                 <Video className="w-3 h-3 mr-1" />
                                 Live Session
                             </Badge>
@@ -142,7 +142,7 @@ function BookingCard({ booking, onConfirm, onReject, onCancel, showActions = fal
                             </Badge>
                         )}
                         {booking.confirmationStatus === 'CONFIRMED' && (
-                            <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
+                            <Badge variant="success" dark>
                                 <CheckCircle className="w-3 h-3 mr-1" />
                                 Confirmed
                             </Badge>
@@ -278,7 +278,7 @@ function OrderCard({ order, onOpen }: { order: any; onOpen: () => void }) {
                 <div className="flex items-start justify-between">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <Badge className={getCategoryColor(order.service.category) + ' text-xs'}>
+                            <Badge variant={getCategoryVariant(order.service.category)} dark className="text-xs">
                                 <div className="flex items-center gap-1">
                                     {getCategoryIcon(order.service.category)}
                                     {order.service.category.charAt(0) + order.service.category.slice(1).toLowerCase()}
@@ -302,7 +302,7 @@ function OrderCard({ order, onOpen }: { order: any; onOpen: () => void }) {
                             <Badge variant="destructive" className="text-xs">Overdue</Badge>
                         )}
                         {isDelivered && (
-                            <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
+                            <Badge variant="success" dark>
                                 <CheckCircle className="w-3 h-3 mr-1" />
                                 Sent
                             </Badge>
@@ -540,7 +540,7 @@ export default function PractitionerBookingsUI({ session, practitionerId, slug }
                         >
                             Completed
                             {completedCount > 0 && (
-                                <Badge className="ml-2 bg-green-500/20 text-green-300 border-green-500/30 text-xs">
+                                <Badge variant="success" dark className="ml-2 text-xs">
                                     {completedCount}
                                 </Badge>
                             )}

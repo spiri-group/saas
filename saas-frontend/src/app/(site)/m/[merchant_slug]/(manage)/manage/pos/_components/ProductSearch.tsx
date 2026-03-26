@@ -56,7 +56,8 @@ const ProductSearch = ({ value, onChange, onBarcodeScan }: Props) => {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="pl-9 pr-9 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-purple-500 focus:ring-purple-500/20"
+        dark
+        className="pl-9 pr-9 focus:border-purple-500 focus:ring-purple-500/20"
       />
       {value ? (
         <button

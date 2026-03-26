@@ -42,7 +42,7 @@ const CreateCommentCase : React.FC<Props> = (props) => {
             <Form {...bl.form}>
                 <form onSubmit={bl.form.handleSubmit(bl.submit)} className="flex flex-col space-y-2">
                     <FormLabel className="text-xl"> Capture an internal team note </FormLabel>  
-                    <FormDescription>Please know that this <span className="font-bold text-black">won&apos;t</span> be shown to the client</FormDescription>
+                    <FormDescription>Please know that this <span className="font-bold text-white">won&apos;t</span> be shown to the client</FormDescription>
                     <FormField
                         name="title"
                         control={bl.form.control}
