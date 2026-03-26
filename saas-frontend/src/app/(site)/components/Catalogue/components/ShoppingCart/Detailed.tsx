@@ -397,14 +397,14 @@ const ShoppingCart = () => {
 
                         {/* Cart Summary */}
                         {isNullOrUndefined(bl.summary) ? (
-                            <div className="flex flex-col bg-gray-50 p-4 animate-pulse w-full rounded-lg mb-2">
+                            <div className="flex flex-col bg-gray-50 p-4 animate-pulse w-full rounded-lg mb-2" data-testid="cart-summary-loading">
                                 <span className="flex-grow">Quantity</span>
                                 <span className="flex-grow">Subtotal</span>
                                 <span className="flex-grow">Fees</span>
                                 <span className="flex-grow">Total</span>
                             </div>
                         ) : (
-                            <div className="flex flex-col w-full p-4 bg-slate-100 rounded-lg mb-2">
+                            <div className="flex flex-col w-full p-4 bg-slate-100 rounded-lg mb-2" data-testid="cart-summary">
                                 <div className="flex flex-row w-full">
                                     <span className="flex-grow">Quantity</span>
                                     <span className="flex-grow text-right">{bl.summary.quantity}</span>

@@ -42,13 +42,16 @@ export class PractitionerSetupPage extends BasePage {
     await expect(container).toBeVisible({ timeout: 15000 });
     console.log('[PractitionerSetup] Handling onboarding consent...');
 
+    // Scope to the desktop layout to avoid matching hidden mobile elements
+    const desktop = this.page.locator('[data-testid="onboarding-consent-desktop"]');
+
     for (let step = 0; step < 10; step++) {
-      const checkbox = this.page.locator('[data-testid^="consent-checkbox-"]').first();
+      const checkbox = desktop.locator('[data-testid^="consent-checkbox-"]').first();
       await expect(checkbox).toBeVisible({ timeout: 5000 });
       await checkbox.click();
 
       // Final step → Accept & Continue
-      const acceptBtn = this.page.locator('[data-testid="onboarding-consent-accept-btn"]');
+      const acceptBtn = desktop.locator('[data-testid="onboarding-consent-accept-btn"]');
       if (await acceptBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
         await expect(acceptBtn).toBeEnabled({ timeout: 3000 });
         await acceptBtn.click();
@@ -59,7 +62,7 @@ export class PractitionerSetupPage extends BasePage {
       }
 
       // Not final → Next
-      const nextBtn = this.page.locator('[data-testid="onboarding-consent-next-btn"]');
+      const nextBtn = desktop.locator('[data-testid="onboarding-consent-next-btn"]');
       await expect(nextBtn).toBeEnabled({ timeout: 3000 });
       await nextBtn.click();
       await this.page.waitForTimeout(500);
@@ -216,7 +219,7 @@ export class PractitionerSetupPage extends BasePage {
 
     // Directory auto-selects and advances; others show tier cards
     if (pathOption !== 'directory') {
-      const tierCard = this.page.locator(`[data-testid="tier-card-${tier}"]`);
+      const tierCard = this.page.locator('[data-testid="plan-cards-grid"]').locator(`[data-testid="tier-card-${tier}"]`);
       await expect(tierCard).toBeVisible({ timeout: 10000 });
       await tierCard.click();
 
@@ -225,10 +228,7 @@ export class PractitionerSetupPage extends BasePage {
       await planContinueBtn.click();
     }
 
-    // ── Step 6: OnboardingConsent → accept terms ──
-    await this.handleOnboardingConsent();
-
-    // ── Step 7: PractitionerProfileStep → fill profile ──
+    // ── Step 6: PractitionerProfileStep → fill profile ──
     await this.fillPractitionerProfile({
       name: practitionerName,
       slug: practitionerSlug,
@@ -240,7 +240,7 @@ export class PractitionerSetupPage extends BasePage {
     await expect(profileContinueBtn).toBeEnabled({ timeout: 5000 });
     await profileContinueBtn.click();
 
-    // ── Step 8: PractitionerOptionalStep → fill optional details and submit ──
+    // ── Step 7: PractitionerOptionalStep → fill optional details and submit ──
     await expect(this.page.locator('[data-testid="setup-practitioner-pronouns"]')).toBeVisible({ timeout: 10000 });
     await this.fillPractitionerOptional({
       pronouns: 'she/her',
@@ -255,11 +255,14 @@ export class PractitionerSetupPage extends BasePage {
     await expect(submitBtn).toBeEnabled({ timeout: 5000 });
     await submitBtn.click();
 
-    // ── Step 9: CardCaptureStep → skip card capture ──
+    // ── Step 8: CardCaptureStep → skip card capture ──
     const skipCardBtn = this.page.locator('[data-testid="card-capture-skip-btn"]');
     await expect(skipCardBtn).toBeVisible({ timeout: 30000 });
     await skipCardBtn.click();
     console.log('[PractitionerSetup] Skipped card capture');
+
+    // ── Step 9: OnboardingConsent → accept terms ──
+    await this.handleOnboardingConsent();
 
     // Wait for redirect to practitioner profile page
     await this.page.waitForURL(new RegExp(`/p/${practitionerSlug}`), { timeout: 30000 });
@@ -374,7 +377,7 @@ export class PractitionerSetupPage extends BasePage {
 
     // Directory auto-selects and advances; others show tier cards
     if (pathOption !== 'directory') {
-      const tierCard = this.page.locator(`[data-testid="tier-card-${tier}"]`);
+      const tierCard = this.page.locator('[data-testid="plan-cards-grid"]').locator(`[data-testid="tier-card-${tier}"]`);
       await expect(tierCard).toBeVisible({ timeout: 10000 });
       await tierCard.click();
 
@@ -383,10 +386,7 @@ export class PractitionerSetupPage extends BasePage {
       await planContinueBtn.click();
     }
 
-    // ── Step 6: OnboardingConsent → accept terms ──
-    await this.handleOnboardingConsent();
-
-    // ── Step 7: PractitionerProfileStep → fill profile ──
+    // ── Step 6: PractitionerProfileStep → fill profile ──
     await this.fillPractitionerProfile({
       name: practitionerName,
       slug: practitionerSlug,
@@ -398,7 +398,7 @@ export class PractitionerSetupPage extends BasePage {
     await expect(profileContinueBtn).toBeEnabled({ timeout: 5000 });
     await profileContinueBtn.click();
 
-    // ── Step 8: PractitionerOptionalStep → fill optional details and submit ──
+    // ── Step 7: PractitionerOptionalStep → fill optional details and submit ──
     await expect(this.page.locator('[data-testid="setup-practitioner-pronouns"]')).toBeVisible({ timeout: 10000 });
     await this.fillPractitionerOptional({
       pronouns: 'she/her',

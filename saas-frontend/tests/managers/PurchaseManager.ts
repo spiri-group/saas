@@ -115,6 +115,11 @@ export class PurchaseManager {
     // Dismiss cookie banner if present (it intercepts checkout button clicks)
     await this.dismissCookieBanner();
 
+    // Wait for cart summary to finish loading (estimate GQL query)
+    const cartSummary = this.page.getByTestId('cart-summary');
+    await expect(cartSummary).toBeVisible({ timeout: 30000 });
+    console.log('[PurchaseManager] Cart summary loaded');
+
     // Wait for checkout button (may show "Checkout", "Loading payment ...", or "Error")
     const checkoutBtn = this.page.getByTestId('checkout-btn');
     await expect(checkoutBtn).toBeVisible({ timeout: 10000 });
@@ -127,7 +132,19 @@ export class PurchaseManager {
 
     // Wait for idle state (shows "Checkout")
     await expect(checkoutBtn).toHaveText('Checkout', { timeout: 10000 });
-    await expect(checkoutBtn).toBeEnabled({ timeout: 5000 });
+
+    // Accept any vendor terms consent checkboxes if present (they load async via GraphQL)
+    const termsCheckbox = this.page.getByTestId('terms-consent-checkbox').first();
+    if (await termsCheckbox.isVisible({ timeout: 3000 }).catch(() => false)) {
+      const termsCheckboxes = this.page.getByTestId('terms-consent-checkbox');
+      const termsCount = await termsCheckboxes.count();
+      for (let i = 0; i < termsCount; i++) {
+        await termsCheckboxes.nth(i).locator('input[type="checkbox"]').check();
+        console.log(`[PurchaseManager] Accepted vendor terms (${i + 1}/${termsCount})`);
+      }
+    }
+
+    await expect(checkoutBtn).toBeEnabled({ timeout: 10000 });
     await checkoutBtn.click();
     console.log('[PurchaseManager] Clicked checkout button');
 

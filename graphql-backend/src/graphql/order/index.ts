@@ -2666,8 +2666,8 @@ export const restore_price_on_line = (line: orderLine_type) => {
 
 export const restore_price_on_lines = (lines: orderLine_type[]) => {
     if (lines.length === 0) return; // no lines to restore
-    // we restore the price on each line
-    if (lines.some(line => isNullOrUndefined(line.price_log) || line.price_log.length === 0)) {
+    // we restore the price on each line — skip lines that already have price set (e.g. from cart estimates)
+    if (lines.some(line => isNullOrUndefined(line.price) && (isNullOrUndefined(line.price_log) || line.price_log.length === 0))) {
         throw new Error("Price log is not available on all lines, cannot restore price");
     }
 
