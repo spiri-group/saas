@@ -85,69 +85,71 @@ const Locations : React.FC<Props> = (props) => {
                 </div>
             </PopoverTrigger>
             <PopoverContent>
-                <Panel>
+                <Panel dark>
                     <Form {...bl.form}>
-                        <ul className="flex flex-col p-3 space-y-3">
-                            <li>
-                                <Button 
-                                    type="button"
-                                    onClick={() => {
-                                        bl.form.reset({
-                                            locations: [...locations, { id: uuid(), title: undefined, address: undefined }]
-                                        })
-                                    }}>
-                                        Add location
-                                </Button>
-                            </li>
-                            {locations.map((location, index) => {
-                                return (
-                                    <li key={location.id} className="flex flex-row space-x-3">
-                                        <Button variant="link" type="button" onClick={() => {
+                        <form onSubmit={(e) => e.preventDefault()}>
+                            <ul className="flex flex-col p-3 space-y-3">
+                                <li>
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
                                             bl.form.reset({
-                                                locations: locations.filter((_, i) => i != index)
+                                                locations: [...locations, { id: uuid(), title: undefined, address: undefined }]
                                             })
-                                        }} className="flex-none w-12">
-                                            <Trash2Icon height={14} />
-                                        </Button>
-                                        <FormField
-                                            name={`locations.${index}.title`}
-                                            control={bl.form.control}
-                                            render={({field}) => (
-                                                <FormItem className="flex-none w-32">
-                                                    <FormControl>
-                                                        <Input {...field} value={field.value ?? ""} placeholder="Enter title" />
-                                                    </FormControl>
-                                                </FormItem>
-                                            )} />
-                                        <FormField
-                                            name={`locations.${index}.address`}
-                                            control={bl.form.control}
-                                            render={({field}) => (
-                                                <FormItem className="flex flex-col flex-grow">
-                                                    <FormControl>
-                                                        <AddressInput 
-                                                            {...field} 
-                                                            placeholder="Enter address" />
-                                                    </FormControl>
-                                                </FormItem>
-                                            )} />
-                                    </li>   
-                                )
-                            })}
-                        </ul>
-                        <div className="flex flex-row items-center space-x-3">
-                            <CancelDialogButton />
-                            <Button className="flex-grow" type="button"
-                                onClick={() => {
-                                    bl.form.trigger().then((isValid) => {
-                                        if (isValid) {
-                                            bl.save(bl.values)
-                                        }
-                                    }, (reason) => {
-                                        console.log(reason)
-                                    })
-                                }}>Confirm</Button>
-                        </div>
+                                        }}>
+                                            Add location
+                                    </Button>
+                                </li>
+                                {locations.map((location, index) => {
+                                    return (
+                                        <li key={location.id} className="flex flex-row space-x-3">
+                                            <Button variant="link" type="button" onClick={() => {
+                                                bl.form.reset({
+                                                    locations: locations.filter((_, i) => i != index)
+                                                })
+                                            }} className="flex-none w-12">
+                                                <Trash2Icon height={14} />
+                                            </Button>
+                                            <FormField
+                                                name={`locations.${index}.title`}
+                                                control={bl.form.control}
+                                                render={({field}) => (
+                                                    <FormItem className="flex-none w-32">
+                                                        <FormControl>
+                                                            <Input dark {...field} value={field.value ?? ""} placeholder="Enter title" />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )} />
+                                            <FormField
+                                                name={`locations.${index}.address`}
+                                                control={bl.form.control}
+                                                render={({field}) => (
+                                                    <FormItem className="flex flex-col flex-grow">
+                                                        <FormControl>
+                                                            <AddressInput
+                                                                {...field}
+                                                                placeholder="Enter address" />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )} />
+                                        </li>
+                                    )
+                                })}
+                            </ul>
+                            <div className="flex flex-row items-center space-x-3">
+                                <CancelDialogButton />
+                                <Button className="flex-grow" type="button"
+                                    onClick={() => {
+                                        bl.form.trigger().then((isValid) => {
+                                            if (isValid) {
+                                                bl.save(bl.form.getValues())
+                                            }
+                                        }, (reason) => {
+                                            console.log(reason)
+                                        })
+                                    }}>Confirm</Button>
+                            </div>
+                        </form>
                     </Form>
                 </Panel>
             </PopoverContent>
