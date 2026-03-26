@@ -18,7 +18,7 @@ const SocialFeed : React.FC<Props> = (props) => {
     if (socialPosts.isLoading || socialPosts.data == null) return <div></div>
 
     if (socialPosts.data.length == 0) return (
-        <Panel key={"socialFeed-NoItems"} className={cn("", props.className)}>
+        <Panel dark key={"socialFeed-NoItems"} className={cn("", props.className)}>
             <></>
         </Panel>
     )
@@ -28,7 +28,7 @@ const SocialFeed : React.FC<Props> = (props) => {
             <ul className={cn("", props.className)}>
                 {
                     socialPosts.data.map((post) => (
-                        <Panel key={post.id} className=" mt-2">
+                        <Panel dark key={post.id} className=" mt-2">
                             <SocialPost socialPost={post} />
                         </Panel>
                     ))

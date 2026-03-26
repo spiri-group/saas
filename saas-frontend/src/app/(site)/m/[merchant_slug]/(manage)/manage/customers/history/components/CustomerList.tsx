@@ -42,7 +42,7 @@ const CustomerList: React.FC<Props> = (props) => {
     })
 
     return (
-        <Panel className="flex-grow">
+        <Panel dark className="flex-grow">
             <h1 className="text-xl font-bold mb-3">Your Customers</h1>
             {bl.customerLists.isLoading ? (
                 <span className="text-xs">Loading...</span>

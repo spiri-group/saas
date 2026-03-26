@@ -354,7 +354,7 @@ const SessionOnBooking : React.FC = () => {
 
             <div className="flex flex-col lg:flex-row gap-2 flex-grow">
                 {/* Bookings panel */}
-                <Panel className="flex-grow">
+                <Panel dark className="flex-grow">
                     {bl.allBookings.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground" data-testid="no-bookings-empty-state">
                             <Users className="w-10 h-10 mb-3 opacity-40" />
@@ -592,7 +592,7 @@ const SessionOnBooking : React.FC = () => {
 
                 {/* Chat panel — only shows when a customer is selected, collapsible */}
                 {bl.showChat && bl.selectedOrderRef.get != null && (
-                    <Panel className="lg:w-2/5 lg:max-w-md">
+                    <Panel dark className="lg:w-2/5 lg:max-w-md">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium">Customer Chat</span>
                             <Button

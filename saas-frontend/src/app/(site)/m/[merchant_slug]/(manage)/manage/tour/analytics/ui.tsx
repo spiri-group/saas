@@ -277,7 +277,7 @@ const LoadingSkeleton: React.FC = () => {
 
             {/* Charts Skeleton */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Panel>
+                <Panel dark>
                     <PanelHeader>
                         <div className="h-5 bg-slate-200 rounded w-32" />
                     </PanelHeader>
@@ -287,7 +287,7 @@ const LoadingSkeleton: React.FC = () => {
                         ))}
                     </div>
                 </Panel>
-                <Panel>
+                <Panel dark>
                     <PanelHeader>
                         <div className="h-5 bg-slate-200 rounded w-32" />
                     </PanelHeader>
@@ -422,7 +422,7 @@ const UI: React.FC<Props> = (props) => {
                     {/* Charts Section */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Top Tours */}
-                        <Panel>
+                        <Panel dark>
                             <PanelHeader>
                                 <PanelTitle>Top Tours</PanelTitle>
                                 <PanelDescription>
@@ -438,7 +438,7 @@ const UI: React.FC<Props> = (props) => {
                         </Panel>
 
                         {/* Booking Status Breakdown */}
-                        <Panel>
+                        <Panel dark>
                             <PanelHeader>
                                 <PanelTitle>Booking Status</PanelTitle>
                                 <PanelDescription>
@@ -456,7 +456,7 @@ const UI: React.FC<Props> = (props) => {
 
                     {/* Empty State */}
                     {bl.analytics.totalBookings === 0 && (
-                        <Panel className="text-center py-12">
+                        <Panel dark className="text-center py-12">
                             <div className="flex flex-col items-center gap-4">
                                 <div className="p-4 rounded-full bg-slate-100">
                                     <BarChart3 className="w-8 h-8 text-muted-foreground" />

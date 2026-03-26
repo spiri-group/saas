@@ -67,7 +67,7 @@ const CaseDetails : React.FC<Props> = (props) => {
 
     return (  
         <>
-            <Panel style={props.style} className={cn("flex flex-col", props.className)}>
+            <Panel dark style={props.style} className={cn("flex flex-col", props.className)}>
                 <PanelHeader className="flex flex-row">
                     <PanelTitle> Details </PanelTitle>
                 </PanelHeader>

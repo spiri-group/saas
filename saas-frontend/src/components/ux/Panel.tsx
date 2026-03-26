@@ -49,9 +49,15 @@ const PanelContent: React.FC<{children: ReactNode, className?:string}> = (props)
     )
 }
 
-const Panel: React.FC<{id?: string, children?: ReactNode, className?: string, style?: CSSProperties}> = (props) => {
+const Panel: React.FC<{id?: string, children?: ReactNode, className?: string, style?: CSSProperties, dark?: boolean}> = (props) => {
     return (
-        <div id={props.id} style={{...props.style}} className={cn("rounded-xl bg-panel text-panel-foreground border border-slate-100 p-3 drop-shadow-lg ", props.className)}>
+        <div id={props.id} style={{...props.style}} className={cn(
+            "rounded-xl p-3 drop-shadow-lg",
+            props.dark
+                ? "bg-slate-800/60 text-white border border-slate-700/50"
+                : "bg-panel text-panel-foreground border border-slate-100",
+            props.className
+        )}>
            {props.children}
         </div>
     )

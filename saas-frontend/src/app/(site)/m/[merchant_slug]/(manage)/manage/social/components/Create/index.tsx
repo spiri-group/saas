@@ -290,7 +290,7 @@ const CreateSocialPost : React.FC = () => {
                         <Button className="mt-auto w-full" type="submit">Post</Button>
                     </form>
                 </Form>
-                <Panel className="mx-3 mt-3">
+                <Panel dark className="mx-3 mt-3">
                     <SocialPostPreview form={bl.form} />
                 </Panel>
             </div>

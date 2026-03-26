@@ -58,7 +58,7 @@ const AssignedCases : React.FC<Props> = (props) => {
     const [caseStatus, setCaseStatus] = useState(true);
 
   return (
-        <Panel className={cn("flex flex-col", props.className)}>
+        <Panel dark className={cn("flex flex-col", props.className)}>
             <PanelHeader>
                 <PanelTitle>My Cases</PanelTitle>
             </PanelHeader>
@@ -74,7 +74,7 @@ const AssignedCases : React.FC<Props> = (props) => {
                 : bl.assignedCases.get?.filter(c => c.caseStatus === 'CLOSED')
                 )?.map(assignedCase => (
                     <li key={assignedCase.id}>
-                        <Panel className="flex flex-col">
+                        <Panel dark className="flex flex-col">
                         <div className="flex flex-row items-center justify-between">
                             <span data-testid={`assigned-case-code-${assignedCase.code}`}> Case {assignedCase.code} </span>
                             <CaseStatusBadge status={assignedCase.caseStatus}>{assignedCase.caseStatus}</CaseStatusBadge>

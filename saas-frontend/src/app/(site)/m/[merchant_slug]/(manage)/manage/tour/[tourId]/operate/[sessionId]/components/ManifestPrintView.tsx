@@ -180,7 +180,7 @@ const ManifestPrintView: React.FC<Props> = ({ sessionRef, merchantId, tourId, se
 
     return (
         <div className="space-y-4">
-            <Panel>
+            <Panel dark>
                 <PanelHeader>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <div>

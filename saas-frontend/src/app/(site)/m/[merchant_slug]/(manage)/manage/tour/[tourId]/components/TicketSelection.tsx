@@ -100,7 +100,7 @@ const TicketSelectionComponent: React.FC<Props> = (props) => {
 
                 return (
                     <CarouselItem key={sidx} className="flex-none min-w-1/2 md:min-w-1/3 flex flex-col space-y-2">
-                        <Panel className="w-full h-full">
+                        <Panel dark className="w-full h-full">
                             <div className="flex flex-row space-x-1 items-center">
                                 <HoverCard>
                                     <HoverCardTrigger asChild>

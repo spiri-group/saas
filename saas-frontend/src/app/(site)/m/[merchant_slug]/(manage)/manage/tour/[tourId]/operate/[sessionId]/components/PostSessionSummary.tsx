@@ -72,7 +72,7 @@ const PostSessionSummary: React.FC<Props> = ({ sessionRef }) => {
 
     return (
         <div className="space-y-4" data-testid="post-session-summary">
-            <Panel>
+            <Panel dark>
                 <PanelHeader>
                     <PanelTitle as="h2">Session Summary</PanelTitle>
                 </PanelHeader>

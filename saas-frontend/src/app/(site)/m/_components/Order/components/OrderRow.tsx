@@ -96,20 +96,20 @@ const OrderRow : React.FC<Props> = (props) => {
                             }}>Pay now</Button>
                         ) : (
                             <div className="ml-auto">
-                                <PaidStatusBadge status={props.order.paid_status} />
+                                <PaidStatusBadge status={props.order.paid_status} dark={props.page !== 'trackCase'} />
                             </div>
                         ) : (
                         props.order.paid_status === 'AWAITING_PAYMENT' ? (
                             <Button variant="default" className="ml-auto">Send payment link</Button>
                         ) : (
                             <div className="ml-auto">
-                                <PaidStatusBadge status={props.order.paid_status} />
+                                <PaidStatusBadge status={props.order.paid_status} dark={props.page !== 'trackCase'} />
                             </div>
                         )
                     )}
                     {["PAID", "PARTIAL_REFUND"].includes(props.order.paid_status) && (
                         <div className="flex flex-col space-y-2">
-                            { props.page === 'case' &&   
+                            { props.page === 'case' &&
                                 <Button variant="link" onClick={() => bl.selectedOrderForRefund.set(props.order)}>
                                     Refund
                                 </Button>
@@ -142,12 +142,12 @@ const OrderRow : React.FC<Props> = (props) => {
                 </CardContent>
             </Card>
             <Dialog open={bl.selectedOrderForRefund.get != null} onOpenChange={() => bl.selectedOrderForRefund.set(null)}>
-                {bl.selectedOrderForRefund.get != null && 
+                {bl.selectedOrderForRefund.get != null &&
                     <RefundOrderForm order={bl.selectedOrderForRefund.get}/>
                 }
             </Dialog>
             </div>
-            <div className="block md:hidden"> 
+            <div className="block md:hidden">
                 <div className="block flex flex-col space-y-2 border-2 border-black p-2 rounded-md md:hidden">
                     <div className="flex flex-row space-x-2">
                         <span>{props.order.code}</span>
@@ -209,7 +209,7 @@ const OrderRow : React.FC<Props> = (props) => {
                             <Button variant="default" className="ml-auto">Send payment link</Button>
                         ) : (
                             <div className="ml-auto">
-                                <PaidStatusBadge status={props.order.paid_status} />
+                                <PaidStatusBadge status={props.order.paid_status} dark />
                             </div>
                         )
                     )}
@@ -242,7 +242,7 @@ const OrderRow : React.FC<Props> = (props) => {
                                     <Button variant="default" className="ml-auto">Send payment link</Button>
                                 ) : (
                                     <div className="ml-auto">
-                                        <PaidStatusBadge status={props.order.paid_status} />
+                                        <PaidStatusBadge status={props.order.paid_status} dark />
                                     </div>
                                 )
                             )}

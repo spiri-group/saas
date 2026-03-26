@@ -64,7 +64,7 @@ const UI : React.FC = () => {
     return (
         <>
             <OfflineBanner />
-            <Panel className="flex flex-row md:flex-col">
+            <Panel dark className="flex flex-row md:flex-col">
                 <PanelHeader className="text-sm md:text-base">Operate Mode</PanelHeader>
                 <BookingInfoHeader />
             </Panel>

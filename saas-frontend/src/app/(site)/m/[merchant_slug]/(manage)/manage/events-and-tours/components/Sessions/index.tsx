@@ -58,7 +58,7 @@ const SessionsComponent : React.FC<SessionsProps> = ({ merchantId, canOperate = 
     return (
         <div className="flex-grow flex flex-col h-0 md:h-auto">
             { !bl.sessions.isLoading && <SessionsSummaryComponent thresholds={thresholds} /> }
-            <Panel className="flex flex-col flex-grow h-0 md:h-auto">
+            <Panel dark className="flex flex-col flex-grow h-0 md:h-auto">
                 <PanelHeader>Sessions</PanelHeader>
                 <PanelContent className="overflow-y-auto flex-grow">
                     {bl.sessions.isLoading ? (<span className="text-sm text-slate-400"> Loading sessions... </span>) : <></>}

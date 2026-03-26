@@ -70,7 +70,7 @@ const InvoiceRow : React.FC<Props> = (props) => {
                             }}> Pay now</Button>
                         ) : (
                             <div className="ml-auto">
-                                <PaidStatusBadge status={props.invoice.paid_status} />
+                                <PaidStatusBadge status={props.invoice.paid_status} dark />
                             </div>
                             
                         ) : (
@@ -78,7 +78,7 @@ const InvoiceRow : React.FC<Props> = (props) => {
                             <Button variant="default" className="ml-auto">Send payment link</Button>
                         ) : (
                             <div className="ml-auto">
-                                <PaidStatusBadge status={props.invoice.paid_status} />
+                                <PaidStatusBadge status={props.invoice.paid_status} dark />
                             </div>
                         )
                     )}

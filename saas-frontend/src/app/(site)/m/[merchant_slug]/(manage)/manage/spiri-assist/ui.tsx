@@ -138,7 +138,7 @@ const UI : React.FC<Props> = (props) => {
                         className="flex-grow my-2"
                         caseId={bl.selectedCaseRef.get.id}
                         merchantId={bl.merchantId} /> :
-                    <Panel className="flex-grow my-2" >
+                    <Panel dark className="flex-grow my-2" >
                         <PanelHeader>
                             <PanelTitle> Details </PanelTitle>
                         </PanelHeader>

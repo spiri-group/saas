@@ -134,7 +134,7 @@ const ViewCaseOffer : React.FC<Props> = (props) => {
                                                 }
                                             </p>
                                             {!payment_required && (
-                                                <p className="text-gray-500">No payment required</p>
+                                                <p className="text-slate-400">No payment required</p>
                                             )}
                                             </div>
                                             <div className="ml-auto">
@@ -227,12 +227,12 @@ const ViewCaseOffer : React.FC<Props> = (props) => {
                                         <>
                                             <div className="hidden md:flex flex-col min-h-0 space-y-2">
                                                 <div className="flex flex-row justify-between" aria-label="case-offer-code">
-                                                    <span className="text-sm text-slate-600">Offer {props.caseOffer.code}</span>
+                                                    <span className="text-sm text-slate-400">Offer {props.caseOffer.code}</span>
                                                     {props.caseOffer.order && props.caseOffer.order.paymentSummary.due && (
                                                         <HoverCard>
                                                             <HoverCardTrigger className="flex flex-row space-x-1 items-center">
                                                                 <CurrencySpan value={props.caseOffer.order.paymentSummary.due.total} />
-                                                                <HelpCircleIcon className="w-5 h-5 text-slate-600" />
+                                                                <HelpCircleIcon className="w-5 h-5 text-slate-400" />
                                                             </HoverCardTrigger>
                                                             <HoverCardContent>
                                                             <div className="flex flex-row space-x-2">
