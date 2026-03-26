@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { BookOpen, Sparkles, Heart, MessageCircle, Plus, Trash2, Pencil, Clock, DollarSign, Tag, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import PractitionerSideNav from "../../../../_components/PractitionerSideNav";
 import usePractitionerServices, { PractitionerService } from "./_hooks/UsePractitionerServices";
 import { usePractitionerSchedule } from "../availability/hooks/UsePractitionerSchedule";
 import useDeleteService from "./_hooks/UseDeleteService";
@@ -261,14 +260,8 @@ export default function PractitionerServicesUI({ session, practitionerId, slug }
     const handleCloseEdit = () => setEditingService(null);
 
     return (
-        <div className="flex min-h-full">
-            <PractitionerSideNav
-                session={session}
-                practitionerId={practitionerId}
-                practitionerSlug={slug}
-            />
-
-            <div className="flex-1 md:ml-[200px] p-4 md:p-6">
+        <>
+        <div className="p-4 md:p-6">
                 <div className="w-full">
                     {/* Header */}
                     <div className="mb-8">
@@ -411,6 +404,6 @@ export default function PractitionerServicesUI({ session, practitionerId, slug }
                     isDeleting={deleteMutation.isPending}
                 />
             )}
-        </div>
+        </>
     );
 }

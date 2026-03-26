@@ -12,7 +12,6 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import PractitionerSideNav from "../../../../_components/PractitionerSideNav";
 import { usePractitionerSchedule, PractitionerWeekday, DeliveryMethodsConfig } from "./hooks/UsePractitionerSchedule";
 import { useUpdatePractitionerSchedule } from "./hooks/UseUpdatePractitionerSchedule";
 import DateOverridesSection from "./components/DateOverridesSection";
@@ -195,20 +194,14 @@ export default function PractitionerAvailabilityUI({ session, practitionerId, sl
 
     if (isLoading) {
         return (
-            <div className="flex min-h-full">
-                <PractitionerSideNav session={session} practitionerId={practitionerId} practitionerSlug={slug} />
-                <div className="flex-1 md:ml-[200px] p-4 md:p-6 flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
-                </div>
+            <div className="p-4 md:p-6 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
             </div>
         );
     }
 
     return (
-        <div className="flex min-h-full">
-            <PractitionerSideNav session={session} practitionerId={practitionerId} practitionerSlug={slug} />
-
-            <div className="flex-1 md:ml-[200px] p-4 md:p-6">
+            <div className="p-4 md:p-6">
                     {/* Header */}
                     <div className="mb-8 flex items-center justify-between">
                         <div>
@@ -623,6 +616,5 @@ export default function PractitionerAvailabilityUI({ session, practitionerId, sl
                         </TabsContent>
                 </Tabs>
             </div>
-        </div>
     );
 }

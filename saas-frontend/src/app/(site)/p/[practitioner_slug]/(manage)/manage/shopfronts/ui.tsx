@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Session } from "next-auth";
-import PractitionerSideNav from "../../../../_components/PractitionerSideNav";
 import { useLinkedShopfronts, useLinkShopfront, useUnlinkShopfront } from "./_hooks/useLinkedShopfronts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,14 +59,7 @@ export default function PractitionerShopfrontsUI({ session, practitionerId, slug
     };
 
     return (
-        <div className="flex min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-950">
-            <PractitionerSideNav
-                session={session}
-                practitionerId={practitionerId}
-                practitionerSlug={slug}
-            />
-
-            <main className="flex-1 p-6 md:p-8">
+            <main className="p-6 md:p-8">
                 <div className="w-full space-y-6">
                     {/* Header */}
                     <div className="flex items-center justify-between">
@@ -277,6 +269,5 @@ export default function PractitionerShopfrontsUI({ session, practitionerId, slug
                     </Card>
                 </div>
             </main>
-        </div>
     );
 }

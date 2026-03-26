@@ -11,7 +11,6 @@ import { useTierFeatures } from "@/hooks/UseTierFeatures";
 import { useRouter } from "next/navigation";
 import SpiriAssistLogo from "@/icons/spiri-assist-logo";
 import { Search, Shield, MessageSquare, ArrowRight } from "lucide-react";
-import PractitionerSideNav from "../../../../_components/PractitionerSideNav";
 import { Session } from "next-auth";
 
 type Props = {
@@ -117,29 +116,12 @@ const UI: React.FC<Props> = (props) => {
 
     if (!features.hasSpiriAssist) {
         return (
-            <div className="flex min-h-full">
-                <PractitionerSideNav
-                session={props.session}
-                practitionerId={props.merchantId}
-                practitionerSlug={props.practitionerSlug}
-            />
-                <div className="flex-1 md:ml-[200px]">
-                    <SpiriAssistLockedPreview practitionerSlug={props.practitionerSlug} />
-                </div>
-            </div>
+            <SpiriAssistLockedPreview practitionerSlug={props.practitionerSlug} />
         );
     }
 
     return (
-        <div className="flex min-h-full">
-            {session && (
-                <PractitionerSideNav
-                    session={session}
-                    practitionerId={props.merchantId}
-                    practitionerSlug={props.practitionerSlug}
-                />
-            )}
-            <div className="flex-1 md:ml-[200px]">
+            <div>
                 <div className="flex flex-row h-screen-minus-nav space-x-2 mr-2">
                     <AvailableCases
                         className={"w-[300px] my-2"}
@@ -172,7 +154,6 @@ const UI: React.FC<Props> = (props) => {
                     </div>
                 </div>
             </div>
-        </div>
     )
 }
 

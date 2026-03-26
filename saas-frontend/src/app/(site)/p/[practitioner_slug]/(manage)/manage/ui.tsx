@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Heart, MessageCircle, Receipt, Radio, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import UIContainer from "@/components/uicontainer";
-import PractitionerSideNav from "../../../_components/PractitionerSideNav";
 import WelcomeHeader from "./_components/WelcomeHeader";
 import StatsCards from "./_components/StatsCards";
 import NeedsAttention from "./_components/NeedsAttention";
@@ -89,14 +88,7 @@ export default function PractitionerDashboard({ session, practitionerId, slug, p
 
     return (
         <UIContainer me={session.user}>
-            <div className="flex min-h-full">
-                <PractitionerSideNav
-                    session={session}
-                    practitionerId={practitionerId}
-                    practitionerSlug={slug}
-                />
-
-                <div className="flex-1 md:ml-[200px] p-4 md:p-6 overflow-auto">
+                <div className="p-4 md:p-6 overflow-auto">
                     <div className="w-full">
                         <WelcomeHeader practitionerName={practitionerName} />
 
@@ -195,7 +187,6 @@ export default function PractitionerDashboard({ session, practitionerId, slug, p
                         />
                     </div>
                 </div>
-            </div>
 
             <>
                 {features.hasPaymentLinks && (

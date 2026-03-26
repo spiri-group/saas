@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Session } from "next-auth";
-import PractitionerSideNav from "../../../../_components/PractitionerSideNav";
 import { usePractitionerTestimonials, useCreateTestimonialRequest, useDeleteTestimonial, usePinTestimonials } from "./_hooks/UseTestimonials";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,16 +107,7 @@ export default function PractitionerTestimonialsUI({ session, practitionerId, sl
     };
 
     return (
-        <div className="flex min-h-full">
-            {/* Sidebar */}
-            <PractitionerSideNav
-                session={session}
-                practitionerId={practitionerId}
-                practitionerSlug={slug}
-            />
-
-            {/* Main Content */}
-            <div className="flex-1 md:ml-[200px] p-8">
+            <div className="p-8">
                 <div className="w-full">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-8">
@@ -341,6 +331,5 @@ export default function PractitionerTestimonialsUI({ session, practitionerId, sl
                     </div>
                 </div>
             </div>
-        </div>
     );
 }

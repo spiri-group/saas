@@ -15,7 +15,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import CurrencySpan from "@/components/ux/CurrencySpan";
 import { Calendar, Clock, Video, MapPin, Car, CheckCircle, XCircle, Loader2, AlertCircle, User, Mail, DollarSign, MessageSquare, Ban, Package, Sparkles, Heart, MessageCircle, Eye } from "lucide-react";
 import { format } from 'date-fns';
-import PractitionerSideNav from "../../../../_components/PractitionerSideNav";
 import { usePendingBookings, ScheduledBooking } from "./hooks/UsePendingBookings";
 import { useUpcomingBookings } from "./hooks/UseUpcomingBookings";
 import { useConfirmBooking } from "./hooks/UseConfirmBooking";
@@ -487,14 +486,8 @@ export default function PractitionerBookingsUI({ session, practitionerId, slug }
     const isLoading = loadingPending || loadingUpcoming || loadingPaid || loadingInProgress || loadingDelivered;
 
     return (
-        <div className="flex min-h-full">
-            <PractitionerSideNav
-                session={session}
-                practitionerId={practitionerId}
-                practitionerSlug={slug}
-            />
-
-            <div className="flex-1 md:ml-[200px] p-4 md:p-6">
+        <>
+        <div className="p-4 md:p-6">
                 <div className="mb-8">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 rounded-lg bg-purple-500/20">
@@ -933,6 +926,6 @@ export default function PractitionerBookingsUI({ session, practitionerId, slug }
                     onSuccess={handleFulfillmentSuccess}
                 />
             )}
-        </div>
+        </>
     );
 }

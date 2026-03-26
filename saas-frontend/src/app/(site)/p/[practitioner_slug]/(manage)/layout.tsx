@@ -2,12 +2,15 @@
 
 import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import UseMerchantIdFromSlug from '../../../m/_hooks/UseMerchantIdFromSlug';
 import TrialBanner from '@/components/TrialBanner';
 import TrialExpiredDialog from '@/components/TrialExpiredDialog';
+import PractitionerSideNav from '../../_components/PractitionerSideNav';
 
 export default function PractitionerManageLayout({ children }: { children: React.ReactNode }) {
     const params = useParams<{ practitioner_slug: string }>();
+    const { data: session } = useSession();
     const { data: slugData } = UseMerchantIdFromSlug(params.practitioner_slug);
     const practitionerId = slugData?.merchantId;
 
@@ -51,7 +54,18 @@ export default function PractitionerManageLayout({ children }: { children: React
         <div className="min-h-screen bg-slate-900">
             {practitionerId && <TrialBanner vendorId={practitionerId} />}
             {practitionerId && <TrialExpiredDialog vendorId={practitionerId} />}
-            {children}
+            <div className="flex min-h-full">
+                {session && practitionerId && (
+                    <PractitionerSideNav
+                        session={session}
+                        practitionerId={practitionerId}
+                        practitionerSlug={params.practitioner_slug}
+                    />
+                )}
+                <div className="flex-1 md:ml-[200px]">
+                    {children}
+                </div>
+            </div>
         </div>
     );
 }
