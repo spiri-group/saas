@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import useFormStatus from "@/components/utils/UseFormStatus"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CircleHelpIcon, SettingsIcon, ZapIcon, MoreHorizontalIcon } from "lucide-react"
+import { ChevronLeftIcon, CircleHelpIcon, SettingsIcon, ZapIcon, MoreHorizontalIcon } from "lucide-react"
 import { BASE_THEMES, getBaseThemeById, getThemeSchemeById } from "./constants/themePacks"
 import { Switch } from "@/components/ui/switch"
 
@@ -163,8 +163,16 @@ const MerchantBrandingComponent : React.FC<Props> = (props) => {
 
     return (
         <TooltipProvider>
-        <div className="fixed left-0 rounded-r-xl p-3 mt-2 w-[200px] bg-slate-800 text-white border-r border-slate-700 min-h-full">
-            <h2 className="mb-3 text-sm">Your branding</h2>
+        <div className="fixed left-0 rounded-r-xl p-3 mt-2 w-[200px] bg-slate-800 text-white border-r border-slate-700 min-h-full overflow-y-auto max-h-[calc(100vh-5rem)]">
+            <button
+                type="button"
+                onClick={props.close}
+                className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors mb-3"
+            >
+                <ChevronLeftIcon className="h-4 w-4" />
+                Back to menu
+            </button>
+            <h2 className="mb-3 text-sm font-bold">Your branding</h2>
             { bl.hasLoaded && 
                 <Form {...bl.form}>
                     <form onSubmit={bl.form.handleSubmit(bl.submit)}>
