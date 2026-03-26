@@ -205,30 +205,34 @@ const MerchantBrandingComponent : React.FC<Props> = (props) => {
                                         <FormLabel className="text-sm font-bold">UI Scheme</FormLabel>
                                         <FormControl>
                                             <div className="flex space-x-2">
-                                                <Button
+                                                <button
                                                     type="button"
-                                                    variant={field.value === 'light' ? 'default' : 'outline'}
-                                                    size="sm"
-                                                    className="flex-1"
+                                                    className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                                                        field.value === 'light'
+                                                            ? 'bg-purple-600 text-white'
+                                                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                                    }`}
                                                     onClick={() => {
                                                         field.onChange('light');
                                                         bl.applyTheme(currentTheme, 'light');
                                                     }}
                                                 >
                                                     Light
-                                                </Button>
-                                                <Button
+                                                </button>
+                                                <button
                                                     type="button"
-                                                    variant={field.value === 'dark' ? 'default' : 'outline'}
-                                                    size="sm"
-                                                    className="flex-1"
+                                                    className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                                                        field.value === 'dark'
+                                                            ? 'bg-purple-600 text-white'
+                                                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                                    }`}
                                                     onClick={() => {
                                                         field.onChange('dark');
                                                         bl.applyTheme(currentTheme, 'dark');
                                                     }}
                                                 >
                                                     Dark
-                                                </Button>
+                                                </button>
                                             </div>
                                         </FormControl>
                                     </FormItem>
