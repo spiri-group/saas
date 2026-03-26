@@ -103,7 +103,7 @@ const OrderRow : React.FC<Props> = (props) => {
                             <Button variant="default" className="ml-auto">Send payment link</Button>
                         ) : (
                             <div className="ml-auto">
-                                <PaidStatusBadge status={props.order.paid_status} dark={props.page !== 'trackCase'} />
+                                <PaidStatusBadge status={props.order.paid_status} dark />
                             </div>
                         )
                     )}
