@@ -98,7 +98,7 @@ const TeamMemberForm : React.FC<TeamMemberFormProps> = (props) => {
                                 <FormControl>
                                 <FileUploader
                                     id={bl.form.getValues().id as string}
-                                    className={"w-full h-[120px] aspect-square border border-dashed"}
+                                    className={"w-[120px] h-[120px] border border-dashed"}
                                     connection={{
                                         container: "public",
                                         relative_path: `merchant/${props.merchantId}/teamMembers`
