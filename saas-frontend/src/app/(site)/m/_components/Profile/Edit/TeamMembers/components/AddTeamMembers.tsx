@@ -47,7 +47,8 @@ type Props = ControllerRenderProps<{
     [key: string]: TeamMember[] | undefined
 }, any> & {
     className?: string,
-    merchantId: string
+    merchantId: string,
+    autoSave?: () => void
 }
 
 const useBL = (props) => {
@@ -211,6 +212,11 @@ const AddTeamMembers : React.FC<Props> = (props) => {
             props.onChange([teamMember], { shouldValidate: true, shouldDirty: true })
         }
         if (selectedIndex) setSelectedIndex(undefined)
+
+        // Auto-save after adding/updating a team member
+        if (props.autoSave) {
+            setTimeout(() => props.autoSave?.(), 0);
+        }
     }
 
     const teamMembers = props.value ?? []
