@@ -163,13 +163,13 @@ const MerchantBrandingComponent : React.FC<Props> = (props) => {
 
     return (
         <TooltipProvider>
-        <div className="fixed left-0 rounded-r-xl p-3 mt-2 w-[200px] bg-white min-h-full">
+        <div className="fixed left-0 rounded-r-xl p-3 mt-2 w-[200px] bg-slate-800 text-white border-r border-slate-700 min-h-full">
             <h2 className="mb-3 text-sm">Your branding</h2>
             { bl.hasLoaded && 
                 <Form {...bl.form}>
                     <form onSubmit={bl.form.handleSubmit(bl.submit)}>
                     {/* Mode Toggle */}
-                    <div className="flex flex-col mb-4 p-2 bg-gray-50 rounded-lg">
+                    <div className="flex flex-col mb-4 p-2 bg-slate-700/50 rounded-lg">
                         <FormField
                             name="mode"
                             control={bl.form.control}
