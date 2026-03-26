@@ -15,7 +15,7 @@ const ReturnAndCancellationPoliciesWrapper: React.FC<Props> = ({ merchantId }) =
     const [activeTab, setActiveTab] = useState<"products" | "services">("products");
 
     return (
-        <DialogContent className="w-[900px] max-w-[95vw] max-h-[90vh] flex flex-col gap-3 overflow-y-auto">
+        <DialogContent className="max-w-[min(900px,95vw)] max-h-[90vh] flex flex-col gap-3 overflow-y-auto">
             <div className="flex flex-col gap-2">
                 <DialogTitle>Return & Cancellation Policies</DialogTitle>
                 <DialogDescription>
