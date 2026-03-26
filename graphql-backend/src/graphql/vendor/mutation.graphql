@@ -229,6 +229,7 @@ input MerchantLocationInput {
   title: String!,
   address: GooglePlaceInput!
   services: [String]!
+  hiddenFromPublic: Boolean
 }
 
 input SocialPlatformInput {

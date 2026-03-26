@@ -14,7 +14,8 @@ export const VendorLocationSchema = z.object({
     id: z.string().uuid(),
     title: z.string().min(1),
     address: GooglePlaceSchema,
-    services: z.array(z.string())
+    services: z.array(z.string()),
+    hiddenFromPublic: z.boolean().optional()
 })
 export type VendorDescriptionSchema = z.infer<typeof VendorLocationSchema>
 
@@ -89,6 +90,7 @@ const useEditVendorLocations = (merchantId: string) => {
                                         }
                                     }
                                     services
+                                    hiddenFromPublic
                                 }
                             }
                         }

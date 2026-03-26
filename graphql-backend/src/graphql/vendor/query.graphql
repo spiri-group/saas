@@ -476,6 +476,7 @@ type MerchantLocation {
   title: String!
   address: GooglePlace!
   services: [String]!
+  hiddenFromPublic: Boolean
 }
 
 type VendorUser {

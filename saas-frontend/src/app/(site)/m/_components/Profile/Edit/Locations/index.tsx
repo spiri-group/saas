@@ -1,8 +1,9 @@
 import { DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import useEditVendorLocations, { UpdateVendorFormSchema } from "./_hooks/UseEditVendorLocations"
 import { useFieldArray } from "react-hook-form"
-import { PlusIcon, Trash2Icon } from "lucide-react"
+import { EyeOff, PlusIcon, Trash2Icon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import AddressInput from "@/components/ux/AddressInput"
@@ -92,14 +93,14 @@ const EditMerchantLocations : React.FC<Props> = (props) => {
                                     return (
                                         <CarouselItem
                                             key={field.id}
-                                            className="flex-none flex flex-col space-y-3 p-3 border border-input rounded-xl w-[300px] mr-3 mb-2">
+                                            className="flex-none flex flex-col space-y-3 p-3 border border-slate-700 rounded-xl w-[300px] mr-3 mb-2">
                                             <FormField
                                                 control={bl.form.control}
                                                 name={`locations.${index}.title`}
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormControl>
-                                                            <Input {...field} placeholder="Name" />
+                                                            <Input dark {...field} placeholder="Name" />
                                                         </FormControl>
                                                     </FormItem>
                                                 )} />
@@ -129,6 +130,24 @@ const EditMerchantLocations : React.FC<Props> = (props) => {
                                                         </FormControl>
                                                     </FormItem>
                                                 )} />
+                                            <FormField
+                                                control={bl.form.control}
+                                                name={`locations.${index}.hiddenFromPublic`}
+                                                render={({field}) => (
+                                                    <FormItem className="flex items-center space-x-2">
+                                                        <FormControl>
+                                                            <Checkbox
+                                                                dark
+                                                                checked={field.value ?? false}
+                                                                onCheckedChange={field.onChange}
+                                                            />
+                                                        </FormControl>
+                                                        <label className="text-sm text-slate-400 flex items-center gap-1.5 cursor-pointer" onClick={() => field.onChange(!field.value)}>
+                                                            <EyeOff className="h-3.5 w-3.5" />
+                                                            Hide from public profile
+                                                        </label>
+                                                    </FormItem>
+                                                )} />
                                                 <CarouselButton
                                                     className="flex-none"
                                                     onSelect={() => bl.locations.remove(index)}>
@@ -148,16 +167,10 @@ const EditMerchantLocations : React.FC<Props> = (props) => {
                             <CancelDialogButton />
                             <Button
                                 variant={bl.status.button.variant}
-                                type="submit"
-                                className="flex-grow">
-                                    {bl.status.formState == "idle" ? "Save" : bl.status.button.title}
-                            </Button>
-                            <Button
-                                variant={bl.status.button.variant}
                                 type="button"
                                 onClick={() => bl.form.handleSubmit(bl.saveAndClose)()}
                                 className="flex-grow">
-                                    {bl.status.formState == "idle" ? "Save & Close" : bl.status.button.title}
+                                    {bl.status.formState == "idle" ? "Save" : bl.status.button.title}
                             </Button>
                         </DialogFooter>
                 </form>
