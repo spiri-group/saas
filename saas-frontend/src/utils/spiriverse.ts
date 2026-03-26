@@ -4902,7 +4902,8 @@ export type merchantLocation_type = {
     id: string,
     title: string,
     address: googleplace_type,
-    services: string[]
+    services: string[],
+    hiddenFromPublic?: boolean
 }
 
 export type vendorUser_type = {
