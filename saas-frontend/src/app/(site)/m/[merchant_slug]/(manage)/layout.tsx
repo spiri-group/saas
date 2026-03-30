@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import UseMerchantIdFromSlug from '../../_hooks/UseMerchantIdFromSlug';
 import TrialBanner from '@/components/TrialBanner';
 import TrialExpiredDialog from '@/components/TrialExpiredDialog';
+import MobileDashboardGate from '@/components/ux/MobileDashboardGate';
 
 export default function ManageLayout({ children }: { children: React.ReactNode }) {
   const params = useParams<{ merchant_slug: string }>();
@@ -50,10 +51,16 @@ export default function ManageLayout({ children }: { children: React.ReactNode }
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      {merchantId && <TrialBanner vendorId={merchantId} />}
-      {merchantId && <TrialExpiredDialog vendorId={merchantId} />}
-      {children}
-    </div>
+    <MobileDashboardGate
+      vendorId={merchantId || ''}
+      vendorSlug={params.merchant_slug}
+      vendorType="merchant"
+    >
+      <div className="min-h-screen bg-slate-900">
+        {merchantId && <TrialBanner vendorId={merchantId} />}
+        {merchantId && <TrialExpiredDialog vendorId={merchantId} />}
+        {children}
+      </div>
+    </MobileDashboardGate>
   );
 }

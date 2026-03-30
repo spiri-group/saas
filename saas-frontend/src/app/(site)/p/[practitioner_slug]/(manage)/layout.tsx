@@ -7,6 +7,7 @@ import UseMerchantIdFromSlug from '../../../m/_hooks/UseMerchantIdFromSlug';
 import TrialBanner from '@/components/TrialBanner';
 import TrialExpiredDialog from '@/components/TrialExpiredDialog';
 import PractitionerSideNav from '../../_components/PractitionerSideNav';
+import MobileDashboardGate from '@/components/ux/MobileDashboardGate';
 
 export default function PractitionerManageLayout({ children }: { children: React.ReactNode }) {
     const params = useParams<{ practitioner_slug: string }>();
@@ -51,21 +52,27 @@ export default function PractitionerManageLayout({ children }: { children: React
     }, []);
 
     return (
-        <div className="min-h-screen bg-slate-900">
-            {practitionerId && <TrialBanner vendorId={practitionerId} />}
-            {practitionerId && <TrialExpiredDialog vendorId={practitionerId} />}
-            <div className="flex min-h-full">
-                {session && practitionerId && (
-                    <PractitionerSideNav
-                        session={session}
-                        practitionerId={practitionerId}
-                        practitionerSlug={params.practitioner_slug}
-                    />
-                )}
-                <div className="flex-1 md:ml-[200px]">
-                    {children}
+        <MobileDashboardGate
+            vendorId={practitionerId || ''}
+            vendorSlug={params.practitioner_slug}
+            vendorType="practitioner"
+        >
+            <div className="min-h-screen bg-slate-900">
+                {practitionerId && <TrialBanner vendorId={practitionerId} />}
+                {practitionerId && <TrialExpiredDialog vendorId={practitionerId} />}
+                <div className="flex min-h-full">
+                    {session && practitionerId && (
+                        <PractitionerSideNav
+                            session={session}
+                            practitionerId={practitionerId}
+                            practitionerSlug={params.practitioner_slug}
+                        />
+                    )}
+                    <div className="flex-1 md:ml-[200px]">
+                        {children}
+                    </div>
                 </div>
             </div>
-        </div>
+        </MobileDashboardGate>
     );
 }
