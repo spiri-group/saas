@@ -54,14 +54,14 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
     return (
         <div className="flex flex-col h-full min-h-0">
             <div className="backdrop-blur-xl bg-white/[0.07] border border-white/15 rounded-2xl shadow-2xl flex flex-col flex-1 min-h-0">
-                <ScrollableForm dark className="px-6 py-5 md:px-8 md:py-6 space-y-4 flex flex-col justify-center">
+                <ScrollableForm dark className="px-4 py-3 sm:px-6 sm:py-5 md:px-8 md:py-6 space-y-3 sm:space-y-4">
                     <div>
-                        <h1 className="text-2xl md:text-3xl text-white tracking-wide mb-1">
-                            First up, tell us a little about yourself
+                        <h1 className="text-lg sm:text-2xl md:text-3xl text-white tracking-wide mb-1">
+                            Tell us a little about yourself
                         </h1>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <FormField
                                 control={form.control}
@@ -188,30 +188,30 @@ export default function BasicDetailsStep({ form, onBrowse, onSetupBusiness }: Pr
                 <div className="border-t border-white/10" />
 
                 {/* CTA section */}
-                <div className="px-6 pb-5 pt-4 md:px-8 md:pb-6 md:pt-5 space-y-2.5">
-                    <p className="text-sm text-slate-400 mb-3 text-center tracking-wide uppercase">
+                <div className="px-4 pb-4 pt-3 sm:px-6 sm:pb-5 sm:pt-4 md:px-8 md:pb-6 md:pt-5 space-y-2">
+                    <p className="text-xs sm:text-sm text-slate-400 mb-2 sm:mb-3 text-center tracking-wide uppercase">
                         What brings you here?
                     </p>
 
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                         <button
                             type="button"
                             data-testid="setup-basic-browse-btn"
                             onClick={handleBrowse}
-                            className="flex-1 flex flex-col items-center justify-center px-6 py-3 md:px-8 md:py-4 rounded-xl bg-white/10 text-white hover:bg-white/20 active:scale-[0.98] transition-all duration-150 cursor-pointer"
+                            className="flex-1 flex flex-col items-center justify-center px-4 py-2.5 sm:px-6 sm:py-3 md:px-8 md:py-4 rounded-xl bg-white/10 text-white hover:bg-white/20 active:scale-[0.98] transition-all duration-150 cursor-pointer"
                         >
-                            <span className="text-base md:text-lg tracking-wide">Let&apos;s Get Started</span>
-                            <span className="text-sm text-white mt-0.5">Customer Journey</span>
+                            <span className="text-sm sm:text-base md:text-lg tracking-wide">Let&apos;s Get Started</span>
+                            <span className="text-xs sm:text-sm text-white mt-0.5">Customer Journey</span>
                         </button>
 
                         <button
                             type="button"
                             data-testid="setup-basic-setup-btn"
                             onClick={handleSetupBusiness}
-                            className="flex-1 flex flex-col items-center justify-center px-6 py-3 md:px-8 md:py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-white hover:from-indigo-400 hover:to-cyan-400 active:scale-[0.98] transition-all duration-150 cursor-pointer"
+                            className="flex-1 flex flex-col items-center justify-center px-4 py-2.5 sm:px-6 sm:py-3 md:px-8 md:py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-white hover:from-indigo-400 hover:to-cyan-400 active:scale-[0.98] transition-all duration-150 cursor-pointer"
                         >
-                            <span className="text-base md:text-lg tracking-wide">Free Trial</span>
-                            <span className="text-sm text-white/70 mt-0.5">Practitioner / Merchant</span>
+                            <span className="text-sm sm:text-base md:text-lg tracking-wide">Free Trial</span>
+                            <span className="text-xs sm:text-sm text-white/70 mt-0.5">Practitioner / Merchant</span>
                         </button>
                     </div>
                 </div>

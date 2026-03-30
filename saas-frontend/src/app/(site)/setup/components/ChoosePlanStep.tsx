@@ -35,6 +35,8 @@ type PathOption = {
     fromPriceTier?: string;
     /** Inline feature labels shown on the card */
     features?: string[];
+    /** Tier to badge as "Recommended" */
+    recommendedTier?: string;
 };
 
 const PATH_OPTIONS: PathOption[] = [
@@ -55,6 +57,7 @@ const PATH_OPTIONS: PathOption[] = [
         tiers: ['awaken', 'illuminate', 'manifest'],
         grayscaleTiers: ['transcend'],
         fromPriceTier: 'awaken',
+        recommendedTier: 'illuminate',
     },
     {
         id: 'merchant',
@@ -64,6 +67,7 @@ const PATH_OPTIONS: PathOption[] = [
         tiers: ['illuminate', 'manifest', 'transcend'],
         grayscaleTiers: ['awaken'],
         fromPriceTier: 'illuminate',
+        recommendedTier: 'manifest',
     },
 ];
 
@@ -152,32 +156,37 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
                                 data-testid={`path-option-${option.id}`}
                                 onClick={() => handlePathSelect(option.id)}
                                 className={cn(
-                                    'group flex items-center gap-3 md:gap-5 rounded-xl border-2 p-4 md:p-6 text-left transition-all cursor-pointer',
+                                    'group flex flex-col rounded-xl border-2 p-4 md:p-6 text-left transition-all cursor-pointer',
                                     'border-slate-700 bg-slate-800/50 hover:border-purple-500/60 hover:bg-purple-500/5',
                                 )}
                             >
-                                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl bg-purple-600/20 text-purple-400 group-hover:bg-purple-600/30 transition-colors">
-                                    <Icon className="w-5 h-5 md:w-6 md:h-6" />
-                                </div>
-                                <div className="flex-1 min-w-0">
+                                {/* Top row: icon + title */}
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="flex-shrink-0 flex items-center justify-center w-9 h-9 md:w-12 md:h-12 rounded-xl bg-purple-600/20 text-purple-400 group-hover:bg-purple-600/30 transition-colors">
+                                        <Icon className="w-4 h-4 md:w-6 md:h-6" />
+                                    </div>
                                     <h3 className="text-base md:text-lg font-semibold text-white">{option.label}</h3>
-                                    <p className="text-xs md:text-sm text-slate-400 mt-0.5">{option.description}</p>
-                                    {option.features && (
-                                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-                                            {option.features.map((feature) => (
-                                                <span key={feature} className="flex items-center gap-1 text-xs text-slate-300">
-                                                    <Check className="h-3 w-3 text-green-400 flex-shrink-0" />
-                                                    {feature}
-                                                </span>
-                                            ))}
-                                        </div>
+                                </div>
+
+                                {/* Bottom row: description left, price right */}
+                                <div className="flex items-end justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs md:text-sm text-slate-400">{option.description}</p>
+                                        {option.features && (
+                                            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                                                {option.features.map((feature) => (
+                                                    <span key={feature} className="flex items-center gap-1 text-xs text-slate-300">
+                                                        <Check className="h-3 w-3 text-green-400 flex-shrink-0" />
+                                                        {feature}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {priceLabel && (
+                                        <span className="flex-shrink-0 text-sm md:text-lg font-bold text-white whitespace-nowrap">{priceLabel}</span>
                                     )}
                                 </div>
-                                {priceLabel && (
-                                    <div className="flex-shrink-0 text-right">
-                                        <span className="text-sm md:text-lg font-bold text-white">{priceLabel}</span>
-                                    </div>
-                                )}
                             </button>
                         );
                     })}
@@ -194,12 +203,13 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
         .filter(t => ALL_PLAN_TIERS.includes(t.tier))
         .sort((a, b) => ALL_PLAN_TIERS.indexOf(a.tier) - ALL_PLAN_TIERS.indexOf(b.tier));
     const grayscaleTiers = currentOption.grayscaleTiers || [];
+    const recommendedTier = currentOption.recommendedTier;
 
     return (
         <div className="flex-1 flex flex-col space-y-3 md:space-y-4 px-4 py-4 md:px-8 md:py-5 min-h-0 overflow-y-auto" data-testid="choose-plan-step">
-            {/* Header row — title + interval toggle */}
+            {/* Header row — title (desktop only) + interval toggle */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div>
+                <div className="hidden md:block">
                     <h1 className="font-light text-2xl md:text-3xl text-white">Choose Your Plan</h1>
                     <p className="text-sm text-slate-300 mt-0.5">
                         {path === 'directory'
@@ -210,12 +220,12 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
                 </div>
 
                 {/* Billing interval toggle */}
-                <div className="flex items-center gap-2 flex-shrink-0" data-testid="plan-interval-toggle">
+                <div className="grid grid-cols-2 md:flex md:items-center gap-2 flex-shrink-0" data-testid="plan-interval-toggle">
                     <button
                         type="button"
                         data-testid="plan-interval-monthly"
                         onClick={() => handleIntervalChange('monthly')}
-                        className={`rounded-lg px-4 py-2.5 sm:px-3 sm:py-1.5 text-sm font-medium transition-colors ${
+                        className={`rounded-lg px-4 py-2.5 md:px-3 md:py-1.5 text-sm font-medium transition-colors ${
                             selectedInterval === 'monthly'
                                 ? 'bg-purple-600 text-white'
                                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -227,7 +237,7 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
                         type="button"
                         data-testid="plan-interval-annual"
                         onClick={() => handleIntervalChange('annual')}
-                        className={`rounded-lg px-4 py-2.5 sm:px-3 sm:py-1.5 text-sm font-medium transition-colors ${
+                        className={`rounded-lg px-4 py-2.5 md:px-3 md:py-1.5 text-sm font-medium transition-colors ${
                             selectedInterval === 'annual'
                                 ? 'bg-purple-600 text-white'
                                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -246,6 +256,8 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
                 selectedTier={selectedTier}
                 selectedInterval={selectedInterval}
                 onSelect={handleTierChange}
+                defaultTier={path === 'merchant' ? 'manifest' : undefined}
+                recommendedTier={recommendedTier}
             />
 
             <div
@@ -267,6 +279,7 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
                                 billingInterval={selectedInterval}
                                 selected={selectedTier === tier.tier}
                                 onSelect={handleTierChange}
+                                badge={tier.tier === recommendedTier ? 'Recommended' : undefined}
                             />
                         </div>
                     );
@@ -275,12 +288,12 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
 
             {/* Footer — stacked on mobile, inline on desktop */}
             <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 max-w-6xl mx-auto w-full">
-                <div className="flex items-center gap-2 order-2 md:order-1">
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 order-2 md:order-1 w-full md:w-auto">
                     <Button
                         type="button"
                         variant="outline"
                         data-testid="plan-back-btn"
-                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                        className="border-slate-600 text-slate-300 hover:bg-slate-700 w-full md:w-auto"
                         onClick={handleBackToPath}
                     >
                         <ArrowLeft className="w-4 h-4 mr-1" />
@@ -315,12 +328,16 @@ function MobileTierCarousel({
     selectedTier,
     selectedInterval,
     onSelect,
+    defaultTier,
+    recommendedTier,
 }: {
     visibleTiers: any[];
     grayscaleTiers: string[];
     selectedTier: string;
     selectedInterval: 'monthly' | 'annual';
     onSelect: (tier: string) => void;
+    defaultTier?: string;
+    recommendedTier?: string;
 }) {
     const [api, setApi] = useState<CarouselApi>();
     const [activeIndex, setActiveIndex] = useState(0);
@@ -330,8 +347,17 @@ function MobileTierCarousel({
         const onSelectSnap = () => setActiveIndex(api.selectedScrollSnap());
         api.on('select', onSelectSnap);
         onSelectSnap();
+
+        // Scroll to preferred default tier, or first selectable (non-greyscale) tier
+        const defaultIndex = defaultTier
+            ? visibleTiers.findIndex(t => t.tier === defaultTier)
+            : visibleTiers.findIndex(t => !grayscaleTiers.includes(t.tier));
+        if (defaultIndex > 0) {
+            api.scrollTo(defaultIndex, true);
+        }
+
         return () => { api.off('select', onSelectSnap); };
-    }, [api]);
+    }, [api, visibleTiers, grayscaleTiers, defaultTier]);
 
     // When a tier is selected via tap, scroll to it
     const handleSelect = (tier: string) => {
@@ -339,9 +365,14 @@ function MobileTierCarousel({
     };
 
     return (
-        <div className="md:hidden flex flex-col gap-3">
-            {/* Dot indicators */}
-            <div className="flex items-center justify-center gap-1.5">
+        <div className="md:hidden flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+            {!selectedTier ? (
+                <p className="text-xs text-slate-400">Swipe &amp; tap to select</p>
+            ) : (
+                <div />
+            )}
+            <div className="flex items-center gap-1.5">
                 {visibleTiers.map((tier, i) => (
                     <button
                         key={tier.tier}
@@ -357,6 +388,7 @@ function MobileTierCarousel({
                         aria-label={`View ${tier.name} plan`}
                     />
                 ))}
+            </div>
             </div>
 
             <Carousel
@@ -382,6 +414,7 @@ function MobileTierCarousel({
                                         billingInterval={selectedInterval}
                                         selected={selectedTier === tier.tier}
                                         onSelect={handleSelect}
+                                        badge={tier.tier === recommendedTier ? 'Recommended' : undefined}
                                     />
                                 </div>
                             </CarouselItem>

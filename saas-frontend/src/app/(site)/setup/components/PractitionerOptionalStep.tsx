@@ -16,16 +16,18 @@ type Props = {
     isSubmitting: boolean;
 };
 
+const inputClass = "bg-white/[0.08] border-white/15 text-white placeholder:text-white/30 focus-visible:ring-purple-500/50 focus-visible:border-white/30";
+
 export default function PractitionerOptionalStep({ form, onSubmit, onBack, isSubmitting }: Props) {
     return (
         <div className="flex flex-col h-full min-h-0">
-            <ScrollableForm className="px-5 py-4 md:p-8 space-y-4 md:space-y-6">
+            <ScrollableForm dark className="px-4 py-3 sm:px-6 sm:py-5 md:px-8 md:py-6 space-y-3 sm:space-y-4 md:space-y-6">
                 <div>
                     <div className="flex items-center gap-2 mb-1">
-                        <Sparkles className="w-5 h-5 text-purple-600" />
-                        <h1 className="font-light text-2xl text-purple-900">Additional Details</h1>
+                        <Sparkles className="w-5 h-5 text-purple-400" />
+                        <h1 className="font-light text-lg sm:text-2xl text-white">Additional Details</h1>
                     </div>
-                <p className="text-sm md:text-base text-purple-700/70">
+                <p className="text-xs sm:text-sm md:text-base text-slate-300">
                     These details are optional but help seekers get to know you better.
                 </p>
             </div>
@@ -35,12 +37,14 @@ export default function PractitionerOptionalStep({ form, onSubmit, onBack, isSub
                 name="practitioner.pronouns"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Pronouns (Optional)</FormLabel>
+                        <FormLabel className="text-slate-300">Pronouns (Optional)</FormLabel>
                         <FormControl>
                             <Input
                                 {...field}
                                 data-testid="setup-practitioner-pronouns"
                                 placeholder="e.g., she/her, he/him, they/them"
+                                glass={false}
+                                className={inputClass}
                             />
                         </FormControl>
                         <FormMessage />
@@ -53,7 +57,7 @@ export default function PractitionerOptionalStep({ form, onSubmit, onBack, isSub
                 name="practitioner.yearsExperience"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Years of Experience (Optional)</FormLabel>
+                        <FormLabel className="text-slate-300">Years of Experience (Optional)</FormLabel>
                         <FormControl>
                             <Input
                                 type="number"
@@ -61,7 +65,8 @@ export default function PractitionerOptionalStep({ form, onSubmit, onBack, isSub
                                 value={field.value ?? ''}
                                 onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                                 placeholder="e.g., 5"
-                                className="w-32"
+                                glass={false}
+                                className={`w-32 ${inputClass}`}
                                 min={0}
                                 max={100}
                             />
@@ -76,13 +81,13 @@ export default function PractitionerOptionalStep({ form, onSubmit, onBack, isSub
                 name="practitioner.spiritualJourney"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Your Spiritual Journey (Optional)</FormLabel>
+                        <FormLabel className="text-slate-300">Your Spiritual Journey (Optional)</FormLabel>
                         <FormControl>
                             <Textarea
                                 {...field}
                                 data-testid="setup-practitioner-journey"
                                 placeholder="Share how you discovered your gifts and what drew you to this path..."
-                                className="min-h-[100px]"
+                                className={`min-h-[100px] ${inputClass}`}
                                 maxLength={2000}
                             />
                         </FormControl>
@@ -96,13 +101,13 @@ export default function PractitionerOptionalStep({ form, onSubmit, onBack, isSub
                 name="practitioner.approach"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Your Approach (Optional)</FormLabel>
+                        <FormLabel className="text-slate-300">Your Approach (Optional)</FormLabel>
                         <FormControl>
                             <Textarea
                                 {...field}
                                 data-testid="setup-practitioner-approach"
                                 placeholder="Describe your reading style and what clients can expect..."
-                                className="min-h-[100px]"
+                                className={`min-h-[100px] ${inputClass}`}
                                 maxLength={1000}
                             />
                         </FormControl>
@@ -112,12 +117,15 @@ export default function PractitionerOptionalStep({ form, onSubmit, onBack, isSub
             />
             </ScrollableForm>
 
-            <div className="px-5 pb-4 md:px-8 md:pb-6">
+            <div className="border-t border-white/10" />
+
+            <div className="px-4 pb-3 pt-2 sm:px-6 sm:pb-5 sm:pt-4 md:px-8 md:pb-6">
                 <div className="flex gap-3">
                     <Button
                         type="button"
                         variant="outline"
                         data-testid="setup-practitioner-opt-back-btn"
+                        className="border-white/20 text-slate-300 hover:bg-white/10 hover:text-white h-12 sm:h-9 text-base sm:text-sm"
                         onClick={onBack}
                     >
                         Back

@@ -75,11 +75,21 @@ export const SignIn = () => {
     }
   }, [otpSent]);
 
-  // Focus the email input when it appears
+  // Focus the email input when it appears and sync any browser-autofilled value
   useEffect(() => {
     if (showEmailInput && emailInputRef.current) {
-      // Small delay to let the animation start
-      setTimeout(() => emailInputRef.current?.focus(), 100);
+      // Small delay to let the animation start and browser autofill to populate
+      setTimeout(() => {
+        if (emailInputRef.current) {
+          emailInputRef.current.focus();
+          // Browser autofill sets the DOM value without triggering onChange,
+          // so sync the input's value to React state
+          const autofilled = emailInputRef.current.value;
+          if (autofilled && autofilled !== email) {
+            setEmail(autofilled);
+          }
+        }
+      }, 200);
     }
   }, [showEmailInput]);
 
@@ -321,6 +331,7 @@ export const SignIn = () => {
           <Input
             ref={emailInputRef}
             name="email"
+            type="email"
             placeholder="Enter your email"
             autoComplete="email"
             glass={false}
