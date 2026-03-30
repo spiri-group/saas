@@ -7,6 +7,8 @@ type Query {
     productReturnPolicy(merchantId: ID!, policyId: ID!): ProductReturnPolicy,
     serviceCancellationPolicies(merchantId: ID!, serviceCategory: String): [ServiceCancellationPolicy],
     serviceCancellationPolicy(merchantId: ID!, policyId: ID!): ServiceCancellationPolicy,
+    termsAndConditions(merchantId: ID!): [TermsAndConditions],
+    publicTermsDocument(vendorId: ID!, documentId: ID!): TermsAndConditions,
 
     # Practitioner queries
     practitioner(slug: String!): Vendor,
@@ -266,6 +268,23 @@ type UpsertCancellationPolicyResponse implements MutationResponseInterface {
   policies: [ServiceCancellationPolicy]!
 }
 
+type TermsAndConditions {
+  id: ID!
+  vendorId: String!
+  title: String!
+  content: String!
+  isDefault: Boolean
+  createdDate: String
+  updatedDate: String
+}
+
+type UpsertTermsResponse implements MutationResponseInterface {
+  code: String!
+  success: Boolean!
+  message: String!
+  documents: [TermsAndConditions]!
+}
+
 type VendorContact {
   email: EmailAddress
   phoneNumber: ContactNumber
@@ -457,6 +476,7 @@ type MerchantLocation {
   title: String!
   address: GooglePlace!
   services: [String]!
+  hiddenFromPublic: Boolean
 }
 
 type VendorUser {

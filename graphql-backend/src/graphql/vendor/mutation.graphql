@@ -40,6 +40,8 @@ type Mutation {
   delete_product_return_policy(merchantId: ID!, policyId: ID!): MutationResponse,
   upsert_service_cancellation_policies(merchantId: ID!, policies: [ServiceCancellationPolicyInput]!): UpsertCancellationPolicyResponse,
   delete_service_cancellation_policy(merchantId: ID!, policyId: ID!): MutationResponse,
+  upsert_terms_and_conditions(merchantId: ID!, documents: [TermsAndConditionsInput]!): UpsertTermsResponse,
+  delete_terms_and_conditions(merchantId: ID!, documentId: ID!): MutationResponse,
   sendMerchantRequest(
     merchantId: ID!,
     customerDetails: MerchantRequestCustomerDetailsInput,
@@ -227,6 +229,7 @@ input MerchantLocationInput {
   title: String!,
   address: GooglePlaceInput!
   services: [String]!
+  hiddenFromPublic: Boolean
 }
 
 input SocialPlatformInput {
@@ -350,6 +353,13 @@ input ServiceCancellationPolicyInput {
   allowRescheduling: Boolean
   maxReschedules: Int
   rescheduleMinHours: Int
+}
+
+input TermsAndConditionsInput {
+  id: ID!
+  title: String!
+  content: String!
+  isDefault: Boolean
 }
 
 input ProfileVisibilityInput {

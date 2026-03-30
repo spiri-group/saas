@@ -25,12 +25,12 @@ export const InternalVendorContactSchema = z.object({
 
 const UpdateVendorFormSchema = z.object({
     id: z.string().min(1),
-    website: z.string().refine(
-        (value) => value === "" || z.string().url().safeParse(value).success,
+    website: z.string().optional().refine(
+        (value) => !value || z.string().url().safeParse(value).success,
         {
-            message: "Must be either an empty string or a valid URL",
+            message: "Please enter a valid URL",
         }
-    ).optional(),
+    ),
     contact: z.object({
         internal: InternalVendorContactSchema,
         public: VendorContactSchema
@@ -57,7 +57,7 @@ const UseEditVendorContactDetails = (merchantId: string) => {
         if (vendorInformationResponse.data != null) {
             form.reset({
                 id: vendorInformationResponse.data.id, // Use actual vendor ID, not slug
-                website: vendorInformationResponse.data.website,
+                website: vendorInformationResponse.data.website || "",
                 contact: {
                     internal: {
                         email: vendorInformationResponse.data.contact.internal.email,

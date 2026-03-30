@@ -19,6 +19,7 @@ import TargetTimezoneSelector from "@/components/scheduling/TargetTimezoneSelect
 import TimezoneImpactMap from "@/components/scheduling/TimezoneImpactMap";
 import SmartSchedulingRecommendations from "@/components/scheduling/SmartSchedulingRecommendations";
 import { type ExistingServiceData } from "../CreateReading/hooks/UseCreateReadingOffer";
+import TermsDocumentPicker from "@/components/ux/TermsDocumentPicker";
 
 type BLProps = {
     merchantId: string;
@@ -100,6 +101,13 @@ const CreateHealing: React.FC<Props> = (props) => {
                                 </FormControl>
                             </FormItem>
                         )}
+                    />
+
+                    <TermsDocumentPicker
+                        dark
+                        vendorId={props.merchantId}
+                        value={bl.form.watch("termsDocumentId")}
+                        onChange={(value) => bl.form.setValue("termsDocumentId", value)}
                     />
 
                     <FormField

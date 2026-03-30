@@ -1,6 +1,6 @@
 'use client'
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { Panel, PanelContent, PanelHeader, PanelTitle, PanelDescription } from "@/components/ux/Panel";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import useMerchantTheme from "@/app/(site)/m/_hooks/UseMerchantTheme";
 import MerchantFontLoader from "@/app/(site)/m/_components/MerchantFontLoader";
 import UsePendingServiceOrder from "./hooks/UsePendingServiceOrder";
 import { Clock, AlertCircle, CheckCircle, ShieldCheck } from "lucide-react";
+import TermsConsent from "@/components/ux/TermsConsent";
 
 type BLProps = {
     merchantId: string;
@@ -41,6 +42,7 @@ const useBL = (props: BLProps) => {
 
 const UI: React.FC<Props> = (props) => {
     const bl = useBL(props);
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     if (bl.isLoading) {
         return (
@@ -251,7 +253,19 @@ const UI: React.FC<Props> = (props) => {
                                         </div>
                                         <CurrencyNote currency={bl.order.price.currency} className="mt-1" />
 
-                                        <Button className="w-full" size="lg">
+                                        <TermsConsent
+                                            vendorId={bl.order.service.vendor.id}
+                                            vendorName={bl.order.service.vendor.name}
+                                            termsDocumentId={bl.order.termsDocumentId}
+                                            accepted={termsAccepted}
+                                            onAccept={setTermsAccepted}
+                                        />
+
+                                        <Button
+                                            className="w-full"
+                                            size="lg"
+                                            disabled={!!bl.order.termsDocumentId && !termsAccepted}
+                                        >
                                             Pay Now
                                         </Button>
 

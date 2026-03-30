@@ -43,8 +43,8 @@ export default function ImpersonationBanner() {
             <div style={{ height: BANNER_HEIGHT }} />
             {/* Fixed banner at very top */}
             <div
-                className="fixed top-0 left-0 right-0 z-[9999] bg-amber-500 text-black px-4 flex items-center justify-center gap-3 text-sm font-medium shadow-lg"
-                style={{ height: BANNER_HEIGHT }}
+                className="fixed left-0 right-0 z-[9999] bg-amber-500 text-black px-4 flex items-center justify-center gap-3 text-sm font-medium shadow-lg"
+                style={{ height: BANNER_HEIGHT, top: 'var(--preview-banner-height, 0px)' }}
                 data-testid="impersonation-banner"
             >
                 <Eye className="h-4 w-4 flex-shrink-0" />

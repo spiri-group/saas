@@ -129,7 +129,7 @@ const CreateScheduleComponent: React.FC<Props> = (props) => {
     return (
         <Form {...bl.form}>
             <form onSubmit={bl.form.handleSubmit(bl.save)} className="flex flex-col space-y-2 h-full">
-            <Panel className="flex flex-col md:w-[350px] md:h-full" data-testid="schedule-dates-panel">
+            <Panel dark className="flex flex-col md:w-[350px] md:h-full" data-testid="schedule-dates-panel">
                 <PanelHeader>Schedule dates</PanelHeader>
                 <PanelContent className="flex-grow flex flex-col space-y-2">
                 <FormField

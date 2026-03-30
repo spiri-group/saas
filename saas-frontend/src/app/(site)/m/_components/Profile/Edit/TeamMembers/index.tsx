@@ -42,7 +42,7 @@ const EditTeamMembers : React.FC<Props> = (props) => {
     return (   
         <DialogContent className="w-[850px]">
             <Form {...bl.form}>
-                <form onSubmit={bl.form.handleSubmit(bl.submit)} 
+                <form onSubmit={bl.form.handleSubmit(bl.submit)}
                     className="flex flex-col p-2">
                     <FormField
                         name="teamMembers"
@@ -50,19 +50,14 @@ const EditTeamMembers : React.FC<Props> = (props) => {
                         render={({ field }) => (
                             <FormItem className="h-full mb-6">
                                 <FormControl>
-                                    <AddTeamMembers 
-                                        {...field} 
+                                    <AddTeamMembers
+                                        {...field}
                                         merchantId={props.merchantId}
+                                        autoSave={() => bl.form.handleSubmit(bl.submit)()}
                                     />
                                 </FormControl>
                             </FormItem>
                         )} />
-                    <div className="flex flex-row mt-auto ml-auto space-x-2">
-                        <CancelDialogButton />
-                        <Button type="submit" variant={bl.status.button.variant} className="w-full" disabled={!bl.form.formState.isDirty && bl.status.formState === "idle"}>{
-                            bl.status.formState === "idle" ? "Confirm" : bl.status.button.title
-                        }</Button>
-                    </div>
                 </form>
             </Form>
         </DialogContent>

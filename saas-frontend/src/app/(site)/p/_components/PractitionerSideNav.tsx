@@ -29,7 +29,10 @@ import {
     ImageIcon,
     Receipt,
     Radio,
-    Headphones
+    Headphones,
+    PiggyBank,
+    CreditCard,
+    FileCheck,
 } from "lucide-react";
 import { VendorDocType } from "@/utils/spiriverse";
 import CreateReading from "../[practitioner_slug]/(manage)/manage/services/_components/CreateReading";
@@ -50,6 +53,8 @@ import MerchantEventsComponent from "../../m/_components/Events";
 import MerchantGalleryComponent from "../../m/_components/Gallery";
 import MerchantBankingComponent from "../../m/_components/Banking";
 import MerchantCardsComponent from "../../m/_components/Cards";
+import MerchantTaxRegistrations from "../../m/_components/TaxRegistration";
+import TermsAndConditionsManager from "./TermsAndConditions";
 import SpiriAssistLogo from "@/icons/spiri-assist-logo";
 import { Session } from "next-auth";
 import { isNullOrUndefined } from "@/lib/functions";
@@ -200,23 +205,42 @@ const useBL = (props: BLProps) => {
                     dialogId: "Manage Events",
                     className: "w-[1000px] max-w-[95vw] h-[850px]"
                 }] : []),
-                {
-                    type: "divider" as const,
-                    label: "Settings"
-                },
+            ] as NavOption[],
+        },
+        {
+            label: "Setup",
+            icon: <Settings className="w-5 h-5" />,
+            testId: "nav-setup",
+            description: "Banking, Availability, Tax",
+            navOptions: [
                 {
                     icon: <Clock className="w-5 h-5" />,
                     label: "Availability",
                     href: `/p/${practitionerSlug}/manage/availability`
                 },
+                {
+                    icon: <PiggyBank className="w-5 h-5" />,
+                    label: "Bank",
+                    dialogId: "Bank Accounts"
+                },
+                {
+                    icon: <CreditCard className="w-5 h-5" />,
+                    label: "Cards",
+                    dialogId: "Payment Cards"
+                },
+                {
+                    icon: <FileText className="w-5 h-5" />,
+                    label: "Tax",
+                    dialogId: "Tax Registrations"
+                },
+                {
+                    icon: <FileCheck className="w-5 h-5" />,
+                    label: "Terms & Conditions",
+                    dialogId: "Terms & Conditions",
+                    className: "w-[700px] max-w-[95vw]"
+                },
             ] as NavOption[],
         },
-        ...(features.canSellServices ? [{
-            label: "Services",
-            icon: <BookOpen className="w-5 h-5" />,
-            testId: "nav-services",
-            href: `/p/${practitionerSlug}/manage/services`,
-        }] as NavOption[] : [] as NavOption[]),
         ...(features.canSellServices ? [{
             label: "Journeys",
             icon: <Headphones className="w-5 h-5" />,
@@ -323,6 +347,8 @@ const useBL = (props: BLProps) => {
             // Payment dialogs (opened via CustomEvent from subscription page)
             "Bank Accounts": () => <MerchantBankingComponent merchantId={practitionerId} />,
             "Payment Cards": () => <MerchantCardsComponent merchantId={practitionerId} />,
+            "Tax Registrations": () => <MerchantTaxRegistrations merchantId={practitionerId} />,
+            "Terms & Conditions": () => <TermsAndConditionsManager practitionerId={practitionerId} />,
             // Shop upgrade dialog for Awaken/Illuminate tiers
             "Shop Upgrade": (onClose) => <ShopUpgradeDialog vendorId={practitionerId} currentTier={tier || 'awaken'} onClose={onClose} />,
             // Feature upgrade dialogs for gated nav items

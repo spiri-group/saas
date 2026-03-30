@@ -27,7 +27,7 @@ export default function SiteError({
       <p className="text-white/60 mb-8 max-w-md">
         No worries — this is a temporary hiccup on our end. You can try refreshing, or head back to the homepage.
       </p>
-      <div className="flex gap-3">
+      <div className="flex flex-wrap justify-center gap-3">
         <button
           onClick={reset}
           className="px-6 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors"
@@ -40,6 +40,17 @@ export default function SiteError({
         >
           Go to Homepage
         </a>
+        <button
+          onClick={() => {
+            document.cookie.split(';').forEach((c) => {
+              document.cookie = c.trim().split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+            });
+            window.location.href = '/';
+          }}
+          className="px-6 py-2.5 rounded-lg border border-white/20 text-white/60 text-sm font-medium hover:text-white hover:bg-white/10 transition-colors"
+        >
+          Log Out
+        </button>
       </div>
       {error.digest && (
         <p className="mt-6 text-xs text-white/30">

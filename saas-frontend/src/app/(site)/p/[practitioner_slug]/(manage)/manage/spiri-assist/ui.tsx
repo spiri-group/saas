@@ -11,8 +11,10 @@ import { useTierFeatures } from "@/hooks/UseTierFeatures";
 import { useRouter } from "next/navigation";
 import SpiriAssistLogo from "@/icons/spiri-assist-logo";
 import { Search, Shield, MessageSquare, ArrowRight } from "lucide-react";
+import { Session } from "next-auth";
 
 type Props = {
+    session: Session
     merchantId: string
     practitionerSlug: string
 }
@@ -113,41 +115,45 @@ const UI: React.FC<Props> = (props) => {
     if (bl.merchantId == null || isLoading) return null;
 
     if (!features.hasSpiriAssist) {
-        return <SpiriAssistLockedPreview practitionerSlug={props.practitionerSlug} />;
+        return (
+            <SpiriAssistLockedPreview practitionerSlug={props.practitionerSlug} />
+        );
     }
 
     return (
-        <div className="flex flex-row h-screen-minus-nav space-x-2 mr-2">
-            <AvailableCases
-                className={"w-[300px] my-2"}
-                merchantId={bl.merchantId}
-                onSelect={bl.selectedCaseRef.set}
-                onTriggerClicked={bl.triggerClicked.set}
-            />
-            {
-                bl.selectedCaseRef.get != null ?
-                    <CaseDetails
-                        className="flex-grow my-2"
-                        caseId={bl.selectedCaseRef.get.id}
-                        merchantId={bl.merchantId} /> :
-                    <Panel className="flex-grow my-2" >
-                        <PanelHeader>
-                            <PanelTitle> Details </PanelTitle>
-                        </PanelHeader>
-                        <span className="text-sm"> Please select a case first. </span>
-                    </Panel>
-            }
-            <div className="w-[300px] flex flex-col space-y-2 my-2">
-                <CaseApplications
-                    className={"flex-grow"}
-                    merchantId={bl.merchantId}
-                />
-                <AssignedCases
-                    className={"flex-grow"}
-                    onSelect={bl.selectedCaseRef.set}
-                />
+            <div>
+                <div className="flex flex-row h-screen-minus-nav space-x-2 mr-2">
+                    <AvailableCases
+                        className={"w-[300px] my-2"}
+                        merchantId={bl.merchantId}
+                        onSelect={bl.selectedCaseRef.set}
+                        onTriggerClicked={bl.triggerClicked.set}
+                    />
+                    {
+                        bl.selectedCaseRef.get != null ?
+                            <CaseDetails
+                                className="flex-grow my-2"
+                                caseId={bl.selectedCaseRef.get.id}
+                                merchantId={bl.merchantId} /> :
+                            <Panel dark className="flex-grow my-2" >
+                                <PanelHeader>
+                                    <PanelTitle> Details </PanelTitle>
+                                </PanelHeader>
+                                <span className="text-sm"> Please select a case first. </span>
+                            </Panel>
+                    }
+                    <div className="w-[300px] flex flex-col space-y-2 my-2">
+                        <CaseApplications
+                            className={"flex-grow"}
+                            merchantId={bl.merchantId}
+                        />
+                        <AssignedCases
+                            className={"flex-grow"}
+                            onSelect={bl.selectedCaseRef.set}
+                        />
+                    </div>
+                </div>
             </div>
-        </div>
     )
 }
 

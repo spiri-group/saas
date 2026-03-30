@@ -23,6 +23,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import useFormStatus from "@/components/utils/UseFormStatus"
 import { Badge } from "@/components/ui/badge"
 import { Loader2 } from "lucide-react"
+import TermsConsent from "@/components/ux/TermsConsent"
 
 export const TOGGLE_DETAILED_CART = "TOGGLE_DETAILED_CART"
 
@@ -293,8 +294,28 @@ const useBL = () => {
 
 const ShoppingCart = () => {
     const bl = useBL();
+    const [termsAccepted, setTermsAccepted] = useState<Record<string, boolean>>({});
 
     const isMobile = typeof window !== 'undefined' ? window.innerWidth < 450 : false;
+
+    // Get unique vendors that require terms consent
+    const vendorsWithTerms = useMemo(() => {
+        const seen = new Map<string, { vendorId: string; vendorName: string; termsDocumentId: string }>();
+        for (const item of bl.cart.items) {
+            if (item.termsDocumentId && item.merchantId && !seen.has(item.merchantId)) {
+                seen.set(item.merchantId, {
+                    vendorId: item.merchantId,
+                    vendorName: item.vendorName ?? item.merchantId,
+                    termsDocumentId: item.termsDocumentId,
+                });
+            }
+        }
+        return Array.from(seen.values());
+    }, [bl.cart.items]);
+
+    // Check if all required terms are accepted
+    const allTermsAccepted = vendorsWithTerms.length === 0 ||
+        vendorsWithTerms.every((v) => termsAccepted[v.vendorId] === true);
 
     // Stripe payment dialog
     if (bl.stripe.details != null && bl.stripe.amount != null && bl.orderRef != null) {
@@ -376,14 +397,14 @@ const ShoppingCart = () => {
 
                         {/* Cart Summary */}
                         {isNullOrUndefined(bl.summary) ? (
-                            <div className="flex flex-col bg-gray-50 p-4 animate-pulse w-full rounded-lg mb-2">
+                            <div className="flex flex-col bg-gray-50 p-4 animate-pulse w-full rounded-lg mb-2" data-testid="cart-summary-loading">
                                 <span className="flex-grow">Quantity</span>
                                 <span className="flex-grow">Subtotal</span>
                                 <span className="flex-grow">Fees</span>
                                 <span className="flex-grow">Total</span>
                             </div>
                         ) : (
-                            <div className="flex flex-col w-full p-4 bg-slate-100 rounded-lg mb-2">
+                            <div className="flex flex-col w-full p-4 bg-slate-100 rounded-lg mb-2" data-testid="cart-summary">
                                 <div className="flex flex-row w-full">
                                     <span className="flex-grow">Quantity</span>
                                     <span className="flex-grow text-right">{bl.summary.quantity}</span>
@@ -403,6 +424,24 @@ const ShoppingCart = () => {
                                 </div>
                                 <span className="mt-2 text-slate-600 text-sm">Shipping and Tax calculated at Checkout</span>
                                 <CurrencyNote currency={bl.summary.total.currency} className="mt-1" />
+                            </div>
+                        )}
+
+                        {/* Terms Consent */}
+                        {vendorsWithTerms.length > 0 && (
+                            <div className="flex flex-col w-full gap-2 mb-2">
+                                {vendorsWithTerms.map((v) => (
+                                    <TermsConsent
+                                        key={v.vendorId}
+                                        vendorId={v.vendorId}
+                                        vendorName={v.vendorName}
+                                        termsDocumentId={v.termsDocumentId}
+                                        accepted={termsAccepted[v.vendorId] ?? false}
+                                        onAccept={(accepted) =>
+                                            setTermsAccepted((prev) => ({ ...prev, [v.vendorId]: accepted }))
+                                        }
+                                    />
+                                ))}
                             </div>
                         )}
 
@@ -433,7 +472,8 @@ const ShoppingCart = () => {
                                 disabled={
                                     bl.status.formState === "processing" ||
                                     isNullOrUndefined(bl.summary) ||
-                                    bl.cart.items.length === 0
+                                    bl.cart.items.length === 0 ||
+                                    !allTermsAccepted
                                 }
                                 variant={bl.status.button.variant}
                                 data-testid="checkout-btn"

@@ -12,6 +12,7 @@ import { vault } from "./vault"
 export type serverContext = {
     userId: string | null,
     userEmail: string | null,
+    host: string,
     dataSources: {
         vault: vault,
         cosmos: CosmosDataSource,

@@ -13,6 +13,7 @@ import { ArrowRight, ArrowLeft, X, Music } from "lucide-react";
 import { StepIndicator } from "@/components/ui/step-indicator";
 import ThumbnailBuilder from "@/components/ux/ThumbnailBuilder";
 import VisuallyHidden from "@/components/ux/VisuallyHidden";
+import TermsDocumentPicker from "@/components/ux/TermsDocumentPicker";
 import FileUploader from "@/components/ux/FileUploader";
 import { useForm } from "react-hook-form";
 import { v4 as uuidv4 } from "uuid";
@@ -69,6 +70,7 @@ type JourneyFormValues = {
     allowRental: boolean;
     rentalPrice: string;
     rentalDurationDays: string;
+    termsDocumentId?: string;
     thumbnail?: Record<string, unknown>;
 };
 
@@ -102,6 +104,7 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
                 ? (editingJourney.pricing.rentalPrice.amount / 100).toString()
                 : "",
             rentalDurationDays: editingJourney?.pricing?.rentalDurationDays?.toString() || "30",
+            termsDocumentId: editingJourney?.termsDocumentId || undefined,
             thumbnail: editingJourney?.thumbnail || undefined,
         },
     });
@@ -185,6 +188,7 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
             difficulty: values.difficulty,
             modalities: values.modalities,
             recommendedTools: values.recommendedTools,
+            termsDocumentId: values.termsDocumentId || null,
             pricing: {
                 collectionPrice: { amount: priceInCents, currency: values.currency },
                 ...(singlePriceInCents && {
@@ -602,6 +606,13 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
                                         </div>
                                     )}
                                 </div>
+
+                                <TermsDocumentPicker
+                                    vendorId={practitionerId}
+                                    value={form.watch("termsDocumentId")}
+                                    onChange={(value) => form.setValue("termsDocumentId", value)}
+                                    dark
+                                />
                             </div>
                         )}
 

@@ -92,7 +92,7 @@ export default function MiddlePane() {
                       <p className="font-medium">
                         Box Code: {box.code}
                       </p>
-                      <div className="text-xs bg-white/50 backdrop-blur px-2 py-0.5 rounded-full border border-white/20 text-gray-700">
+                      <div className="text-xs bg-slate-800/50 backdrop-blur px-2 py-0.5 rounded-full border border-white/20 text-slate-300">
                         {box.used_weight.toFixed(2)} kg used
                       </div>
                     </div>

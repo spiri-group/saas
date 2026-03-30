@@ -114,7 +114,10 @@ const resolvers = {
                 spiritualInterests: args.input.spiritualInterests || [],
                 recommendedCrystals: args.input.recommendedCrystals || [],
                 recommendedTools: args.input.recommendedTools || [],
-                previewTrackId: args.input.previewTrackId
+                previewTrackId: args.input.previewTrackId,
+                stripe: {
+                    tax_code: "txcd_10000000"
+                }
             }
 
             await context.dataSources.cosmos.add_record("Main-Listing", item, item.vendorId, context.userId)

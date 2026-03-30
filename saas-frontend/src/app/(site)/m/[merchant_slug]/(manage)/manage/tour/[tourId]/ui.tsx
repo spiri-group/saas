@@ -44,7 +44,7 @@ const UI : React.FC<Props> = (props) => {
                         listingId={props.tourId} 
                         merchantId={props.merchantId} />
                 </div>
-                <Panel id="viewreview" className="flex-grow">
+                <Panel dark id="viewreview" className="flex-grow">
                     <PanelHeader className="flex flex-row">
                         <h1 className="font-bold text-sm md:text-xl">Reviews</h1>
                         <NewReview

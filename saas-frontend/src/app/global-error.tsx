@@ -40,7 +40,7 @@ export default function GlobalError({
           <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.6)', marginBottom: '32px', maxWidth: '400px' }}>
             No worries — this is a temporary hiccup on our end and we&apos;ve been notified. You can try refreshing, or head back to the homepage.
           </p>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '12px' }}>
             <button
               onClick={reset}
               style={{
@@ -74,6 +74,26 @@ export default function GlobalError({
             >
               Go to Homepage
             </a>
+            <button
+              onClick={() => {
+                document.cookie.split(';').forEach((c) => {
+                  document.cookie = c.trim().split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+                });
+                window.location.href = '/';
+              }}
+              style={{
+                padding: '10px 24px',
+                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.2)',
+                background: 'transparent',
+                color: 'rgba(255,255,255,0.6)',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 500,
+              }}
+            >
+              Log Out
+            </button>
           </div>
           {error.digest && (
             <p style={{ marginTop: '24px', fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>

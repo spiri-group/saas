@@ -12,6 +12,7 @@ type CreateJourneyInput = {
     spiritualInterests?: string[];
     recommendedCrystals?: string[];
     recommendedTools?: string[];
+    termsDocumentId?: string | null;
     pricing: {
         collectionPrice: { amount: number; currency: string };
         singleTrackPrice?: { amount: number; currency: string };

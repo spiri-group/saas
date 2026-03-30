@@ -5,7 +5,12 @@ import {
   SendAdHocEmailInput,
   AiMessageInput,
   SENT_EMAILS_TABLE,
+  EMAIL_TRACKING_TABLE,
+  EmailTrackingEntity,
+  EmailTrackingInfo,
   entityToSentEmail,
+  buildTrackingPixelUrl,
+  injectTrackingPixel,
 } from "./adhocTypes";
 import { buildAdHocEmailHtml, buildAdHocEmailHtmlWithDefaults, generateEmailWithAi } from "./adhocEmail";
 import { v4 as uuidv4 } from "uuid";
@@ -17,6 +22,13 @@ const templatePartition = 'email-template';
 const headerFooterPartition = 'email-header-footer';
 const emailAssetsContainer = 'public';
 const emailAssetsPrefix = 'email-templates';
+
+/** Find a sent email by its ID (rowKey) across all users */
+async function findEmailById(tableStorage: serverContext['dataSources']['tableStorage'], id: string) {
+  const filter = `RowKey eq '${id}'`;
+  const results = await tableStorage.queryEntities<SentEmailEntity>(SENT_EMAILS_TABLE, filter);
+  return results.length > 0 ? results[0] : null;
+}
 
 const resolvers = {
   Query: {
@@ -110,11 +122,9 @@ const resolvers = {
 
     sentEmails: async (_: any, args: { limit?: number; offset?: number; search?: string }, context: serverContext) => {
       try {
-        const userId = context.userId || 'system';
-        const filter = `PartitionKey eq '${userId}'`;
+        // Fetch all emails across all users so the full team can see the shared outbox
         const entities = await context.dataSources.tableStorage.queryEntities<SentEmailEntity>(
-          SENT_EMAILS_TABLE,
-          filter
+          SENT_EMAILS_TABLE
         );
 
         let results = entities.map(entityToSentEmail);
@@ -128,7 +138,8 @@ const resolvers = {
           results = results.filter(
             (e) =>
               e.subject.toLowerCase().includes(search) ||
-              e.recipients.some((r) => r.toLowerCase().includes(search))
+              e.recipients.some((r) => r.toLowerCase().includes(search)) ||
+              e.sentByEmail.toLowerCase().includes(search)
           );
         }
 
@@ -449,24 +460,43 @@ const resolvers = {
         const userEmail = context.userEmail || 'system@spiriverse.com';
         const now = new Date().toISOString();
         const id = uuidv4();
+        const host = context.host;
 
         // Build the branded HTML using default header/footer from Cosmos
         const htmlSnapshot = await buildAdHocEmailHtmlWithDefaults(input.bodyHtml, context.dataSources);
 
         const isScheduled = !!input.scheduledFor && new Date(input.scheduledFor) > new Date();
 
-        // If not scheduled, send immediately
+        // Create tracking records for each recipient
+        for (let i = 0; i < input.recipients.length; i++) {
+          const trackingId = `${id}_${i}`;
+          const trackingEntity: EmailTrackingEntity = {
+            partitionKey: id,
+            rowKey: trackingId,
+            recipient: input.recipients[i],
+            sentBy: userId,
+            openCount: 0,
+            createdAt: now,
+          };
+          await context.dataSources.tableStorage.createEntity(EMAIL_TRACKING_TABLE, trackingEntity);
+        }
+
+        // If not scheduled, send immediately with tracking pixels
         if (!isScheduled) {
           const allCc = (input.cc || []).filter(Boolean) as string[];
           const allBcc = (input.bcc || []).filter(Boolean) as string[];
 
           for (let i = 0; i < input.recipients.length; i++) {
+            const trackingId = `${id}_${i}`;
+            const pixelUrl = buildTrackingPixelUrl(host, trackingId);
+            const trackedHtml = injectTrackingPixel(htmlSnapshot, pixelUrl);
+
             // Only include CC/BCC on the first email to avoid duplicates
             await context.dataSources.email.sendRawHtmlEmail(
               'noreply@spiriverse.com',
               input.recipients[i],
               input.subject,
-              htmlSnapshot,
+              trackedHtml,
               i === 0 ? allCc : [],
               i === 0 ? allBcc : []
             );
@@ -482,7 +512,7 @@ const resolvers = {
           }
         }
 
-        // Store in Table Storage
+        // Store in Table Storage (htmlSnapshot without pixel - used for preview/clone)
         const entity: SentEmailEntity = {
           partitionKey: userId,
           rowKey: id,
@@ -497,6 +527,7 @@ const resolvers = {
           scheduledFor: input.scheduledFor || undefined,
           sentAt: isScheduled ? undefined : now,
           createdAt: now,
+          trackingHost: host,
         };
 
         await context.dataSources.tableStorage.createEntity(SENT_EMAILS_TABLE, entity);
@@ -510,13 +541,7 @@ const resolvers = {
 
     cancelScheduledEmail: async (_: any, args: { id: string }, context: serverContext) => {
       try {
-        const userId = context.userId || 'system';
-
-        const entity = await context.dataSources.tableStorage.getEntity<SentEmailEntity>(
-          SENT_EMAILS_TABLE,
-          userId,
-          args.id
-        );
+        const entity = await findEmailById(context.dataSources.tableStorage, args.id);
 
         if (!entity) {
           throw new Error('Email not found');
@@ -527,7 +552,7 @@ const resolvers = {
         }
 
         await context.dataSources.tableStorage.updateEntity(SENT_EMAILS_TABLE, {
-          partitionKey: userId,
+          partitionKey: entity.partitionKey,
           rowKey: args.id,
           emailStatus: 'CANCELLED',
         });
@@ -535,6 +560,42 @@ const resolvers = {
         return true;
       } catch (error) {
         console.error(`Failed to cancel scheduled email ${args.id}:`, error);
+        throw error;
+      }
+    },
+
+    rescheduleEmail: async (_: any, args: { id: string; scheduledFor: string }, context: serverContext) => {
+      try {
+        const entity = await findEmailById(context.dataSources.tableStorage, args.id);
+
+        if (!entity) {
+          throw new Error('Email not found');
+        }
+
+        if (entity.emailStatus !== 'SCHEDULED') {
+          throw new Error('Only scheduled emails can be rescheduled');
+        }
+
+        const newTime = new Date(args.scheduledFor);
+        if (isNaN(newTime.getTime()) || newTime <= new Date()) {
+          throw new Error('Scheduled time must be in the future');
+        }
+
+        await context.dataSources.tableStorage.updateEntity(SENT_EMAILS_TABLE, {
+          partitionKey: entity.partitionKey,
+          rowKey: args.id,
+          scheduledFor: newTime.toISOString(),
+        });
+
+        const updated = await context.dataSources.tableStorage.getEntity<SentEmailEntity>(
+          SENT_EMAILS_TABLE,
+          entity.partitionKey as string,
+          args.id
+        );
+
+        return entityToSentEmail(updated!);
+      } catch (error) {
+        console.error(`Failed to reschedule email ${args.id}:`, error);
         throw error;
       }
     },
@@ -572,15 +633,95 @@ const resolvers = {
 
     deleteEmailDraft: async (_: any, args: { id: string }, context: serverContext) => {
       try {
-        const userId = context.userId || 'system';
-        await context.dataSources.tableStorage.deleteEntity(SENT_EMAILS_TABLE, userId, args.id);
+        const entity = await findEmailById(context.dataSources.tableStorage, args.id);
+        if (!entity) {
+          throw new Error('Draft not found');
+        }
+        await context.dataSources.tableStorage.deleteEntity(SENT_EMAILS_TABLE, entity.partitionKey as string, args.id);
         return true;
       } catch (error) {
         console.error(`Failed to delete email draft ${args.id}:`, error);
         throw error;
       }
     },
-  }
+
+    createEmailTracker: async (_: any, args: { input: { recipients: string[]; subject: string } }, context: serverContext) => {
+      try {
+        const { input } = args;
+        const userId = context.userId || 'system';
+        const userEmail = context.userEmail || 'system@spiriverse.com';
+        const now = new Date().toISOString();
+        const id = uuidv4();
+        const host = context.host;
+
+        // Create tracking records for each recipient
+        for (let i = 0; i < input.recipients.length; i++) {
+          const trackingId = `${id}_${i}`;
+          const trackingEntity: EmailTrackingEntity = {
+            partitionKey: id,
+            rowKey: trackingId,
+            recipient: input.recipients[i],
+            sentBy: userId,
+            openCount: 0,
+            createdAt: now,
+          };
+          await context.dataSources.tableStorage.createEntity(EMAIL_TRACKING_TABLE, trackingEntity);
+        }
+
+        // Store as EXTERNAL email in the sent emails table
+        const entity: SentEmailEntity = {
+          partitionKey: userId,
+          rowKey: id,
+          sentByEmail: userEmail,
+          recipients: JSON.stringify(input.recipients),
+          cc: JSON.stringify([]),
+          bcc: JSON.stringify([]),
+          subject: input.subject,
+          bodyHtml: '',
+          htmlSnapshot: '',
+          emailStatus: 'EXTERNAL',
+          sentAt: now,
+          createdAt: now,
+          trackingHost: host,
+        };
+
+        await context.dataSources.tableStorage.createEntity(SENT_EMAILS_TABLE, entity);
+
+        // Build a single tracking pixel URL (uses first recipient's pixel — all hit the same endpoint)
+        const trackingPixelUrl = buildTrackingPixelUrl(host, `${id}_0`);
+
+        return {
+          email: entityToSentEmail(entity),
+          trackingPixelUrl,
+        };
+      } catch (error) {
+        console.error('Failed to create email tracker:', error);
+        throw new Error('Failed to create email tracker');
+      }
+    },
+  },
+
+  SentEmail: {
+    tracking: async (parent: { id: string }, _args: any, context: serverContext): Promise<EmailTrackingInfo[]> => {
+      try {
+        const filter = `PartitionKey eq '${parent.id}'`;
+        const entities = await context.dataSources.tableStorage.queryEntities<EmailTrackingEntity>(
+          EMAIL_TRACKING_TABLE,
+          filter
+        );
+
+        return entities.map((e) => ({
+          recipient: e.recipient || "",
+          openCount: e.openCount || 0,
+          firstOpenedAt: e.firstOpenedAt || undefined,
+          lastOpenedAt: e.lastOpenedAt || undefined,
+        }));
+      } catch {
+        // Table may not exist yet for older emails
+        return [];
+      }
+    },
+  },
 };
 
 export { resolvers };

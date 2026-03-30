@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { ShieldCheck, CheckCircle2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,13 +18,38 @@ const ConsentGuard = () => {
   const isLoggedIn = status === 'authenticated' && !!session?.user;
   const market = useUserMarket();
 
-  const { data: outstanding, isLoading } = useCheckOutstandingConsents('site', isLoggedIn, market);
+  const { data: outstandingRaw, isLoading } = useCheckOutstandingConsents('site', isLoggedIn, market);
+
+  // Terms of Service and Privacy Policy are accepted implicitly at sign-in
+  // ("By continuing, you agree to our Terms of Service and Privacy Policy")
+  // so we don't force users to read and check them again here.
+  const IMPLICIT_CONSENT_DOCS = ['terms-of-service', 'privacy-policy'];
+  const outstanding = outstandingRaw?.filter(doc => !IMPLICIT_CONSENT_DOCS.includes(doc.documentType));
   const { data: globalPlaceholders } = UseLegalPlaceholders();
   const recordConsents = useRecordConsents();
 
   const [checkedDocs, setCheckedDocs] = useState<Set<string>>(new Set());
   const [dismissed, setDismissed] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const autoAcceptedRef = useRef(false);
+
+  // Auto-accept implicit consent docs (Terms, Privacy) silently in the background
+  useEffect(() => {
+    if (autoAcceptedRef.current || !outstandingRaw || isLoading) return;
+    const implicitDocs = outstandingRaw.filter(doc => IMPLICIT_CONSENT_DOCS.includes(doc.documentType));
+    if (implicitDocs.length === 0) return;
+    autoAcceptedRef.current = true;
+    const inputs = implicitDocs.map(doc => ({
+      documentType: doc.documentType,
+      documentId: doc.documentId,
+      version: doc.version,
+      consentContext: 'implicit-sign-in',
+      documentTitle: doc.title,
+      supplementDocumentId: doc.supplementDocumentId,
+      supplementVersion: doc.supplementVersion,
+    }));
+    recordConsents.mutate(inputs);
+  }, [outstandingRaw, isLoading]);
 
   if (!isLoggedIn || isLoading || dismissed) return null;
   if (!outstanding || outstanding.length === 0) return null;

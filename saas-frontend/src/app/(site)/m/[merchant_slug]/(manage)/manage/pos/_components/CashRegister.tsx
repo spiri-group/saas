@@ -77,7 +77,7 @@ const CashRegister = ({ registerState, sales, currency, onOpenRegister, onCloseR
         </button>
 
         <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-          <DialogContent className="sm:max-w-sm bg-slate-900 border-slate-700 text-white" data-testid="pos-open-register-dialog">
+          <DialogContent className="sm:max-w-sm" data-testid="pos-open-register-dialog">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-white">
                 <DollarSign className="h-5 w-5 text-green-400" />
@@ -99,7 +99,8 @@ const CashRegister = ({ registerState, sales, currency, onOpenRegister, onCloseR
                   value={floatAmount}
                   onChange={(e) => setFloatAmount(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleOpenRegister()}
-                  className="pl-7 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 text-lg h-12 focus:border-purple-500 focus:ring-purple-500/20"
+                  dark
+                  className="pl-7 text-lg h-12 focus:border-purple-500 focus:ring-purple-500/20"
                   autoFocus
                 />
               </div>
@@ -129,7 +130,7 @@ const CashRegister = ({ registerState, sales, currency, onOpenRegister, onCloseR
       </button>
 
       <Dialog open={closeDialog} onOpenChange={setCloseDialog}>
-        <DialogContent className="sm:max-w-md bg-slate-900 border-slate-700 text-white" data-testid="pos-close-register-dialog">
+        <DialogContent className="sm:max-w-md" data-testid="pos-close-register-dialog">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-white">
               <DollarSign className="h-5 w-5 text-green-400" />
@@ -185,7 +186,8 @@ const CashRegister = ({ registerState, sales, currency, onOpenRegister, onCloseR
                   placeholder="0.00"
                   value={countedCash}
                   onChange={(e) => setCountedCash(e.target.value)}
-                  className="pl-7 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 text-lg h-12 focus:border-purple-500 focus:ring-purple-500/20"
+                  dark
+                  className="pl-7 text-lg h-12 focus:border-purple-500 focus:ring-purple-500/20"
                 />
               </div>
               {variance !== null && !isNaN(variance) && (

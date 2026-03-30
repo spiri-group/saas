@@ -13,6 +13,7 @@ import { GraphQLError } from "graphql";
 import { extractLovedOnesFromText, isMediumshipReading } from "./loved-ones-extractor";
 import { renderEmailTemplate } from "../email/utils";
 import { sender_details } from "../../client/email_templates";
+import { fetchTermsSnapshot } from "./terms_utils";
 
 /**
  * Validates that a requested booking time falls within the practitioner's available schedule
@@ -1052,6 +1053,9 @@ const resolvers = {
                 throw new Error("Service pricing not configured correctly");
             }
 
+            // Snapshot terms & conditions if the service has them
+            const termsSnapshot = await fetchTermsSnapshot(context.dataSources.cosmos, service.termsDocumentId, args.merchantId);
+
             // Store timezone-aware booking information
             var record = {
                 id: uuidv4(),
@@ -1059,6 +1063,7 @@ const resolvers = {
                 vendorId: args.merchantId,
                 serviceId: args.serviceId,
                 userId: context.userId,
+                ...(termsSnapshot && { termsSnapshot }),
                 date: DateTime.fromJSDate(date).toISODate(),
                 time: {
                     start: DateTime.fromJSDate(time.start).toISOTime(),
@@ -2358,6 +2363,9 @@ const resolvers = {
                 utcDateTime: slotStart.toUTC().toISO()
             };
 
+            // Snapshot terms & conditions if the service has them
+            const termsSnapshot = await fetchTermsSnapshot(context.dataSources.cosmos, service.termsDocumentId, vendorId);
+
             // Create booking record
             const bookingId = uuidv4();
             const booking = {
@@ -2370,6 +2378,7 @@ const resolvers = {
                 serviceId,
                 listingId: serviceId,
                 service,
+                ...(termsSnapshot && { termsSnapshot }),
                 purchaseDate: new Date().toISOString(),
                 date: dateStr,
                 time: scheduledDateTime.time,

@@ -266,7 +266,6 @@ export default function SetupUI() {
 
     const handleMerchantBack = useCallback(() => {
         if (tierParam && session?.user?.id) {
-            // Tier was pre-selected via URL — cancel back to My Journey
             router.push(`/u/${session.user.id}/space`);
         } else {
             setStep('plan');
@@ -490,11 +489,7 @@ export default function SetupUI() {
                 <div
                     className={`flex flex-col rounded-2xl flex-1 min-h-0 transition-all duration-1000 overflow-hidden ${
                         mounted ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'
-                    } ${
-                        theme === 'purple'
-                            ? 'bg-purple-50 border-2 border-purple-300/60 shadow-[0_8px_40px_-8px_rgba(147,51,234,0.25)]'
-                            : 'bg-white border border-slate-200 shadow-2xl'
-                    }`}
+                    } backdrop-blur-xl bg-white/[0.07] border border-white/15 shadow-2xl`}
                 >
                     {/* Themed accent bar */}
                     <div className={`h-1.5 flex-shrink-0 ${

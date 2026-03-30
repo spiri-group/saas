@@ -82,7 +82,7 @@ const CustomerPurchases: React.FC<Props> = (props) => {
 
     return (
         <>
-            <Panel className={cn("flex flex-col", props.className)}>
+            <Panel dark className={cn("flex flex-col", props.className)}>
                 <h1 className="text-xl font-bold mb-3">Their Purchases</h1>
                 {props.customerId ? (
                     <>
@@ -90,7 +90,7 @@ const CustomerPurchases: React.FC<Props> = (props) => {
                             {bl.tourPurchases.get.map((customerTourBooking) => {
                                 return (
                                     <li key={customerTourBooking.ref.id}>
-                                        <Panel className="p-4">
+                                        <Panel dark className="p-4">
                                             <span>Order code: {customerTourBooking.code}</span>
                                             <Button variant="link">Update booking</Button>
                                             <Button variant="link">Change day</Button>
@@ -101,7 +101,7 @@ const CustomerPurchases: React.FC<Props> = (props) => {
                             {bl.servicePurchases.get.length > 0 && bl.servicePurchases.get.map((customerServiceBooking) => {
                                 return (
                                     <li key={customerServiceBooking.ref.id}>
-                                        <Panel className="p-2 flex flex-row space-x-4">
+                                        <Panel dark className="p-2 flex flex-row space-x-4">
                                             <div className="flex flex-col space-y-2">
                                                 <span>{customerServiceBooking.service.name}</span>
                                                 <span className="text-sm text-slate-400">Invoice #{customerServiceBooking.stripe.invoiceNumber}</span>
@@ -163,17 +163,17 @@ const CustomerPurchases: React.FC<Props> = (props) => {
                             {bl.customerOrders.get.length > 0 && bl.customerOrders.get.map((order) => {
                                 return (
                                     <li key={order.id}>
-                                        <Panel className="p-4" style={{height: 320, width: "100%"}}>
+                                        <Panel dark className="p-4" style={{height: 320, width: "100%"}}>
                                             <PanelContent className="flex flex-col h-full">
                                                 <div className="flex flex-row justify-between items-center mb-2">
                                                     <span className="font-bold text-xl">{order.code}</span>
-                                                    <PaidStatusBadge className="text-md " status={order.paid_status} />
+                                                    <PaidStatusBadge className="text-md " status={order.paid_status} dark />
                                                 </div>
                                                 <div className="space-y-2 flex flex-col flex-grow">
                                                     <span>
                                                         Ordered: {DateTime.fromISO(order.createdDate).toLocaleString({ weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                                                     </span>
-                                                    <div className="flex-grow bg-slate-50 rounded-xl p-3">
+                                                    <div className="flex-grow bg-slate-800/50 rounded-xl p-3">
                                                         <span className={cn("font-semibold text-slate-500 mb-3 text-sm py-2")}>Item Summary</span>
                                                         <p className="line-clamp-3 text-sm">
                                                         {Array

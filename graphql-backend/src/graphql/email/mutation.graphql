@@ -40,6 +40,16 @@ input SaveEmailDraftInput {
   bodyHtml: String
 }
 
+input CreateEmailTrackerInput {
+  recipients: [String!]!
+  subject: String!
+}
+
+type EmailTrackerResult {
+  email: SentEmail!
+  trackingPixelUrl: String!
+}
+
 type Mutation {
   upsertEmailTemplate(input: EmailTemplateInput!): EmailTemplate!
   deleteEmailTemplate(id: ID!): Boolean!
@@ -48,6 +58,8 @@ type Mutation {
   deleteEmailAsset(name: String!): Boolean!
   sendAdHocEmail(input: SendAdHocEmailInput!): SentEmail!
   cancelScheduledEmail(id: ID!): Boolean!
+  rescheduleEmail(id: ID!, scheduledFor: String!): SentEmail!
   saveEmailDraft(input: SaveEmailDraftInput!): SentEmail!
   deleteEmailDraft(id: ID!): Boolean!
+  createEmailTracker(input: CreateEmailTrackerInput!): EmailTrackerResult!
 }

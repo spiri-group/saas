@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Session } from "next-auth";
-import PractitionerSideNav from "../../../../_components/PractitionerSideNav";
 import { usePractitionerTestimonials, useCreateTestimonialRequest, useDeleteTestimonial, usePinTestimonials } from "./_hooks/UseTestimonials";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,16 +107,7 @@ export default function PractitionerTestimonialsUI({ session, practitionerId, sl
     };
 
     return (
-        <div className="flex min-h-full">
-            {/* Sidebar */}
-            <PractitionerSideNav
-                session={session}
-                practitionerId={practitionerId}
-                practitionerSlug={slug}
-            />
-
-            {/* Main Content */}
-            <div className="flex-1 md:ml-[200px] p-8">
+            <div className="p-8">
                 <div className="w-full">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-8">
@@ -133,7 +123,7 @@ export default function PractitionerTestimonialsUI({ session, practitionerId, sl
 
                         <Dialog open={isRequestDialogOpen} onOpenChange={(open) => open ? setIsRequestDialogOpen(true) : handleCloseDialog()}>
                             <DialogTrigger asChild>
-                                <Button data-testid="request-testimonial-btn" className="bg-amber-500 hover:bg-amber-600 text-slate-900">
+                                <Button data-testid="request-testimonial-btn" className="bg-amber-600 hover:bg-amber-700 text-white">
                                     <Plus className="w-4 h-4 mr-2" />
                                     Request Testimonial
                                 </Button>
@@ -173,13 +163,13 @@ export default function PractitionerTestimonialsUI({ session, practitionerId, sl
                                     </div>
                                 ) : (
                                     <div className="py-4 space-y-4">
-                                        <div className="bg-slate-100 rounded-lg p-4">
-                                            <Label className="text-slate-700 mb-2 block">Your Testimonial Request Link</Label>
+                                        <div className="bg-slate-800 rounded-lg p-4">
+                                            <Label className="text-slate-300 mb-2 block">Your Testimonial Request Link</Label>
                                             <div className="flex items-center gap-2">
                                                 <Input
                                                     value={generatedLink}
                                                     readOnly
-                                                    className="bg-white font-mono text-sm"
+                                                    className="bg-slate-800 text-slate-200 font-mono text-sm"
                                                     data-testid="generated-link-input"
                                                 />
                                                 <Button
@@ -203,7 +193,7 @@ export default function PractitionerTestimonialsUI({ session, practitionerId, sl
                                         <Button
                                             onClick={handleCreateRequest}
                                             disabled={createRequestMutation.isPending}
-                                            className="bg-amber-500 hover:bg-amber-600 text-slate-900"
+                                            className="bg-amber-600 hover:bg-amber-700 text-white"
                                             data-testid="generate-link-btn"
                                         >
                                             {createRequestMutation.isPending ? 'Generating...' : 'Generate Link'}
@@ -341,6 +331,5 @@ export default function PractitionerTestimonialsUI({ session, practitionerId, sl
                     </div>
                 </div>
             </div>
-        </div>
     );
 }

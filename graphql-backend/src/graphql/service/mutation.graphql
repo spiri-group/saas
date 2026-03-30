@@ -181,6 +181,7 @@ input CreateReadingOfferInput {
   name: String!
   description: String!
   terms: String
+  termsDocumentId: ID
   faq: [FAQInput]
   thumbnail: ThumbnailInput
   pricing: ServicePricingInput!
@@ -203,6 +204,7 @@ input CreateHealingOfferInput {
   name: String!
   description: String!
   terms: String
+  termsDocumentId: ID
   faq: [FAQInput]
   thumbnail: ThumbnailInput
   pricing: ServicePricingInput!
@@ -223,6 +225,7 @@ input CreateCoachingOfferInput {
   name: String!
   description: String!
   terms: String
+  termsDocumentId: ID
   faq: [FAQInput]
   thumbnail: ThumbnailInput
   pricing: ServicePricingInput!
@@ -308,6 +311,7 @@ input UpdateReadingOfferInput {
   name: String
   description: String
   terms: String
+  termsDocumentId: ID
   faq: [FAQInput]
   thumbnail: ThumbnailInput
   pricing: ServicePricingInput
@@ -330,6 +334,7 @@ input UpdateHealingOfferInput {
   name: String
   description: String
   terms: String
+  termsDocumentId: ID
   faq: [FAQInput]
   thumbnail: ThumbnailInput
   pricing: ServicePricingInput
@@ -350,6 +355,7 @@ input UpdateCoachingOfferInput {
   name: String
   description: String
   terms: String
+  termsDocumentId: ID
   faq: [FAQInput]
   thumbnail: ThumbnailInput
   pricing: ServicePricingInput

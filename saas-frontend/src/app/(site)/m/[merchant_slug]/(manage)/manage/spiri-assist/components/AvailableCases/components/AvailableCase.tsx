@@ -25,7 +25,7 @@ const AvailableCase : React.FC<Props> = (props) => {
 
     return (   
         <>
-            <Panel className="flex flex-col">
+            <Panel dark className="flex flex-col">
                 <div className="flex flex-col space-y-2 p-2" > 
                     <div className="flex flex-row w-full items-center">
                     <span className="text-sm">({props.case.locatedFromMe.value}{props.case.locatedFromMe.units})</span>

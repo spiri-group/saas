@@ -36,16 +36,18 @@ const Locations : React.FC<Props> = ({vendor, visibility}) => {
         return <></>;
     }
 
-    if (vendor.locations == null || vendor.locations.length == 0) {
+    const publicLocations = (vendor.locations ?? []).filter(l => !l.hiddenFromPublic);
+
+    if (publicLocations.length == 0) {
         return <></>
     }
 
-    if (vendor.locations != null && vendor.locations.length == 1) {
+    if (publicLocations.length == 1) {
         return (
             <MerchantCard vendor={vendor} visibility={visibility} title="Location">
                 <div className="flex flex-col space-y-2 w-full">
                 <ul className="flex flex-col space-y-2 flex-grow">
-                    {vendor.locations.map((location) => (
+                    {publicLocations.map((location) => (
                         <li key={location.id} className="flex flex-col">
                             <div className="flex flex-row space-x-3">
                                 <MapIcon 
@@ -94,7 +96,7 @@ const Locations : React.FC<Props> = ({vendor, visibility}) => {
                 <div className="flex flex-col space-y-2 w-full">
                     <Carousel>
                         <CarouselContent className="pl-2">
-                            {vendor.locations.map((location) => (
+                            {publicLocations.map((location) => (
                                 <CarouselItem key={location.id}>
                                     <MerchantLocationTitle className="mr-3">
                                         {location.title}
@@ -104,7 +106,7 @@ const Locations : React.FC<Props> = ({vendor, visibility}) => {
                         </CarouselContent>
                     </Carousel>
                 <div className="flex flex-row justify-between items-center">
-                    <span className="text-xs">{vendor.locations.length} locations</span>
+                    <span className="text-xs">{publicLocations.length} locations</span>
                     <Button 
                         variant="link"
                         type="button"
@@ -131,7 +133,7 @@ const Locations : React.FC<Props> = ({vendor, visibility}) => {
                             Autoplay({ playOnInit: false, delay: 3000 })
                         ]}>
                         <CarouselContent className="w-[600px]">
-                            {vendor.locations.map((location) => (
+                            {publicLocations.map((location) => (
                                 <CarouselItem key={location.id} className="flex-none flex flex-col w-[200px] mr-3">
                                     <div className="flex flex-col space-y-2 w-auto items-center">
                                         <div className="flex flex-row space-x-3 items-center">

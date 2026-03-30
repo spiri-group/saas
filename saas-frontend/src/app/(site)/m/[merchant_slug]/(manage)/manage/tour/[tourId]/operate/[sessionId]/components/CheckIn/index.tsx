@@ -320,7 +320,7 @@ const CheckInComponent: React.FC<Props> = (props) => {
 
     return (
         <div className="space-y-4">
-            <Panel>
+            <Panel dark>
                 <PanelHeader>
                     <PanelTitle as="h2">Quick Check-In</PanelTitle>
                     <PanelDescription>
@@ -415,7 +415,7 @@ const CheckInComponent: React.FC<Props> = (props) => {
 
             {/* Loading State */}
             {bl.isLoading && (
-                <Panel>
+                <Panel dark>
                     <div className="flex items-center justify-center py-8">
                         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                     </div>
@@ -435,7 +435,7 @@ const CheckInComponent: React.FC<Props> = (props) => {
 
             {/* Booking Details */}
             {!bl.isLoading && bl.booking && (
-                <Panel data-testid="booking-details-panel">
+                <Panel dark data-testid="booking-details-panel">
                     <PanelHeader>
                         <div className="flex items-center justify-between">
                             <PanelTitle>Booking #{bl.booking.code}</PanelTitle>

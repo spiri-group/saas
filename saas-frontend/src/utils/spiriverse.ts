@@ -441,6 +441,8 @@ export interface AiConversation {
     createdDate: string;
     updatedDate: string;
     messageCount: number;
+    createdByUserId?: string;
+    createdByEmail?: string;
 }
 
 export interface AiMessage {
@@ -449,6 +451,8 @@ export interface AiMessage {
     role: 'user' | 'assistant';
     content: string;
     createdDate: string;
+    senderUserId?: string;
+    senderEmail?: string;
 }
 
 export interface AnalyticsEntity {
@@ -2037,6 +2041,7 @@ export type journey_type = {
     thumbnail: thumbnail_type
     ref: recordref_type
     isLive: boolean
+    termsDocumentId?: string
 
     // Journey-specific fields
     journeyStructure: JourneyStructure
@@ -4029,6 +4034,7 @@ export type service_type = {
     type: string,
     description: string,
     terms: string,
+    termsDocumentId?: string,
     faq: faq_type[]
     thumbnail: thumbnail_type
     ref: recordref_type
@@ -4896,7 +4902,8 @@ export type merchantLocation_type = {
     id: string,
     title: string,
     address: googleplace_type,
-    services: string[]
+    services: string[],
+    hiddenFromPublic?: boolean
 }
 
 export type vendorUser_type = {

@@ -85,7 +85,7 @@ const GoLiveChecklist: React.FC<GoLiveChecklistProps> = ({ merchantId }) => {
                     <span className="text-xs text-slate-400">{goLiveReadiness.hasStripeOnboarding ? '1' : '0'}/1 complete</span>
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
-                    Complete this step to publish your shop and start accepting customers.
+                    You won&apos;t appear in search until this is done. Complete banking setup to go live.
                 </p>
             </CardHeader>
             <CardContent className="pt-0">

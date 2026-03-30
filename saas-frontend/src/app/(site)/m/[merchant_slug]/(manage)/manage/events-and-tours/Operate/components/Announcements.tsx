@@ -12,7 +12,7 @@ const AnnouncementsComponent : React.FC = () => {
     return (   
         <>
             <div className="grid grid-cols-2 space-x-2"> 
-                <Panel>
+                <Panel dark>
                     <h1 className="text-xl font-bold"> Create New Announcement </h1>
                     <RadioGroup defaultValue="comfortable" className="flex flex-row">
                         <div className="flex items-center space-x-2">
@@ -62,7 +62,7 @@ const AnnouncementsComponent : React.FC = () => {
                     </div>
                     <Button className="mt-2"> Create Announcement </Button>
                 </Panel>
-                <Panel>
+                <Panel dark>
                     <h1 className="text-xl font-bold"> All announcement appears here </h1>
                     {/* {bl.bookings.get.map((announcement) => {
                         return (

@@ -69,7 +69,7 @@ jobs:
 
       - name: Update Container Jobs
         run: |
-          JOBS=("booking-reminder" "billing-processor" "refund-protection" "tour-reminder")
+          JOBS=("booking-reminder" "billing-processor" "refund-protection" "tour-reminder" "scheduled-email")
           for JOB_NAME in "${JOBS[@]}"; do
             FULL_NAME="job-${JOB_NAME}-${{ env.ENV_NAME }}-${{ env.ENV_SUFFIX }}"
             echo "Updating job: ${FULL_NAME}"

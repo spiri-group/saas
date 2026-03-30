@@ -4,7 +4,8 @@ import { cn } from "@/lib/utils";
 type Props = {
     className?: string,
     status: string,
-    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl',
+    dark?: boolean
 }
 
 const statusClasses = {
@@ -12,6 +13,13 @@ const statusClasses = {
     PAID: "text-green-800",
     PARTIAL_REFUND: "text-blue-800 bg-blue-200",
     FULL_REFUND: "text-red-800",
+};
+
+const statusClassesDark = {
+    AWAITING_PAYMENT: "text-yellow-400 bg-yellow-900/30",
+    PAID: "text-green-400",
+    PARTIAL_REFUND: "text-blue-400 bg-blue-900/30",
+    FULL_REFUND: "text-red-400",
 };
 
 const statusText = {
@@ -30,9 +38,10 @@ const sizeClasses = {
     xl: "px-6 py-3 text-xl"
 };
 
-const PaidStatusBadge: React.FC<Props> = ({status, className, size = 'md'}) => {
+const PaidStatusBadge: React.FC<Props> = ({status, className, size = 'md', dark}) => {
     const badge_cn = `rounded-xl items-center justify-between ${className || ''}`;
-    const classes = statusClasses[status] || '';
+    const palette = dark ? statusClassesDark : statusClasses;
+    const classes = palette[status] || '';
     const text = statusText[status] || '';
     const sizeClass = sizeClasses[size];
 

@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Headphones, Plus, Trash2, Pencil, Clock, Music, Eye, EyeOff, ListMusic, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import PractitionerSideNav from "../../../../_components/PractitionerSideNav";
 import useJourneys, { JourneyListItem } from "./_hooks/UseJourneys";
 import useCreateJourney from "./_hooks/UseCreateJourney";
 import { decodeAmountFromSmallestUnit } from "@/lib/functions";
@@ -193,14 +192,8 @@ export default function PractitionerJourneysUI({ session, practitionerId, slug }
     };
 
     return (
-        <div className="flex min-h-full">
-            <PractitionerSideNav
-                session={session}
-                practitionerId={practitionerId}
-                practitionerSlug={slug}
-            />
-
-            <div className="flex-1 md:ml-[200px] p-4 md:p-6">
+        <>
+            <div className="p-4 md:p-6">
                 <div className="w-full">
                     {managingJourney ? (
                         <JourneyTrackManager
@@ -412,6 +405,6 @@ export default function PractitionerJourneysUI({ session, practitionerId, slug }
                     </DialogContent>
                 </Dialog>
             )}
-        </div>
+        </>
     );
 }

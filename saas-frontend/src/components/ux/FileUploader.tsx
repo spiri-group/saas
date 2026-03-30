@@ -481,15 +481,16 @@ const FileUploader : React.FC<FileUploaderParams> = ({includePreview= true, ...p
                         includePreview ?
                         <>
                         <div className={classNames("relative h-full w-full rounded-lg", props.imageClassName)}>
-                            <NextImage.default 
+                            <NextImage.default
                                 src={ Array.isArray(props.value) ? props.value[0] : props.value }
-                                style={{ 
-                                    objectFit: props.objectFit ?? "contain", 
-                                    height: "100%", 
+                                style={{
+                                    objectFit: props.objectFit ?? "contain",
+                                    height: "100%",
                                     ...props.style // Merge additional styles here
                                 }}
                                 className={props.imageClassName}
-                                fill={true} alt={""} />
+                                fill={true} alt={""}
+                                unoptimized />
                         </div>
                         </> : (
                             props.onRemoveAsync != null ? (

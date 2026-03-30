@@ -1,6 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { gql } from "@/lib/services/gql";
 
+export interface EmailTrackingInfo {
+  recipient: string;
+  openCount: number;
+  firstOpenedAt?: string;
+  lastOpenedAt?: string;
+}
+
 export interface SentEmail {
   id: string;
   sentBy: string;
@@ -15,6 +22,7 @@ export interface SentEmail {
   scheduledFor?: string;
   sentAt?: string;
   createdAt: string;
+  tracking: EmailTrackingInfo[];
 }
 
 const UseSentEmails = (search?: string) => {
@@ -38,6 +46,12 @@ const UseSentEmails = (search?: string) => {
             scheduledFor
             sentAt
             createdAt
+            tracking {
+              recipient
+              openCount
+              firstOpenedAt
+              lastOpenedAt
+            }
           }
         }
       `,

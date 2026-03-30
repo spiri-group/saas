@@ -330,7 +330,7 @@ export default function LiveQueueDashboard({ practitionerId, sessionId, slug }: 
             {/* Fullscreen QR overlay */}
             {showQR && shareUrl && (
                 <div
-                    className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center cursor-pointer"
+                    className="fixed inset-0 z-50 bg-slate-900 text-white flex flex-col items-center justify-center cursor-pointer"
                     onClick={() => setShowQR(false)}
                     data-testid="qr-fullscreen"
                 >

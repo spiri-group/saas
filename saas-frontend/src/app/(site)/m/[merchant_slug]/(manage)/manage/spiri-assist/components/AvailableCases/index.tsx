@@ -52,7 +52,7 @@ const AvailableCases : React.FC<Props> = (props) => {
     const bl = useBL()
 
     return (   
-        <Panel className={cn("flex flex-col", props.className)}>
+        <Panel dark className={cn("flex flex-col", props.className)}>
             <PanelHeader>
                 <PanelTitle>Available Help Requests</PanelTitle>
                 <div className="flex flex-row space-x-1">

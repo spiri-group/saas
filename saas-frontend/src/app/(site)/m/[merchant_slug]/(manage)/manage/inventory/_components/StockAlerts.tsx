@@ -43,9 +43,7 @@ export default function StockAlerts({ merchantId }: StockAlertsProps) {
       case 'OUT_OF_STOCK':
         return <Badge variant="destructive">Out of Stock</Badge>;
       case 'LOW_STOCK':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-          Low Stock
-        </Badge>;
+        return <Badge variant="warning" dark>Low Stock</Badge>;
       default:
         return <Badge variant="outline">{alertType}</Badge>;
     }

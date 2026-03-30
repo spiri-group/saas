@@ -33,14 +33,14 @@ const TourDetails : React.FC<Props> = (props) => {
 
     if (!bl.tour.get) {
         return (
-            <Panel className="flex-none w-full md:w-[450px]">
+            <Panel dark className="flex-none w-full md:w-[450px]">
                 <></>
             </Panel>
         )
     }
 
     return (
-        <Panel className="flex-none space-y-2 w-full md:w-[400px]">
+        <Panel dark className="flex-none space-y-2 w-full md:w-[400px]">
             <h1 className="font-bold text-sm md:text-xl">{bl.tour.get.name}</h1>
             <img src={bl.tour.get.thumbnail.image.media.url} 
                 className="w-full h-auto rounded-xl"

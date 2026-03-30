@@ -28,6 +28,7 @@ const queryFn = async (merchantId: string) => {
                         }
                     }
                     services
+                    hiddenFromPublic
                 }
               }
           }

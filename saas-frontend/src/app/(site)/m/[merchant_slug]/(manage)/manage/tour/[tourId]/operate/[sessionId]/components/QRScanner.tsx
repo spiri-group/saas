@@ -155,7 +155,7 @@ const QRScanner: React.FC<Props> = ({ merchantId, sessionId, sessionRef }) => {
 
     return (
         <div className="space-y-4">
-            <Panel>
+            <Panel dark>
                 <PanelHeader>
                     <PanelTitle as="h2">QR Code Scanner</PanelTitle>
                     <PanelDescription>

@@ -33,6 +33,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "stspvappdev002.blob.core.windows.net",
         pathname: "/**"
+      },
+      {
+        protocol: "https",
+        hostname: "stspvappprd002.blob.core.windows.net",
+        pathname: "/**"
       }
     ]
   }

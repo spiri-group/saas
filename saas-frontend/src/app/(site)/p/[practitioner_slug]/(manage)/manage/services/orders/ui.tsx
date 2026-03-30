@@ -43,16 +43,16 @@ export default function UI({ practitionerId }: Props) {
     }
   };
 
-  const getCategoryColor = (category: string) => {
+  const getCategoryVariant = (category: string): 'info' | 'success' | 'warning' | 'secondary' => {
     switch (category) {
       case 'READING':
-        return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+        return 'info';
       case 'HEALING':
-        return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+        return 'success';
       case 'COACHING':
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+        return 'warning';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'secondary';
     }
   };
 
@@ -78,7 +78,7 @@ export default function UI({ practitionerId }: Props) {
         <CardContent className="p-6">
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center gap-2">
-              <Badge className={getCategoryColor(order.service.category)}>
+              <Badge variant={getCategoryVariant(order.service.category)} dark>
                 <div className="flex items-center gap-1">
                   {getCategoryIcon(order.service.category)}
                   {order.service.category}

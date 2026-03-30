@@ -9,6 +9,7 @@ type PendingServiceOrder = {
     status: string;
     purchaseDate: string;
     checkoutLinkExpiresAt?: string;
+    termsDocumentId?: string;
     service: {
         id: string;
         name: string;
@@ -52,6 +53,7 @@ const UsePendingServiceOrder = (orderId: string) => {
                         status
                         purchaseDate
                         checkoutLinkExpiresAt
+                        termsDocumentId
                         service {
                             id
                             name

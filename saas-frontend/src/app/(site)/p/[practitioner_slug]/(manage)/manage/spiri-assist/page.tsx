@@ -29,7 +29,7 @@ async function SpiriAssistPage({ params }: { params: Promise<{ practitioner_slug
 
         return (
             <UIContainer me={session.user}>
-                <UI merchantId={practitionerId} practitionerSlug={slug} />
+                <UI session={session} merchantId={practitionerId} practitionerSlug={slug} />
             </UIContainer>
         );
     } catch {

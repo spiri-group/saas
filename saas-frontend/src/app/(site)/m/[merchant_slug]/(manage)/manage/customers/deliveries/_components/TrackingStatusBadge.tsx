@@ -35,32 +35,32 @@ const trackingStatusMeta: Record<
   in_transit: {
     label: "In Transit",
     icon: <TruckIcon size={14} />,
-    className: "bg-yellow-100 text-yellow-800",
+    className: "bg-yellow-900/30 text-yellow-400",
   },
   delivered: {
     label: "Delivered",
     icon: <CheckCircleIcon size={14} />,
-    className: "bg-green-100 text-green-800",
+    className: "bg-green-900/30 text-green-400",
   },
   delivered_to_service_point: {
     label: "Collection Location",
     icon: <LocateIcon size={14} />,
-    className: "bg-blue-100 text-blue-800",
+    className: "bg-blue-900/30 text-blue-400",
   },
   error: {
     label: "Exception",
     icon: <AlertTriangleIcon size={14} />,
-    className: "bg-red-100 text-red-800",
+    className: "bg-red-900/30 text-red-400",
   },
   unknown: {
     label: "Unknown",
-    icon: <span className="w-2 h-2 rounded-full bg-gray-300 inline-block" />,
-    className: "bg-gray-50 text-gray-400 border border-gray-200 px-2 py-0.5",
+    icon: <span className="w-2 h-2 rounded-full bg-gray-500 inline-block" />,
+    className: "bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5",
   },
   default: {
     label: "Status",
     icon: <ClockIcon size={14} />,
-    className: "bg-muted text-foreground",
+    className: "bg-slate-800 text-slate-300",
   },
 };
 

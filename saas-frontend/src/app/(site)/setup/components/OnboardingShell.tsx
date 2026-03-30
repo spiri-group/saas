@@ -17,30 +17,28 @@ type Props = {
 export default function OnboardingShell({ isFullScreen, isCentered, marketingContent, children, onCancel }: Props) {
     return (
         <div className="w-full flex-1 flex flex-col min-h-0 relative">
-            {/* Content grid with animated transition */}
+            {/* Content area */}
             <div
                 className={cn(
-                    "relative z-10 w-full grid gap-2 p-2 sm:gap-4 sm:p-4 md:gap-6 md:p-6 min-h-0",
+                    "relative z-10 w-full flex gap-2 p-2 sm:gap-4 sm:p-4 md:gap-6 md:p-6 min-h-0",
                     !isCentered && "flex-1",
                     isCentered && "max-w-6xl mx-auto my-auto",
                 )}
-                style={{
-                    gridTemplateColumns: isFullScreen ? '0fr 1fr' : '1fr 1fr',
-                    gridTemplateRows: isCentered ? 'auto' : '1fr',
-                    transition: 'grid-template-columns 700ms ease-in-out',
-                }}
             >
-                {/* Marketing panel — collapses to 0fr when full-screen */}
+                {/* Marketing panel — hidden on mobile, collapses when full-screen */}
                 <div
-                    className="overflow-hidden hidden lg:flex flex-col transition-opacity duration-700 min-w-0"
+                    className={cn(
+                        "overflow-hidden hidden flex-col transition-all duration-700 min-w-0",
+                        !isFullScreen && "lg:flex lg:w-1/2",
+                    )}
                     style={{ opacity: isFullScreen ? 0 : 1 }}
                 >
                     {marketingContent}
                 </div>
 
-                {/* Form panel — stretches to center when full-screen */}
+                {/* Form panel — takes full width on mobile, shares space on desktop */}
                 <div className={cn(
-                    'flex flex-col min-h-0 min-w-0 overflow-x-hidden overflow-y-auto transition-all duration-700',
+                    'flex flex-col min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto transition-all duration-700',
                     isFullScreen ? 'max-w-7xl mx-auto w-full' : '',
                 )}>
                     {children}

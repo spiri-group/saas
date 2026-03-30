@@ -58,7 +58,7 @@ const CaseApplications : React.FC<Props> = (props) => {
 
     return (  
         <> 
-            <Panel className={cn("flex flex-col", props.className)}>
+            <Panel dark className={cn("flex flex-col", props.className)}>
                 <PanelHeader>
                     <PanelTitle>My Offers</PanelTitle>
                 </PanelHeader>
@@ -68,7 +68,7 @@ const CaseApplications : React.FC<Props> = (props) => {
                         {bl.caseApplications.get != undefined && bl.caseApplications.get.map((caseApplication) => {
                                 return (
                                     <li key={caseApplication.id}>
-                                        <Panel className="flex flex-col">
+                                        <Panel dark className="flex flex-col">
                                             <div className="flex flex-row items-center justify-between">
                                                 <div className="grid grid-rows-2 gap-2">
                                                     <span>Offer {caseApplication.code} </span>

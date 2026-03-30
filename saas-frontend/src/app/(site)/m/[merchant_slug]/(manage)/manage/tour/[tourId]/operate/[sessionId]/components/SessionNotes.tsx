@@ -47,7 +47,7 @@ const SessionNotes: React.FC<Props> = ({ sessionId, tourId }) => {
     }, [notes, saveNotes]);
 
     return (
-        <Panel>
+        <Panel dark>
             <PanelHeader>
                 <div className="flex items-center justify-between">
                     <div>

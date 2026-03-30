@@ -5,7 +5,12 @@
 import { AzureEmailDataSource } from "../services/azureEmail";
 import { TableStorageDataSource } from "../services/tablestorage";
 import { LogManager } from "../utils/functions";
-import { SentEmailEntity, SENT_EMAILS_TABLE } from "../graphql/email/adhocTypes";
+import {
+    SentEmailEntity,
+    SENT_EMAILS_TABLE,
+    buildTrackingPixelUrl,
+    injectTrackingPixel,
+} from "../graphql/email/adhocTypes";
 
 export async function runScheduledEmailSender(
     tableStorage: TableStorageDataSource,
@@ -27,13 +32,24 @@ export async function runScheduledEmailSender(
             const cc: string[] = JSON.parse(entity.cc || "[]");
             const bcc: string[] = JSON.parse(entity.bcc || "[]");
 
+            // Use tracking host stored when email was created, fall back to WEBSITE_HOSTNAME
+            const trackingHost = entity.trackingHost || process.env.WEBSITE_HOSTNAME || "";
+
             for (let i = 0; i < recipients.length; i++) {
+                // Inject per-recipient tracking pixel
+                let htmlToSend = entity.htmlSnapshot;
+                if (trackingHost) {
+                    const trackingId = `${entity.rowKey}_${i}`;
+                    const pixelUrl = buildTrackingPixelUrl(trackingHost, trackingId);
+                    htmlToSend = injectTrackingPixel(entity.htmlSnapshot, pixelUrl);
+                }
+
                 // Only include CC/BCC on the first email to avoid duplicates
                 await email.sendRawHtmlEmail(
                     "noreply@spiriverse.com",
                     recipients[i],
                     entity.subject,
-                    entity.htmlSnapshot,
+                    htmlToSend,
                     i === 0 ? cc : [],
                     i === 0 ? bcc : []
                 );
