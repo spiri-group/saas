@@ -855,6 +855,20 @@ const resolvers = {
 
             await context.dataSources.cosmos.add_record("Main-Listing", item, item["vendorId"], context.userId)
 
+            // Publish feed activity
+            try {
+                const { publishFeedActivity, extractVendorInfo } = await import("../social/feedActivity");
+                const vendor = await context.dataSources.cosmos.get_record<any>("Main-Vendor", item.vendorId, item.vendorId);
+                if (vendor) {
+                    await publishFeedActivity(context, extractVendorInfo(vendor), "NEW_SERVICE", item.id, {
+                        title: item.name,
+                        subtitle: item.description || null,
+                        media: item.thumbnail || item.images?.[0] || null,
+                        metadata: { price: item.price, duration: item.duration },
+                    });
+                }
+            } catch { /* feed is secondary */ }
+
             return {
                 code: 200,
                 message: `Service ${item['name']} has been setup successfully`,

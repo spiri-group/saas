@@ -1,24 +1,35 @@
 type Query {
     socialpost(id: String, vendorId: String): SocialPost
-    myFeed(limit: Int, offset: Int): MyFeedResponse
+    myFeed(limit: Int, offset: Int, activityTypes: [String]): MyFeedResponse
+    exploreFeed(limit: Int, offset: Int, category: String): ExploreFeedResponse
 }
 
 type MyFeedResponse {
-  posts: [FeedPost]!
+  activities: [FeedActivity]!
+  hasMore: Boolean!
+  followingCount: Int!
+}
+
+type ExploreFeedResponse {
+  activities: [FeedActivity]!
   hasMore: Boolean!
 }
 
-type FeedPost {
+type FeedActivity {
+  id: String!
   vendorId: String!
   vendorName: String!
   vendorSlug: String!
   vendorLogo: Media
   vendorDocType: String!
-  postType: String!
-  video: Video
-  videoCaption: String
-  videoPostedAt: DateTime
-  oracleMessage: OracleMessage
+  activityType: String!
+  sourceId: String!
+  title: String!
+  subtitle: String
+  media: Media
+  coverPhoto: Media
+  metadata: String
+  publishedAt: DateTime!
 }
 
 type SocialPost {
