@@ -669,23 +669,35 @@ const resolvers = {
                 // Tour sessions
                 await purgeContainer("Tour-Session", "SELECT c.id FROM c WHERE c.vendorId = @id", (r) => r.id)
 
-                // Remove vendor reference from owner user's vendors array
-                if (ownerId) {
-                    try {
-                        const owner = await context.dataSources.cosmos.get_record<user_type>(USER_CONTAINER, ownerId, ownerId)
-                        if (owner?.vendors) {
-                            const updatedVendors = owner.vendors.filter((v: any) => v.id !== vendorId)
-                            const patchOps: PatchOperation[] = [
-                                { op: "set", path: "/vendors", value: updatedVendors }
-                            ]
-                            await context.dataSources.cosmos.patch_record(
-                                USER_CONTAINER, ownerId, ownerId, patchOps, context.userId || "CONSOLE_ADMIN"
-                            )
-                            context.logger.logMessage(`[PURGE_VENDOR] Removed vendor ref from owner user ${ownerId}`)
+                // Remove vendor reference from ALL users who have it in their vendors array
+                try {
+                    const usersWithVendor = await context.dataSources.cosmos.run_query<{ id: string }>(
+                        USER_CONTAINER,
+                        {
+                            query: "SELECT c.id FROM c WHERE ARRAY_CONTAINS(c.vendors, {id: @vendorId}, true)",
+                            parameters: [{ name: "@vendorId", value: vendorId }]
+                        },
+                        true
+                    )
+                    for (const user of usersWithVendor) {
+                        try {
+                            const userRecord = await context.dataSources.cosmos.get_record<user_type>(USER_CONTAINER, user.id, user.id)
+                            if (userRecord?.vendors) {
+                                const updatedVendors = userRecord.vendors.filter((v: any) => v.id !== vendorId)
+                                const patchOps: PatchOperation[] = [
+                                    { op: "set", path: "/vendors", value: updatedVendors }
+                                ]
+                                await context.dataSources.cosmos.patch_record(
+                                    USER_CONTAINER, user.id, user.id, patchOps, context.userId || "CONSOLE_ADMIN"
+                                )
+                                context.logger.logMessage(`[PURGE_VENDOR] Removed vendor ref from user ${user.id}`)
+                            }
+                        } catch (err) {
+                            context.logger.error(`[PURGE_VENDOR] Failed to update user ${user.id}: ${err}`)
                         }
-                    } catch (err) {
-                        context.logger.error(`[PURGE_VENDOR] Failed to update owner user: ${err}`)
                     }
+                } catch (err) {
+                    context.logger.error(`[PURGE_VENDOR] Failed to query users with vendor reference: ${err}`)
                 }
 
                 // Delete the vendor document itself
