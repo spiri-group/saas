@@ -338,7 +338,7 @@ export default function ScheduledBookingFlow({
             </RadioGroup>
 
             {/* Show duration if available */}
-            {serviceDuration && (
+            {serviceDuration && serviceDuration.unit && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-indigo-50 border border-indigo-200">
                     <Clock className="w-5 h-5 text-indigo-600" />
                     <span className="text-slate-700">

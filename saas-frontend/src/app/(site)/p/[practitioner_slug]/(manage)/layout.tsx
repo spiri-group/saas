@@ -58,7 +58,6 @@ export default function PractitionerManageLayout({ children }: { children: React
             vendorType="practitioner"
         >
             <div className="min-h-screen bg-slate-900">
-                {practitionerId && <TrialBanner vendorId={practitionerId} />}
                 {practitionerId && <TrialExpiredDialog vendorId={practitionerId} />}
                 <div className="flex min-h-full">
                     {session && practitionerId && (
@@ -69,6 +68,7 @@ export default function PractitionerManageLayout({ children }: { children: React
                         />
                     )}
                     <div className="flex-1 md:ml-[200px]">
+                        {practitionerId && <TrialBanner vendorId={practitionerId} />}
                         {children}
                     </div>
                 </div>

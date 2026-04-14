@@ -43,11 +43,12 @@ export default function ManageError({
           Go to Homepage
         </a>
       </div>
-      {error.digest && (
-        <p className="mt-6 text-xs text-slate-600">
-          Error ID: {error.digest}
+      <div className="mt-6 text-xs text-slate-600 max-w-xl">
+        {error.digest && <p>Error ID: {error.digest}</p>}
+        <p className="mt-2 break-words">
+          {error.message || 'Unknown error'}
         </p>
-      )}
+      </div>
     </div>
   );
 }

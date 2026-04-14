@@ -9,7 +9,9 @@ import {
 import { useEffect, useState } from "react"
 import UseStripeMerchantAccount from '../../_hooks/UseStripeMerchantAccount';
 import CancelDialogButton from '@/components/ux/CancelDialogButton';
-import MerchantBankingComponent from '../Banking';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 type Props = {
     merchantId: string
@@ -41,7 +43,28 @@ const MerchantTaxRegistrations: React.FC<Props> = (props) => {
 
   if (stripeAccount.isLoading) return <></>;
   
-  if (stripeAccount.data?.onboarding_link != null) return <MerchantBankingComponent merchantId={props.merchantId} />;
+  if (stripeAccount.data?.onboarding_link != null) {
+    return (
+      <DialogContent className="max-w-none w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Set Up Banking First</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm">
+          Before adding tax registrations, you need to set up your bank accounts. This ensures your payouts and tax information are linked correctly.
+        </p>
+        <p className="text-sm">Stripe&apos;s secure infrastructure ensures that your personal and financial information is protected throughout the process.</p>
+        <DialogFooter className="flex flex-row space-x-3">
+          <CancelDialogButton />
+          <Link
+            className={cn("flex-grow", buttonVariants({ variant: "default" }))}
+            href={stripeAccount.data.onboarding_link.url}
+          >
+            Continue to Stripe
+          </Link>
+        </DialogFooter>
+      </DialogContent>
+    );
+  }
 
   return (
     <DialogContent className="flex flex-col w-[800px] h-[650px]">

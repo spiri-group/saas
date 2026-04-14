@@ -56,7 +56,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       return (
         <div
           className={cn(
-            "flex h-10 min-w-[96px] rounded-md flex-row items-center text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+            "flex h-10 min-w-[144px] rounded-md flex-row items-center text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
             withButtons
               ? cn(
                   "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
