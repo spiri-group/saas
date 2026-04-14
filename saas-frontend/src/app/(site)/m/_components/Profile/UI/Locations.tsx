@@ -36,7 +36,7 @@ const Locations : React.FC<Props> = ({vendor, visibility}) => {
         return <></>;
     }
 
-    const publicLocations = vendor.locations ?? [];
+    const publicLocations = (vendor.locations ?? []).filter(l => !l.hiddenFromPublic);
 
     if (publicLocations.length == 0) {
         return <></>
