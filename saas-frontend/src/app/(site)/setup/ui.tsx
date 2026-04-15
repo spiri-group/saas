@@ -20,13 +20,12 @@ import BasicDetailsStep from './components/BasicDetailsStep';
 import ChoosePlanStep from './components/ChoosePlanStep';
 import MerchantProfileStep from './components/MerchantProfileStep';
 import PractitionerProfileStep from './components/PractitionerProfileStep';
-import PractitionerOptionalStep from './components/PractitionerOptionalStep';
 import CardCaptureStep from './components/CardCaptureStep';
 import { useOnboardingForm } from './hooks/useOnboardingForm';
 
 // ── Step identifiers ────────────────────────────────────────────────
 // Flow order:
-//   Practitioner: basic → plan → practitioner-profile → practitioner-optional → card-capture → consent → redirect
+//   Practitioner: basic → plan → practitioner-profile → card-capture → consent → redirect
 //   Merchant:     basic → plan → merchant-profile → card-capture → consent → redirect
 
 type Step =
@@ -35,7 +34,6 @@ type Step =
     | 'merchant-profile'
     | 'card-capture'
     | 'practitioner-profile'
-    | 'practitioner-optional'
     | 'consent';
 
 // ── Branch (determined after plan selection) ────────────────────────
@@ -57,7 +55,7 @@ function themeForStep(step: Step, branch: Branch, hasReligion?: boolean): Onboar
         return 'purple';
     }
     if (step === 'merchant-profile') return 'amber';
-    if (step === 'practitioner-profile' || step === 'practitioner-optional') return 'purple';
+    if (step === 'practitioner-profile') return 'purple';
     return 'neutral';
 }
 
@@ -78,7 +76,6 @@ function stepLabels(step: Step, branch: Branch): string[] {
 function stepNumber(step: Step, branch: Branch): number {
     if (branch === 'practitioner') {
         if (step === 'practitioner-profile') return 1;
-        if (step === 'practitioner-optional') return 2;
     }
     if (branch === 'merchant') {
         if (step === 'merchant-profile') return 1;
@@ -315,14 +312,6 @@ export default function SetupUI() {
         }
     }, [tierParam, session?.user?.id, router]);
 
-    const handlePractitionerProfileNext = useCallback(() => {
-        setStep('practitioner-optional');
-    }, []);
-
-    const handlePractitionerOptionalBack = useCallback(() => {
-        setStep('practitioner-profile');
-    }, []);
-
     const handlePractitionerSubmit = useCallback(async () => {
         // Ensure country is set (fallback for skip path where detection resolved late)
         if (!form.getValues('country') && detectedCountry) {
@@ -341,6 +330,10 @@ export default function SetupUI() {
             setIsSubmitting(false);
         }
     }, [createPractitioner, form, detectedCountry]);
+
+    const handlePractitionerProfileNext = useCallback(async () => {
+        await handlePractitionerSubmit();
+    }, [handlePractitionerSubmit]);
 
     // Card capture completion (practitioner-only flow) → consent
     const handlePractitionerCardComplete = useCallback(() => {
@@ -459,14 +452,6 @@ export default function SetupUI() {
                     />
                 )}
 
-                {step === 'practitioner-optional' && (
-                    <PractitionerOptionalStep
-                        form={form}
-                        onSubmit={handlePractitionerSubmit}
-                        onBack={handlePractitionerOptionalBack}
-                        isSubmitting={isSubmitting}
-                    />
-                )}
 
                 {step === 'consent' && (
                     <OnboardingConsent
