@@ -400,8 +400,8 @@ const CreateReading: React.FC<Props> = (props) => {
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
-                                                                <SelectItem value="minute">Minutes</SelectItem>
-                                                                <SelectItem value="hour">Hours</SelectItem>
+                                                                <SelectItem value="MINUTE">Minutes</SelectItem>
+                                                                <SelectItem value="HOUR">Hours</SelectItem>
                                                             </SelectContent>
                                                         </Select>
                                                     </FormItem>

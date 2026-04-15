@@ -95,11 +95,12 @@ export default function GlobalError({
               Log Out
             </button>
           </div>
-          {error.digest && (
-            <p style={{ marginTop: '24px', fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>
-              Error ID: {error.digest}
+          <div style={{ marginTop: '24px', fontSize: '12px', color: 'rgba(255,255,255,0.3)', maxWidth: '600px' }}>
+            {error.digest && <p>Error ID: {error.digest}</p>}
+            <p style={{ marginTop: '8px', wordBreak: 'break-word' }}>
+              {error.message || 'Unknown error'}
             </p>
-          )}
+          </div>
         </div>
       </body>
     </html>

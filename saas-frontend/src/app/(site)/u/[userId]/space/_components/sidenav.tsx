@@ -50,6 +50,12 @@ const useBL = () => {
                 icon: <Home className="w-5 h-5" />
             },
             {
+                icon: <Sparkles className="w-5 h-5" />,
+                label: "Following",
+                href: `/u/${userId}/space/following`,
+                testId: "following-nav"
+            },
+            {
                 icon: <MessageCircle className="w-5 h-5" />,
                 label: "Messages",
                 href: `/u/${userId}/space/messages`,

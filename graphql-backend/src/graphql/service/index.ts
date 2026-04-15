@@ -632,7 +632,7 @@ const resolvers = {
 
             // Calculate service duration in minutes
             const serviceDurationMinutes = service.duration?.amount
-                ? ((service.duration as any).unitId === "hour" ? service.duration.amount * 60 : service.duration.amount)
+                ? ((service.duration as any).unitId === "HOUR" ? service.duration.amount * 60 : service.duration.amount)
                 : 60;
 
             const bufferMinutes = service.scheduleConfig?.bufferMinutes ?? schedule.bufferMinutes ?? 15;
@@ -854,6 +854,20 @@ const resolvers = {
             // }
 
             await context.dataSources.cosmos.add_record("Main-Listing", item, item["vendorId"], context.userId)
+
+            // Publish feed activity
+            try {
+                const { publishFeedActivity, extractVendorInfo } = await import("../social/feedActivity");
+                const vendor = await context.dataSources.cosmos.get_record<any>("Main-Vendor", item.vendorId, item.vendorId);
+                if (vendor) {
+                    await publishFeedActivity(context, extractVendorInfo(vendor), "NEW_SERVICE", item.id, {
+                        title: item.name,
+                        subtitle: item.description || null,
+                        media: item.thumbnail || item.images?.[0] || null,
+                        metadata: { price: item.price, duration: item.duration },
+                    });
+                }
+            } catch { /* feed is secondary */ }
 
             return {
                 code: 200,
@@ -2282,12 +2296,12 @@ const resolvers = {
                 currency = service.pricing.fixedPrice.currency || "usd";
             } else if (service.pricing?.type === "HOURLY" && service.pricing.ratePerHour) {
                 const durationMinutes = service.duration?.amount || 60;
-                const durationHours = (service.duration as any)?.unitId === "hour" ? service.duration.amount : durationMinutes / 60;
+                const durationHours = (service.duration as any)?.unitId === "HOUR" ? service.duration.amount : durationMinutes / 60;
                 price = service.pricing.ratePerHour.amount * durationHours;
                 currency = service.pricing.ratePerHour.currency || "usd";
             } else if (service.ratePerHour) {
                 const durationMinutes = service.duration?.amount || 60;
-                const durationHours = (service.duration as any)?.unitId === "hour" ? service.duration.amount : durationMinutes / 60;
+                const durationHours = (service.duration as any)?.unitId === "HOUR" ? service.duration.amount : durationMinutes / 60;
                 price = service.ratePerHour.amount * durationHours;
                 currency = service.ratePerHour.currency || "usd";
             }

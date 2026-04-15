@@ -996,6 +996,19 @@ const resolvers = {
                 await context.dataSources.cosmos.add_record(containerName, record, partition, context.userId);
             }
 
+            // Publish feed activity
+            try {
+                const { publishFeedActivity, extractVendorInfo } = await import("../social/feedActivity");
+                if (vendor) {
+                    await publishFeedActivity(context, extractVendorInfo(vendor), "NEW_PRODUCT", item.id, {
+                        title: item.name,
+                        subtitle: item.description || null,
+                        media: item.thumbnail || item.images?.[0] || null,
+                        metadata: { price: item.variants?.[0]?.price, productType: item.productType },
+                    });
+                }
+            } catch { /* feed is secondary */ }
+
             return {
                 code: 200,
                 message: `The product ${item['name']} has been setup successfully`,

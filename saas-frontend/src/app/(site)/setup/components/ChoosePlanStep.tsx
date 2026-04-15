@@ -37,6 +37,8 @@ type PathOption = {
     features?: string[];
     /** Tier to badge as "Recommended" */
     recommendedTier?: string;
+    /** Extra tagline shown below the description */
+    tagline?: string;
 };
 
 const PATH_OPTIONS: PathOption[] = [
@@ -44,6 +46,7 @@ const PATH_OPTIONS: PathOption[] = [
         id: 'directory',
         label: 'List me on the directory',
         description: 'Get found by seekers looking for spiritual guidance',
+        tagline: 'Best suited for paranormal groups or businesses just wanting to advertise',
         icon: BookOpen,
         tiers: ['directory'],
         showPrice: true,
@@ -172,6 +175,9 @@ export default function ChoosePlanStep({ form, onSelect }: Props) {
                                 <div className="flex items-end justify-between gap-3">
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs md:text-sm text-slate-400">{option.description}</p>
+                                        {option.tagline && (
+                                            <p className="text-xs text-purple-400/80 italic mt-1">{option.tagline}</p>
+                                        )}
                                         {option.features && (
                                             <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
                                                 {option.features.map((feature) => (

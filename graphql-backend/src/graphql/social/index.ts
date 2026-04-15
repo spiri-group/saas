@@ -1,13 +1,15 @@
 import { DateTime } from "luxon"
 import { serverContext } from "../../services/azFunction"
 import { isNullOrWhiteSpace } from "../../utils/functions"
+import { FeedActivity } from "./feedActivity"
 
 const resolvers = {
     Query: {
         socialpost: async (_: any, args: { id: string, vendorId: string}, { dataSources }: serverContext) => {
             return await dataSources.cosmos.get_record("Main-SocialPost", args.id, args.vendorId)
         },
-        myFeed: async (_: any, args: { limit?: number, offset?: number }, context: serverContext) => {
+
+        myFeed: async (_: any, args: { limit?: number, offset?: number, activityTypes?: string[] }, context: serverContext) => {
             if (!context.userId) throw new Error("User must be logged in")
 
             const limit = args.limit || 20
@@ -21,65 +23,114 @@ const resolvers = {
             const follows = await context.dataSources.cosmos.run_query<{ merchantId: string }>("Main-Follow", followQuery)
 
             if (follows.length === 0) {
-                return { posts: [], hasMore: false }
+                return { activities: [], hasMore: false, followingCount: 0 }
             }
 
-            // Fetch vendors with their videos and oracle messages
-            const allPosts: any[] = []
-            const now = new Date().toISOString()
+            // Fetch feed activities from Main-SocialPost for each followed vendor
+            const allActivities: FeedActivity[] = []
+
             await Promise.all(
                 follows.map(async (f) => {
                     try {
-                        const vendor = await context.dataSources.cosmos.get_record<any>("Main-Vendor", f.merchantId, f.merchantId)
-                        if (!vendor) return
+                        let query = `SELECT * FROM c WHERE c.vendorId = @vendorId AND c.activityType != null`
+                        const params: any[] = [{ name: "@vendorId", value: f.merchantId }]
 
-                        const vendorInfo = {
-                            vendorId: vendor.id,
-                            vendorName: vendor.name || "Unknown",
-                            vendorSlug: vendor.slug || "",
-                            vendorLogo: vendor.logo || null,
-                            vendorDocType: vendor.docType || "MERCHANT"
+                        // Filter by activity types if specified
+                        if (args.activityTypes && args.activityTypes.length > 0) {
+                            query += ` AND c.activityType IN (${args.activityTypes.map((_, i) => `@type${i}`).join(',')})`
+                            args.activityTypes.forEach((t, i) => params.push({ name: `@type${i}`, value: t }))
                         }
 
-                        // Add video updates (intentional posts, not profile gallery)
-                        if (vendor.videoUpdates && vendor.videoUpdates.length > 0) {
-                            for (const update of vendor.videoUpdates) {
-                                allPosts.push({
-                                    ...vendorInfo,
-                                    postType: "VIDEO",
-                                    video: { media: update.media, coverPhoto: update.coverPhoto },
-                                    videoCaption: update.caption || null,
-                                    videoPostedAt: update.postedAt,
-                                    oracleMessage: null,
-                                    _sortDate: update.postedAt
-                                })
-                            }
-                        }
+                        query += ` ORDER BY c.publishedAt DESC OFFSET 0 LIMIT 50`
 
-                        // Add active oracle message from practitioners
-                        const oracle = vendor.practitioner?.oracleMessage
-                        if (oracle && oracle.expiresAt > now) {
-                            allPosts.push({
-                                ...vendorInfo,
-                                postType: "ORACLE",
-                                video: null,
-                                oracleMessage: oracle,
-                                _sortDate: oracle.postedAt
-                            })
-                        }
-                    } catch { /* skip vendors that can't be found */ }
+                        const activities = await context.dataSources.cosmos.run_query<FeedActivity>(
+                            "Main-SocialPost",
+                            { query, parameters: params },
+                            true // ignoreStatus — feed activities don't use soft-delete status field
+                        )
+                        allActivities.push(...activities)
+                    } catch { /* skip vendors that error */ }
                 })
             )
 
-            // Sort by date (newest first) - oracle messages with postedAt, videos without a clear date go after
-            allPosts.sort((a, b) => (b._sortDate || "").localeCompare(a._sortDate || ""))
+            // Sort by date (newest first)
+            allActivities.sort((a, b) => (b.publishedAt || "").localeCompare(a.publishedAt || ""))
 
             // Apply pagination
-            const paginated = allPosts.slice(offset, offset + limit + 1)
+            const paginated = allActivities.slice(offset, offset + limit + 1)
             const hasMore = paginated.length > limit
 
             return {
-                posts: paginated.slice(0, limit),
+                activities: paginated.slice(0, limit),
+                hasMore,
+                followingCount: follows.length
+            }
+        },
+
+        exploreFeed: async (_: any, args: { limit?: number, offset?: number, category?: string }, context: serverContext) => {
+            if (!context.userId) throw new Error("User must be logged in")
+
+            const limit = args.limit || 20
+            const offset = args.offset || 0
+
+            // Get followed vendor IDs to exclude
+            const followQuery = {
+                query: `SELECT c.targetId as merchantId FROM c WHERE c.followerId = @userId AND c.targetType = 'MERCHANT'`,
+                parameters: [{ name: "@userId", value: context.userId }]
+            }
+            const follows = await context.dataSources.cosmos.run_query<{ merchantId: string }>("Main-Follow", followQuery)
+            const followedIds = new Set(follows.map(f => f.merchantId))
+
+            // Get user's own vendor IDs to exclude
+            const userVendors = await context.dataSources.cosmos.run_query<{ id: string }>(
+                "Main-Vendor",
+                {
+                    query: `SELECT c.id FROM c WHERE ARRAY_CONTAINS(c.userIds, @userId)`,
+                    parameters: [{ name: "@userId", value: context.userId }]
+                }
+            )
+            userVendors.forEach(v => followedIds.add(v.id))
+
+            // Fetch recent feed activities across all vendors (cross-partition)
+            // Filter to only published vendors' content
+            let query = `SELECT * FROM c WHERE c.activityType != null`
+            const params: any[] = []
+
+            // Category filter maps to activity types
+            if (args.category) {
+                const typeMap: Record<string, string[]> = {
+                    'readings': ['NEW_SERVICE'],
+                    'crystals': ['NEW_PRODUCT'],
+                    'events': ['NEW_EVENT'],
+                    'healing': ['NEW_SERVICE'],
+                    'journeys': ['NEW_JOURNEY'],
+                    'oracle': ['ORACLE_MESSAGE'],
+                    'video': ['VIDEO_UPDATE'],
+                }
+                const types = typeMap[args.category]
+                if (types) {
+                    query += ` AND c.activityType IN (${types.map((_, i) => `@catType${i}`).join(',')})`
+                    types.forEach((t, i) => params.push({ name: `@catType${i}`, value: t }))
+                }
+            }
+
+            query += ` ORDER BY c.publishedAt DESC OFFSET 0 LIMIT ${offset + limit + 20}`
+
+            const activities = await context.dataSources.cosmos.run_query<FeedActivity>(
+                "Main-SocialPost",
+                { query, parameters: params },
+                true
+            )
+
+            // Filter out followed vendors and own vendors
+            const filtered = activities.filter(a => !followedIds.has(a.vendorId))
+
+            // Apply pagination
+            const paginated = filtered.slice(offset, offset + limit + 1)
+            const hasMore = paginated.length > limit
+
+            return {
+                activities: paginated.slice(0, limit),
                 hasMore
             }
         }
@@ -94,11 +145,10 @@ const resolvers = {
                 sp.isPublished = false
            }
 
-           // we should remove any # from the hashtags
            sp.hashtags = sp.hashtags.map((h: string) => {
                 return h.replace("#", "")
            }).filter((h: string) => !isNullOrWhiteSpace(h))
-           
+
            sp.availableAfter = DateTime.fromJSDate(sp.availableAfter).toISO()
            if (sp.media != null) {
                 sp.media = sp.media.map(({ url, ...media}: { url: URL }) => {
@@ -118,7 +168,7 @@ const resolvers = {
         },
         update_socialpost: async (_: any, args: any, context: serverContext) => {
             if (context.userId == null) throw "User must be present for this call";
-            
+
             await context.dataSources.cosmos.update_record("Main-SocialPost", args.socialPost.id, args.socialPost.vendorId, args.socialPost, context.userId)
 
             return {
@@ -137,6 +187,12 @@ const resolvers = {
                 success: true,
                 message: `Social Post ${args.id} successfully deleted`
             }
+        }
+    },
+    FeedActivity: {
+        // Serialize metadata object to JSON string for transport
+        metadata: (parent: FeedActivity) => {
+            return parent.metadata ? JSON.stringify(parent.metadata) : null;
         }
     },
     SocialPost: {

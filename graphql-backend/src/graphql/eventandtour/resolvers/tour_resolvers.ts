@@ -97,6 +97,19 @@ export const tour_resolvers = {
                 // Email notification skipped — context.userId is a UUID, not an email address
                 // TODO: resolve user email from userId before sending
 
+                // Publish feed activity
+                try {
+                    const { publishFeedActivity, extractVendorInfo } = await import("../../social/feedActivity");
+                    if (vendor) {
+                        await publishFeedActivity(context, extractVendorInfo(vendor), "NEW_EVENT", tour.id, {
+                            title: tour.name,
+                            subtitle: tour.description || null,
+                            media: tour.thumbnail?.image?.media || null,
+                            metadata: { country: tour.country },
+                        });
+                    }
+                } catch { /* feed is secondary */ }
+
                 return {
                     code: "200",
                     success: true,

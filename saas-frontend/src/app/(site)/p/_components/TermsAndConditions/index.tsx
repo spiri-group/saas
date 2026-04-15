@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, ArrowLeft, FileCheck } from "lucide-react";
+import CancelDialogButton from "@/components/ux/CancelDialogButton";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -296,7 +297,8 @@ export default function TermsAndConditionsManager({ practitionerId }: Props) {
         )}
       </div>
 
-      <DialogFooter>
+      <DialogFooter className="flex gap-2 sm:gap-2">
+        <CancelDialogButton label="Close" />
         <Button
           data-testid="tc-new-btn"
           onClick={handleNew}

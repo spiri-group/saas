@@ -213,7 +213,7 @@ const ServiceScheduleSelector: React.FC<Props> = ({
                         step={5}
                         value={value.bufferMinutes}
                         onChange={e => onChange({ ...value, bufferMinutes: parseInt(e.target.value) || 0 })}
-                        className="w-24 text-center"
+                        className="text-center"
                         data-testid="service-buffer-minutes"
                     />
                     <span className={`text-sm ${dark ? 'text-slate-400' : 'text-gray-500'}`}>min</span>

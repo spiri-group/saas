@@ -52,11 +52,12 @@ export default function SiteError({
           Log Out
         </button>
       </div>
-      {error.digest && (
-        <p className="mt-6 text-xs text-white/30">
-          Error ID: {error.digest}
+      <div className="mt-6 text-xs text-white/30 max-w-xl">
+        {error.digest && <p>Error ID: {error.digest}</p>}
+        <p className="mt-2 break-words">
+          {error.message || 'Unknown error'}
         </p>
-      )}
+      </div>
     </div>
   );
 }

@@ -40,6 +40,53 @@ function getOperationInfo(query: string): { name: string; type: string } {
 
 const myCache = new NodeCache();
 
+// --- Rate Limiting ---
+
+const RATE_LIMIT_UNAUTH = 60;     // requests per minute for unauthenticated
+const RATE_LIMIT_AUTH = 120;      // requests per minute for authenticated users
+const RATE_LIMIT_GLOBAL = 5000;   // circuit breaker: total requests per minute
+const RATE_LIMIT_WINDOW = 60;     // window in seconds
+
+const rateLimitCache = new NodeCache({ stdTTL: RATE_LIMIT_WINDOW, checkperiod: 30 });
+
+function getClientIp(request: HttpRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) {
+    return forwarded.split(',')[0].trim().split(':')[0];
+  }
+  return request.headers.get('x-real-ip') || 'unknown';
+}
+
+function isRateLimited(key: string, limit: number): { blocked: boolean; retryAfter: number } {
+  const current = rateLimitCache.get<number>(key) || 0;
+  if (current >= limit) {
+    const ttl = rateLimitCache.getTtl(key);
+    const retryAfter = ttl ? Math.ceil((ttl - Date.now()) / 1000) : RATE_LIMIT_WINDOW;
+    return { blocked: true, retryAfter: Math.max(retryAfter, 1) };
+  }
+  if (current === 0) {
+    rateLimitCache.set(key, 1);
+  } else {
+    const ttl = rateLimitCache.getTtl(key);
+    const remainingTtl = ttl ? Math.max(Math.ceil((ttl - Date.now()) / 1000), 1) : RATE_LIMIT_WINDOW;
+    rateLimitCache.set(key, current + 1, remainingTtl);
+  }
+  return { blocked: false, retryAfter: 0 };
+}
+
+function rateLimitResponse(retryAfter: number, limit: number): HttpResponseInit {
+  return {
+    status: 429,
+    headers: {
+      'Content-Type': 'application/json',
+      'Retry-After': String(retryAfter),
+      'X-RateLimit-Limit': String(limit),
+      'X-RateLimit-Remaining': '0',
+    },
+    body: JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+  };
+}
+
 // Create ApolloServer instance once at module level for reuse across requests
 // This avoids schema parsing, validation, and compilation on every request
 const apolloServer = new ApolloServer({
@@ -95,6 +142,19 @@ export async function graphql(request: HttpRequest, context: InvocationContext):
           error: 'An error occurred while processing your request. Please try again later.'
         })
       }
+    }
+
+    // --- Rate limiting (before any expensive work) ---
+    const globalCheck = isRateLimited('global', RATE_LIMIT_GLOBAL);
+    if (globalCheck.blocked) {
+      return rateLimitResponse(globalCheck.retryAfter, RATE_LIMIT_GLOBAL);
+    }
+
+    const clientIp = getClientIp(request);
+    const ipCheck = isRateLimited(`ip:${clientIp}`, RATE_LIMIT_UNAUTH);
+    if (ipCheck.blocked) {
+      console.warn(`[RATE LIMIT] IP ${clientIp} exceeded ${RATE_LIMIT_UNAUTH} req/min`);
+      return rateLimitResponse(ipCheck.retryAfter, RATE_LIMIT_UNAUTH);
     }
 
     const logger = new LogManager(context)
@@ -200,6 +260,15 @@ export async function graphql(request: HttpRequest, context: InvocationContext):
             "Content-Type": "application/json"
           }
         }
+      }
+    }
+
+    // Per-user rate limit for authenticated requests (higher limit)
+    if (userId) {
+      const userCheck = isRateLimited(`user:${userId}`, RATE_LIMIT_AUTH);
+      if (userCheck.blocked) {
+        console.warn(`[RATE LIMIT] User ${userId} exceeded ${RATE_LIMIT_AUTH} req/min`);
+        return rateLimitResponse(userCheck.retryAfter, RATE_LIMIT_AUTH);
       }
     }
 

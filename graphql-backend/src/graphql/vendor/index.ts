@@ -1340,6 +1340,20 @@ const resolvers = {
 
             const updatedPractitioner = await context.dataSources.cosmos.get_record("Main-Vendor", args.practitionerId, args.practitionerId);
 
+            // Publish feed activity for oracle message
+            if (oracleMessage) {
+                try {
+                    const { publishFeedActivity, extractVendorInfo } = await import("../social/feedActivity");
+                    await publishFeedActivity(context, extractVendorInfo(existing), "ORACLE_MESSAGE", oracleMessage.id, {
+                        title: oracleMessage.message || "Daily Oracle Message",
+                        media: oracleMessage.audio ? { ...oracleMessage.audio, type: "AUDIO" as any } : null,
+                        metadata: { expiresAt: oracleMessage.expiresAt },
+                        publishedAt: oracleMessage.postedAt,
+                        ttl: 86400, // 24 hours
+                    });
+                } catch { /* feed is secondary */ }
+            }
+
             return {
                 code: "200",
                 success: true,
@@ -1953,6 +1967,18 @@ const resolvers = {
             await container.item(args.vendorId, args.vendorId).patch([
                 { op: "set", path: "/videoUpdates", value: videoUpdates }
             ]);
+
+            // Publish feed activity for video update
+            try {
+                const { publishFeedActivity, extractVendorInfo } = await import("../social/feedActivity");
+                await publishFeedActivity(context, extractVendorInfo(vendor), "VIDEO_UPDATE", videoUpdate.id, {
+                    title: videoUpdate.caption || "New Video",
+                    media: videoUpdate.media,
+                    coverPhoto: videoUpdate.coverPhoto,
+                    metadata: { duration: videoUpdate.media?.durationSeconds },
+                    publishedAt: videoUpdate.postedAt,
+                });
+            } catch { /* feed is secondary */ }
 
             return {
                 code: "200",
