@@ -188,17 +188,24 @@ export default function PractitionerProfileStep({ form, onNext, onBack }: Props)
         </>
     );
 
-    const heading = isMobile && mobilePage === 2 ? 'Your Practice' : 'Practitioner Profile';
-    const subheading = isMobile && mobilePage === 2
-        ? 'What do you offer and specialise in?'
-        : 'Tell seekers about your practice.';
+    const tier = form.watch('subscription.tier');
+    const isDirectory = tier === 'directory';
+
+    const heading = isMobile && mobilePage === 2
+        ? 'Your Practice'
+        : isDirectory ? 'Business Profile' : 'Practitioner Profile';
+    const subheading = isDirectory
+        ? null
+        : isMobile && mobilePage === 2
+            ? 'What do you offer and specialise in?'
+            : 'Tell seekers about your practice.';
 
     return (
         <div className="flex flex-col h-full min-h-0">
             <ScrollableForm dark className="px-4 py-3 sm:px-6 sm:py-5 md:px-8 md:py-6 space-y-3 sm:space-y-4 md:space-y-6">
                 <div>
                     <h1 className="font-light text-lg sm:text-2xl text-white mb-1">{heading}</h1>
-                    <p className="text-xs sm:text-sm md:text-base text-slate-300">{subheading}</p>
+                    {subheading && <p className="text-xs sm:text-sm md:text-base text-slate-300">{subheading}</p>}
                 </div>
 
                 {isMobile ? (

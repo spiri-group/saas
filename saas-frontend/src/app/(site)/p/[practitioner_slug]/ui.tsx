@@ -1543,14 +1543,14 @@ export default function PractitionerProfileContent({
                                             </div>
                                         )}
 
-                                        {profile?.spiritualJourney && (
+                                        {profile?.spiritualJourney && !(profile.bio && profile.bio.includes(profile.spiritualJourney)) && (
                                             <div>
                                                 <h3 className="text-xl md:text-2xl font-semibold text-white/90 mb-3">My Spiritual Journey</h3>
                                                 <p className="text-white/60 whitespace-pre-line leading-relaxed">{profile.spiritualJourney}</p>
                                             </div>
                                         )}
 
-                                        {profile?.approach && (
+                                        {profile?.approach && !(profile.bio && profile.bio.includes(profile.approach)) && (
                                             <div>
                                                 <h3 className="text-xl md:text-2xl font-semibold text-white/90 mb-3">My Approach</h3>
                                                 <p className="text-white/60 whitespace-pre-line leading-relaxed">{profile.approach}</p>

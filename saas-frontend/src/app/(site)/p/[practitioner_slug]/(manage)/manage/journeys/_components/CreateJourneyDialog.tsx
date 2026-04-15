@@ -690,6 +690,7 @@ export default function CreateJourneyDialog({ practitionerId, editingJourney, de
                                     dark
                                     control={form.control}
                                     name="thumbnail"
+                                    panelSubtext="Enrol Now"
                                     onUploadCoverPhoto={handleUploadCoverPhoto}
                                     onUploadVideo={handleUploadVideo}
                                     onUploadCollageImage={handleUploadCollageImage}

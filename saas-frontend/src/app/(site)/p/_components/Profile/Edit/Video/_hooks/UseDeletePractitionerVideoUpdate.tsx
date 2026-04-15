@@ -39,6 +39,7 @@ const useDeletePractitionerVideoUpdate = (practitionerId: string) => {
                 };
             });
             queryClient.invalidateQueries({ queryKey: ['practitioner-video-updates', practitionerId] });
+            queryClient.invalidateQueries({ queryKey: ['practitioner-profile', practitionerId] });
             queryClient.invalidateQueries({ queryKey: ['my-feed'] });
         }
     });
