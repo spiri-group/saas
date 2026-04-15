@@ -3,7 +3,6 @@
 import { UseFormReturn } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { LoaderIcon, Sparkles } from 'lucide-react';
 import type { OnboardingFormValues } from '../hooks/useOnboardingForm';
@@ -76,45 +75,6 @@ export default function PractitionerOptionalStep({ form, onSubmit, onBack, isSub
                 )}
             />
 
-            <FormField
-                control={form.control}
-                name="practitioner.spiritualJourney"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="text-slate-300">Your Spiritual Journey (Optional)</FormLabel>
-                        <FormControl>
-                            <Textarea
-                                {...field}
-                                data-testid="setup-practitioner-journey"
-                                placeholder="Share how you discovered your gifts and what drew you to this path..."
-                                className={`min-h-[100px] ${inputClass}`}
-                                maxLength={2000}
-                            />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-
-            <FormField
-                control={form.control}
-                name="practitioner.approach"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="text-slate-300">Your Approach (Optional)</FormLabel>
-                        <FormControl>
-                            <Textarea
-                                {...field}
-                                data-testid="setup-practitioner-approach"
-                                placeholder="Describe your reading style and what clients can expect..."
-                                className={`min-h-[100px] ${inputClass}`}
-                                maxLength={1000}
-                            />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
             </ScrollableForm>
 
             <div className="border-t border-white/10" />

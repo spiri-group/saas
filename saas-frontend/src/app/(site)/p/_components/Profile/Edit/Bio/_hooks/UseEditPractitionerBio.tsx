@@ -27,8 +27,6 @@ interface PractitionerProfile {
     pronouns?: string;
     headline: string;
     bio: string;
-    spiritualJourney?: string;
-    approach?: string;
     modalities: string[];
     specializations: string[];
 }
@@ -71,8 +69,6 @@ export const usePractitionerData = (practitionerId: string) => {
                             pronouns
                             headline
                             bio
-                            spiritualJourney
-                            approach
                             modalities
                             specializations
                         }
@@ -106,17 +102,10 @@ const useEditPractitionerBio = (practitionerId: string) => {
         if (practitionerData.data?.practitioner && !hasLoaded) {
             const prac = practitionerData.data.practitioner;
 
-            // If bio is empty but they filled in journey/approach during onboarding, use those as a starting point
-            let bio = prac.bio ?? "";
-            if (!bio) {
-                const parts = [prac.spiritualJourney, prac.approach].filter(Boolean);
-                bio = parts.join("\n\n");
-            }
-
             form.reset({
                 id: practitionerId,
                 headline: prac.headline ?? "",
-                bio,
+                bio: prac.bio ?? "",
                 logo: practitionerData.data.logo ?? null
             })
             setHasLoaded(true)
