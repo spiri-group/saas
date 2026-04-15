@@ -819,6 +819,7 @@ const CreateReading: React.FC<Props> = (props) => {
                                 dark
                                 control={bl.form.control}
                                 name="thumbnail"
+                                panelSubtext={bl.form.watch('requiresConsultation') ? 'Taking Bookings' : 'Available Now'}
                                 onUploadCoverPhoto={bl.mockUploadCoverPhoto}
                                 onUploadVideo={bl.mockUploadVideo}
                                 onUploadCollageImage={bl.mockUploadCollageImage}

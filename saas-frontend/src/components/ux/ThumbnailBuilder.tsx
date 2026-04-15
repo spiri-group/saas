@@ -84,6 +84,7 @@ type ThumbnailBuilderProps = {
   control: Control<any>;
   name: string;
   dark?: boolean;
+  panelSubtext?: string;
   onUploadCoverPhoto: (file: File) => Promise<MediaFile>;
   onUploadVideo: (file: File) => Promise<MediaFile>;
   onUploadCollageImage: (file: File) => Promise<MediaFile>;
@@ -93,6 +94,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
   control,
   name,
   dark = false,
+  panelSubtext,
   onUploadCoverPhoto,
   onUploadVideo,
   onUploadCollageImage
@@ -918,7 +920,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                                 : "rgba(0,0,0,0.6)"
                             }}
                           >
-                            Price shown here
+                            {panelSubtext || 'Price shown here'}
                           </span>
                         </div>
                       </div>
