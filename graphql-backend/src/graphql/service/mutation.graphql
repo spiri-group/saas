@@ -340,6 +340,7 @@ input UpdateHealingOfferInput {
   pricing: ServicePricingInput
   bookingType: String
   turnaroundDays: Int
+  deliveryFormats: [String]
   addOns: [ServiceAddOnInput]
   questionnaire: [ServiceQuestionInput]
   targetTimezones: [String]

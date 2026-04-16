@@ -1653,6 +1653,7 @@ const resolvers = {
             if (args.input.questionnaire !== undefined) ops.push({ op: "set", path: "/questionnaire", value: args.input.questionnaire });
             if (args.input.targetTimezones !== undefined) ops.push({ op: "set", path: "/targetTimezones", value: args.input.targetTimezones });
             if (args.input.readingOptions !== undefined) ops.push({ op: "set", path: "/readingOptions", value: args.input.readingOptions });
+            if (args.input.termsDocumentId !== undefined) ops.push({ op: "set", path: "/termsDocumentId", value: args.input.termsDocumentId });
             if (args.input.requiresConsultation !== undefined) {
                 const deliveryMode = args.input.requiresConsultation ? "SYNC" : "ASYNC";
                 ops.push({ op: "set", path: "/deliveryMode", value: deliveryMode });
@@ -1707,10 +1708,12 @@ const resolvers = {
                 ops.push({ op: "set", path: "/skus/0/price", value: { amount: basePrice, currency: currency } });
             }
             if (args.input.turnaroundDays !== undefined) ops.push({ op: "set", path: "/turnaroundDays", value: args.input.turnaroundDays });
+            if (args.input.deliveryFormats !== undefined) ops.push({ op: "set", path: "/deliveryFormats", value: args.input.deliveryFormats.map((f: string) => ({ format: f })) });
             if (args.input.addOns !== undefined) ops.push({ op: "set", path: "/addOns", value: args.input.addOns });
             if (args.input.questionnaire !== undefined) ops.push({ op: "set", path: "/questionnaire", value: args.input.questionnaire });
             if (args.input.targetTimezones !== undefined) ops.push({ op: "set", path: "/targetTimezones", value: args.input.targetTimezones });
             if (args.input.healingOptions !== undefined) ops.push({ op: "set", path: "/healingOptions", value: args.input.healingOptions });
+            if (args.input.termsDocumentId !== undefined) ops.push({ op: "set", path: "/termsDocumentId", value: args.input.termsDocumentId });
             if (args.input.requiresConsultation !== undefined) {
                 const deliveryMode = args.input.requiresConsultation ? "SYNC" : "ASYNC";
                 ops.push({ op: "set", path: "/deliveryMode", value: deliveryMode });
@@ -1770,6 +1773,7 @@ const resolvers = {
             if (args.input.questionnaire !== undefined) ops.push({ op: "set", path: "/questionnaire", value: args.input.questionnaire });
             if (args.input.targetTimezones !== undefined) ops.push({ op: "set", path: "/targetTimezones", value: args.input.targetTimezones });
             if (args.input.coachingOptions !== undefined) ops.push({ op: "set", path: "/coachingOptions", value: args.input.coachingOptions });
+            if (args.input.termsDocumentId !== undefined) ops.push({ op: "set", path: "/termsDocumentId", value: args.input.termsDocumentId });
             if (args.input.requiresConsultation !== undefined) {
                 const deliveryMode = args.input.requiresConsultation ? "SYNC" : "ASYNC";
                 ops.push({ op: "set", path: "/deliveryMode", value: deliveryMode });
@@ -2195,11 +2199,32 @@ const resolvers = {
 
             const { practitionerId, input } = args;
             const scheduleId = practitionerId;
+            const now = new Date().toISOString();
 
-            // Fetch existing schedule
-            const schedule = await context.dataSources.cosmos.get_record<practitionerSchedule_type>("Main-PractitionerSchedules", scheduleId, practitionerId);
+            // Fetch existing schedule, or create a default one if it doesn't exist yet
+            let schedule = await context.dataSources.cosmos.get_record<practitionerSchedule_type>("Main-PractitionerSchedules", scheduleId, practitionerId);
             if (!schedule) {
-                throw new Error("Practitioner schedule not found. Please set up availability first.");
+                const newSchedule = {
+                    id: scheduleId,
+                    practitionerId,
+                    timezone: "America/New_York",
+                    country: "US",
+                    weekdays: [],
+                    dateOverrides: [],
+                    serviceIds: [],
+                    bufferMinutes: 15,
+                    advanceBookingDays: 30,
+                    minimumNoticeHours: 24,
+                    deliveryMethods: {
+                        online: { enabled: true, defaultMeetingLink: "" },
+                        atPractitionerLocation: { enabled: false, displayArea: "" },
+                        mobile: { enabled: false, serviceRadiusKm: 25 },
+                    },
+                    createdDate: now,
+                    updatedDate: now
+                };
+                await context.dataSources.cosmos.add_record("Main-PractitionerSchedules", newSchedule, practitionerId, context.userId);
+                schedule = newSchedule as practitionerSchedule_type;
             }
 
             const dateOverrides = schedule.dateOverrides || [];
@@ -2221,7 +2246,7 @@ const resolvers = {
             const updatedScheduleData: practitionerSchedule_type = {
                 ...schedule,
                 dateOverrides,
-                updatedDate: new Date().toISOString()
+                updatedDate: now
             };
 
             await context.dataSources.cosmos.update_record("Main-PractitionerSchedules", scheduleId, practitionerId, updatedScheduleData, context.userId);
@@ -2241,7 +2266,25 @@ const resolvers = {
 
             const schedule = await context.dataSources.cosmos.get_record<practitionerSchedule_type>("Main-PractitionerSchedules", scheduleId, practitionerId);
             if (!schedule) {
-                throw new Error("Practitioner schedule not found.");
+                // No schedule means no overrides to remove — return empty schedule
+                return {
+                    id: scheduleId,
+                    practitionerId,
+                    timezone: "America/New_York",
+                    country: "US",
+                    weekdays: [],
+                    dateOverrides: [],
+                    serviceIds: [],
+                    bufferMinutes: 15,
+                    advanceBookingDays: 30,
+                    minimumNoticeHours: 24,
+                    deliveryMethods: {
+                        online: { enabled: true, defaultMeetingLink: "" },
+                        atPractitionerLocation: { enabled: false, displayArea: "" },
+                        mobile: { enabled: false, serviceRadiusKm: 25 },
+                    },
+                    ref: { id: scheduleId, partition: [practitionerId], container: "Main-PractitionerSchedules" }
+                };
             }
 
             const dateOverrides = (schedule.dateOverrides || []).filter((o: any) => o.date !== dateStr);

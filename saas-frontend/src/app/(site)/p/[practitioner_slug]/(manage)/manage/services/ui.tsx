@@ -4,14 +4,14 @@ import React, { useState } from "react";
 import { Session } from "next-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Sparkles, Heart, MessageCircle, Plus, Trash2, Pencil, Clock, DollarSign, Tag, ArrowRight } from "lucide-react";
+import { BookOpen, Sparkles, Heart, MessageCircle, Plus, Trash2, Pencil, Clock, Tag, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import usePractitionerServices, { PractitionerService } from "./_hooks/UsePractitionerServices";
 import { usePractitionerSchedule } from "../availability/hooks/UsePractitionerSchedule";
 import useDeleteService from "./_hooks/UseDeleteService";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useTierFeatures } from "@/hooks/UseTierFeatures";
-import { decodeAmountFromSmallestUnit } from "@/lib/functions";
+import CurrencySpan from "@/components/ux/CurrencySpan";
 import CreateReading from "./_components/CreateReading";
 import CreateHealing from "./_components/CreateHealing";
 import CreateCoaching from "./_components/CreateCoaching";
@@ -142,10 +142,7 @@ function ServiceCard({
                 </div>
                 <div className="flex items-center gap-3 text-sm text-slate-400">
                     {price && (
-                        <span className="flex items-center gap-1">
-                            <DollarSign className="w-3 h-3" />
-                            ${decodeAmountFromSmallestUnit(price.amount, price.currency)} {price.currency}
-                        </span>
+                        <CurrencySpan value={price} className="flex items-center gap-1" />
                     )}
                     {service.turnaroundDays && (
                         <span className="flex items-center gap-1">
