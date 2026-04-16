@@ -4,12 +4,12 @@ import { useState } from "react";
 import { Session } from "next-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Headphones, Plus, Trash2, Pencil, Clock, Music, Eye, EyeOff, ListMusic, DollarSign } from "lucide-react";
+import { Headphones, Plus, Trash2, Pencil, Clock, Music, Eye, EyeOff, ListMusic } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import useJourneys, { JourneyListItem } from "./_hooks/UseJourneys";
 import useCreateJourney from "./_hooks/UseCreateJourney";
-import { decodeAmountFromSmallestUnit } from "@/lib/functions";
+import CurrencySpan from "@/components/ux/CurrencySpan";
 import CreateJourneyDialog from "./_components/CreateJourneyDialog";
 import JourneyTrackManager from "./_components/JourneyTrackManager";
 
@@ -95,10 +95,7 @@ function JourneyCard({
                 </div>
                 <div className="flex items-center gap-3 text-sm text-slate-400">
                     {price && (
-                        <span className="flex items-center gap-1">
-                            <DollarSign className="w-3 h-3" />
-                            ${decodeAmountFromSmallestUnit(price.amount, price.currency)} {price.currency}
-                        </span>
+                        <CurrencySpan value={price} />
                     )}
                     <span className="flex items-center gap-1">
                         <ListMusic className="w-3 h-3" />

@@ -29,7 +29,6 @@ import {
     Target,
     Wrench,
 } from "lucide-react"
-import { decodeAmountFromSmallestUnit } from "@/lib/functions"
 
 type Props = {
     merchantId: string
@@ -503,9 +502,7 @@ const UI: React.FC<Props> = (props) => {
                                                                     )}
                                                                     <span className="text-merchant-default-foreground/80">{product.name}</span>
                                                                     {sku?.price && (
-                                                                        <span className="text-merchant-default-foreground/50">
-                                                                            ${decodeAmountFromSmallestUnit(sku.price.amount, sku.price.currency)}
-                                                                        </span>
+                                                                        <CurrencySpan value={sku.price} className="text-merchant-default-foreground/50" />
                                                                     )}
                                                                     {sku && product.ref && (
                                                                         <button

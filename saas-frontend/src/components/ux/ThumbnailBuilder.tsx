@@ -920,7 +920,7 @@ export const ThumbnailBuilder: React.FC<ThumbnailBuilderProps> = ({
                                 : "rgba(0,0,0,0.6)"
                             }}
                           >
-                            {panelSubtext || 'Price shown here'}
+                            {panelSubtext}
                           </span>
                         </div>
                       </div>

@@ -8,7 +8,7 @@ import {
   Clock, BookOpen, Sparkles, ChevronRight, ChevronLeft, Loader2, Timer, ShoppingCart, Package,
 } from 'lucide-react';
 import { useUnifiedCart } from '@/app/(site)/components/Catalogue/components/ShoppingCart/useUnifiedCart';
-import { decodeAmountFromSmallestUnit } from '@/lib/functions';
+import CurrencySpan from '@/components/ux/CurrencySpan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -532,9 +532,7 @@ const UI: React.FC<Props> = ({ userId, journeyId }) => {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-white truncate">{product.name}</p>
                         {sku?.price && (
-                          <p className="text-xs text-slate-400">
-                            ${decodeAmountFromSmallestUnit(sku.price.amount, sku.price.currency)} {sku.price.currency}
-                          </p>
+                          <CurrencySpan value={sku.price} className="text-xs text-slate-400" />
                         )}
                       </div>
                       {sku && product.ref && (

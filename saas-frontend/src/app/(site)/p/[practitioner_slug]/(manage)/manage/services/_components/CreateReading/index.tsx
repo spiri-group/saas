@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { escape_key } from "@/lib/functions";
+import { toast } from "sonner";
 import { useCreateReadingOffer, type ExistingServiceData } from "./hooks/UseCreateReadingOffer";
 import { Label } from "@/components/ui/label";
 import { StepIndicator } from "@/components/ui/step-indicator";
@@ -163,12 +164,17 @@ const useBL = (props: BLProps) => {
         mockUploadVideo,
         mockUploadCollageImage,
         submit: async (values: any) => {
-            await mutation.mutateAsync(values);
-            if (props.onClose) {
-                props.onClose();
-            } else {
-                escape_key();
-                router.push(`/p/${practitioner_slug}/manage/services`);
+            try {
+                await mutation.mutateAsync(values);
+                if (props.onClose) {
+                    props.onClose();
+                } else {
+                    escape_key();
+                    router.push(`/p/${practitioner_slug}/manage/services`);
+                }
+            } catch (error) {
+                console.error("Failed to save service:", error);
+                toast.error("Failed to save service. Please try again.");
             }
         }
     };

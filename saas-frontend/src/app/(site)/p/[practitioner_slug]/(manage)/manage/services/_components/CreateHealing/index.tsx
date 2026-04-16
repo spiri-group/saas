@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { escape_key } from "@/lib/functions";
 import { Heart, Monitor, MapPin } from "lucide-react";
+import { toast } from "sonner";
 import QuestionBuilder from "@/components/ux/QuestionBuilder";
 import { useCreateHealingOffer } from "./hooks/UseCreateHealingOffer";
 import { Label } from "@/components/ui/label";
@@ -43,15 +44,20 @@ const useBL = (props: BLProps) => {
         schedule,
         mutation,
         submit: async (values: any) => {
-            await mutation.mutateAsync(values);
-            if (props.onClose) {
-                props.onClose();
-            } else {
-                escape_key();
-                const servicesPath = merchant_slug
-                    ? `/m/${merchant_slug}/manage/services`
-                    : `/p/${practitioner_slug}/manage/services`;
-                router.push(servicesPath);
+            try {
+                await mutation.mutateAsync(values);
+                if (props.onClose) {
+                    props.onClose();
+                } else {
+                    escape_key();
+                    const servicesPath = merchant_slug
+                        ? `/m/${merchant_slug}/manage/services`
+                        : `/p/${practitioner_slug}/manage/services`;
+                    router.push(servicesPath);
+                }
+            } catch (error) {
+                console.error("Failed to save service:", error);
+                toast.error("Failed to save service. Please try again.");
             }
         }
     };

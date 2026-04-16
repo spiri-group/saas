@@ -9,14 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
     ArrowLeft, GripVertical, Music, Play, Pause, Pencil,
-    Plus, Trash2, Upload, X, Clock, ChevronDown, ChevronUp, Save, Loader2, DollarSign, Headphones,
+    Plus, Trash2, Upload, X, Clock, ChevronDown, ChevronUp, Save, Loader2, Headphones,
     ArrowUp, ArrowDown, Files
 } from "lucide-react";
 import { useJourneyTracks, useUpsertTrack, useDeleteTrack, useReorderTracks, type JourneyTrack } from "../_hooks/UseJourneyTracks";
 import { JourneyListItem } from "../_hooks/UseJourneys";
 import FileUploader from "@/components/ux/FileUploader";
 import { media_type } from "@/utils/spiriverse";
-import { decodeAmountFromSmallestUnit } from "@/lib/functions";
+import CurrencySpan from "@/components/ux/CurrencySpan";
 import { gql } from "@/lib/services/gql";
 import { ShoppingCart, Package } from "lucide-react";
 import FeatureGate from "@/components/subscription/FeatureGate";
@@ -485,9 +485,7 @@ function AddTrackDialog({
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm text-white truncate">{product.name}</p>
                                         {product.skus?.[0]?.price && (
-                                            <p className="text-xs text-slate-400">
-                                                ${decodeAmountFromSmallestUnit(product.skus[0].price.amount, product.skus[0].price.currency)} {product.skus[0].price.currency}
-                                            </p>
+                                            <CurrencySpan value={product.skus[0].price} className="text-xs text-slate-400" />
                                         )}
                                     </div>
                                     <Button
@@ -546,9 +544,7 @@ function AddTrackDialog({
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm text-white truncate">{product.name}</p>
                                                 {product.skus?.[0]?.price && (
-                                                    <p className="text-xs text-slate-400">
-                                                        ${decodeAmountFromSmallestUnit(product.skus[0].price.amount, product.skus[0].price.currency)} {product.skus[0].price.currency}
-                                                    </p>
+                                                    <CurrencySpan value={product.skus[0].price} className="text-xs text-slate-400" />
                                                 )}
                                             </div>
                                             <Plus className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -753,10 +749,9 @@ export default function JourneyTrackManager({ practitionerId, journey, onBack }:
                             </span>
                             {journey.pricing?.collectionPrice && (
                                 <span className="flex items-center gap-1">
-                                    <DollarSign className="w-3.5 h-3.5" />
                                     {journey.pricing.collectionPrice.amount === 0
                                         ? 'Free'
-                                        : `$${decodeAmountFromSmallestUnit(journey.pricing.collectionPrice.amount, journey.pricing.collectionPrice.currency)} ${journey.pricing.collectionPrice.currency}`
+                                        : <CurrencySpan value={journey.pricing.collectionPrice} />
                                     }
                                 </span>
                             )}
