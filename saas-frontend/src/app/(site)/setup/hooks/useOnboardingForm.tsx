@@ -47,10 +47,6 @@ export const onboardingSchema = z.object({
         bio: z.string().max(2000).optional(),
         modalities: z.array(z.string()).min(1, 'Select at least one modality'),
         specializations: z.array(z.string()).min(1, 'Select at least one specialization'),
-        pronouns: z.string().optional(),
-        yearsExperience: z.number().min(0).max(100).optional(),
-        spiritualJourney: z.string().max(2000).optional(),
-        approach: z.string().max(1000).optional(),
     }).optional(),
 });
 
@@ -150,10 +146,6 @@ export function useOnboardingForm() {
                 bio: '',
                 modalities: [],
                 specializations: [],
-                pronouns: '',
-                yearsExperience: undefined,
-                spiritualJourney: '',
-                approach: '',
             });
         }
     };
@@ -230,10 +222,6 @@ export function useOnboardingForm() {
                 bio: prac.bio || undefined,
                 modalities: prac.modalities,
                 specializations: prac.specializations,
-                pronouns: prac.pronouns || undefined,
-                yearsExperience: prac.yearsExperience,
-                spiritualJourney: prac.spiritualJourney || undefined,
-                approach: prac.approach || undefined,
                 subscription: {
                     tier: overrideTier || vals.subscription.tier,
                     billingInterval: vals.subscription.billingInterval,
