@@ -120,7 +120,6 @@ const resolvers = {
                     });
                 }
 
-                const userContainer = await context.dataSources.cosmos.get_container("Main-User")
                 const operations : PatchOperation[] = [
                     { op: "add", path: `/stripe`,
                         value:  {
@@ -128,12 +127,11 @@ const resolvers = {
                         }
                     }
                 ]
-                await userContainer.item(user.id, user.id).patch(operations)
+                await context.dataSources.cosmos.patch_record("Main-User", user.id, user.id, operations, context.userId)
             }
 
             // Clear requiresInput once basic details (first + last name) are provided
             if (user.requiresInput && isFullProfileUpdate) {
-                const userContainer = await context.dataSources.cosmos.get_container("Main-User")
                 const operations : PatchOperation[] = [
                     { op: "set", path: `/requiresInput`, value: false },
                     ...(address ? [{ op: "set" as const, path: `/addresses`, value: [{
@@ -141,7 +139,7 @@ const resolvers = {
                         ...address
                     }]}] : [])
                 ]
-                await userContainer.item(user.id, user.id).patch(operations)
+                await context.dataSources.cosmos.patch_record("Main-User", user.id, user.id, operations, context.userId)
             }
 
             return {

@@ -65,8 +65,7 @@ const resolvers = {
             const operations: PatchOperation[] = [
                 { op: "set", path: '/isReported', value: true }
             ];
-            const container = await context.dataSources.cosmos.get_container("Main-Comments")
-            await container.item(args.forObject.id, args.forObject.partition).patch(operations)
+            await context.dataSources.cosmos.patch_record("Main-Comments", args.forObject.id, args.forObject.partition, operations, context.userId)
 
             return {
                 code: "200",

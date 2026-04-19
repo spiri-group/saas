@@ -307,10 +307,9 @@ const resolvers = {
                 activity.createdBy = context.userId
             }
 
-            var container = await context.dataSources.cosmos.get_container("Main-Listing")
             const operations : PatchOperation[] = [{ op: "add", path: `/activityLists/-`, value: activityList}]
-            await container.item(args.listingId, args.vendorId).patch(operations)
-          
+            await context.dataSources.cosmos.patch_record("Main-Listing", args.listingId, args.vendorId, operations, context.userId!)
+
             return {
               code: "200",
               message: "Activity List created successfully",
@@ -337,9 +336,8 @@ const resolvers = {
             const activityListFromDB = tour.activityLists[activityListIdx]
             const finalActivityList = mergeDeep(activityListFromDB, activityList)
             
-            var container = await context.dataSources.cosmos.get_container("Main-Listing")
             const operations : PatchOperation[] = [{ op: "replace", path: `/activityLists/${activityListIdx}`, value: finalActivityList}]
-            await container.item(args.listingId, args.vendorId).patch(operations)
+            await context.dataSources.cosmos.patch_record("Main-Listing", args.listingId, args.vendorId, operations, context.userId!)
 
             return {
                 code: "200",

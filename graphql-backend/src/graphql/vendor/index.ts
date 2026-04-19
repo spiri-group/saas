@@ -824,7 +824,6 @@ const resolvers = {
             // Update the vendor in the database with the stripe IDs
             // Note: No subscription order or SetupIntent created at signup
             // Subscription billing starts once merchant receives payouts >= Essentials threshold
-            const vendorContainer = await context.dataSources.cosmos.get_container("Main-Vendor")
             const operations : PatchOperation[] = [
                 { op: "add", path: `/stripe`,
                     value: {
@@ -833,7 +832,7 @@ const resolvers = {
                     }
                 }
             ]
-            await vendorContainer.item(vendorInput.id, vendorInput.id).patch(operations)
+            await context.dataSources.cosmos.patch_record("Main-Vendor", vendorInput.id, vendorInput.id, operations, context.userId)
 
             // Add the vendor to the user with a patch
             const user = await context.dataSources.cosmos.get_record<user_type>("Main-User", context.userId, context.userId);
@@ -1237,10 +1236,9 @@ const resolvers = {
             };
 
             // Patch the practitioner field
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor");
-            await container.item(args.practitionerId, args.practitionerId).patch([
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.practitionerId, args.practitionerId, [
                 { op: "set", path: "/practitioner", value: updatedProfile }
-            ]);
+            ], context.userId);
 
             const updatedPractitioner = await context.dataSources.cosmos.get_record("Main-Vendor", args.practitionerId, args.practitionerId);
 
@@ -1278,10 +1276,9 @@ const resolvers = {
             };
 
             // Patch the practitioner field
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor");
-            await container.item(args.practitionerId, args.practitionerId).patch([
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.practitionerId, args.practitionerId, [
                 { op: "set", path: "/practitioner", value: updatedProfile }
-            ]);
+            ], context.userId);
 
             const updatedPractitioner = await context.dataSources.cosmos.get_record("Main-Vendor", args.practitionerId, args.practitionerId);
 
@@ -1333,10 +1330,9 @@ const resolvers = {
             };
 
             // Patch the practitioner field
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor");
-            await container.item(args.practitionerId, args.practitionerId).patch([
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.practitionerId, args.practitionerId, [
                 { op: "set", path: "/practitioner", value: updatedProfile }
-            ]);
+            ], context.userId);
 
             const updatedPractitioner = await context.dataSources.cosmos.get_record("Main-Vendor", args.practitionerId, args.practitionerId);
 
@@ -1391,10 +1387,9 @@ const resolvers = {
             };
 
             // Patch the practitioner field
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor");
-            await container.item(args.practitionerId, args.practitionerId).patch([
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.practitionerId, args.practitionerId, [
                 { op: "set", path: "/practitioner", value: updatedProfile }
-            ]);
+            ], context.userId);
 
             const updatedPractitioner = await context.dataSources.cosmos.get_record("Main-Vendor", args.practitionerId, args.practitionerId);
 
@@ -1461,10 +1456,9 @@ const resolvers = {
                 linkedShopfronts: updatedShopfronts
             };
 
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor");
-            await container.item(args.practitionerId, args.practitionerId).patch([
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.practitionerId, args.practitionerId, [
                 { op: "set", path: "/practitioner", value: updatedProfile }
-            ]);
+            ], context.userId);
 
             const updatedPractitioner = await context.dataSources.cosmos.get_record("Main-Vendor", args.practitionerId, args.practitionerId);
 
@@ -1503,10 +1497,9 @@ const resolvers = {
                 linkedShopfronts: updatedShopfronts
             };
 
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor");
-            await container.item(args.practitionerId, args.practitionerId).patch([
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.practitionerId, args.practitionerId, [
                 { op: "set", path: "/practitioner", value: updatedProfile }
-            ]);
+            ], context.userId);
 
             const updatedPractitioner = await context.dataSources.cosmos.get_record("Main-Vendor", args.practitionerId, args.practitionerId);
 
@@ -1553,10 +1546,9 @@ const resolvers = {
                 linkedShopfronts: updatedShopfronts
             };
 
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor");
-            await container.item(args.practitionerId, args.practitionerId).patch([
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.practitionerId, args.practitionerId, [
                 { op: "set", path: "/practitioner", value: updatedProfile }
-            ]);
+            ], context.userId);
 
             const updatedPractitioner = await context.dataSources.cosmos.get_record("Main-Vendor", args.practitionerId, args.practitionerId);
 
@@ -1687,12 +1679,11 @@ const resolvers = {
             await context.dataSources.cosmos.add_record("Main-VendorSettings", testimonial, request.practitionerId, "GUEST");
 
             // Update the request status to SUBMITTED
-            const container = await context.dataSources.cosmos.get_container("Main-VendorSettings");
-            await container.item(request.id, request.practitionerId).patch([
+            await context.dataSources.cosmos.patch_record("Main-VendorSettings", request.id, request.practitionerId, [
                 { op: "set", path: "/requestStatus", value: "SUBMITTED" },
                 { op: "set", path: "/submittedAt", value: now.toISOString() },
                 { op: "set", path: "/testimonialId", value: testimonialId }
-            ]);
+            ], "GUEST");
 
             return {
                 code: "200",
@@ -1746,10 +1737,9 @@ const resolvers = {
             };
 
             // Patch the practitioner field
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor");
-            await container.item(args.practitionerId, args.practitionerId).patch([
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.practitionerId, args.practitionerId, [
                 { op: "set", path: "/practitioner", value: updatedProfile }
-            ]);
+            ], context.userId);
 
             const updatedPractitioner = await context.dataSources.cosmos.get_record("Main-Vendor", args.practitionerId, args.practitionerId);
 
@@ -1812,11 +1802,10 @@ const resolvers = {
             if (context.userId == null) throw "User must be present for this call";
             const merchantId = args.merchantId
 
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor")
             const operations : PatchOperation[] = [
                 { op: "set", path: '/descriptions', value: args.descriptions}
             ]
-            await container.item(merchantId, merchantId).patch(operations)
+            await context.dataSources.cosmos.patch_record("Main-Vendor", merchantId, merchantId, operations, context.userId)
             
             return {
                 code: "200",
@@ -1829,11 +1818,10 @@ const resolvers = {
             if (context.userId == null) throw "User must be present for this call";
 
             const merchantId = args.merchantId
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor")
             const operations : PatchOperation[] = [
                 { op: "set", path: '/locations', value: args.locations}
             ]
-            await container.item(merchantId, merchantId).patch(operations)
+            await context.dataSources.cosmos.patch_record("Main-Vendor", merchantId, merchantId, operations, context.userId)
 
             return {
                 code: "200",
@@ -1853,11 +1841,10 @@ const resolvers = {
             }
 
             const merchantId = args.merchantId
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor")
             const operations : PatchOperation[] = [
                 { op: "set", path: '/intro', value: intro}
             ]
-            await container.item(merchantId, merchantId).patch(operations)
+            await context.dataSources.cosmos.patch_record("Main-Vendor", merchantId, merchantId, operations, context.userId)
 
             return {
                 code: "200",
@@ -1876,11 +1863,10 @@ const resolvers = {
             }
 
             const merchantId = args.merchantId
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor")
             const operations : PatchOperation[] = [
                 { op: "set", path: '/promiseBanner', value: promiseBanner}
             ]
-            await container.item(merchantId, merchantId).patch(operations)
+            await context.dataSources.cosmos.patch_record("Main-Vendor", merchantId, merchantId, operations, context.userId)
 
             return {
                 code: "200",
@@ -1895,11 +1881,10 @@ const resolvers = {
             const merchantId = args.merchantId
             const bannerConfig = args.bannerConfig
 
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor")
             const operations : PatchOperation[] = [
                 { op: "set", path: '/bannerConfig', value: bannerConfig}
             ]
-            await container.item(merchantId, merchantId).patch(operations)
+            await context.dataSources.cosmos.patch_record("Main-Vendor", merchantId, merchantId, operations, context.userId)
 
             return {
                 code: "200",
@@ -1921,7 +1906,6 @@ const resolvers = {
             // Add new video to beginning of array and keep only latest 5
             const videos = video ? [video, ...(vendor.videos || [])].slice(0, 5) : vendor.videos
 
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor")
             const operations : PatchOperation[] = [
                 { op: "set", path: '/videos', value: videos}
             ]
@@ -1931,7 +1915,7 @@ const resolvers = {
                 operations.push({ op: "set", path: '/videoSettings', value: videoSettings})
             }
 
-            await container.item(merchantId, merchantId).patch(operations)
+            await context.dataSources.cosmos.patch_record("Main-Vendor", merchantId, merchantId, operations, context.userId)
 
             return {
                 code: "200",
@@ -1963,10 +1947,9 @@ const resolvers = {
             // Prepend to videoUpdates array, keep latest 20
             const videoUpdates = [videoUpdate, ...(vendor.videoUpdates || [])].slice(0, 20);
 
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor");
-            await container.item(args.vendorId, args.vendorId).patch([
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.vendorId, args.vendorId, [
                 { op: "set", path: "/videoUpdates", value: videoUpdates }
-            ]);
+            ], context.userId);
 
             // Publish feed activity for video update
             try {
@@ -2001,10 +1984,9 @@ const resolvers = {
 
             const videoUpdates = (vendor.videoUpdates || []).filter((v: any) => v.id !== args.videoUpdateId);
 
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor");
-            await container.item(args.vendorId, args.vendorId).patch([
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.vendorId, args.vendorId, [
                 { op: "set", path: "/videoUpdates", value: videoUpdates }
-            ]);
+            ], context.userId);
 
             return {
                 code: "200",
@@ -2028,8 +2010,7 @@ const resolvers = {
             [
                 { op: "set", path: '/teamMembers', value: args.teamMembers}
             ];
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor")
-            await container.item(args.merchantId, args.merchantId).patch(operations)
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.merchantId, args.merchantId, operations, context.userId)
             
             // now retrieve it
             const vendor = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", args.merchantId, args.merchantId)
@@ -2047,15 +2028,13 @@ const resolvers = {
             const merchantId = args.merchantId
             context.logger.logMessage(`Updating social URLs for merchant ${merchantId}: ${JSON.stringify(args.socials)}`);
 
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor")
-
             const operations : PatchOperation[] = [
                 { op: "set", path: '/social', value: {
                     style: args.style,
                     platforms: args.socials
                 }}
             ]
-            await container.item(merchantId, merchantId).patch(operations)
+            await context.dataSources.cosmos.patch_record("Main-Vendor", merchantId, merchantId, operations, context.userId)
 
             const updatedVendor = await context.dataSources.cosmos.get_record<vendor_type>("Main-Vendor", merchantId, merchantId);
             context.logger.logMessage(`Social URLs saved for merchant ${merchantId}: ${JSON.stringify(updatedVendor.social)}`);
@@ -2302,9 +2281,8 @@ const resolvers = {
                 }
 
                 // now just patch cosmos to remove the setup intent secret
-                var container = await context.dataSources.cosmos.get_container("Main-Vendor")
                 const operations : PatchOperation[] = [{ op: "remove", path: `/stripe/setupIntent`}]
-                await container.item(args.vendorId, args.vendorId).patch(operations)
+                await context.dataSources.cosmos.patch_record("Main-Vendor", args.vendorId, args.vendorId, operations, context.userId ?? "SYSTEM")
 
                 return {
                     code: "200",
@@ -2401,10 +2379,9 @@ const resolvers = {
         clearMerchantWelcomeMessage: async (_: any, args: any, context: serverContext) => {
             if (context.userId == null) throw "User must be present for this call";
 
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor")
-            await container.item(args.vendorId, args.vendorId).patch([
+            await context.dataSources.cosmos.patch_record("Main-Vendor", args.vendorId, args.vendorId, [
                 { op: "remove", path: "/onStart"}
-            ])
+            ], context.userId)
 
             return {
                 code: "200",
@@ -3213,11 +3190,10 @@ const resolvers = {
             const merchantId = args.merchantId;
             protect_via_merchant_access(context.dataSources.cosmos, context.userId, merchantId);
 
-            const container = await context.dataSources.cosmos.get_container("Main-Vendor");
             const operations: PatchOperation[] = [
                 { op: "set", path: '/profileVisibility', value: args.visibility }
             ];
-            await container.item(merchantId, merchantId).patch(operations);
+            await context.dataSources.cosmos.patch_record("Main-Vendor", merchantId, merchantId, operations, context.userId);
 
             return {
                 code: "200",
