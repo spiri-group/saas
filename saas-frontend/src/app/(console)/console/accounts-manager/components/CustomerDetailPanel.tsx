@@ -2,10 +2,21 @@
 
 import { ConsoleCustomerAccount } from '../types';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { useState } from 'react';
-import { X, User, Mail, ShoppingBag, Store, Sparkles, Eye, Loader2 } from 'lucide-react';
+import { X, User, Mail, ShoppingBag, Store, Sparkles, Eye, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 import AccountNotes from './AccountNotes';
+import { usePurgeCustomerAccount } from '../hooks/UseCustomerQuickActions';
 
 interface CustomerDetailPanelProps {
     customer: ConsoleCustomerAccount;
@@ -14,6 +25,9 @@ interface CustomerDetailPanelProps {
 
 export default function CustomerDetailPanel({ customer, onClose }: CustomerDetailPanelProps) {
     const [isImpersonating, setIsImpersonating] = useState(false);
+    const [showPurgeDialog, setShowPurgeDialog] = useState(false);
+    const [purgeConfirmEmail, setPurgeConfirmEmail] = useState('');
+    const purgeCustomer = usePurgeCustomerAccount();
 
     const handleViewAs = async () => {
         if (!customer.email) return;
@@ -29,6 +43,25 @@ export default function CustomerDetailPanel({ customer, onClose }: CustomerDetai
             }
         } finally {
             setIsImpersonating(false);
+        }
+    };
+
+    const handlePurge = async () => {
+        try {
+            const result = await purgeCustomer.mutateAsync({
+                userId: customer.id,
+                confirmEmail: purgeConfirmEmail,
+            });
+            if (result.success) {
+                toast.success(result.message);
+                setShowPurgeDialog(false);
+                setPurgeConfirmEmail('');
+                onClose();
+            } else {
+                toast.error(result.message);
+            }
+        } catch {
+            toast.error('Failed to purge customer account');
         }
     };
 
@@ -154,7 +187,87 @@ export default function CustomerDetailPanel({ customer, onClose }: CustomerDetai
                         </div>
                     </div>
                 )}
+
+                {/* Danger Zone */}
+                <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-red-400 flex items-center">
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        Danger Zone
+                    </h3>
+                    <div className="border border-red-500/20 rounded-lg p-4 space-y-3">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10"
+                            onClick={() => setShowPurgeDialog(true)}
+                            data-testid="purge-customer-btn"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Purge Account
+                        </Button>
+                    </div>
+                </div>
             </div>
+
+            {/* Purge Confirmation Dialog */}
+            <Dialog open={showPurgeDialog} onOpenChange={setShowPurgeDialog} data-testid="purge-customer-dialog">
+                <DialogContent className="sm:max-w-md max-w-[95vw]" data-testid="purge-customer-dialog-content">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center space-x-2 text-red-400">
+                            <Trash2 className="h-5 w-5" />
+                            <span>Purge Customer Account</span>
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            This will permanently delete all data for <span className="font-semibold text-white">{customer.email}</span>. This action cannot be undone. All owned vendors, orders, bookings, cases, reviews, follows, messages, saved cart, reading requests and Stripe customer records will be removed.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label className="text-sm text-slate-300">
+                                Type the customer email to confirm
+                            </Label>
+                            <Input
+                                data-testid="purge-customer-confirm-email-input"
+                                value={purgeConfirmEmail}
+                                onChange={(e) => setPurgeConfirmEmail(e.target.value)}
+                                placeholder={customer.email}
+                                dark
+                            />
+                        </div>
+                        <div className="flex flex-col space-y-2">
+                            <Button
+                                data-testid="purge-customer-confirm-btn"
+                                onClick={handlePurge}
+                                disabled={purgeConfirmEmail !== customer.email || purgeCustomer.isPending}
+                                className="w-full bg-red-600 hover:bg-red-700 text-white"
+                            >
+                                {purgeCustomer.isPending ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Purging...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Permanently Delete All Data
+                                    </>
+                                )}
+                            </Button>
+                            <Button
+                                data-testid="purge-customer-cancel-btn"
+                                variant="outline"
+                                onClick={() => {
+                                    setShowPurgeDialog(false);
+                                    setPurgeConfirmEmail('');
+                                }}
+                                className="w-full"
+                            >
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
