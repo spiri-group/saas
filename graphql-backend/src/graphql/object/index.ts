@@ -28,29 +28,28 @@ const resolvers = {
 
             // Prepare the patch operations for the partial update
             const operations: PatchOperation[] = [];
-            const container = await context.dataSources.cosmos.get_container(args.ref.container);
 
             if (liked_by == null) {
                 liked_by = []
-                await container.item(args.ref.id, args.ref.partition).patch([
+                await context.dataSources.cosmos.patch_record(args.ref.container, args.ref.id, args.ref.partition, [
                     { op: "set", value: liked_by, path: "/liked_by" }
-                ]);
+                ], context.userId!);
             }
 
             if (disliked_by == null) {
                 disliked_by = []
-                await container.item(args.ref.id, args.ref.partition).patch([
+                await context.dataSources.cosmos.patch_record(args.ref.container, args.ref.id, args.ref.partition, [
                     { op: "set", value: disliked_by, path: "/disliked_by" }
-                ]);
+                ], context.userId!);
             }
-          
+
             if (args.like) {
               operations.push({
                 op: "add",
                 path: "/liked_by/-",
                 value: context.userId
               });
-              
+
               const dislikedByIndex = disliked_by.findIndex(x => x == context.userId)
                 if (dislikedByIndex != -1) {
                     operations.push({
@@ -64,7 +63,7 @@ const resolvers = {
                     path: "/disliked_by/-",
                     value: context.userId
                 });
-              
+
               const likedByIndex = liked_by.findIndex(x => x == context.userId)
               if (likedByIndex != -1) {
                 operations.push({
@@ -73,9 +72,9 @@ const resolvers = {
                   });
               }
             }
-          
+
             // Perform the partial update using the patch operations
-            await container.item(args.ref.id, args.ref.partition).patch(operations);
+            await context.dataSources.cosmos.patch_record(args.ref.container, args.ref.id, args.ref.partition, operations, context.userId!);
           
             // Get the updated comment document from the database
             const obj = await context.dataSources.cosmos.get_record<{ liked_by: string[], disliked_by: string[]}>(args.ref.container, args.ref.id, args.ref.partition)
@@ -96,13 +95,12 @@ const resolvers = {
 
             // Prepare the patch operations for the partial update
             const operations: PatchOperation[] = [];
-            const container = await context.dataSources.cosmos.get_container(args.ref.container);
 
             if (helped == null) {
                 helped = []
-                await container.item(args.ref.id, args.ref.partition).patch([
+                await context.dataSources.cosmos.patch_record(args.ref.container, args.ref.id, args.ref.partition, [
                     { op: "set", value: helped, path: "/helped" }
-                ]);
+                ], context.userId!);
             }
 
             if (args.helped) {
@@ -111,7 +109,7 @@ const resolvers = {
                 path: "/helped/-",
                 value: context.userId
               })
-              
+
               const helpedByIndex = helped.findIndex(x => x == context.userId)
               if (helpedByIndex != -1) {
                 operations.push({
@@ -121,7 +119,7 @@ const resolvers = {
               }
             }
             // Perform the partial update using the patch operations
-            await container.item(args.ref.id, args.ref.partition).patch(operations);
+            await context.dataSources.cosmos.patch_record(args.ref.container, args.ref.id, args.ref.partition, operations, context.userId!);
           
             // Get the updated comment document from the database
             const obj = await context.dataSources.cosmos.get_record<{ helped: string[]}>(args.ref.container, args.ref.id, args.ref.partition)

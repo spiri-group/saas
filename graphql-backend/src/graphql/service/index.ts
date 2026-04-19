@@ -935,8 +935,6 @@ const resolvers = {
 
             //FIX: If the id matches an existing record need to update
             //FIX: If the schedule name given does not match the id throw an error
-            
-            const container = await context.dataSources.cosmos.get_container("Main-ServicesSchedules")
 
             const ops : PatchOperation[] = []
 
@@ -1011,7 +1009,7 @@ const resolvers = {
             //     path: "/weekdays"
             // })
             
-            await container.item(args.scheduleId, args.merchantId).patch(ops);
+            await context.dataSources.cosmos.patch_record("Main-ServicesSchedules", args.scheduleId, args.merchantId, ops, context.userId);
 
             return {
                 code: "200",
@@ -1634,7 +1632,6 @@ const resolvers = {
             }
 
             // Build patch operations for updated fields
-            const container = await context.dataSources.cosmos.get_container("Main-Listing");
             const ops: PatchOperation[] = [];
 
             if (args.input.name !== undefined) ops.push({ op: "set", path: "/name", value: args.input.name });
@@ -1664,7 +1661,7 @@ const resolvers = {
             if (args.input.scheduleId !== undefined) ops.push({ op: "set", path: "/scheduleId", value: args.input.scheduleId });
 
             if (ops.length > 0) {
-                await container.item(args.input.id, args.merchantId).patch(ops);
+                await context.dataSources.cosmos.patch_record("Main-Listing", args.input.id, args.merchantId, ops, context.userId);
             }
 
             return await context.dataSources.cosmos.get_record("Main-Listing", args.input.id, args.merchantId);
@@ -1695,7 +1692,6 @@ const resolvers = {
             }
 
             // Build patch operations for updated fields
-            const container = await context.dataSources.cosmos.get_container("Main-Listing");
             const ops: PatchOperation[] = [];
 
             if (args.input.name !== undefined) ops.push({ op: "set", path: "/name", value: args.input.name });
@@ -1724,7 +1720,7 @@ const resolvers = {
             if (args.input.scheduleId !== undefined) ops.push({ op: "set", path: "/scheduleId", value: args.input.scheduleId });
 
             if (ops.length > 0) {
-                await container.item(args.input.id, args.merchantId).patch(ops);
+                await context.dataSources.cosmos.patch_record("Main-Listing", args.input.id, args.merchantId, ops, context.userId);
             }
 
             return await context.dataSources.cosmos.get_record("Main-Listing", args.input.id, args.merchantId);
@@ -1755,7 +1751,6 @@ const resolvers = {
             }
 
             // Build patch operations for updated fields
-            const container = await context.dataSources.cosmos.get_container("Main-Listing");
             const ops: PatchOperation[] = [];
 
             if (args.input.name !== undefined) ops.push({ op: "set", path: "/name", value: args.input.name });
@@ -1784,7 +1779,7 @@ const resolvers = {
             if (args.input.scheduleId !== undefined) ops.push({ op: "set", path: "/scheduleId", value: args.input.scheduleId });
 
             if (ops.length > 0) {
-                await container.item(args.input.id, args.merchantId).patch(ops);
+                await context.dataSources.cosmos.patch_record("Main-Listing", args.input.id, args.merchantId, ops, context.userId);
             }
 
             return await context.dataSources.cosmos.get_record("Main-Listing", args.input.id, args.merchantId);

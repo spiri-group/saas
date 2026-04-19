@@ -183,12 +183,11 @@ const resolvers = {
             ratingStats["total_count"] = numPeople_results[0].numReviews
             ratingStats["average"] = (Math.ceil(rating_results[0].rating * 2) / 2).toFixed(2)
 
-            const container = await context.dataSources.cosmos.get_container("Main-Listing")
-            await container.item(args.objectId, args.objectPartition).patch([{
+            await context.dataSources.cosmos.patch_record("Main-Listing", args.objectId, args.objectPartition, [{
                 "op": PatchOperationType.set,
                 "path": "/rating",
                 "value": ratingStats
-            }])
+            }], context.userId)
 
             const review = await context.dataSources.cosmos.get_record<any>("Main-Comments", item.id, partition)
 
