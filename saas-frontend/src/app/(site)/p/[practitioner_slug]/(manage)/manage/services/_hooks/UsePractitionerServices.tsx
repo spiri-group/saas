@@ -100,6 +100,7 @@ export type PractitionerService = {
     coachingOptions?: {
         specialties?: string[];
     };
+    termsDocumentId?: string;
 };
 
 const usePractitionerServices = (practitionerId: string) => {
@@ -230,6 +231,7 @@ const usePractitionerServices = (practitionerId: string) => {
                         coachingOptions {
                             specialties
                         }
+                        termsDocumentId
                     }
                 }
             `, { merchantId: practitionerId });
